@@ -13,3 +13,23 @@
     @apply bg-creme font-sans text-navy-900 antialiased;
   }
 }
+
+/* Impression : ne montrer que la zone du bulletin. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .zone-impression,
+  .zone-impression * {
+    visibility: visible;
+  }
+  .zone-impression {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 24px;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

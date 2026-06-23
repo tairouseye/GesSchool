@@ -10,6 +10,8 @@ import TableauDeBord from "@/pages/TableauDeBord.jsx";
 import Structure from "@/pages/Structure.jsx";
 import Eleves from "@/pages/Eleves.jsx";
 import FicheEleve from "@/pages/FicheEleve.jsx";
+import Notes from "@/pages/Notes.jsx";
+import Bulletins from "@/pages/Bulletins.jsx";
 import EnConstruction from "@/pages/EnConstruction.jsx";
 
 // GesSchool — routeur applicatif (Phase 0).
@@ -45,7 +47,8 @@ export default function App() {
             <Route path="/structure" element={<Structure />} />
             <Route path="/eleves" element={<Eleves />} />
             <Route path="/eleves/:id" element={<FicheEleve />} />
-            <Route path="/bulletins" element={<EnConstruction titre="Bulletins" />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/bulletins" element={<Bulletins />} />
             <Route path="/paiements" element={<EnConstruction titre="Paiements" />} />
           </Route>
 

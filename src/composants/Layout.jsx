@@ -6,6 +6,7 @@ import Cachet from "@/composants/Cachet.jsx";
 const NAV = [
   { to: "/", label: "Tableau de bord", icone: "▦", exact: true },
   { to: "/eleves", label: "Élèves", icone: "👤" },
+  { to: "/notes", label: "Notes", icone: "✎" },
   { to: "/bulletins", label: "Bulletins", icone: "🎓" },
   { to: "/paiements", label: "Paiements", icone: "₣" },
   { to: "/structure", label: "Structure", icone: "🏫" },
