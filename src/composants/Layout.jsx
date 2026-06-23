@@ -10,6 +10,7 @@ const NAV = [
   { to: "/bulletins", label: "Bulletins", icone: "🎓" },
   { to: "/paiements", label: "Paiements", icone: "₣" },
   { to: "/structure", label: "Structure", icone: "🏫" },
+  { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫" },
 ];
 
 export default function Layout() {

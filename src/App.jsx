@@ -13,6 +13,7 @@ import FicheEleve from "@/pages/FicheEleve.jsx";
 import Notes from "@/pages/Notes.jsx";
 import Bulletins from "@/pages/Bulletins.jsx";
 import Paiements from "@/pages/Paiements.jsx";
+import Enseignants from "@/pages/Enseignants.jsx";
 
 // GesSchool — routeur applicatif (Phase 0).
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
           >
             <Route path="/" element={<TableauDeBord />} />
             <Route path="/structure" element={<Structure />} />
+            <Route path="/enseignants" element={<Enseignants />} />
             <Route path="/eleves" element={<Eleves />} />
             <Route path="/eleves/:id" element={<FicheEleve />} />
             <Route path="/notes" element={<Notes />} />
