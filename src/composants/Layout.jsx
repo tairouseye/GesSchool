@@ -11,6 +11,7 @@ const NAV = [
   { to: "/paiements", label: "Paiements", icone: "₣" },
   { to: "/structure", label: "Structure", icone: "🏫" },
   { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫" },
+  { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋" },
 ];
 
 export default function Layout() {
