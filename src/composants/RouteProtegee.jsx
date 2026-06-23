@@ -6,8 +6,9 @@ import Cachet from "@/composants/Cachet.jsx";
 //  - non connecté          → /connexion
 //  - connecté sans profil  → /onboarding (école pas encore créée)
 //  - rôle requis non détenu → page « accès refusé »
+// Garde de l'espace STAFF (admin/direction/enseignant…).
 export default function RouteProtegee({ children, role, exigeProfil = true }) {
-  const { estConnecte, aProfil, aRole, chargement } = useAuth();
+  const { estConnecte, aProfil, estParent, aRole, chargement } = useAuth();
   const location = useLocation();
 
   if (chargement) return <Ecran chargement />;
@@ -16,14 +17,28 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
     return <Navigate to="/connexion" replace state={{ from: location }} />;
   }
 
+  // Un parent n'a rien à faire dans l'espace de gestion → espace parent.
+  if (estParent) {
+    return <Navigate to="/parent" replace />;
+  }
+
   if (exigeProfil && !aProfil) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/bienvenue" replace />;
   }
 
   if (role && !aRole(role)) {
     return <Ecran message="Accès refusé : vous n'avez pas les droits requis." />;
   }
 
+  return children;
+}
+
+// Garde de l'ESPACE PARENT.
+export function RouteParent({ children }) {
+  const { estConnecte, estParent, aProfil, chargement } = useAuth();
+  if (chargement) return <Ecran chargement />;
+  if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (!estParent) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
   return children;
 }
 

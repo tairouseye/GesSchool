@@ -4,6 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
+import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 
 export default function FicheEleve() {
@@ -21,6 +22,7 @@ export default function FicheEleve() {
   const [modaleInscr, setModaleInscr] = useState(false);
   const [modaleEdit, setModaleEdit] = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
+  const [codes, setCodes] = useState({}); // tuteur_id -> code parent
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -154,9 +156,29 @@ export default function FicheEleve() {
                         {t.responsable_legal && <span className="ml-2 text-navy-900/40">• légal</span>}
                       </p>
                     </div>
-                    <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-500 hover:underline">
-                      retirer
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      {codes[t.tuteurs.id] ? (
+                        <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
+                          {codes[t.tuteurs.id]}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            setErreur("");
+                            try {
+                              const code = await genererCodeTuteur(t.tuteurs.id);
+                              setCodes((s) => ({ ...s, [t.tuteurs.id]: code }));
+                            } catch (e) { setErreur(e.message); }
+                          }}
+                          className="text-xs text-navy-700 hover:text-or-500"
+                        >
+                          Code parent
+                        </button>
+                      )}
+                      <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-500 hover:underline">
+                        retirer
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

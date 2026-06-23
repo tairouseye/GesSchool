@@ -1,11 +1,15 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contextes/AuthContext.jsx";
-import RouteProtegee from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent } from "@/composants/RouteProtegee.jsx";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
 import MotDePasseOublie from "@/pages/MotDePasseOublie.jsx";
 import ReinitMotDePasse from "@/pages/ReinitMotDePasse.jsx";
 import Onboarding from "@/pages/Onboarding.jsx";
+import Bienvenue from "@/pages/Bienvenue.jsx";
+import ParentLayout from "@/pages/ParentLayout.jsx";
+import ParentAccueil from "@/pages/ParentAccueil.jsx";
+import ParentEnfant from "@/pages/ParentEnfant.jsx";
 import TableauDeBord from "@/pages/TableauDeBord.jsx";
 import Structure from "@/pages/Structure.jsx";
 import Eleves from "@/pages/Eleves.jsx";
@@ -28,7 +32,15 @@ export default function App() {
           <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
           <Route path="/reinitialiser" element={<ReinitMotDePasse />} />
 
-          {/* Connecté sans école → onboarding */}
+          {/* Connecté sans profil → choix (école ou parent) */}
+          <Route
+            path="/bienvenue"
+            element={
+              <RouteProtegee exigeProfil={false}>
+                <Bienvenue />
+              </RouteProtegee>
+            }
+          />
           <Route
             path="/onboarding"
             element={
@@ -37,6 +49,19 @@ export default function App() {
               </RouteProtegee>
             }
           />
+
+          {/* Espace parent */}
+          <Route
+            path="/parent"
+            element={
+              <RouteParent>
+                <ParentLayout />
+              </RouteParent>
+            }
+          >
+            <Route index element={<ParentAccueil />} />
+            <Route path="enfant/:id" element={<ParentEnfant />} />
+          </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}
           <Route

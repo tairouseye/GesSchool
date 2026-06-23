@@ -93,6 +93,7 @@ export function AuthProvider({ children }) {
     ecoleId: profil?.ecole_id ?? null,
     estConnecte: !!session,
     aProfil: !!profil,
+    estParent: roles.includes("parent"),
     chargement,
     aRole: (r) => roles.includes(r),
     connexion,
