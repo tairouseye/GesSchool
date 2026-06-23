@@ -52,6 +52,15 @@ export async function supprimerEleve(id) {
   if (error) throw error;
 }
 
+// Téléverse une photo dans le bucket 'eleves' et renvoie son URL publique.
+export async function televerserPhoto(ecoleId, eleveId, file) {
+  const ext = file.name.split(".").pop();
+  const chemin = `${ecoleId}/${eleveId}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("eleves").upload(chemin, file, { upsert: true });
+  if (error) throw error;
+  return supabase.storage.from("eleves").getPublicUrl(chemin).data.publicUrl;
+}
+
 // --- Inscriptions ---
 // Inscriptions de l'année courante, indexées par eleve_id (avec libellé de classe).
 export async function getInscriptionsParEleve(ecoleId, anneeId) {

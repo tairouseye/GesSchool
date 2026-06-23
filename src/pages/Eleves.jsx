@@ -15,6 +15,8 @@ export default function Eleves() {
   const [classes, setClasses] = useState([]);
   const [annee, setAnnee] = useState(null);
   const [recherche, setRecherche] = useState("");
+  const [filtreClasse, setFiltreClasse] = useState("");
+  const [filtreStatut, setFiltreStatut] = useState("");
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
@@ -45,11 +47,16 @@ export default function Eleves() {
 
   const filtres = eleves.filter((e) => {
     const q = recherche.toLowerCase();
-    return (
+    const insc = inscriptions[e.id];
+    const okRecherche =
       !q ||
       `${e.prenom} ${e.nom}`.toLowerCase().includes(q) ||
-      (e.matricule || "").toLowerCase().includes(q)
-    );
+      (e.matricule || "").toLowerCase().includes(q);
+    const okClasse = !filtreClasse || insc?.classe_id === filtreClasse;
+    const okStatut =
+      !filtreStatut ||
+      (filtreStatut === "non_inscrit" ? !insc : insc?.statut === filtreStatut);
+    return okRecherche && okClasse && okStatut;
   });
 
   return (
@@ -67,13 +74,35 @@ export default function Eleves() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <Carte className="overflow-hidden">
-          <div className="border-b border-navy-900/10 p-4">
+          <div className="flex flex-wrap items-center gap-3 border-b border-navy-900/10 p-4">
             <input
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               placeholder="Rechercher un élève, un matricule…"
-              className="w-full max-w-md rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
+              className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
             />
+            <select
+              value={filtreClasse}
+              onChange={(e) => setFiltreClasse(e.target.value)}
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
+            >
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.libelle}</option>
+              ))}
+            </select>
+            <select
+              value={filtreStatut}
+              onChange={(e) => setFiltreStatut(e.target.value)}
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
+            >
+              <option value="">Tous les statuts</option>
+              <option value="inscrit">Inscrit</option>
+              <option value="reinscrit">Réinscrit</option>
+              <option value="transfere">Transféré</option>
+              <option value="abandon">Abandon</option>
+              <option value="non_inscrit">Non inscrit</option>
+            </select>
           </div>
 
           {chargement ? (
@@ -103,8 +132,17 @@ export default function Eleves() {
                       className="cursor-pointer border-t border-navy-900/5 hover:bg-creme/60"
                     >
                       <td className="px-6 py-4 font-mono text-xs text-navy-900/70">{e.matricule || "—"}</td>
-                      <td className="px-6 py-4 font-medium text-navy-900">
-                        {e.prenom} {e.nom}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {e.photo_url ? (
+                            <img src={e.photo_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <span className="grid h-8 w-8 place-items-center rounded-full bg-navy-900/10 text-xs font-semibold text-navy-900/60">
+                              {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
+                            </span>
+                          )}
+                          <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-navy-900/60">{e.sexe || "—"}</td>
                       <td className="px-6 py-4">{insc?.classes?.libelle || "—"}</td>

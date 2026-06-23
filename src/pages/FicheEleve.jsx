@@ -19,6 +19,8 @@ export default function FicheEleve() {
   const [chargement, setChargement] = useState(true);
   const [modaleTuteur, setModaleTuteur] = useState(false);
   const [modaleInscr, setModaleInscr] = useState(false);
+  const [modaleEdit, setModaleEdit] = useState(false);
+  const [photoEnCours, setPhotoEnCours] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -71,12 +73,46 @@ export default function FicheEleve() {
 
         {/* Infos */}
         <Carte className="p-6 lg:col-span-1">
-          <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">État civil</h3>
+          {/* Photo */}
+          <div className="mb-5 flex flex-col items-center">
+            {eleve.photo_url ? (
+              <img src={eleve.photo_url} alt="" className="h-24 w-24 rounded-full object-cover ring-2 ring-or-500/40" />
+            ) : (
+              <span className="grid h-24 w-24 place-items-center rounded-full bg-navy-900/10 font-display text-2xl font-bold text-navy-900/50">
+                {(eleve.prenom?.[0] || "").toUpperCase()}{(eleve.nom?.[0] || "").toUpperCase()}
+              </span>
+            )}
+            <label className="mt-3 cursor-pointer text-xs text-navy-700 hover:text-or-500">
+              {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer la photo" : "Ajouter une photo"}
+              <input
+                type="file" accept="image/*" className="hidden" disabled={photoEnCours}
+                onChange={async (ev) => {
+                  const file = ev.target.files?.[0];
+                  if (!file) return;
+                  setPhotoEnCours(true);
+                  await wrap(async () => {
+                    const url = await api.televerserPhoto(ecoleId, eleve.id, file);
+                    await api.majEleve(eleve.id, { photo_url: url });
+                  });
+                  setPhotoEnCours(false);
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold text-navy-900">État civil</h3>
+            <button onClick={() => setModaleEdit(true)} className="text-xs text-navy-700 hover:text-or-500">
+              Modifier
+            </button>
+          </div>
           <dl className="space-y-2 text-sm">
             <Info label="Matricule" valeur={eleve.matricule} mono />
             <Info label="Sexe" valeur={eleve.sexe === "M" ? "Masculin" : eleve.sexe === "F" ? "Féminin" : "—"} />
             <Info label="Naissance" valeur={eleve.date_naissance || "—"} />
             <Info label="Lieu" valeur={eleve.lieu_naissance || "—"} />
+            <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
+            <Info label="Adresse" valeur={eleve.adresse || "—"} />
           </dl>
           <Bouton
             variante="fantome"
@@ -152,6 +188,14 @@ export default function FicheEleve() {
         </div>
       </div>
 
+      {/* Modale édition élève */}
+      <ModaleEditEleve
+        ouvert={modaleEdit}
+        onFermer={() => setModaleEdit(false)}
+        eleve={eleve}
+        onEnregistrer={(maj) => wrap(async () => { await api.majEleve(eleve.id, maj); setModaleEdit(false); })}
+      />
+
       {/* Modale ajout tuteur */}
       <ModaleTuteur
         ouvert={modaleTuteur}
@@ -179,6 +223,61 @@ function Info({ label, valeur, mono }) {
       <dt className="text-navy-900/50">{label}</dt>
       <dd className={`font-medium text-navy-900 ${mono ? "font-mono text-xs" : ""}`}>{valeur}</dd>
     </div>
+  );
+}
+
+function ModaleEditEleve({ ouvert, onFermer, eleve, onEnregistrer }) {
+  const [f, setF] = useState({});
+  useEffect(() => {
+    if (eleve) setF({
+      prenom: eleve.prenom || "", nom: eleve.nom || "", sexe: eleve.sexe || "",
+      date_naissance: eleve.date_naissance || "", lieu_naissance: eleve.lieu_naissance || "",
+      nationalite: eleve.nationalite || "", adresse: eleve.adresse || "",
+    });
+  }, [eleve, ouvert]);
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Modifier l'élève" large>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onEnregistrer({
+            prenom: f.prenom.trim(), nom: f.nom.trim(), sexe: f.sexe || null,
+            date_naissance: f.date_naissance || null, lieu_naissance: f.lieu_naissance || null,
+            nationalite: f.nationalite || null, adresse: f.adresse || null,
+          });
+        }}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Champ label="Prénom *" value={f.prenom || ""} onChange={(e) => maj("prenom", e.target.value)} required />
+          <Champ label="Nom *" value={f.nom || ""} onChange={(e) => maj("nom", e.target.value)} required />
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Sexe</span>
+            <select
+              value={f.sexe || ""} onChange={(e) => maj("sexe", e.target.value)}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
+            >
+              <option value="">—</option>
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+            </select>
+          </label>
+          <Champ label="Naissance" type="date" value={f.date_naissance || ""} onChange={(e) => maj("date_naissance", e.target.value)} />
+          <Champ label="Lieu" value={f.lieu_naissance || ""} onChange={(e) => maj("lieu_naissance", e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Champ label="Nationalité" value={f.nationalite || ""} onChange={(e) => maj("nationalite", e.target.value)} />
+          <Champ label="Adresse" value={f.adresse || ""} onChange={(e) => maj("adresse", e.target.value)} />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton type="submit" disabled={!f.prenom?.trim() || !f.nom?.trim()}>Enregistrer</Bouton>
+        </div>
+      </form>
+    </Modale>
   );
 }
 
