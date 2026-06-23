@@ -34,6 +34,24 @@ export function Carte({ children, className = "" }) {
   );
 }
 
+export function Modale({ ouvert, onFermer, titre, children, large = false }) {
+  if (!ouvert) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-navy-900/40 p-4" onClick={onFermer}>
+      <div
+        className={`w-full ${large ? "max-w-2xl" : "max-w-lg"} rounded-2xl bg-white shadow-xl`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-navy-900/10 px-6 py-4">
+          <h3 className="font-display text-lg font-semibold text-navy-900">{titre}</h3>
+          <button onClick={onFermer} className="text-navy-900/40 hover:text-navy-900">✕</button>
+        </div>
+        <div className="max-h-[75vh] overflow-auto p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export function Alerte({ ton = "erreur", children }) {
   if (!children) return null;
   const tons = {
