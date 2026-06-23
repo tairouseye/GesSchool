@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profil, setProfil] = useState(null);
   const [roles, setRoles] = useState([]);
+  const [ecole, setEcole] = useState(null);
   const [chargement, setChargement] = useState(true);
 
   // Charge le profil + les rôles de l'utilisateur connecté.
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
     if (!userId) {
       setProfil(null);
       setRoles([]);
+      setEcole(null);
       return;
     }
     const { data: p } = await supabase
@@ -32,6 +34,18 @@ export function AuthProvider({ children }) {
       .select("role")
       .eq("profil_id", userId);
     setRoles((r ?? []).map((x) => x.role));
+
+    // École de rattachement (pour l'en-tête / la navigation)
+    if (p?.ecole_id) {
+      const { data: e } = await supabase
+        .from("ecoles")
+        .select("*")
+        .eq("id", p.ecole_id)
+        .maybeSingle();
+      setEcole(e ?? null);
+    } else {
+      setEcole(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -75,6 +89,7 @@ export function AuthProvider({ children }) {
     utilisateur: session?.user ?? null,
     profil,
     roles,
+    ecole,
     ecoleId: profil?.ecole_id ?? null,
     estConnecte: !!session,
     aProfil: !!profil,
