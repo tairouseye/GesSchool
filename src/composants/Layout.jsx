@@ -65,6 +65,7 @@ export default function Layout() {
           <button onClick={deconnexion} className="mt-3 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>
+          <p className="mt-3 text-center font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
         </div>
       </aside>
 
@@ -74,6 +75,7 @@ export default function Layout() {
         <div className="flex items-center gap-3 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
           <button onClick={() => setMenu(true)} className="text-2xl leading-none" aria-label="Menu">☰</button>
           <span className="font-display font-bold">{ecole?.nom || "GesSchool"}</span>
+          <span className="ml-auto font-mono text-[10px] text-creme/40">v{__APP_VERSION__}</span>
         </div>
         <main className="flex-1 overflow-auto">
           <Outlet />

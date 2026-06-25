@@ -2,9 +2,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
+import { readFileSync } from "node:fs";
+
+// Version de l'app injectée au build (affichée dans l'UI pour repérer
+// quelle version tourne réellement — utile face au cache PWA).
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url)));
+const dateBuild = new Date().toISOString().slice(0, 10);
 
 // GesSchool — config Vite + PWA (web + mobile installable, code unique)
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_DATE__: JSON.stringify(dateBuild),
+  },
   // Chemins relatifs : fonctionne en local ET sous un sous-chemin
   // GitHub Pages (https://user.github.io/GesSchool/).
   base: "./",

@@ -24,6 +24,9 @@ export default function ParentLayout() {
       <main className="mx-auto max-w-4xl p-6">
         <Outlet />
       </main>
+      <footer className="pb-6 text-center font-mono text-[10px] text-navy-900/30">
+        GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}
+      </footer>
     </div>
   );
 }
