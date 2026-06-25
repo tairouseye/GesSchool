@@ -83,6 +83,22 @@ export async function supprimerClasse(id) {
   if (error) throw error;
 }
 
+// Crée plusieurs classes d'un coup (génération en lot).
+export async function creerClassesEnLot(ecoleId, niveauId, anneeId, libelles, effectifMax, serieId = null) {
+  const lignes = libelles.map((libelle) => ({
+    ecole_id: ecoleId,
+    niveau_id: niveauId,
+    annee_id: anneeId,
+    libelle,
+    effectif_max: effectifMax || null,
+    serie_id: serieId || null,
+  }));
+  if (lignes.length === 0) return [];
+  const { data, error } = await supabase.from("classes").insert(lignes).select();
+  if (error) throw error;
+  return data ?? [];
+}
+
 // --- Matières ---
 export async function getMatieres(ecoleId) {
   const { data, error } = await supabase

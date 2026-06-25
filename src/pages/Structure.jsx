@@ -96,8 +96,8 @@ export default function Structure() {
                 wrap(() => api.creerNiveau(ecoleId, cycle.id, libelle, ordre))
               }
               onSupprNiveau={(id) => wrap(() => api.supprimerNiveau(id))}
-              onAjoutClasse={(niveauId, libelle, eff, serieId) =>
-                wrap(() => api.creerClasse(ecoleId, niveauId, annee.id, libelle, eff, serieId))
+              onGenererClasses={(niveauId, libelles, eff, serieId) =>
+                wrap(() => api.creerClassesEnLot(ecoleId, niveauId, annee.id, libelles, eff, serieId))
               }
               onSupprClasse={(id) => wrap(() => api.supprimerClasse(id))}
             />
@@ -143,7 +143,7 @@ export default function Structure() {
   );
 }
 
-function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onSupprNiveau, onAjoutClasse, onSupprClasse }) {
+function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse }) {
   const [nouveauNiveau, setNouveauNiveau] = useState("");
   return (
     <Carte className="p-6">
@@ -163,7 +163,7 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
             series={cycle.type === "lycee" ? series : []}
             annee={annee}
             onSuppr={() => onSupprNiveau(niveau.id)}
-            onAjoutClasse={(lib, eff, serieId) => onAjoutClasse(niveau.id, lib, eff, serieId)}
+            onGenerer={(libelles, eff, serieId) => onGenererClasses(niveau.id, libelles, eff, serieId)}
             onSupprClasse={onSupprClasse}
           />
         ))}
@@ -191,11 +191,42 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
   );
 }
 
-function LigneNiveau({ niveau, classes, series, annee, onSuppr, onAjoutClasse, onSupprClasse }) {
-  const [classe, setClasse] = useState("");
+// Construit les libellés à générer : "{base} A", "{base} B"… (ou chiffres / aucun).
+function construireLibelles(base, nombre, style) {
+  const n = Math.max(1, Math.min(40, Number(nombre) || 1));
+  const out = [];
+  // En "aucun" avec plusieurs classes, on numérote pour éviter les doublons.
+  const styleEffectif = n > 1 && style === "aucun" ? "chiffres" : style;
+  for (let i = 0; i < n; i++) {
+    let suffixe = "";
+    if (styleEffectif === "lettres") suffixe = i < 26 ? String.fromCharCode(65 + i) : String(i + 1);
+    else if (styleEffectif === "chiffres") suffixe = String(i + 1);
+    out.push(suffixe ? `${base} ${suffixe}` : base);
+  }
+  return out;
+}
+
+function LigneNiveau({ niveau, classes, series, annee, onSuppr, onGenerer, onSupprClasse }) {
+  const [base, setBase] = useState(niveau.libelle);
+  const [nombre, setNombre] = useState(1);
+  const [style, setStyle] = useState("lettres"); // lettres | chiffres | aucun
   const [eff, setEff] = useState("");
   const [serieId, setSerieId] = useState("");
   const serieCode = (id) => series.find((s) => s.id === id)?.code;
+
+  const existants = new Set(classes.map((c) => c.libelle));
+  const apercu = construireLibelles(base.trim() || niveau.libelle, nombre, style);
+  const aCreer = apercu.filter((l) => !existants.has(l));
+
+  function generer(e) {
+    e.preventDefault();
+    if (!annee || aCreer.length === 0) return;
+    onGenerer(aCreer, eff ? Number(eff) : null, serieId || null);
+    setNombre(1);
+    setEff("");
+    setSerieId("");
+  }
+
   return (
     <div className="rounded-xl border border-navy-900/10 p-4">
       <div className="flex items-center justify-between">
@@ -227,47 +258,77 @@ function LigneNiveau({ niveau, classes, series, annee, onSuppr, onAjoutClasse, o
         {classes.length === 0 && <span className="text-xs text-navy-900/40">aucune classe</span>}
       </div>
 
-      {/* Ajout classe */}
-      <form
-        className="mt-3 flex flex-wrap gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!classe.trim() || !annee) return;
-          onAjoutClasse(classe.trim(), eff ? Number(eff) : null, serieId || null);
-          setClasse("");
-          setEff("");
-          setSerieId("");
-        }}
-      >
-        <input
-          value={classe}
-          onChange={(e) => setClasse(e.target.value)}
-          placeholder={`Classe (ex. ${niveau.libelle} A)`}
-          className="min-w-40 flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500"
-        />
-        {series.length > 0 && (
+      {/* Génération en lot */}
+      <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={generer}>
+        <label className="block">
+          <span className="mb-1 block text-[11px] text-navy-900/50">Base du nom</span>
+          <input
+            value={base}
+            onChange={(e) => setBase(e.target.value)}
+            placeholder={niveau.libelle}
+            className="w-32 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] text-navy-900/50">Nombre</span>
+          <input
+            type="number"
+            min="1"
+            max="40"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value.replace(/\D/g, ""))}
+            className="w-20 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] text-navy-900/50">Suffixe</span>
           <select
-            value={serieId}
-            onChange={(e) => setSerieId(e.target.value)}
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
             className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-sm outline-none focus:border-or-500"
-            title="Série (lycée)"
           >
-            <option value="">Sans série</option>
-            {series.map((s) => (
-              <option key={s.id} value={s.id}>{s.code}</option>
-            ))}
+            <option value="lettres">A, B, C…</option>
+            <option value="chiffres">1, 2, 3…</option>
+            <option value="aucun">Aucun</option>
           </select>
+        </label>
+        {series.length > 0 && (
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-navy-900/50">Série</span>
+            <select
+              value={serieId}
+              onChange={(e) => setSerieId(e.target.value)}
+              className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-sm outline-none focus:border-or-500"
+            >
+              <option value="">Sans série</option>
+              {series.map((s) => (
+                <option key={s.id} value={s.id}>{s.code}</option>
+              ))}
+            </select>
+          </label>
         )}
-        <input
-          value={eff}
-          onChange={(e) => setEff(e.target.value.replace(/\D/g, ""))}
-          placeholder="Effectif max"
-          className="w-28 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500"
-        />
-        <Bouton type="submit" variante="or" className="px-3 py-1.5 text-xs" disabled={!annee}>
-          + Classe
+        <label className="block">
+          <span className="mb-1 block text-[11px] text-navy-900/50">Effectif max</span>
+          <input
+            value={eff}
+            onChange={(e) => setEff(e.target.value.replace(/\D/g, ""))}
+            placeholder="—"
+            className="w-24 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500"
+          />
+        </label>
+        <Bouton type="submit" variante="or" className="px-3 py-1.5 text-xs" disabled={!annee || aCreer.length === 0}>
+          + Générer {aCreer.length || ""}
         </Bouton>
       </form>
+
+      {/* Aperçu des classes à créer */}
+      <p className="mt-2 text-[11px] text-navy-900/40">
+        {aCreer.length > 0 ? (
+          <>À créer : <span className="font-mono text-navy-900/60">{aCreer.join(", ")}</span></>
+        ) : (
+          <>Toutes ces classes existent déjà.</>
+        )}
+      </p>
     </div>
   );
 }
