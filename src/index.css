@@ -14,6 +14,25 @@
   }
 }
 
+/* Mobile : les tableaux larges deviennent défilables horizontalement
+   (évite que la mise en page « casse » sur téléphone). */
+@media (max-width: 768px) {
+  main table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile : marges de contenu plus compactes. */
+@media (max-width: 640px) {
+  main .p-8 {
+    padding: 1rem;
+  }
+}
+
 /* Impression : ne montrer que la zone du bulletin. */
 @media print {
   body * {
