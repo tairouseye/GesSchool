@@ -21,6 +21,7 @@ import Enseignants from "@/pages/Enseignants.jsx";
 import VieScolaire from "@/pages/VieScolaire.jsx";
 import Recouvrement from "@/pages/Recouvrement.jsx";
 import EmploiDuTemps from "@/pages/EmploiDuTemps.jsx";
+import Annonces from "@/pages/Annonces.jsx";
 
 // GesSchool — routeur applicatif (Phase 0).
 export default function App() {
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="/paiements" element={<Paiements />} />
             <Route path="/recouvrement" element={<Recouvrement />} />
             <Route path="/emploi-du-temps" element={<EmploiDuTemps />} />
+            <Route path="/annonces" element={<Annonces />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
