@@ -3,13 +3,17 @@ import { supabase } from "@/lib/supabase.js";
 // GesSchool — couche d'accès « élèves & inscriptions ».
 // Écritures avec ecole_id (RLS = ecole_courante()).
 
-// Génère un matricule SIGLE-ANNÉE-NNNN (séquence par école).
+// Génère le prochain matricule.
+// Priorité : format configuré par l'école (RPC serveur, séquence atomique).
+// Repli (config/migration absente) : SIGLE-ANNÉE-NNNN basé sur le comptage.
 export async function genererMatricule(ecoleId, sigle) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase.rpc("prochain_matricule");
+  if (!error && data) return data;
+
+  const { count } = await supabase
     .from("eleves")
     .select("id", { count: "exact", head: true })
     .eq("ecole_id", ecoleId);
-  if (error) throw error;
   const code = (sigle || "ELV").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4) || "ELV";
   const seq = String((count ?? 0) + 1).padStart(4, "0");
   return `${code}-${new Date().getFullYear()}-${seq}`;

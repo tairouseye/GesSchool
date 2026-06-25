@@ -61,7 +61,7 @@ export async function getClasses(ecoleId, anneeId) {
   return data ?? [];
 }
 
-export async function creerClasse(ecoleId, niveauId, anneeId, libelle, effectifMax) {
+export async function creerClasse(ecoleId, niveauId, anneeId, libelle, effectifMax, serieId = null) {
   const { data, error } = await supabase
     .from("classes")
     .insert({
@@ -70,6 +70,7 @@ export async function creerClasse(ecoleId, niveauId, anneeId, libelle, effectifM
       annee_id: anneeId,
       libelle,
       effectif_max: effectifMax || null,
+      serie_id: serieId || null,
     })
     .select()
     .single();
@@ -106,4 +107,136 @@ export async function creerMatiere(ecoleId, libelle, code, cycleId) {
 export async function supprimerMatiere(id) {
   const { error } = await supabase.from("matieres").delete().eq("id", id);
   if (error) throw error;
+}
+
+// --- Séries (lycée : L, S2, G…) ---
+export async function getSeries(ecoleId) {
+  const { data, error } = await supabase
+    .from("series")
+    .select("*")
+    .eq("ecole_id", ecoleId)
+    .order("ordre")
+    .order("code");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerSerie(ecoleId, code, libelle, ordre) {
+  const { data, error } = await supabase
+    .from("series")
+    .insert({ ecole_id: ecoleId, code, libelle, ordre: ordre ?? 0 })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerSerie(id) {
+  const { error } = await supabase.from("series").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Séries standard du Sénégal (pré-remplissage modifiable).
+export const SERIES_STANDARD = [
+  ["L", "Littéraire"],
+  ["L1", "Littéraire 1"],
+  ["L2", "Littéraire 2"],
+  ["S1", "Scientifique 1"],
+  ["S2", "Scientifique 2"],
+  ["S3", "Scientifique 3"],
+  ["G", "Gestion (STEG)"],
+  ["STIDD", "Sciences & Techniques Industrielles"],
+];
+
+// Insère les séries standard absentes (ne touche pas aux existantes).
+export async function semerSeriesStandard(ecoleId, existantes = []) {
+  const codes = new Set(existantes.map((s) => s.code));
+  const lignes = SERIES_STANDARD.filter(([code]) => !codes.has(code)).map(([code, libelle], i) => ({
+    ecole_id: ecoleId,
+    code,
+    libelle,
+    ordre: i + 1,
+  }));
+  if (lignes.length === 0) return [];
+  const { data, error } = await supabase.from("series").insert(lignes).select();
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Grille de coefficients (matière × série OU matière × niveau) ---
+export async function getCoefficients(ecoleId) {
+  const { data, error } = await supabase
+    .from("coefficients_matieres")
+    .select("*")
+    .eq("ecole_id", ecoleId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Définit (upsert) le coefficient d'une matière pour une portée (niveau OU série).
+// coefficient null/0 → supprime la ligne.
+export async function definirCoefficient(ecoleId, { matiereId, niveauId = null, serieId = null, coefficient }) {
+  let q = supabase
+    .from("coefficients_matieres")
+    .select("id")
+    .eq("ecole_id", ecoleId)
+    .eq("matiere_id", matiereId);
+  q = niveauId ? q.eq("niveau_id", niveauId) : q.eq("serie_id", serieId);
+  const { data: existant, error: e1 } = await q.maybeSingle();
+  if (e1) throw e1;
+
+  const coef = Number(coefficient);
+  if (!coef || coef <= 0) {
+    if (existant) {
+      const { error } = await supabase.from("coefficients_matieres").delete().eq("id", existant.id);
+      if (error) throw error;
+    }
+    return;
+  }
+  if (existant) {
+    const { error } = await supabase
+      .from("coefficients_matieres")
+      .update({ coefficient: coef })
+      .eq("id", existant.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("coefficients_matieres").insert({
+      ecole_id: ecoleId,
+      matiere_id: matiereId,
+      niveau_id: niveauId,
+      serie_id: serieId,
+      coefficient: coef,
+    });
+    if (error) throw error;
+  }
+}
+
+// --- Configuration du matricule (par école) ---
+export async function getConfigEcole(ecoleId) {
+  const { data, error } = await supabase
+    .from("ecoles")
+    .select("id, nom, sigle, matricule_prefixe, matricule_separateur, matricule_longueur")
+    .eq("id", ecoleId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur }) {
+  const { error } = await supabase
+    .from("ecoles")
+    .update({
+      matricule_prefixe: prefixe || null,
+      matricule_separateur: separateur || "-",
+      matricule_longueur: Math.max(1, Number(longueur) || 4),
+    })
+    .eq("id", ecoleId);
+  if (error) throw error;
+}
+
+// Génère le prochain matricule (séquence atomique côté serveur).
+export async function genererMatricule() {
+  const { data, error } = await supabase.rpc("prochain_matricule");
+  if (error) throw error;
+  return data;
 }

@@ -84,16 +84,38 @@ export async function enregistrerNotes(ecoleId, evaluationId, notes) {
   if (error) throw error;
 }
 
-// Coefficients de matière pour une classe (depuis affectations ; défaut 1).
+// Coefficients de matière pour une classe.
+// Priorité : grille par série (si la classe a une série) ou par niveau ;
+// repli sur l'ancien coefficient d'affectation ; défaut 1.
 async function getCoefsMatiere(ecoleId, classeId, anneeId) {
-  const { data } = await supabase
+  const map = {};
+
+  // 1) Portée de la classe (niveau / série) → grille de coefficients
+  const { data: classe } = await supabase
+    .from("classes")
+    .select("niveau_id, serie_id")
+    .eq("id", classeId)
+    .maybeSingle();
+  if (classe) {
+    let q = supabase
+      .from("coefficients_matieres")
+      .select("matiere_id, coefficient")
+      .eq("ecole_id", ecoleId);
+    q = classe.serie_id ? q.eq("serie_id", classe.serie_id) : q.eq("niveau_id", classe.niveau_id);
+    const { data: grille } = await q;
+    for (const c of grille ?? []) map[c.matiere_id] = Number(c.coefficient) || 1;
+  }
+
+  // 2) Repli : coefficients portés par les affectations (compat ascendante)
+  const { data: aff } = await supabase
     .from("affectations")
     .select("matiere_id, coefficient")
     .eq("ecole_id", ecoleId)
     .eq("classe_id", classeId)
     .eq("annee_id", anneeId);
-  const map = {};
-  for (const a of data ?? []) map[a.matiere_id] = Number(a.coefficient) || 1;
+  for (const a of aff ?? []) {
+    if (map[a.matiere_id] == null) map[a.matiere_id] = Number(a.coefficient) || 1;
+  }
   return map;
 }
 
