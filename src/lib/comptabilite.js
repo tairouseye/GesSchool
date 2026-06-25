@@ -51,6 +51,15 @@ export async function supprimerCompte(id) {
   if (error) throw error;
 }
 
+// Téléverse un justificatif (image/PDF) et renvoie son URL publique.
+export async function televerserJustificatif(ecoleId, file) {
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+  const chemin = `${ecoleId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("justificatifs").upload(chemin, file, { upsert: true });
+  if (error) throw error;
+  return supabase.storage.from("justificatifs").getPublicUrl(chemin).data.publicUrl;
+}
+
 // --- Recettes (entrées) ---
 export async function getRecettes(ecoleId, { debut, fin } = {}) {
   let q = supabase.from("recettes").select("*, comptes(libelle)").eq("ecole_id", ecoleId);
@@ -73,6 +82,7 @@ export async function creerRecette(ecoleId, r, saisiPar) {
       mode: r.mode || null,
       date_recette: r.date_recette || new Date().toISOString().slice(0, 10),
       source: r.source || null,
+      justificatif_url: r.justificatif_url || null,
       saisi_par: saisiPar || null,
     })
     .select()
@@ -108,6 +118,7 @@ export async function creerDepense(ecoleId, d, saisiPar) {
       mode: d.mode || null,
       date_depense: d.date_depense || new Date().toISOString().slice(0, 10),
       beneficiaire: d.beneficiaire || null,
+      justificatif_url: d.justificatif_url || null,
       saisi_par: saisiPar || null,
     })
     .select()

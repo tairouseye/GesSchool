@@ -117,12 +117,12 @@ export default function Comptabilite() {
       />
       <ModaleMouvement
         ouvert={modale === "recette"} type="recette" onFermer={() => setModale(null)}
-        comptes={soldes} devise={devise}
+        ecoleId={ecoleId} comptes={soldes} devise={devise}
         onCreer={(m) => wrap(async () => { await api.creerRecette(ecoleId, m, utilisateur?.id); setModale(null); })}
       />
       <ModaleMouvement
         ouvert={modale === "depense"} type="depense" onFermer={() => setModale(null)}
-        comptes={soldes} devise={devise}
+        ecoleId={ecoleId} comptes={soldes} devise={devise}
         onCreer={(m) => wrap(async () => { await api.creerDepense(ecoleId, m, utilisateur?.id); setModale(null); })}
       />
     </>
@@ -254,7 +254,13 @@ function Mouvements({ type, items, devise, onSuppr }) {
                 {type === "recette" ? "+" : "−"}{fmt(it.montant)} {devise}
               </td>
               <td className="px-6 py-3 text-right">
-                <button onClick={() => onSuppr(it.id)} className="text-xs text-rose-500 hover:underline">suppr.</button>
+                <div className="flex items-center justify-end gap-3">
+                  {it.justificatif_url && (
+                    <a href={it.justificatif_url} target="_blank" rel="noreferrer"
+                      className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 reçu</a>
+                  )}
+                  <button onClick={() => onSuppr(it.id)} className="text-xs text-rose-500 hover:underline">suppr.</button>
+                </div>
               </td>
             </tr>
           ))}
@@ -293,18 +299,39 @@ function ModaleCompte({ ouvert, onFermer, devise, onCreer }) {
   );
 }
 
-function ModaleMouvement({ ouvert, type, onFermer, comptes, devise, onCreer }) {
+function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, onCreer }) {
   const champDate = type === "recette" ? "date_recette" : "date_depense";
   const champTiers = type === "recette" ? "source" : "beneficiaire";
   const tiersLabel = type === "recette" ? "Source" : "Bénéficiaire";
   const categories = type === "recette" ? api.CATEGORIES_RECETTE : api.CATEGORIES_DEPENSE;
   const vide = { libelle: "", montant: "", categorie: "", mode: "", compte_id: "", [champTiers]: "", [champDate]: auj() };
   const [f, setF] = useState(vide);
+  const [fichier, setFichier] = useState(null);
+  const [enCours, setEnCours] = useState(false);
+  const [erreurFichier, setErreurFichier] = useState("");
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  async function soumettre(e) {
+    e.preventDefault();
+    if (!f.libelle.trim() || !f.montant) return;
+    setEnCours(true);
+    setErreurFichier("");
+    try {
+      let justificatif_url = null;
+      if (fichier) justificatif_url = await api.televerserJustificatif(ecoleId, fichier);
+      onCreer({ ...f, justificatif_url });
+      setF(vide);
+      setFichier(null);
+    } catch (err) {
+      setErreurFichier(err.message);
+    } finally {
+      setEnCours(false);
+    }
+  }
 
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre={type === "recette" ? "Nouvelle recette" : "Nouvelle dépense"} large>
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!f.libelle.trim() || !f.montant) return; onCreer(f); setF(vide); }}>
+      <form className="space-y-4" onSubmit={soumettre}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Champ label="Libellé *" value={f.libelle} onChange={(e) => maj("libelle", e.target.value)} placeholder={type === "recette" ? "Don, location salle…" : "Achat fournitures…"} />
           <Champ label={`Montant (${devise}) *`} value={f.montant} onChange={(e) => maj("montant", e.target.value.replace(/[^0-9]/g, ""))} />
@@ -339,9 +366,24 @@ function ModaleMouvement({ ouvert, type, onFermer, comptes, devise, onCreer }) {
           <Champ label={tiersLabel} value={f[champTiers]} onChange={(e) => maj(champTiers, e.target.value)} />
           <Champ label="Date" type="date" value={f[champDate]} onChange={(e) => maj(champDate, e.target.value)} />
         </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Justificatif (facture, reçu — image ou PDF)</span>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(e) => setFichier(e.target.files?.[0] || null)}
+            className="block w-full text-sm text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm file:text-navy-900 hover:file:bg-navy-900/10"
+          />
+          {fichier && <span className="mt-1 block text-xs text-navy-900/50">{fichier.name}</span>}
+          {erreurFichier && <span className="mt-1 block text-xs text-rose-500">{erreurFichier}</span>}
+        </label>
+
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit" variante={type === "recette" ? "primaire" : "or"}>Enregistrer</Bouton>
+          <Bouton type="submit" variante={type === "recette" ? "primaire" : "or"} disabled={enCours}>
+            {enCours ? "Enregistrement…" : "Enregistrer"}
+          </Bouton>
         </div>
       </form>
     </Modale>
