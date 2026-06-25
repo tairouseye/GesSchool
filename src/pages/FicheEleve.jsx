@@ -275,7 +275,7 @@ function ModaleEditEleve({ ouvert, onFermer, eleve, onEnregistrer }) {
           <Champ label="Prénom *" value={f.prenom || ""} onChange={(e) => maj("prenom", e.target.value)} required />
           <Champ label="Nom *" value={f.nom || ""} onChange={(e) => maj("nom", e.target.value)} required />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Sexe</span>
             <select

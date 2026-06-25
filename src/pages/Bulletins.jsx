@@ -200,7 +200,7 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat }) {
         </tbody>
       </table>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-navy-900 p-4 text-creme">
           <p className="text-xs text-creme/60">Moyenne générale</p>
           <p className="font-display text-2xl font-bold">

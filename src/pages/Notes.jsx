@@ -307,7 +307,7 @@ function ModaleEvaluation({ ouvert, onFermer, onCreer }) {
           </select>
         </label>
         <Champ label="Libellé (optionnel)" value={f.libelle} onChange={(e) => maj("libelle", e.target.value)} placeholder="Devoir n°1" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Champ label="Barème" value={f.bareme} onChange={(e) => maj("bareme", e.target.value.replace(/[^0-9]/g, ""))} />
           <Champ label="Coefficient" value={f.coefficient} onChange={(e) => maj("coefficient", e.target.value.replace(/[^0-9.]/g, ""))} />
           <Champ label="Date" type="date" value={f.date_eval} onChange={(e) => maj("date_eval", e.target.value)} />

@@ -12,6 +12,20 @@
   body {
     @apply bg-creme font-sans text-navy-900 antialiased;
   }
+  /* Empêche le navigateur mobile de redimensionner le texte tout seul
+     (sinon l'app paraît minuscule et oblige à zoomer). */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  /* Garde-fou : aucun élément ne doit dépasser la largeur de l'écran
+     (un seul bloc trop large fait « dézoomer » toute la page sur mobile). */
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 }
 
 /* Mobile : les tableaux larges deviennent défilables horizontalement

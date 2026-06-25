@@ -117,7 +117,7 @@ export default function TableauDeBord() {
         {stats && (
           <Carte className="p-6">
             <h3 className="font-display text-lg font-semibold text-navy-900">Recouvrement {annee?.libelle}</h3>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+            <div className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
               <Bloc label="Facturé" valeur={`${fmtMontant(stats.totalFacture)} ${devise}`} />
               <Bloc label="Encaissé" valeur={`${fmtMontant(stats.totalPaye)} ${devise}`} ton="vert" />
               <Bloc label="Reste à encaisser" valeur={`${fmtMontant(stats.totalFacture - stats.totalPaye)} ${devise}`} ton="rouge" />
