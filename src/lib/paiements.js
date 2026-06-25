@@ -137,6 +137,78 @@ export async function supprimerPaiement(id) {
   if (error) throw error;
 }
 
+// --- Facturation en lot (depuis la grille tarifaire) ---
+
+// Élèves inscrits pour l'année, avec leur niveau (via la classe).
+export async function getInscritsAvecNiveau(ecoleId, anneeId) {
+  if (!anneeId) return [];
+  const { data, error } = await supabase
+    .from("inscriptions")
+    .select("eleve_id, statut, eleves(prenom, nom, matricule), classes(niveau_id, libelle)")
+    .eq("ecole_id", ecoleId)
+    .eq("annee_id", anneeId);
+  if (error) throw error;
+  return (data ?? [])
+    .filter((i) => i.eleves && i.statut !== "radie" && i.statut !== "parti")
+    .map((i) => ({
+      eleve_id: i.eleve_id,
+      prenom: i.eleves.prenom,
+      nom: i.eleves.nom,
+      matricule: i.eleves.matricule,
+      niveau_id: i.classes?.niveau_id || null,
+      classe: i.classes?.libelle || "",
+    }));
+}
+
+// frais_id déjà facturés cette année, indexés par élève (évite les doublons).
+async function getFraisDejaFactures(ecoleId, anneeId) {
+  const { data, error } = await supabase
+    .from("facture_lignes")
+    .select("frais_id, factures!inner(eleve_id, annee_id)")
+    .eq("ecole_id", ecoleId)
+    .eq("factures.annee_id", anneeId);
+  if (error) throw error;
+  const map = {};
+  for (const d of data ?? []) {
+    const eid = d.factures?.eleve_id;
+    if (!eid || !d.frais_id) continue;
+    (map[eid] ||= new Set()).add(d.frais_id);
+  }
+  return map;
+}
+
+// Génère une facture par élève à partir d'une liste de frais.
+// Saute les frais déjà facturés à l'élève cette année.
+// Retourne { crees, ignores }.
+export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList, echeance) {
+  const deja = await getFraisDejaFactures(ecoleId, anneeId);
+  let crees = 0;
+  let ignores = 0;
+  for (const eleveId of eleveIds) {
+    const dejaEleve = deja[eleveId] || new Set();
+    const lignes = fraisList
+      .filter((fr) => !dejaEleve.has(fr.id))
+      .map((fr) => ({
+        frais_id: fr.id,
+        libelle: fr.libelle,
+        quantite: 1,
+        prix_unitaire: Number(fr.montant),
+      }));
+    if (lignes.length === 0) {
+      ignores++;
+      continue;
+    }
+    await creerFacture(ecoleId, {
+      eleve_id: eleveId,
+      annee_id: anneeId,
+      date_echeance: echeance || null,
+      lignes,
+    });
+    crees++;
+  }
+  return { crees, ignores };
+}
+
 // Solde par élève (somme due - payé sur ses factures).
 export async function getSoldesEleves(ecoleId, anneeId) {
   const factures = await getFactures(ecoleId, anneeId);
