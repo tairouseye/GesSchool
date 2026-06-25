@@ -114,13 +114,15 @@ export default function Structure() {
           onSuppr={(id) => wrap(() => api.supprimerMatiere(id))}
         />
 
-        {/* Séries (lycée) */}
-        <PanneauSeries
-          series={series}
-          onAjout={(code, libelle) => wrap(() => api.creerSerie(ecoleId, code, libelle, series.length + 1))}
-          onSuppr={(id) => wrap(() => api.supprimerSerie(id))}
-          onSemer={() => wrap(() => api.semerSeriesStandard(ecoleId, series))}
-        />
+        {/* Séries (lycée uniquement) */}
+        {cycles.some((c) => c.type === "lycee") && (
+          <PanneauSeries
+            series={series}
+            onAjout={(code, libelle) => wrap(() => api.creerSerie(ecoleId, code, libelle, series.length + 1))}
+            onSuppr={(id) => wrap(() => api.supprimerSerie(id))}
+            onSemer={() => wrap(() => api.semerSeriesStandard(ecoleId, series))}
+          />
+        )}
 
         {/* Grille de coefficients */}
         <PanneauCoefficients
@@ -158,7 +160,7 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
             key={niveau.id}
             niveau={niveau}
             classes={classes.filter((c) => c.niveau_id === niveau.id)}
-            series={series}
+            series={cycle.type === "lycee" ? series : []}
             annee={annee}
             onSuppr={() => onSupprNiveau(niveau.id)}
             onAjoutClasse={(lib, eff, serieId) => onAjoutClasse(niveau.id, lib, eff, serieId)}
