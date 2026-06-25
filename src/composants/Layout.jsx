@@ -13,6 +13,7 @@ const NAV = [
   { to: "/structure", label: "Structure", icone: "🏫" },
   { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫" },
   { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋" },
+  { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️" },
 ];
 
 export default function Layout() {
