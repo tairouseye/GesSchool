@@ -1,6 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, Garde } from "@/composants/RouteProtegee.jsx";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
 import MotDePasseOublie from "@/pages/MotDePasseOublie.jsx";
@@ -76,19 +76,19 @@ export default function App() {
             }
           >
             <Route path="/" element={<TableauDeBord />} />
-            <Route path="/structure" element={<Structure />} />
-            <Route path="/enseignants" element={<Enseignants />} />
-            <Route path="/vie-scolaire" element={<VieScolaire />} />
-            <Route path="/eleves" element={<Eleves />} />
-            <Route path="/eleves/:id" element={<FicheEleve />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/bulletins" element={<Bulletins />} />
-            <Route path="/paiements" element={<Paiements />} />
-            <Route path="/recouvrement" element={<Recouvrement />} />
-            <Route path="/emploi-du-temps" element={<EmploiDuTemps />} />
-            <Route path="/annonces" element={<Annonces />} />
-            <Route path="/comptabilite" element={<Comptabilite />} />
-            <Route path="/rh" element={<RH />} />
+            <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
+            <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
+            <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
+            <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
+            <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
+            <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />
+            <Route path="/bulletins" element={<Garde cle="bulletins"><Bulletins /></Garde>} />
+            <Route path="/paiements" element={<Garde cle="paiements"><Paiements /></Garde>} />
+            <Route path="/recouvrement" element={<Garde cle="recouvrement"><Recouvrement /></Garde>} />
+            <Route path="/emploi-du-temps" element={<Garde cle="emploi"><EmploiDuTemps /></Garde>} />
+            <Route path="/annonces" element={<Garde cle="annonces"><Annonces /></Garde>} />
+            <Route path="/comptabilite" element={<Garde cle="comptabilite"><Comptabilite /></Garde>} />
+            <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

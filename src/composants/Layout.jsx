@@ -2,29 +2,31 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
+import { peutVoir, LIBELLES_ROLES } from "@/lib/permissions.js";
 
 // GesSchool — shell applicatif responsive (sidebar fixe en desktop,
 // tiroir en mobile via le bouton ☰).
 const NAV = [
-  { to: "/", label: "Tableau de bord", icone: "▦", exact: true },
-  { to: "/eleves", label: "Élèves", icone: "👤" },
-  { to: "/notes", label: "Notes", icone: "✎" },
-  { to: "/bulletins", label: "Bulletins", icone: "🎓" },
-  { to: "/paiements", label: "Paiements", icone: "₣" },
-  { to: "/recouvrement", label: "Recouvrement", icone: "🔔" },
-  { to: "/structure", label: "Structure", icone: "🏫" },
-  { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫" },
-  { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋" },
-  { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️" },
-  { to: "/annonces", label: "Annonces", icone: "📣" },
-  { to: "/comptabilite", label: "Comptabilité", icone: "💰" },
-  { to: "/rh", label: "RH & paie", icone: "🧑‍💼" },
+  { to: "/", label: "Tableau de bord", icone: "▦", exact: true, cle: "dashboard" },
+  { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
+  { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },
+  { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins" },
+  { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements" },
+  { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement" },
+  { to: "/structure", label: "Structure", icone: "🏫", cle: "structure" },
+  { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
+  { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire" },
+  { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi" },
+  { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
+  { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
+  { to: "/rh", label: "RH & paie", icone: "🧑‍💼", cle: "rh" },
 ];
 
 export default function Layout() {
   const { ecole, profil, roles, deconnexion } = useAuth();
   const [menu, setMenu] = useState(false);
   const sigle = ecole?.sigle || "GS";
+  const nav = NAV.filter((item) => peutVoir(roles, item.cle));
 
   return (
     <div className="flex h-screen overflow-hidden bg-creme text-navy-900">
@@ -45,7 +47,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -64,7 +66,7 @@ export default function Layout() {
         </nav>
         <div className="border-t border-navy-800 px-5 py-4">
           <p className="truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
-          <p className="truncate text-xs text-creme/50">{roles[0] || "utilisateur"}</p>
+          <p className="truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
           <button onClick={deconnexion} className="mt-3 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>

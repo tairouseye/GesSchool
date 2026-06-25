@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
+import { peutVoir, premierePage } from "@/lib/permissions.js";
 
 // Garde de route :
 //  - non connecté          → /connexion
@@ -30,6 +31,17 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
     return <Ecran message="Accès refusé : vous n'avez pas les droits requis." />;
   }
 
+  return children;
+}
+
+// Garde de page selon le rôle (RBAC). À utiliser à l'intérieur de l'espace staff.
+// Si l'utilisateur n'a pas accès à la page, on le renvoie vers sa première
+// page autorisée (jamais de cul-de-sac).
+export function Garde({ cle, children }) {
+  const { roles } = useAuth();
+  if (!peutVoir(roles, cle)) {
+    return <Navigate to={premierePage(roles)} replace />;
+  }
   return children;
 }
 
