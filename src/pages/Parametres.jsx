@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule } from "@/lib/academique.js";
+import { MODULES, tousLesModules } from "@/lib/modules.js";
 
 const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD"];
 
@@ -26,6 +27,7 @@ export default function Parametres() {
 
         <ProfilEcole ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} />
         <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
+        <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
       </div>
     </>
   );
@@ -70,6 +72,45 @@ function ProfilEcole({ ecole, onSave }) {
       </div>
       <div className="mt-4 flex justify-end">
         <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
+      </div>
+    </Carte>
+  );
+}
+
+function ModulesActifs({ ecole, onSave }) {
+  // null = tous actifs
+  const [actifs, setActifs] = useState(() => new Set(tousLesModules()));
+  useEffect(() => {
+    if (!ecole) return;
+    setActifs(new Set(ecole.modules_actifs ?? tousLesModules()));
+  }, [ecole]);
+
+  const toggle = (id) => setActifs((s) => {
+    const n = new Set(s);
+    n.has(id) ? n.delete(id) : n.add(id);
+    return n;
+  });
+
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Modules actifs</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Active ou désactive des modules pour cet établissement. Un module désactivé disparaît
+        des menus et son accès est bloqué.
+      </p>
+      <div className="space-y-2">
+        {MODULES.map((m) => (
+          <label key={m.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3">
+            <span>
+              <span className="font-medium text-navy-900">{m.label}</span>
+              <span className="ml-2 text-xs text-navy-900/50">{m.desc}</span>
+            </span>
+            <input type="checkbox" checked={actifs.has(m.id)} onChange={() => toggle(m.id)} className="h-5 w-5" />
+          </label>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Bouton onClick={() => onSave([...actifs])}>Enregistrer</Bouton>
       </div>
     </Carte>
   );

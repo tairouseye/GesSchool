@@ -4,18 +4,23 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
 import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, itemsEspace } from "@/lib/espaces.js";
+import { moduleActif } from "@/lib/modules.js";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage
 // (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
 // ceux qui ont accès à plusieurs ; sidebar fixe en desktop, tiroir en mobile.
 export default function Layout() {
-  const { ecole, profil, roles, deconnexion, estPromoteur } = useAuth();
+  const { ecole, profil, roles, deconnexion, estPromoteur, modulesActifs } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const sigle = ecole?.sigle || "GS";
 
-  const accessibles = espacesAccessibles(roles, estPromoteur);
+  // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un
+  // menu visible (rôle + module actif).
+  const accessibles = espacesAccessibles(roles, estPromoteur).filter(
+    (e) => itemsEspace(e, roles).some((it) => moduleActif(modulesActifs, it.cle))
+  );
   const [espaceId, setEspaceId] = useState(() => espaceParDefaut(roles, estPromoteur)?.id);
 
   // Synchronise l'espace courant avec la route (si la route appartient à un
@@ -31,7 +36,7 @@ export default function Layout() {
   }, [location.pathname]);
 
   const espaceCourant = espaceParId(espaceId) || espaceParDefaut(roles, estPromoteur);
-  const items = itemsEspace(espaceCourant, roles);
+  const items = itemsEspace(espaceCourant, roles).filter((it) => moduleActif(modulesActifs, it.cle));
 
   const changerEspace = (e) => {
     setEspaceId(e.id);

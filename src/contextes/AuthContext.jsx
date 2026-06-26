@@ -102,6 +102,7 @@ export function AuthProvider({ children }) {
     roles,
     ecole,
     ecoleId: profil?.ecole_id ?? null,
+    modulesActifs: ecole?.modules_actifs ?? null,
     ecolesPossedees,
     estPromoteur: ecolesPossedees.length > 0,
     estConnecte: !!session,
