@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { compterNonLues } from "@/lib/parent.js";
+import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
 
 // Espace parent — coque légère (pas de sidebar de gestion).
 export default function ParentLayout() {
   const { profil, deconnexion } = useAuth();
   const location = useLocation();
   const [nonLues, setNonLues] = useState(0);
+  const [msgNonLus, setMsgNonLus] = useState(0);
 
-  // Rafraîchit le compteur d'alertes à chaque navigation dans l'espace parent.
+  // Rafraîchit les compteurs (alertes + messages) à chaque navigation.
   useEffect(() => {
     compterNonLues().then(setNonLues).catch(() => {});
+    mesMessagesNonLus().then(setMsgNonLus).catch(() => {});
   }, [location.pathname]);
   return (
     <div className="min-h-full bg-creme">
@@ -24,6 +26,14 @@ export default function ParentLayout() {
           </span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          <Link to="/parent/messages" className="relative" title="Messagerie">
+            <span className="text-xl">💬</span>
+            {msgNonLus > 0 && (
+              <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
+                {msgNonLus > 9 ? "9+" : msgNonLus}
+              </span>
+            )}
+          </Link>
           <Link to="/parent/notifications" className="relative" title="Alertes">
             <span className="text-xl">🔔</span>
             {nonLues > 0 && (

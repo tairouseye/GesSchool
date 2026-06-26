@@ -45,6 +45,7 @@ export const ESPACES = [
       { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement" },
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
+      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
     ],
   },
   {

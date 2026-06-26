@@ -30,6 +30,7 @@ const ACCES = {
   vie_scolaire: ["surveillant", "enseignant"],
   emploi: ["enseignant"],
   annonces: [],
+  messagerie: [],
   paiements: ["comptable"],
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],

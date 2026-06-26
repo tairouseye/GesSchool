@@ -62,6 +62,30 @@ export async function marquerToutesLues() {
   if (error) throw error;
 }
 
+// --- Messagerie parent ↔ école ---
+export async function mesConversations() {
+  const { data, error } = await supabase.rpc("mes_conversations");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function mesMessagesNonLus() {
+  const { data, error } = await supabase.rpc("mes_messages_non_lus");
+  if (error) throw error;
+  return data ?? 0;
+}
+
+export async function conversationMessages(tuteurId) {
+  const { data, error } = await supabase.rpc("conversation_messages", { p_tuteur: tuteurId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function parentEnvoyer(tuteurId, contenu) {
+  const { error } = await supabase.rpc("parent_envoyer", { p_tuteur: tuteurId, p_contenu: contenu });
+  if (error) throw error;
+}
+
 export async function lierParent(code) {
   const { data, error } = await supabase.rpc("lier_parent", { p_code: code });
   if (error) throw error;

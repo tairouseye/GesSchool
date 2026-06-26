@@ -12,6 +12,8 @@ import ParentLayout from "@/pages/ParentLayout.jsx";
 import ParentAccueil from "@/pages/ParentAccueil.jsx";
 import ParentEnfant from "@/pages/ParentEnfant.jsx";
 import ParentNotifications from "@/pages/ParentNotifications.jsx";
+import ParentMessagerie from "@/pages/ParentMessagerie.jsx";
+import Messagerie from "@/pages/Messagerie.jsx";
 import TableauDeBord from "@/pages/TableauDeBord.jsx";
 import Structure from "@/pages/Structure.jsx";
 import Eleves from "@/pages/Eleves.jsx";
@@ -77,6 +79,7 @@ export default function App() {
             <Route index element={<ParentAccueil />} />
             <Route path="enfant/:id" element={<ParentEnfant />} />
             <Route path="notifications" element={<ParentNotifications />} />
+            <Route path="messages" element={<ParentMessagerie />} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}
@@ -102,6 +105,7 @@ export default function App() {
             <Route path="/recouvrement" element={<Garde cle="recouvrement"><Recouvrement /></Garde>} />
             <Route path="/emploi-du-temps" element={<Garde cle="emploi"><EmploiDuTemps /></Garde>} />
             <Route path="/annonces" element={<Garde cle="annonces"><Annonces /></Garde>} />
+            <Route path="/messagerie" element={<Garde cle="messagerie"><Messagerie /></Garde>} />
             <Route path="/comptabilite" element={<Garde cle="comptabilite"><Comptabilite /></Garde>} />
             <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>
