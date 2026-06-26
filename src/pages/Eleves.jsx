@@ -5,10 +5,12 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { peutEditerEleves } from "@/lib/permissions.js";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
-  const { ecoleId, ecole } = useAuth();
+  const { ecoleId, ecole, roles } = useAuth();
+  const peutEditer = peutEditerEleves(roles);
   const navigate = useNavigate();
   const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
@@ -65,9 +67,11 @@ export default function Eleves() {
         titre="Élèves & inscriptions"
         sousTitre={annee ? `Année ${annee.libelle} · ${eleves.length} élève(s)` : "Aucune année courante"}
         action={
-          <Bouton onClick={() => setModale(true)} disabled={!annee}>
-            + Nouvel élève
-          </Bouton>
+          peutEditer && (
+            <Bouton onClick={() => setModale(true)} disabled={!annee}>
+              + Nouvel élève
+            </Bouton>
+          )
         }
       />
       <div className="space-y-4 p-8">

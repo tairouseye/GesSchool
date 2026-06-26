@@ -6,11 +6,13 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { peutEditerEleves } from "@/lib/permissions.js";
 
 export default function FicheEleve() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ecoleId } = useAuth();
+  const { ecoleId, roles } = useAuth();
+  const peutEditer = peutEditerEleves(roles);
   const [eleve, setEleve] = useState(null);
   const [tuteurs, setTuteurs] = useState([]);
   const [inscriptions, setInscriptions] = useState([]);
@@ -84,29 +86,33 @@ export default function FicheEleve() {
                 {(eleve.prenom?.[0] || "").toUpperCase()}{(eleve.nom?.[0] || "").toUpperCase()}
               </span>
             )}
-            <label className="mt-3 cursor-pointer text-xs text-navy-700 hover:text-or-500">
-              {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer la photo" : "Ajouter une photo"}
-              <input
-                type="file" accept="image/*" className="hidden" disabled={photoEnCours}
-                onChange={async (ev) => {
-                  const file = ev.target.files?.[0];
-                  if (!file) return;
-                  setPhotoEnCours(true);
-                  await wrap(async () => {
-                    const url = await api.televerserPhoto(ecoleId, eleve.id, file);
-                    await api.majEleve(eleve.id, { photo_url: url });
-                  });
-                  setPhotoEnCours(false);
-                }}
-              />
-            </label>
+            {peutEditer && (
+              <label className="mt-3 cursor-pointer text-xs text-navy-700 hover:text-or-500">
+                {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer la photo" : "Ajouter une photo"}
+                <input
+                  type="file" accept="image/*" className="hidden" disabled={photoEnCours}
+                  onChange={async (ev) => {
+                    const file = ev.target.files?.[0];
+                    if (!file) return;
+                    setPhotoEnCours(true);
+                    await wrap(async () => {
+                      const url = await api.televerserPhoto(ecoleId, eleve.id, file);
+                      await api.majEleve(eleve.id, { photo_url: url });
+                    });
+                    setPhotoEnCours(false);
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold text-navy-900">État civil</h3>
-            <button onClick={() => setModaleEdit(true)} className="text-xs text-navy-700 hover:text-or-500">
-              Modifier
-            </button>
+            {peutEditer && (
+              <button onClick={() => setModaleEdit(true)} className="text-xs text-navy-700 hover:text-or-500">
+                Modifier
+              </button>
+            )}
           </div>
           <dl className="space-y-2 text-sm">
             <Info label="Matricule" valeur={eleve.matricule} mono />
@@ -116,20 +122,22 @@ export default function FicheEleve() {
             <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
             <Info label="Adresse" valeur={eleve.adresse || "—"} />
           </dl>
-          <Bouton
-            variante="fantome"
-            className="mt-5 w-full text-rose-600"
-            onClick={() => {
-              if (confirm("Supprimer définitivement cet élève ?")) {
-                wrap(async () => {
-                  await api.supprimerEleve(eleve.id);
-                  navigate("/eleves");
-                });
-              }
-            }}
-          >
-            Supprimer l'élève
-          </Bouton>
+          {peutEditer && (
+            <Bouton
+              variante="fantome"
+              className="mt-5 w-full text-rose-600"
+              onClick={() => {
+                if (confirm("Supprimer définitivement cet élève ?")) {
+                  wrap(async () => {
+                    await api.supprimerEleve(eleve.id);
+                    navigate("/eleves");
+                  });
+                }
+              }}
+            >
+              Supprimer l'élève
+            </Bouton>
+          )}
         </Carte>
 
         <div className="space-y-6 lg:col-span-2">
@@ -137,7 +145,7 @@ export default function FicheEleve() {
           <Carte className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-display text-lg font-semibold text-navy-900">Responsables</h3>
-              <Bouton variante="fantome" onClick={() => setModaleTuteur(true)}>+ Ajouter</Bouton>
+              {peutEditer && <Bouton variante="fantome" onClick={() => setModaleTuteur(true)}>+ Ajouter</Bouton>}
             </div>
             {tuteurs.length === 0 ? (
               <p className="text-sm text-navy-900/40">Aucun responsable enregistré.</p>
@@ -156,6 +164,7 @@ export default function FicheEleve() {
                         {t.responsable_legal && <span className="ml-2 text-navy-900/40">• légal</span>}
                       </p>
                     </div>
+                    {peutEditer && (
                     <div className="flex flex-col items-end gap-1">
                       {codes[t.tuteurs.id] ? (
                         <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
@@ -179,6 +188,7 @@ export default function FicheEleve() {
                         retirer
                       </button>
                     </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -189,9 +199,11 @@ export default function FicheEleve() {
           <Carte className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-display text-lg font-semibold text-navy-900">Inscriptions</h3>
-              <Bouton onClick={() => setModaleInscr(true)} disabled={!annee || classes.length === 0}>
-                {inscriptions.some((i) => i.annee_id === annee?.id) ? "Changer de classe" : "Inscrire"}
-              </Bouton>
+              {peutEditer && (
+                <Bouton onClick={() => setModaleInscr(true)} disabled={!annee || classes.length === 0}>
+                  {inscriptions.some((i) => i.annee_id === annee?.id) ? "Changer de classe" : "Inscrire"}
+                </Bouton>
+              )}
             </div>
             {inscriptions.length === 0 ? (
               <p className="text-sm text-navy-900/40">Aucune inscription.</p>

@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contextes/AuthContext.jsx";
+import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
 import RouteProtegee, { RouteParent, Garde, GardePromoteur } from "@/composants/RouteProtegee.jsx";
+import { espaceParDefaut } from "@/lib/espaces.js";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
 import MotDePasseOublie from "@/pages/MotDePasseOublie.jsx";
@@ -25,6 +26,14 @@ import Annonces from "@/pages/Annonces.jsx";
 import Comptabilite from "@/pages/Comptabilite.jsx";
 import RH from "@/pages/RH.jsx";
 import Pilotage from "@/pages/Pilotage.jsx";
+import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
+
+// Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
+function RedirectionAccueil() {
+  const { roles, estPromoteur } = useAuth();
+  const espace = espaceParDefaut(roles, estPromoteur);
+  return <Navigate to={espace?.accueil || "/gestion"} replace />;
+}
 
 // GesSchool — routeur applicatif (Phase 0).
 export default function App() {
@@ -76,8 +85,10 @@ export default function App() {
               </RouteProtegee>
             }
           >
-            <Route path="/" element={<TableauDeBord />} />
+            <Route path="/" element={<RedirectionAccueil />} />
             <Route path="/pilotage" element={<GardePromoteur><Pilotage /></GardePromoteur>} />
+            <Route path="/pedagogie" element={<Garde cle="_pedagogie"><AccueilPedagogie /></Garde>} />
+            <Route path="/gestion" element={<Garde cle="_gestion"><TableauDeBord /></Garde>} />
             <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />

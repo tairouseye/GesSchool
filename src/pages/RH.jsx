@@ -64,11 +64,22 @@ export default function RH() {
     ? <Bouton onClick={() => setModalePers(true)}>+ Personnel</Bouton>
     : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer la paie</Bouton>;
 
+  // Synthèse RH (accueil de l'espace)
+  const masseMois = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  const aPayer = salaires.filter((s) => !s.paye).length;
+
   return (
     <>
       <EnTete titre="RH & paie" sousTitre="Personnel, contrats et salaires" action={action} />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
+
+        {/* Synthèse RH */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <SyntheseCarte label="Personnel" valeur={String(personnels.length)} />
+          <SyntheseCarte label={`Masse salariale (${libellePeriode(periode)})`} valeur={`${fmt(masseMois)} ${devise}`} ton="rouge" />
+          <SyntheseCarte label="Fiches à payer" valeur={String(aPayer)} ton={aPayer > 0 ? "or" : "vert"} />
+        </div>
 
         <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
           {[["personnel", "Personnel"], ["paie", "Paie"]].map(([k, l]) => (
@@ -352,6 +363,16 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
         </div>
       </div>
     </Modale>
+  );
+}
+
+function SyntheseCarte({ label, valeur, ton }) {
+  const tons = { navy: "text-navy-900", rouge: "text-rose-600", or: "text-or-600", vert: "text-emerald-700" };
+  return (
+    <Carte className="p-5">
+      <p className="text-sm text-navy-900/50">{label}</p>
+      <p className={`mt-2 font-display text-2xl font-bold ${tons[ton] || tons.navy}`}>{valeur}</p>
+    </Carte>
   );
 }
 

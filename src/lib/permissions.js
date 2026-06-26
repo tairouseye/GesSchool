@@ -20,7 +20,9 @@ export const LIBELLES_ROLES = {
 //  "*"  = tout le personnel ;  []  = réservé aux rôles complets.
 const ACCES = {
   dashboard: "*",
-  eleves: ["surveillant"],
+  _pedagogie: ["enseignant", "surveillant"], // accueil Pédagogie
+  _gestion: ["comptable"], // accueil Gestion
+  eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
   notes: ["enseignant"],
   bulletins: ["enseignant"],
   structure: [],
@@ -68,4 +70,10 @@ export function peutVoir(roles, cle) {
 export function premierePage(roles) {
   const p = PAGES.find((x) => peutVoir(roles, x.cle));
   return p ? p.path : "/";
+}
+
+// L'édition des élèves est réservée au côté Gestion (les rôles purement
+// pédagogiques — enseignant/surveillant — sont en lecture seule).
+export function peutEditerEleves(roles) {
+  return estRoleComplet(roles) || (roles || []).includes("comptable");
 }
