@@ -166,6 +166,9 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, onMaj, onPayer, on
           <span className="text-emerald-700">Payé : <b className="font-mono">{fmt(totalPaye)} {devise}</b></span>
         </div>
       </div>
+      <p className="text-xs text-navy-900/40">
+        💡 « Payer » crée automatiquement une dépense en comptabilité (catégorie Salaires) ; « annuler » la retire.
+      </p>
 
       {salaires.length === 0 ? (
         <Carte className="p-8 text-sm text-navy-900/50">

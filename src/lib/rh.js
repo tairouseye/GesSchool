@@ -142,23 +142,20 @@ export async function majSalaire(id, { montant_brut, prime, retenue }) {
   if (error) throw error;
 }
 
-export async function marquerPaye(id, { date_paiement, mode }) {
-  const { error } = await supabase
-    .from("salaires")
-    .update({
-      paye: true,
-      date_paiement: date_paiement || new Date().toISOString().slice(0, 10),
-      mode: mode || null,
-    })
-    .eq("id", id);
+// Marque payé ET crée la dépense comptable correspondante (RPC sécurisée).
+export async function marquerPaye(id, { date_paiement, mode, compte_id } = {}) {
+  const { error } = await supabase.rpc("payer_salaire", {
+    p_salaire: id,
+    p_date: date_paiement || new Date().toISOString().slice(0, 10),
+    p_mode: mode || null,
+    p_compte: compte_id || null,
+  });
   if (error) throw error;
 }
 
+// Annule le paiement ET supprime la dépense comptable liée.
 export async function annulerPaiement(id) {
-  const { error } = await supabase
-    .from("salaires")
-    .update({ paye: false, date_paiement: null })
-    .eq("id", id);
+  const { error } = await supabase.rpc("annuler_salaire", { p_salaire: id });
   if (error) throw error;
 }
 
