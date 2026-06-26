@@ -30,6 +30,7 @@ export const ESPACES = [
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins" },
       { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi" },
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire" },
+      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures" },
     ],
   },
   {

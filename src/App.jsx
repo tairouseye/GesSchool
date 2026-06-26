@@ -30,6 +30,7 @@ import Comptabilite from "@/pages/Comptabilite.jsx";
 import RH from "@/pages/RH.jsx";
 import Pilotage from "@/pages/Pilotage.jsx";
 import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
+import Fournitures from "@/pages/Fournitures.jsx";
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
@@ -97,6 +98,7 @@ export default function App() {
             <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
+            <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

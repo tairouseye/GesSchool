@@ -256,3 +256,36 @@ export async function genererMatricule() {
   if (error) throw error;
   return data;
 }
+
+// --- Fournitures scolaires (par niveau) ---
+export async function getFournitures(ecoleId) {
+  const { data, error } = await supabase
+    .from("fournitures")
+    .select("*, niveaux(libelle)")
+    .eq("ecole_id", ecoleId)
+    .order("libelle");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerFourniture(ecoleId, f) {
+  const { data, error } = await supabase
+    .from("fournitures")
+    .insert({
+      ecole_id: ecoleId,
+      niveau_id: f.niveau_id || null,
+      libelle: f.libelle,
+      quantite: Number(f.quantite) || 1,
+      obligatoire: f.obligatoire ?? true,
+      note: f.note || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerFourniture(id) {
+  const { error } = await supabase.from("fournitures").delete().eq("id", id);
+  if (error) throw error;
+}

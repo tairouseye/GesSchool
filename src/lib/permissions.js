@@ -29,6 +29,7 @@ const ACCES = {
   enseignants: ["rh"],
   vie_scolaire: ["surveillant", "enseignant"],
   emploi: ["enseignant"],
+  fournitures: ["enseignant"],
   annonces: [],
   messagerie: [],
   paiements: ["comptable"],

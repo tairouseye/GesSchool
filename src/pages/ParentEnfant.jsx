@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { enfantNotes, enfantFactures, enfantAbsences, enfantEmploi } from "@/lib/parent.js";
+import { enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { Carte, Alerte } from "@/composants/ui.jsx";
 
@@ -14,6 +14,7 @@ export default function ParentEnfant() {
   const [factures, setFactures] = useState([]);
   const [absences, setAbsences] = useState([]);
   const [emploi, setEmploi] = useState([]);
+  const [fournitures, setFournitures] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
@@ -21,10 +22,10 @@ export default function ParentEnfant() {
     (async () => {
       setChargement(true);
       try {
-        const [n, f, a, e] = await Promise.all([
-          enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
+        const [n, f, a, e, four] = await Promise.all([
+          enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id), enfantFournitures(id),
         ]);
-        setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
+        setNotes(n); setFactures(f); setAbsences(a); setEmploi(e); setFournitures(four);
       } catch (e) { setErreur(e.message); }
       finally { setChargement(false); }
     })();
@@ -36,7 +37,7 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["emploi", "Emploi du temps"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -50,6 +51,8 @@ export default function ParentEnfant() {
         <Notes notes={notes} />
       ) : onglet === "emploi" ? (
         <Emploi creneaux={emploi} />
+      ) : onglet === "fournitures" ? (
+        <Fournitures items={fournitures} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} />
       ) : (
@@ -134,6 +137,27 @@ function Emploi({ creneaux }) {
         );
       })}
     </div>
+  );
+}
+
+function Fournitures({ items }) {
+  if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-3 font-display font-semibold text-navy-900">Liste des fournitures</h3>
+      <ul className="divide-y divide-navy-900/5">
+        {items.map((f, i) => (
+          <li key={i} className="flex items-center justify-between py-2 text-sm">
+            <span className="text-navy-900">
+              <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
+              <span className="font-medium">{f.libelle}</span>
+              {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
+              {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Carte>
   );
 }
 

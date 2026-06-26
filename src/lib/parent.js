@@ -32,6 +32,12 @@ export async function enfantEmploi(eleveId) {
   return data ?? [];
 }
 
+export async function enfantFournitures(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_fournitures", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // --- Notifications / alertes du parent (RLS « self ») ---
 export async function mesNotifications() {
   const { data, error } = await supabase
