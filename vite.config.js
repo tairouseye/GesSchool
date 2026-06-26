@@ -22,7 +22,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "icone.svg"],
       manifest: {
         name: "GesSchool — Gestion scolaire",
         short_name: "GesSchool",
@@ -40,9 +39,12 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        // Handler de notifications push ajouté au service worker généré.
+        importScripts: ["push-sw.js"],
         // Pas de navigateFallback absolu : routage géré par HashRouter
         // (compatible sous-chemin GitHub Pages).
       },
+      includeAssets: ["favicon.svg", "icone.svg", "push-sw.js"],
       devOptions: { enabled: true },
     }),
   ],

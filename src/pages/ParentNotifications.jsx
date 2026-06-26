@@ -1,10 +1,50 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { mesNotifications, marquerLue, marquerToutesLues } from "@/lib/parent.js";
+import { pushSupporte, etatPush, activerPush, desactiverPush } from "@/lib/push.js";
 import { Carte, Alerte, Bouton } from "@/composants/ui.jsx";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+
+function PushToggle({ onErreur }) {
+  const [etat, setEtat] = useState("…");
+  const [occupe, setOccupe] = useState(false);
+
+  const rafraichir = async () => { try { setEtat(await etatPush()); } catch { setEtat("non_supporte"); } };
+  useEffect(() => { rafraichir(); }, []);
+
+  if (!pushSupporte() || etat === "non_supporte") return null;
+
+  const basculer = async () => {
+    setOccupe(true);
+    onErreur("");
+    try {
+      if (etat === "actif") await desactiverPush();
+      else await activerPush();
+      await rafraichir();
+    } catch (e) { onErreur(e.message); }
+    finally { setOccupe(false); }
+  };
+
+  return (
+    <Carte className="flex items-center justify-between p-4">
+      <div>
+        <p className="text-sm font-medium text-navy-900">Notifications sur le téléphone</p>
+        <p className="text-xs text-navy-900/50">
+          {etat === "actif" ? "Activées — tu seras alerté même app fermée."
+            : etat === "refuse" ? "Bloquées dans les réglages du navigateur."
+            : "Reçois les alertes directement sur ton appareil."}
+        </p>
+      </div>
+      {etat !== "refuse" && (
+        <Bouton variante={etat === "actif" ? "fantome" : "primaire"} onClick={basculer} disabled={occupe}>
+          {occupe ? "…" : etat === "actif" ? "Désactiver" : "Activer"}
+        </Bouton>
+      )}
+    </Carte>
+  );
+}
 
 const ICONE = (titre = "") => {
   if (/note/i.test(titre)) return "📘";
@@ -49,6 +89,8 @@ export default function ParentNotifications() {
       </div>
 
       <Alerte ton="erreur">{erreur}</Alerte>
+
+      <PushToggle onErreur={setErreur} />
 
       {chargement ? (
         <p className="text-sm text-navy-900/50">Chargement…</p>
