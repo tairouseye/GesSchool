@@ -93,7 +93,7 @@ export default function RH() {
         {onglet === "personnel" ? (
           <PanneauPersonnel
             personnels={personnels} contrats={contrats} devise={devise}
-            onSuppr={(id) => wrap(() => api.supprimerPersonnel(id))}
+            onSuppr={(id) => { if (confirm("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id)); }}
           />
         ) : (
           <PanneauPaie

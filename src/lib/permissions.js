@@ -32,6 +32,7 @@ const ACCES = {
   fournitures: ["enseignant"],
   annonces: [],
   messagerie: [],
+  parametres: [],
   paiements: ["comptable"],
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],

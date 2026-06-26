@@ -238,6 +238,12 @@ export async function getConfigEcole(ecoleId) {
   return data;
 }
 
+// Met à jour le profil de l'école (réservé admin_ecole par la RLS).
+export async function majEcole(ecoleId, champs) {
+  const { error } = await supabase.from("ecoles").update(champs).eq("id", ecoleId);
+  if (error) throw error;
+}
+
 export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur }) {
   const { error } = await supabase
     .from("ecoles")

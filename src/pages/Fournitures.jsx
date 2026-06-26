@@ -55,7 +55,7 @@ export default function Fournitures() {
                       {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
                       {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
                     </span>
-                    <button onClick={() => wrap(() => supprimerFourniture(f.id))} className="text-xs text-rose-500 hover:underline">
+                    <button onClick={() => { if (confirm("Supprimer cette fourniture ?")) wrap(() => supprimerFourniture(f.id)); }} className="text-xs text-rose-500 hover:underline">
                       supprimer
                     </button>
                   </li>

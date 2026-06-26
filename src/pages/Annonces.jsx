@@ -80,7 +80,7 @@ export default function Annonces() {
                   </p>
                 </div>
                 <button
-                  onClick={() => wrap(() => api.supprimerAnnonce(a.id))}
+                  onClick={() => { if (confirm("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id)); }}
                   className="shrink-0 text-xs text-rose-500 hover:underline"
                 >
                   supprimer

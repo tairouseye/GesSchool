@@ -95,11 +95,11 @@ export default function Structure() {
               onAjoutNiveau={(libelle, ordre) =>
                 wrap(() => api.creerNiveau(ecoleId, cycle.id, libelle, ordre))
               }
-              onSupprNiveau={(id) => wrap(() => api.supprimerNiveau(id))}
+              onSupprNiveau={(id) => { if (confirm("Supprimer ce niveau ? (impossible s'il a des classes)")) wrap(() => api.supprimerNiveau(id)); }}
               onGenererClasses={(niveauId, libelles, eff, serieId) =>
                 wrap(() => api.creerClassesEnLot(ecoleId, niveauId, annee.id, libelles, eff, serieId))
               }
-              onSupprClasse={(id) => wrap(() => api.supprimerClasse(id))}
+              onSupprClasse={(id) => { if (confirm("Supprimer cette classe ?")) wrap(() => api.supprimerClasse(id)); }}
             />
           ))}
         </div>
@@ -111,7 +111,7 @@ export default function Structure() {
           onAjout={(libelle, code, cycleId) =>
             wrap(() => api.creerMatiere(ecoleId, libelle, code, cycleId))
           }
-          onSuppr={(id) => wrap(() => api.supprimerMatiere(id))}
+          onSuppr={(id) => { if (confirm("Supprimer cette matière ?")) wrap(() => api.supprimerMatiere(id)); }}
         />
 
         {/* Séries (lycée uniquement) */}
@@ -119,7 +119,7 @@ export default function Structure() {
           <PanneauSeries
             series={series}
             onAjout={(code, libelle) => wrap(() => api.creerSerie(ecoleId, code, libelle, series.length + 1))}
-            onSuppr={(id) => wrap(() => api.supprimerSerie(id))}
+            onSuppr={(id) => { if (confirm("Supprimer cette série ?")) wrap(() => api.supprimerSerie(id)); }}
             onSemer={() => wrap(() => api.semerSeriesStandard(ecoleId, series))}
           />
         )}
@@ -133,11 +133,7 @@ export default function Structure() {
           onDefinir={(scope) => wrap(() => api.definirCoefficient(ecoleId, scope))}
         />
 
-        {/* Configuration du matricule */}
-        <PanneauMatricule
-          config={config}
-          onEnregistrer={(cfg) => wrap(() => api.majConfigMatricule(ecoleId, cfg))}
-        />
+        {/* La configuration du matricule est désormais dans Paramètres. */}
       </div>
     </>
   );

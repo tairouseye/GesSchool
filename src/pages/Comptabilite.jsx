@@ -94,20 +94,20 @@ export default function Comptabilite() {
         )}
 
         {onglet === "tresorerie" && (
-          <Tresorerie soldes={soldes} devise={devise} onSuppr={(id) => wrap(() => api.supprimerCompte(id))} />
+          <Tresorerie soldes={soldes} devise={devise} onSuppr={(id) => { if (confirm("Supprimer ce compte ?")) wrap(() => api.supprimerCompte(id)); }} />
         )}
 
         {onglet === "recettes" && (
           <Mouvements
             type="recette" items={recettes} devise={devise}
-            onSuppr={(id) => wrap(() => api.supprimerRecette(id))}
+            onSuppr={(id) => { if (confirm("Supprimer cette recette ?")) wrap(() => api.supprimerRecette(id)); }}
           />
         )}
 
         {onglet === "depenses" && (
           <Mouvements
             type="depense" items={depenses} devise={devise}
-            onSuppr={(id) => wrap(() => api.supprimerDepense(id))}
+            onSuppr={(id) => { if (confirm("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id)); }}
           />
         )}
       </div>
