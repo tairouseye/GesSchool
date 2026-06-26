@@ -45,6 +45,13 @@ export function Garde({ cle, children }) {
   return children;
 }
 
+// Garde de l'espace PILOTAGE (réservé aux promoteurs / propriétaires d'école).
+export function GardePromoteur({ children }) {
+  const { estPromoteur } = useAuth();
+  if (!estPromoteur) return <Navigate to="/" replace />;
+  return children;
+}
+
 // Garde de l'ESPACE PARENT.
 export function RouteParent({ children }) {
   const { estConnecte, estParent, aProfil, chargement } = useAuth();

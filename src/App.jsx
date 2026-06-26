@@ -1,6 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent, Garde } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, Garde, GardePromoteur } from "@/composants/RouteProtegee.jsx";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
 import MotDePasseOublie from "@/pages/MotDePasseOublie.jsx";
@@ -24,6 +24,7 @@ import EmploiDuTemps from "@/pages/EmploiDuTemps.jsx";
 import Annonces from "@/pages/Annonces.jsx";
 import Comptabilite from "@/pages/Comptabilite.jsx";
 import RH from "@/pages/RH.jsx";
+import Pilotage from "@/pages/Pilotage.jsx";
 
 // GesSchool — routeur applicatif (Phase 0).
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
             }
           >
             <Route path="/" element={<TableauDeBord />} />
+            <Route path="/pilotage" element={<GardePromoteur><Pilotage /></GardePromoteur>} />
             <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />

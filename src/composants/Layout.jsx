@@ -23,10 +23,13 @@ const NAV = [
 ];
 
 export default function Layout() {
-  const { ecole, profil, roles, deconnexion } = useAuth();
+  const { ecole, profil, roles, deconnexion, estPromoteur } = useAuth();
   const [menu, setMenu] = useState(false);
   const sigle = ecole?.sigle || "GS";
-  const nav = NAV.filter((item) => peutVoir(roles, item.cle));
+  const nav = [
+    ...(estPromoteur ? [{ to: "/pilotage", label: "Pilotage", icone: "🎯", cle: "_pilotage" }] : []),
+    ...NAV.filter((item) => peutVoir(roles, item.cle)),
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-creme text-navy-900">

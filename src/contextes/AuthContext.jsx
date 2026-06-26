@@ -12,6 +12,7 @@ export function AuthProvider({ children }) {
   const [profil, setProfil] = useState(null);
   const [roles, setRoles] = useState([]);
   const [ecole, setEcole] = useState(null);
+  const [ecolesPossedees, setEcolesPossedees] = useState([]);
   const [chargement, setChargement] = useState(true);
 
   // Charge le profil + les rôles de l'utilisateur connecté.
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
       setProfil(null);
       setRoles([]);
       setEcole(null);
+      setEcolesPossedees([]);
       return;
     }
     const { data: p } = await supabase
@@ -34,6 +36,15 @@ export function AuthProvider({ children }) {
       .select("role")
       .eq("profil_id", userId);
     setRoles((r ?? []).map((x) => x.role));
+
+    // Écoles possédées (promoteur multi-écoles)
+    const { data: prop } = await supabase
+      .from("proprietaires")
+      .select("ecole_id, ecoles(nom, sigle)")
+      .eq("profil_id", userId);
+    setEcolesPossedees(
+      (prop ?? []).map((x) => ({ ecole_id: x.ecole_id, nom: x.ecoles?.nom, sigle: x.ecoles?.sigle }))
+    );
 
     // École de rattachement (pour l'en-tête / la navigation)
     if (p?.ecole_id) {
@@ -91,6 +102,8 @@ export function AuthProvider({ children }) {
     roles,
     ecole,
     ecoleId: profil?.ecole_id ?? null,
+    ecolesPossedees,
+    estPromoteur: ecolesPossedees.length > 0,
     estConnecte: !!session,
     aProfil: !!profil,
     estParent: roles.includes("parent"),
