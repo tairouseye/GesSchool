@@ -6,6 +6,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { peutEditerEleves } from "@/lib/permissions.js";
+import Photo from "@/composants/Photo.jsx";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
@@ -138,13 +139,17 @@ export default function Eleves() {
                       <td className="px-6 py-4 font-mono text-xs text-navy-900/70">{e.matricule || "—"}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {e.photo_url ? (
-                            <img src={e.photo_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-                          ) : (
-                            <span className="grid h-8 w-8 place-items-center rounded-full bg-navy-900/10 text-xs font-semibold text-navy-900/60">
-                              {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
-                            </span>
-                          )}
+                          <Photo
+                            bucket="eleves"
+                            valeur={e.photo_url}
+                            alt=""
+                            className="h-8 w-8 rounded-full object-cover"
+                            fallback={
+                              <span className="grid h-8 w-8 place-items-center rounded-full bg-navy-900/10 text-xs font-semibold text-navy-900/60">
+                                {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
+                              </span>
+                            }
+                          />
                           <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span>
                         </div>
                       </td>

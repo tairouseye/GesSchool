@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
+import { urlSignee } from "@/lib/stockage.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -256,8 +257,13 @@ function Mouvements({ type, items, devise, onSuppr }) {
               <td className="px-6 py-3 text-right">
                 <div className="flex items-center justify-end gap-3">
                   {it.justificatif_url && (
-                    <a href={it.justificatif_url} target="_blank" rel="noreferrer"
-                      className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 reçu</a>
+                    <button
+                      onClick={async () => {
+                        const u = await urlSignee("justificatifs", it.justificatif_url);
+                        if (u) window.open(u, "_blank", "noreferrer");
+                      }}
+                      className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif"
+                    >📎 reçu</button>
                   )}
                   <button onClick={() => onSuppr(it.id)} className="text-xs text-rose-500 hover:underline">suppr.</button>
                 </div>

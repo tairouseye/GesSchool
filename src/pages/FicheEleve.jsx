@@ -7,6 +7,7 @@ import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { peutEditerEleves } from "@/lib/permissions.js";
+import Photo from "@/composants/Photo.jsx";
 
 export default function FicheEleve() {
   const { id } = useParams();
@@ -79,13 +80,17 @@ export default function FicheEleve() {
         <Carte className="p-6 lg:col-span-1">
           {/* Photo */}
           <div className="mb-5 flex flex-col items-center">
-            {eleve.photo_url ? (
-              <img src={eleve.photo_url} alt="" className="h-24 w-24 rounded-full object-cover ring-2 ring-or-500/40" />
-            ) : (
-              <span className="grid h-24 w-24 place-items-center rounded-full bg-navy-900/10 font-display text-2xl font-bold text-navy-900/50">
-                {(eleve.prenom?.[0] || "").toUpperCase()}{(eleve.nom?.[0] || "").toUpperCase()}
-              </span>
-            )}
+            <Photo
+              bucket="eleves"
+              valeur={eleve.photo_url}
+              alt=""
+              className="h-24 w-24 rounded-full object-cover ring-2 ring-or-500/40"
+              fallback={
+                <span className="grid h-24 w-24 place-items-center rounded-full bg-navy-900/10 font-display text-2xl font-bold text-navy-900/50">
+                  {(eleve.prenom?.[0] || "").toUpperCase()}{(eleve.nom?.[0] || "").toUpperCase()}
+                </span>
+              }
+            />
             {peutEditer && (
               <label className="mt-3 cursor-pointer text-xs text-navy-700 hover:text-or-500">
                 {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer la photo" : "Ajouter une photo"}

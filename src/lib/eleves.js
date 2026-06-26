@@ -56,13 +56,14 @@ export async function supprimerEleve(id) {
   if (error) throw error;
 }
 
-// Téléverse une photo dans le bucket 'eleves' et renvoie son URL publique.
+// Téléverse une photo dans le bucket privé 'eleves' et renvoie son CHEMIN
+// (l'affichage se fait via une URL signée, cf. composant Photo).
 export async function televerserPhoto(ecoleId, eleveId, file) {
   const ext = file.name.split(".").pop();
   const chemin = `${ecoleId}/${eleveId}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("eleves").upload(chemin, file, { upsert: true });
   if (error) throw error;
-  return supabase.storage.from("eleves").getPublicUrl(chemin).data.publicUrl;
+  return chemin;
 }
 
 // --- Inscriptions ---

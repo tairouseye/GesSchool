@@ -51,13 +51,14 @@ export async function supprimerCompte(id) {
   if (error) throw error;
 }
 
-// Téléverse un justificatif (image/PDF) et renvoie son URL publique.
+// Téléverse un justificatif (image/PDF) dans le bucket privé et renvoie son
+// CHEMIN (l'ouverture se fait via une URL signée temporaire).
 export async function televerserJustificatif(ecoleId, file) {
   const ext = (file.name.split(".").pop() || "bin").toLowerCase();
   const chemin = `${ecoleId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await supabase.storage.from("justificatifs").upload(chemin, file, { upsert: true });
   if (error) throw error;
-  return supabase.storage.from("justificatifs").getPublicUrl(chemin).data.publicUrl;
+  return chemin;
 }
 
 // --- Recettes (entrées) ---
