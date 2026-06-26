@@ -26,6 +26,12 @@ export async function enfantAbsences(eleveId) {
   return data ?? [];
 }
 
+export async function enfantEmploi(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_emploi", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function lierParent(code) {
   const { data, error } = await supabase.rpc("lier_parent", { p_code: code });
   if (error) throw error;

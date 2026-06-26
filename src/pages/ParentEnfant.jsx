@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { enfantNotes, enfantFactures, enfantAbsences } from "@/lib/parent.js";
+import { enfantNotes, enfantFactures, enfantAbsences, enfantEmploi } from "@/lib/parent.js";
+import { JOURS } from "@/lib/emploi.js";
 import { Carte, Alerte } from "@/composants/ui.jsx";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
+const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 
 export default function ParentEnfant() {
   const { id } = useParams();
@@ -11,6 +13,7 @@ export default function ParentEnfant() {
   const [notes, setNotes] = useState([]);
   const [factures, setFactures] = useState([]);
   const [absences, setAbsences] = useState([]);
+  const [emploi, setEmploi] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
@@ -18,8 +21,10 @@ export default function ParentEnfant() {
     (async () => {
       setChargement(true);
       try {
-        const [n, f, a] = await Promise.all([enfantNotes(id), enfantFactures(id), enfantAbsences(id)]);
-        setNotes(n); setFactures(f); setAbsences(a);
+        const [n, f, a, e] = await Promise.all([
+          enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
+        ]);
+        setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
       } catch (e) { setErreur(e.message); }
       finally { setChargement(false); }
     })();
@@ -31,7 +36,7 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["emploi", "Emploi du temps"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -43,6 +48,8 @@ export default function ParentEnfant() {
         <p className="text-sm text-navy-900/50">Chargement…</p>
       ) : onglet === "notes" ? (
         <Notes notes={notes} />
+      ) : onglet === "emploi" ? (
+        <Emploi creneaux={emploi} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} />
       ) : (
@@ -93,6 +100,36 @@ function Notes({ notes }) {
                 ))}
               </tbody>
             </table>
+          </Carte>
+        );
+      })}
+    </div>
+  );
+}
+
+function Emploi({ creneaux }) {
+  if (creneaux.length === 0) {
+    return <Carte className="p-6 text-sm text-navy-900/40">Aucun emploi du temps disponible.</Carte>;
+  }
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {JOURS.map(([j, label]) => {
+        const items = creneaux.filter((c) => c.jour === j);
+        if (items.length === 0) return null;
+        return (
+          <Carte key={j} className="p-5">
+            <h3 className="mb-3 font-display font-semibold text-navy-900">{label}</h3>
+            <ul className="space-y-2">
+              {items.map((c, i) => (
+                <li key={i} className="rounded-xl border border-navy-900/10 p-3">
+                  <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
+                  <p className="font-medium text-navy-900">{c.matiere || "—"}</p>
+                  <p className="text-xs text-navy-900/50">
+                    {c.enseignant || ""}{c.salle ? ` · ${c.salle}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </Carte>
         );
       })}
