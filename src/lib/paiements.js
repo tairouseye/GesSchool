@@ -209,6 +209,54 @@ export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList
   return { crees, ignores };
 }
 
+// --- Paiement mobile (déclaratif) ---
+export const MODES_MOBILE = [
+  ["wave", "Wave"],
+  ["orange_money", "Orange Money"],
+  ["free_money", "Free Money"],
+];
+
+// Coordonnées mobile money de l'école (stockées dans `parametres`).
+export async function getPaiementMobile(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres")
+    .select("valeur")
+    .eq("ecole_id", ecoleId)
+    .eq("cle", "paiement_mobile")
+    .maybeSingle();
+  if (error) throw error;
+  return data?.valeur || {};
+}
+
+export async function setPaiementMobile(ecoleId, infos) {
+  const { error } = await supabase
+    .from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "paiement_mobile", valeur: infos }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// Déclarations de paiement (staff).
+export async function getDeclarations(ecoleId, statut = "en_attente") {
+  let q = supabase
+    .from("declarations_paiement")
+    .select("*, eleves(prenom, nom), factures(numero)")
+    .eq("ecole_id", ecoleId);
+  if (statut) q = q.eq("statut", statut);
+  const { data, error } = await q.order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function validerDeclaration(id) {
+  const { error } = await supabase.rpc("valider_declaration", { p_decl: id });
+  if (error) throw error;
+}
+
+export async function rejeterDeclaration(id) {
+  const { error } = await supabase.rpc("rejeter_declaration", { p_decl: id });
+  if (error) throw error;
+}
+
 // Solde par élève (somme due - payé sur ses factures).
 export async function getSoldesEleves(ecoleId, anneeId) {
   const factures = await getFactures(ecoleId, anneeId);

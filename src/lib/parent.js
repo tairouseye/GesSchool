@@ -38,6 +38,26 @@ export async function enfantFournitures(eleveId) {
   return data ?? [];
 }
 
+// --- Paiement mobile déclaratif ---
+export async function ecolePaiementInfos(eleveId) {
+  const { data, error } = await supabase.rpc("ecole_paiement_infos", { p_eleve: eleveId });
+  if (error) throw error;
+  return data || {};
+}
+
+export async function declarerPaiement(factureId, montant, mode, reference) {
+  const { error } = await supabase.rpc("declarer_paiement", {
+    p_facture: factureId, p_montant: montant, p_mode: mode, p_reference: reference,
+  });
+  if (error) throw error;
+}
+
+export async function enfantDeclarations(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_declarations", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // --- Notifications / alertes du parent (RLS « self ») ---
 export async function mesNotifications() {
   const { data, error } = await supabase

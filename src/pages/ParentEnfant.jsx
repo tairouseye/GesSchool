@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures } from "@/lib/parent.js";
+import {
+  enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
+  ecolePaiementInfos, declarerPaiement, enfantDeclarations,
+} from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
-import { Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+
+const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
@@ -15,21 +20,24 @@ export default function ParentEnfant() {
   const [absences, setAbsences] = useState([]);
   const [emploi, setEmploi] = useState([]);
   const [fournitures, setFournitures] = useState([]);
+  const [infos, setInfos] = useState({});
+  const [declarations, setDeclarations] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setChargement(true);
-      try {
-        const [n, f, a, e, four] = await Promise.all([
-          enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id), enfantFournitures(id),
-        ]);
-        setNotes(n); setFactures(f); setAbsences(a); setEmploi(e); setFournitures(four);
-      } catch (e) { setErreur(e.message); }
-      finally { setChargement(false); }
-    })();
+  const charger = useCallback(async () => {
+    try {
+      const [n, f, a, e, four, inf, decl] = await Promise.all([
+        enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
+        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id),
+      ]);
+      setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
+      setFournitures(four); setInfos(inf); setDeclarations(decl);
+    } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [id]);
+
+  useEffect(() => { setChargement(true); charger(); }, [charger]);
 
   return (
     <div className="space-y-5">
@@ -54,7 +62,7 @@ export default function ParentEnfant() {
       ) : onglet === "fournitures" ? (
         <Fournitures items={fournitures} />
       ) : onglet === "paiements" ? (
-        <Paiements factures={factures} />
+        <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={charger} onErreur={setErreur} />
       ) : (
         <Absences absences={absences} />
       )}
@@ -161,37 +169,128 @@ function Fournitures({ items }) {
   );
 }
 
-function Paiements({ factures }) {
+function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur }) {
+  const [payer, setPayer] = useState(null); // facture à régler
   if (factures.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>;
   const totalReste = factures.reduce((s, f) => s + ((Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0)), 0);
+  const aDesNumeros = MODES_MOBILE.some(([k]) => infos?.[k]);
+  const statutLib = { en_attente: "En attente", valide: "Validé", rejete: "Rejeté" };
+  const statutTon = { en_attente: "text-or-600", valide: "text-emerald-700", rejete: "text-rose-600" };
+
   return (
     <div className="space-y-4">
       <Carte className="p-5">
         <p className="text-sm text-navy-900/50">Reste à payer</p>
         <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalReste)} <span className="text-sm font-normal">XOF</span></p>
       </Carte>
+
       <Carte className="overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
-            <tr><th className="px-6 py-2 font-medium">N°</th><th className="px-6 py-2 font-medium">Échéance</th><th className="px-6 py-2 text-right font-medium">Total</th><th className="px-6 py-2 text-right font-medium">Payé</th><th className="px-6 py-2 text-right font-medium">Reste</th></tr>
+            <tr><th className="px-4 py-2 font-medium">N°</th><th className="px-4 py-2 font-medium">Échéance</th><th className="px-4 py-2 text-right font-medium">Reste</th><th className="px-4 py-2"></th></tr>
           </thead>
           <tbody>
-            {factures.map((f, i) => {
+            {factures.map((f) => {
               const reste = (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0);
               return (
-                <tr key={i} className="border-t border-navy-900/5">
-                  <td className="px-6 py-2 font-mono text-xs">{f.numero}</td>
-                  <td className="px-6 py-2 font-mono text-xs">{f.date_echeance || "—"}</td>
-                  <td className="px-6 py-2 text-right font-mono">{fmt(f.montant_total)}</td>
-                  <td className="px-6 py-2 text-right font-mono">{fmt(f.montant_paye)}</td>
-                  <td className={`px-6 py-2 text-right font-mono ${reste > 0 ? "text-rose-600" : "text-emerald-600"}`}>{fmt(reste)}</td>
+                <tr key={f.id} className="border-t border-navy-900/5">
+                  <td className="px-4 py-2 font-mono text-xs">{f.numero}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{f.date_echeance || "—"}</td>
+                  <td className={`px-4 py-2 text-right font-mono ${reste > 0 ? "text-rose-600" : "text-emerald-600"}`}>{fmt(reste)}</td>
+                  <td className="px-4 py-2 text-right">
+                    {reste > 0 && aDesNumeros && (
+                      <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Payer</button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </Carte>
+
+      {!aDesNumeros && (
+        <p className="text-xs text-navy-900/40">Le paiement mobile n'est pas encore configuré par l'établissement.</p>
+      )}
+
+      {declarations.length > 0 && (
+        <Carte className="p-5">
+          <h3 className="mb-2 font-display font-semibold text-navy-900">Mes déclarations</h3>
+          <ul className="space-y-1 text-sm">
+            {declarations.map((d) => (
+              <li key={d.id} className="flex items-center justify-between">
+                <span className="text-navy-900/70">{d.numero} · {fmt(d.montant)} XOF</span>
+                <span className={`text-xs font-medium ${statutTon[d.statut]}`}>{statutLib[d.statut] || d.statut}</span>
+              </li>
+            ))}
+          </ul>
+        </Carte>
+      )}
+
+      <ModalePayer
+        facture={payer} infos={infos} eleveId={eleveId}
+        onFermer={() => setPayer(null)}
+        onDeclare={async (data) => {
+          try {
+            await declarerPaiement(payer.id, data.montant, data.mode, data.reference);
+            setPayer(null);
+            await onChange();
+          } catch (e) { onErreur(e.message); }
+        }}
+      />
     </div>
+  );
+}
+
+function ModalePayer({ facture, infos, onFermer, onDeclare }) {
+  const [mode, setMode] = useState("wave");
+  const [montant, setMontant] = useState("");
+  const [reference, setReference] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+
+  useEffect(() => {
+    if (facture) { setMontant(String(Math.round(facture.reste || 0))); setReference(""); setMode("wave"); }
+  }, [facture]);
+
+  if (!facture) return null;
+  const numero = infos?.[mode];
+
+  return (
+    <Modale ouvert={!!facture} onFermer={onFermer} titre={`Payer la facture ${facture.numero}`}>
+      <div className="space-y-4">
+        <div className="rounded-xl bg-creme p-4 text-sm">
+          <p className="text-navy-900/60">1. Paie depuis ton application mobile money sur le numéro de l'école :</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {MODES_MOBILE.map(([k, label]) => infos?.[k] && (
+              <button key={k} onClick={() => setMode(k)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${mode === k ? "bg-navy-900 text-creme" : "bg-white text-navy-900/70 border border-navy-900/15"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {numero && (
+            <p className="mt-3 font-display text-xl font-bold text-navy-900">{numero}</p>
+          )}
+          <p className="mt-1 text-xs text-navy-900/50">Référence à indiquer : <span className="font-mono">{facture.numero}</span></p>
+        </div>
+
+        <p className="text-sm text-navy-900/60">2. Déclare ton paiement, l'école le validera :</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Montant payé" value={montant} onChange={(e) => setMontant(e.target.value.replace(/[^0-9]/g, ""))} />
+          <Champ label="Réf. transaction" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ID Wave/OM…" />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton
+            disabled={envoi || !montant}
+            onClick={async () => { setEnvoi(true); await onDeclare({ montant: Number(montant), mode, reference }); setEnvoi(false); }}
+          >
+            {envoi ? "…" : "Déclarer le paiement"}
+          </Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }
 

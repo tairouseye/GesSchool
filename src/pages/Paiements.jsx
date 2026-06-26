@@ -19,6 +19,8 @@ export default function Paiements() {
   const [eleves, setEleves] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
   const [inscrits, setInscrits] = useState([]);
+  const [declarations, setDeclarations] = useState([]);
+  const [mobileInfos, setMobileInfos] = useState({});
   const [recherche, setRecherche] = useState("");
   const [erreur, setErreur] = useState("");
   const [modaleNouvelle, setModaleNouvelle] = useState(false);
@@ -30,24 +32,33 @@ export default function Paiements() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [fac, fr, els, niv, ins] = await Promise.all([
+      const [fac, fr, els, niv, ins, decl, mob] = await Promise.all([
         api.getFactures(ecoleId, an?.id),
         api.getFrais(ecoleId, an?.id),
         getEleves(ecoleId),
         getNiveaux(ecoleId),
         api.getInscritsAvecNiveau(ecoleId, an?.id),
+        api.getDeclarations(ecoleId, "en_attente"),
+        api.getPaiementMobile(ecoleId),
       ]);
       setFactures(fac);
       setFrais(fr);
       setEleves(els);
       setNiveaux(niv);
       setInscrits(ins);
+      setDeclarations(decl);
+      setMobileInfos(mob);
     } catch (e) {
       setErreur(e.message);
     }
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
+
+  const wrap = async (fn) => {
+    setErreur("");
+    try { await fn(); await recharger(); } catch (e) { setErreur(e.message); }
+  };
 
   const facturesFiltrees = factures.filter((f) => {
     const q = recherche.toLowerCase();
@@ -78,7 +89,7 @@ export default function Paiements() {
 
         {/* Onglets */}
         <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["factures", "Factures"], ["frais", "Grille tarifaire"]].map(([k, l]) => (
+          {[["factures", "Factures"], ["declarations", `Déclarations${declarations.length ? ` (${declarations.length})` : ""}`], ["frais", "Grille tarifaire"], ["mobile", "Paiement mobile"]].map(([k, l]) => (
             <button
               key={k}
               onClick={() => setOnglet(k)}
@@ -135,6 +146,17 @@ export default function Paiements() {
               </table>
             )}
           </Carte>
+        ) : onglet === "declarations" ? (
+          <PanneauDeclarations
+            declarations={declarations} devise={devise}
+            onValider={(id) => wrap(() => api.validerDeclaration(id))}
+            onRejeter={(id) => wrap(() => api.rejeterDeclaration(id))}
+          />
+        ) : onglet === "mobile" ? (
+          <PanneauMobile
+            infos={mobileInfos}
+            onSave={(v) => wrap(() => api.setPaiementMobile(ecoleId, v))}
+          />
         ) : (
           <PanneauFrais
             ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} devise={devise}
@@ -248,6 +270,72 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErre
         </label>
         <Bouton type="submit">+ Ajouter</Bouton>
       </form>
+    </Carte>
+  );
+}
+
+function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
+  const modeLabel = (m) => (api.MODES.find((x) => x[0] === m) || [])[1] || m;
+  if (declarations.length === 0) {
+    return <Carte className="p-8 text-sm text-navy-900/50">Aucune déclaration de paiement en attente.</Carte>;
+  }
+  return (
+    <Carte className="overflow-hidden">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-creme text-navy-900/50">
+          <tr>
+            <th className="px-5 py-3 font-medium">Élève</th>
+            <th className="px-5 py-3 font-medium">Facture</th>
+            <th className="px-5 py-3 font-medium">Mode</th>
+            <th className="px-5 py-3 font-medium">Référence</th>
+            <th className="px-5 py-3 text-right font-medium">Montant</th>
+            <th className="px-5 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {declarations.map((d) => (
+            <tr key={d.id} className="border-t border-navy-900/5">
+              <td className="px-5 py-3 font-medium text-navy-900">{d.eleves?.prenom} {d.eleves?.nom}</td>
+              <td className="px-5 py-3 font-mono text-xs text-navy-900/70">{d.factures?.numero || "—"}</td>
+              <td className="px-5 py-3">{modeLabel(d.mode)}</td>
+              <td className="px-5 py-3 font-mono text-xs">{d.reference_tx || "—"}</td>
+              <td className="px-5 py-3 text-right font-mono">{fmt(d.montant)} {devise}</td>
+              <td className="px-5 py-3">
+                <div className="flex justify-end gap-3 text-xs">
+                  <button onClick={() => onValider(d.id)} className="font-medium text-emerald-700 hover:underline">valider</button>
+                  <button onClick={() => onRejeter(d.id)} className="text-rose-500 hover:underline">rejeter</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
+        « Valider » enregistre l'encaissement et solde la facture automatiquement.
+      </p>
+    </Carte>
+  );
+}
+
+function PanneauMobile({ infos, onSave }) {
+  const [f, setF] = useState({ wave: "", orange_money: "", free_money: "" });
+  useEffect(() => { setF({ wave: infos.wave || "", orange_money: infos.orange_money || "", free_money: infos.free_money || "" }); }, [infos]);
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  return (
+    <Carte className="max-w-xl p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Coordonnées de paiement mobile</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Numéros affichés aux parents pour régler les factures. Ils paient depuis leur appli mobile money,
+        déclarent le paiement, puis vous validez dans l'onglet « Déclarations ».
+      </p>
+      <div className="space-y-3">
+        {api.MODES_MOBILE.map(([k, label]) => (
+          <Champ key={k} label={label} value={f[k]} onChange={(e) => maj(k, e.target.value)} placeholder="77 123 45 67" />
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
+      </div>
     </Carte>
   );
 }
