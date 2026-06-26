@@ -11,6 +11,7 @@ import Bienvenue from "@/pages/Bienvenue.jsx";
 import ParentLayout from "@/pages/ParentLayout.jsx";
 import ParentAccueil from "@/pages/ParentAccueil.jsx";
 import ParentEnfant from "@/pages/ParentEnfant.jsx";
+import ParentNotifications from "@/pages/ParentNotifications.jsx";
 import TableauDeBord from "@/pages/TableauDeBord.jsx";
 import Structure from "@/pages/Structure.jsx";
 import Eleves from "@/pages/Eleves.jsx";
@@ -75,6 +76,7 @@ export default function App() {
           >
             <Route index element={<ParentAccueil />} />
             <Route path="enfant/:id" element={<ParentEnfant />} />
+            <Route path="notifications" element={<ParentNotifications />} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}

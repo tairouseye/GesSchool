@@ -32,6 +32,36 @@ export async function enfantEmploi(eleveId) {
   return data ?? [];
 }
 
+// --- Notifications / alertes du parent (RLS « self ») ---
+export async function mesNotifications() {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function compterNonLues() {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("lu", false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function marquerLue(id) {
+  const { error } = await supabase.from("notifications").update({ lu: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function marquerToutesLues() {
+  const { error } = await supabase.from("notifications").update({ lu: true }).eq("lu", false);
+  if (error) throw error;
+}
+
 export async function lierParent(code) {
   const { data, error } = await supabase.rpc("lier_parent", { p_code: code });
   if (error) throw error;
