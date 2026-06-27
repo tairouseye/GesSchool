@@ -23,6 +23,7 @@ export default function Eleves() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
+  const [modaleImport, setModaleImport] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -69,9 +70,14 @@ export default function Eleves() {
         sousTitre={annee ? `Année ${annee.libelle} · ${eleves.length} élève(s)` : "Aucune année courante"}
         action={
           peutEditer && (
-            <Bouton onClick={() => setModale(true)} disabled={!annee}>
-              + Nouvel élève
-            </Bouton>
+            <div className="flex flex-wrap gap-2">
+              <Bouton variante="fantome" onClick={() => setModaleImport(true)} disabled={!annee}>
+                ↑ Importer (Excel)
+              </Bouton>
+              <Bouton onClick={() => setModale(true)} disabled={!annee}>
+                + Nouvel élève
+              </Bouton>
+            </div>
           )
         }
       />
@@ -185,7 +191,139 @@ export default function Eleves() {
           recharger();
         }}
       />
+
+      <ModaleImport
+        ouvert={modaleImport}
+        onFermer={() => setModaleImport(false)}
+        ecoleId={ecoleId}
+        sigle={ecole?.sigle}
+        annee={annee}
+        classes={classes}
+        onFini={() => { setModaleImport(false); recharger(); }}
+      />
     </>
+  );
+}
+
+const CHAMPS_IMPORT = [
+  ["prenom", "Prénom *", [/pr[ée]nom/i, /first/i]],
+  ["nom", "Nom *", [/^nom$/i, /last|famille/i]],
+  ["sexe", "Sexe", [/sexe|genre|sex/i]],
+  ["date_naissance", "Date de naissance", [/naiss|birth|n[ée]\(e\)/i]],
+  ["lieu_naissance", "Lieu de naissance", [/lieu/i]],
+  ["matricule", "Matricule", [/matric/i]],
+  ["classe", "Classe", [/classe|class/i]],
+];
+
+function deviner(entetes, patterns) {
+  for (const p of patterns) {
+    const h = entetes.find((e) => p.test(e));
+    if (h) return h;
+  }
+  return "";
+}
+
+function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini }) {
+  const [lignes, setLignes] = useState([]);
+  const [entetes, setEntetes] = useState([]);
+  const [mapping, setMapping] = useState({});
+  const [erreur, setErreur] = useState("");
+  const [enCours, setEnCours] = useState(false);
+  const [resultat, setResultat] = useState(null);
+
+  const reset = () => { setLignes([]); setEntetes([]); setMapping({}); setErreur(""); setResultat(null); };
+
+  async function lireFichier(file) {
+    setErreur(""); setResultat(null);
+    try {
+      const XLSX = await import("xlsx");
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      if (rows.length === 0) { setErreur("Fichier vide."); return; }
+      const cols = Object.keys(rows[0]);
+      setEntetes(cols);
+      setLignes(rows);
+      const map = {};
+      for (const [cle, , pats] of CHAMPS_IMPORT) map[cle] = deviner(cols, pats);
+      setMapping(map);
+    } catch (e) { setErreur("Lecture impossible : " + e.message); }
+  }
+
+  async function importer() {
+    if (!mapping.prenom || !mapping.nom) { setErreur("Associe au moins les colonnes Prénom et Nom."); return; }
+    setEnCours(true); setErreur("");
+    try {
+      const data = lignes.map((r) => {
+        const o = {};
+        for (const [cle] of CHAMPS_IMPORT) o[cle] = mapping[cle] ? r[mapping[cle]] : "";
+        return o;
+      });
+      const res = await api.importerEleves(ecoleId, annee?.id, data, classes, sigle);
+      setResultat(res);
+    } catch (e) { setErreur(e.message); }
+    finally { setEnCours(false); }
+  }
+
+  return (
+    <Modale ouvert={ouvert} onFermer={() => { reset(); onFermer(); }} titre="Importer des élèves (Excel/CSV)" large>
+      <div className="space-y-4">
+        <Alerte ton="erreur">{erreur}</Alerte>
+
+        {!resultat && (
+          <>
+            <div className="rounded-xl border border-dashed border-navy-900/20 p-4 text-sm">
+              <input type="file" accept=".xlsx,.xls,.csv"
+                onChange={(e) => e.target.files?.[0] && lireFichier(e.target.files[0])}
+                className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
+              <p className="mt-2 text-xs text-navy-900/40">
+                1ʳᵉ ligne = en-têtes. Colonnes reconnues : Prénom, Nom, Sexe, Date de naissance, Lieu, Matricule, Classe.
+              </p>
+            </div>
+
+            {entetes.length > 0 && (
+              <>
+                <p className="text-sm text-navy-900/60">{lignes.length} ligne(s) détectée(s). Vérifie l'association des colonnes :</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {CHAMPS_IMPORT.map(([cle, label]) => (
+                    <label key={cle} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-navy-900/70">{label}</span>
+                      <select value={mapping[cle] || ""} onChange={(e) => setMapping((s) => ({ ...s, [cle]: e.target.value }))}
+                        className="w-44 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-sm outline-none focus:border-or-500">
+                        <option value="">—</option>
+                        {entetes.map((h) => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-navy-900/40">
+                  La colonne « Classe » doit correspondre au libellé exact d'une classe existante pour inscrire l'élève.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Bouton type="button" variante="fantome" onClick={() => { reset(); onFermer(); }}>Annuler</Bouton>
+                  <Bouton type="button" onClick={importer} disabled={enCours}>
+                    {enCours ? "Import en cours…" : `Importer ${lignes.length} élève(s)`}
+                  </Bouton>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {resultat && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              ✅ {resultat.crees} élève(s) créé(s){resultat.inscrits ? ` · ${resultat.inscrits} inscrit(s)` : ""}
+              {resultat.ignores ? ` · ${resultat.ignores} ignoré(s) (prénom/nom manquant)` : ""}.
+            </div>
+            <div className="flex justify-end">
+              <Bouton onClick={() => { reset(); onFini(); }}>Terminer</Bouton>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modale>
   );
 }
 

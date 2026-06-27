@@ -19,6 +19,55 @@ export async function genererMatricule(ecoleId, sigle) {
   return `${code}-${new Date().getFullYear()}-${seq}`;
 }
 
+// Normalise le sexe importé.
+function normSexe(v) {
+  const s = (v || "").toString().trim().toLowerCase();
+  if (["m", "masculin", "garçon", "garcon", "homme"].includes(s)) return "M";
+  if (["f", "féminin", "feminin", "fille", "femme"].includes(s)) return "F";
+  return null;
+}
+
+// Normalise une date importée (Date Excel, "jj/mm/aaaa" ou "aaaa-mm-jj") → ISO.
+function normDate(v) {
+  if (!v) return null;
+  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+  const s = v.toString().trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
+  if (m) {
+    const a = m[3].length === 2 ? `20${m[3]}` : m[3];
+    return `${a}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  }
+  return null;
+}
+
+// Import en masse : crée les élèves (+ inscriptions si la classe correspond).
+// lignes: [{ prenom, nom, sexe, date_naissance, lieu_naissance, matricule, classe }]
+export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle) {
+  const parClasse = {};
+  for (const c of classes) parClasse[(c.libelle || "").trim().toLowerCase()] = c.id;
+  let crees = 0, ignores = 0, inscrits = 0;
+  for (const r of lignes) {
+    const prenom = (r.prenom || "").toString().trim();
+    const nom = (r.nom || "").toString().trim();
+    if (!prenom || !nom) { ignores++; continue; }
+    let matricule = (r.matricule || "").toString().trim();
+    if (!matricule) { try { matricule = await genererMatricule(ecoleId, sigle); } catch { matricule = null; } }
+    const eleve = await creerEleve(ecoleId, {
+      matricule: matricule || null,
+      prenom, nom,
+      sexe: normSexe(r.sexe),
+      date_naissance: normDate(r.date_naissance),
+      lieu_naissance: (r.lieu_naissance || "").toString().trim() || null,
+    });
+    crees++;
+    const cid = r.classe ? parClasse[r.classe.toString().trim().toLowerCase()] : null;
+    if (cid && anneeId) { try { await inscrire(ecoleId, eleve.id, cid, anneeId); inscrits++; } catch { /* ignore */ } }
+  }
+  return { crees, ignores, inscrits };
+}
+
 export async function getEleves(ecoleId) {
   const { data, error } = await supabase
     .from("eleves")
