@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
@@ -10,7 +10,7 @@ import { moduleActif } from "@/lib/modules.js";
 // (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
 // ceux qui ont accès à plusieurs ; sidebar fixe en desktop, tiroir en mobile.
 export default function Layout() {
-  const { ecole, profil, roles, deconnexion, estPromoteur, modulesActifs } = useAuth();
+  const { ecole, profil, roles, deconnexion, estPromoteur, modulesActifs, estSuperAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
@@ -110,7 +110,12 @@ export default function Layout() {
         <div className="border-t border-navy-800 px-5 py-4">
           <p className="truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
           <p className="truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
-          <button onClick={deconnexion} className="mt-3 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
+          {estSuperAdmin && (
+            <Link to="/super-admin" className="mt-3 block rounded-lg bg-or-500/20 px-3 py-1.5 text-center text-xs font-medium text-or-500 hover:bg-or-500/30">
+              🛠️ Console super-admin
+            </Link>
+          )}
+          <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>
           <p className="mt-3 text-center font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>

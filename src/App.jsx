@@ -1,6 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent, Garde, GardePromoteur } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
 import { espaceParDefaut } from "@/lib/espaces.js";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
@@ -32,6 +32,7 @@ import Pilotage from "@/pages/Pilotage.jsx";
 import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
 import Fournitures from "@/pages/Fournitures.jsx";
 import Parametres from "@/pages/Parametres.jsx";
+import SuperAdmin from "@/pages/SuperAdmin.jsx";
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
@@ -68,6 +69,9 @@ export default function App() {
               </RouteProtegee>
             }
           />
+
+          {/* Console super-admin (propriétaire SaaS) */}
+          <Route path="/super-admin" element={<GardeSuper><SuperAdmin /></GardeSuper>} />
 
           {/* Espace parent */}
           <Route

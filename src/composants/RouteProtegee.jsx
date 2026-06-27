@@ -46,6 +46,15 @@ export function Garde({ cle, children }) {
   return children;
 }
 
+// Garde de la console SUPER-ADMIN (propriétaire SaaS).
+export function GardeSuper({ children }) {
+  const { estConnecte, estSuperAdmin, chargement } = useAuth();
+  if (chargement) return <Ecran chargement />;
+  if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (!estSuperAdmin) return <Navigate to="/" replace />;
+  return children;
+}
+
 // Garde de l'espace PILOTAGE (réservé aux promoteurs / propriétaires d'école).
 export function GardePromoteur({ children }) {
   const { estPromoteur } = useAuth();

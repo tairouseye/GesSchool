@@ -108,6 +108,7 @@ export function AuthProvider({ children }) {
     estConnecte: !!session,
     aProfil: !!profil,
     estParent: roles.includes("parent"),
+    estSuperAdmin: roles.includes("super_admin"),
     chargement,
     aRole: (r) => roles.includes(r),
     connexion,
