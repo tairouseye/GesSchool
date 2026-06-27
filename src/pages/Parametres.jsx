@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule } from "@/lib/academique.js";
-import { MODULES, tousLesModules } from "@/lib/modules.js";
+import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
+import { estRoleComplet } from "@/lib/permissions.js";
+import * as relancesApi from "@/lib/relances.js";
 
 const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD"];
 
 export default function Parametres() {
-  const { ecoleId, ecole, rafraichirProfil } = useAuth();
+  const { ecoleId, ecole, roles, modulesActifs, rafraichirProfil } = useAuth();
   const [erreur, setErreur] = useState("");
   const [info, setInfo] = useState("");
 
@@ -27,9 +29,148 @@ export default function Parametres() {
 
         <ProfilEcole ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} />
         <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
+        {moduleActif(modulesActifs, "recouvrement") && (
+          <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
+        )}
         <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
       </div>
     </>
+  );
+}
+
+const MODELE_DEFAUT =
+  "Rappel {ecole} : {montant} {devise} restent dus pour {eleve} (échéance {echeance}). Merci de régulariser.";
+
+function RelancesConfig({ ecoleId, estGestion }) {
+  const [regles, setRegles] = useState([]);
+  const [edit, setEdit] = useState(null); // règle en cours d'édition / création
+  const [erreur, setErreur] = useState("");
+  const [info, setInfo] = useState("");
+
+  const recharger = useCallback(async () => {
+    setErreur("");
+    try { setRegles(await relancesApi.getRegles(ecoleId)); }
+    catch (e) { setErreur(e.message); }
+  }, [ecoleId]);
+
+  useEffect(() => { recharger(); }, [recharger]);
+
+  const wrap = async (fn, msg) => {
+    setErreur(""); setInfo("");
+    try { await fn(); await recharger(); if (msg) setInfo(msg); }
+    catch (e) { setErreur(e.message); }
+  };
+
+  const lancerTout = () =>
+    wrap(async () => {
+      const n = await relancesApi.lancerTout();
+      setInfo(`${n} relance(s) envoyée(s).`);
+    });
+
+  return (
+    <Carte className="p-6">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold text-navy-900">Relances automatiques</h3>
+        <Bouton variante="fantome" onClick={() => setEdit({ libelle: "", jours: 1, modele: MODELE_DEFAUT, actif: true })}>
+          + Palier
+        </Bouton>
+      </div>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Paliers déclenchés chaque jour pour les scolarités impayées (J = jours après l'échéance,
+        négatif = avant). Le message part en notification + push aux parents. Variables :
+        <span className="font-mono"> {relancesApi.VARIABLES_MODELE.join(" ")}</span>
+      </p>
+
+      <Alerte ton="erreur">{erreur}</Alerte>
+      {info && <Alerte ton="succes">{info}</Alerte>}
+
+      <div className="mt-3 space-y-2">
+        {regles.length === 0 && (
+          <p className="rounded-xl border border-dashed border-navy-900/15 px-4 py-6 text-center text-sm text-navy-900/40">
+            Aucun palier. Ajoute un premier rappel pour activer les relances.
+          </p>
+        )}
+        {regles.map((r) => (
+          <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-navy-900/10 px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate font-medium text-navy-900">
+                {r.libelle} <span className="ml-1 font-mono text-xs text-navy-900/50">J{r.jours >= 0 ? "+" : ""}{r.jours}</span>
+              </p>
+              <p className="truncate text-xs text-navy-900/40">{r.modele}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <label className="flex items-center gap-1.5 text-xs text-navy-900/60">
+                <input type="checkbox" checked={r.actif}
+                  onChange={() => wrap(() => relancesApi.majRegle(r.id, { actif: !r.actif }))} />
+                actif
+              </label>
+              <button onClick={() => setEdit(r)} className="text-xs font-medium text-navy-700 hover:text-or-500">éditer</button>
+              <button onClick={() => confirm("Supprimer ce palier ?") && wrap(() => relancesApi.supprimerRegle(r.id), "Palier supprimé.")}
+                className="text-xs font-medium text-rose-600 hover:text-rose-700">suppr.</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {estGestion && regles.some((r) => r.actif) && (
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-creme px-4 py-3">
+          <span className="text-xs text-navy-900/50">Forcer l'envoi de tous les rappels dus maintenant.</span>
+          <Bouton variante="or" onClick={lancerTout}>Relancer tous les retards</Bouton>
+        </div>
+      )}
+
+      <ModaleRegle
+        regle={edit}
+        onFermer={() => setEdit(null)}
+        onValider={(vals) =>
+          wrap(async () => {
+            if (edit?.id) await relancesApi.majRegle(edit.id, vals);
+            else await relancesApi.creerRegle(ecoleId, vals);
+            setEdit(null);
+          }, "Palier enregistré ✓")
+        }
+      />
+    </Carte>
+  );
+}
+
+function ModaleRegle({ regle, onFermer, onValider }) {
+  const [f, setF] = useState({ libelle: "", jours: 1, modele: MODELE_DEFAUT, actif: true });
+  useEffect(() => {
+    if (!regle) return;
+    setF({
+      libelle: regle.libelle ?? "",
+      jours: regle.jours ?? 1,
+      modele: regle.modele ?? MODELE_DEFAUT,
+      actif: regle.actif ?? true,
+    });
+  }, [regle]);
+  if (!regle) return null;
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const valide = f.libelle.trim() && f.modele.trim();
+
+  return (
+    <Modale ouvert={!!regle} onFermer={onFermer} titre={regle?.id ? "Modifier le palier" : "Nouveau palier"}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Champ label="Libellé" value={f.libelle} onChange={(e) => maj("libelle", e.target.value)} placeholder="1er rappel" />
+          <Champ label="Jours après échéance" type="number" value={f.jours}
+            onChange={(e) => maj("jours", parseInt(e.target.value, 10) || 0)} />
+        </div>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Message</span>
+          <textarea rows={4} value={f.modele} onChange={(e) => maj("modele", e.target.value)}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20" />
+        </label>
+        <p className="text-xs text-navy-900/40">
+          Variables : <span className="font-mono">{relancesApi.VARIABLES_MODELE.join(" ")}</span>
+        </p>
+        <div className="flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton onClick={() => valide && onValider(f)} disabled={!valide}>Enregistrer</Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }
 
