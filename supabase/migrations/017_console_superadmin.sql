@@ -17,6 +17,27 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+--  Pré-requis : supprime toute version existante des RPC admin_* (peu
+--  importe la signature). Nécessaire car on ne peut pas « create or
+--  replace » une fonction dont on change le type de retour. Sans données
+--  perdues : ce sont des fonctions, pas des tables.
+-- ---------------------------------------------------------------------
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname in ('admin_ecoles','admin_set_abonnement',
+                        'admin_set_statut','admin_set_modules')
+  loop
+    execute 'drop function ' || r.sig::text || ';';
+  end loop;
+end $$;
+
+-- ---------------------------------------------------------------------
 --  Liste consolidée des écoles clientes (+ abonnement courant + modules)
 --  Contrat de retour attendu par SuperAdmin.jsx :
 --    ecole_id, nom, sigle, effectif, plan_code, plan_libelle,
