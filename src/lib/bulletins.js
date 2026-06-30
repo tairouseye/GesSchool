@@ -119,6 +119,40 @@ async function getCoefsMatiere(ecoleId, classeId, anneeId) {
   return map;
 }
 
+// Publie (persiste) les bulletins calculés → visibles par les parents.
+export async function publierBulletins(ecoleId, classeId, periodeId, resultats) {
+  let n = 0;
+  for (const r of resultats.eleves) {
+    const { data: b, error } = await supabase
+      .from("bulletins")
+      .upsert({
+        ecole_id: ecoleId,
+        eleve_id: r.eleve.id,
+        classe_id: classeId,
+        periode_id: periodeId,
+        moyenne_generale: r.moyenne,
+        rang: r.rang,
+        effectif: resultats.effectif,
+        mention: r.mention,
+        genere_le: new Date().toISOString(),
+      }, { onConflict: "eleve_id,periode_id" })
+      .select("id")
+      .single();
+    if (error) throw error;
+
+    await supabase.from("bulletin_lignes").delete().eq("bulletin_id", b.id);
+    const lignes = r.lignes.map((l) => ({
+      ecole_id: ecoleId, bulletin_id: b.id, matiere_id: l.matiere_id, moyenne: l.moyenne, coefficient: l.coef,
+    }));
+    if (lignes.length) {
+      const { error: e2 } = await supabase.from("bulletin_lignes").insert(lignes);
+      if (e2) throw e2;
+    }
+    n++;
+  }
+  return n;
+}
+
 export function mention(moy) {
   if (moy == null) return "—";
   if (moy >= 16) return "Très Bien";

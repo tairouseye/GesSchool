@@ -19,6 +19,19 @@ export default function Bulletins() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
   const [bulletinActif, setBulletinActif] = useState(null);
+  const [publication, setPublication] = useState("");
+  const [enPublication, setEnPublication] = useState(false);
+
+  async function publier() {
+    if (!resultats) return;
+    setErreur(""); setPublication("");
+    setEnPublication(true);
+    try {
+      const n = await api.publierBulletins(ecoleId, classeId, periodeId, resultats);
+      setPublication(`${n} bulletin(s) publié(s) — visibles par les parents.`);
+    } catch (e) { setErreur(e.message); }
+    finally { setEnPublication(false); }
+  }
 
   useEffect(() => {
     (async () => {
@@ -72,11 +85,20 @@ export default function Bulletins() {
           </Bouton>
         </div>
 
+        {publication && <Alerte ton="succes">{publication}</Alerte>}
+
         {resultats && (
           <Carte className="overflow-hidden">
-            <div className="border-b border-navy-900/10 px-6 py-3 text-sm text-navy-900/60">
-              {classe?.libelle} · {periode?.libelle} · {resultats.effectif} élève(s) ·{" "}
-              {resultats.evaluations.length} évaluation(s)
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 px-6 py-3 text-sm text-navy-900/60">
+              <span>
+                {classe?.libelle} · {periode?.libelle} · {resultats.effectif} élève(s) ·{" "}
+                {resultats.evaluations.length} évaluation(s)
+              </span>
+              {resultats.eleves.length > 0 && (
+                <Bouton variante="or" onClick={publier} disabled={enPublication}>
+                  {enPublication ? "Publication…" : "📤 Publier aux parents"}
+                </Bouton>
+              )}
             </div>
             {resultats.eleves.length === 0 ? (
               <p className="p-6 text-sm text-navy-900/40">Aucun élève inscrit.</p>

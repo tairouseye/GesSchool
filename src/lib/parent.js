@@ -31,6 +31,18 @@ export async function justifierAbsenceParent(absenceId, texte) {
   if (error) throw error;
 }
 
+export async function enfantBulletins(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_bulletins", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function enfantBulletinLignes(bulletinId) {
+  const { data, error } = await supabase.rpc("enfant_bulletin_lignes", { p_bulletin: bulletinId });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function enfantEmploi(eleveId) {
   const { data, error } = await supabase.rpc("enfant_emploi", { p_eleve: eleveId });
   if (error) throw error;

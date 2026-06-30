@@ -3,9 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, enfantDeclarations, justifierAbsenceParent,
+  enfantBulletins, enfantBulletinLignes,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
+import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -24,17 +26,18 @@ export default function ParentEnfant() {
   const [infos, setInfos] = useState({});
   const [declarations, setDeclarations] = useState([]);
   const [cahier, setCahier] = useState([]);
+  const [bulletins, setBulletins] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
   const charger = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl, cah] = await Promise.all([
+      const [n, f, a, e, four, inf, decl, cah, bul] = await Promise.all([
         enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
-        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id),
+        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id),
       ]);
       setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
-      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah);
+      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul);
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
   }, [id]);
@@ -47,7 +50,7 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -59,6 +62,8 @@ export default function ParentEnfant() {
         <p className="text-sm text-navy-900/50">Chargement…</p>
       ) : onglet === "notes" ? (
         <Notes notes={notes} />
+      ) : onglet === "bulletins" ? (
+        <Bulletins bulletins={bulletins} onErreur={setErreur} />
       ) : onglet === "cahier" ? (
         <Cahier entrees={cahier} />
       ) : onglet === "emploi" ? (
@@ -148,6 +153,104 @@ function Emploi({ creneaux }) {
           </Carte>
         );
       })}
+    </div>
+  );
+}
+
+function Bulletins({ bulletins, onErreur }) {
+  const [sel, setSel] = useState(null);
+  const [lignes, setLignes] = useState([]);
+
+  async function ouvrir(b) {
+    try { setLignes(await enfantBulletinLignes(b.id)); setSel(b); }
+    catch (e) { onErreur(e.message); }
+  }
+
+  if (bulletins.length === 0) {
+    return <Carte className="p-6 text-sm text-navy-900/40">Aucun bulletin publié pour le moment.</Carte>;
+  }
+  return (
+    <div className="space-y-2">
+      {bulletins.map((b) => (
+        <Carte key={b.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="font-display font-semibold text-navy-900">{b.periode}</p>
+            <p className="text-xs text-navy-900/50">
+              Moyenne {b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}/20
+              {b.rang ? ` · Rang ${b.rang}${b.effectif ? "/" + b.effectif : ""}` : ""} · {b.mention || "—"}
+            </p>
+          </div>
+          <Bouton variante="fantome" onClick={() => ouvrir(b)}>Voir / Imprimer</Bouton>
+        </Carte>
+      ))}
+
+      <Modale ouvert={!!sel} onFermer={() => setSel(null)} titre="Bulletin" large>
+        {sel && (
+          <>
+            <BulletinParent b={sel} lignes={lignes} />
+            <div className="no-print mt-5 flex justify-end gap-2">
+              <Bouton variante="fantome" onClick={() => setSel(null)}>Fermer</Bouton>
+              <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+            </div>
+          </>
+        )}
+      </Modale>
+    </div>
+  );
+}
+
+function BulletinParent({ b, lignes }) {
+  const totalCoef = lignes.reduce((s, l) => s + Number(l.coefficient || 0), 0);
+  return (
+    <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
+      <Cachet size={200} sigle={b.sigle || "GS"} className="pointer-events-none absolute -right-8 -top-8 text-or-500/10" />
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="font-display text-xl font-bold text-navy-900">Bulletin scolaire</p>
+          <p className="text-sm text-navy-900/50">{b.ecole} — {b.periode}{b.annee ? ` · ${b.annee}` : ""}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-lg font-semibold text-navy-900">{b.eleve_prenom} {b.eleve_nom}</p>
+          <p className="text-sm text-navy-900/50">Classe {b.classe}</p>
+          <p className="font-mono text-xs text-navy-900/40">{b.matricule}</p>
+        </div>
+      </div>
+
+      <table className="mt-6 w-full text-left text-sm">
+        <thead className="border-b border-navy-900/15 text-navy-900/50">
+          <tr><th className="py-2 font-medium">Matière</th><th className="py-2 text-center font-medium">Moyenne</th><th className="py-2 text-center font-medium">Coef.</th><th className="py-2 text-right font-medium">Pts</th></tr>
+        </thead>
+        <tbody>
+          {lignes.map((l, i) => (
+            <tr key={i} className="border-b border-navy-900/5">
+              <td className="py-2 font-medium text-navy-900">{l.matiere}</td>
+              <td className="py-2 text-center font-mono">{l.moyenne != null ? Number(l.moyenne).toFixed(2) : "—"}</td>
+              <td className="py-2 text-center font-mono text-navy-900/60">{l.coefficient}</td>
+              <td className="py-2 text-right font-mono text-navy-900/60">{l.moyenne != null ? (Number(l.moyenne) * Number(l.coefficient)).toFixed(2) : "—"}</td>
+            </tr>
+          ))}
+          {lignes.length === 0 && <tr><td colSpan={4} className="py-3 text-navy-900/40">—</td></tr>}
+        </tbody>
+      </table>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl bg-navy-900 p-4 text-creme">
+          <p className="text-xs text-creme/60">Moyenne générale</p>
+          <p className="font-display text-2xl font-bold">{b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}<span className="text-sm font-normal">/20</span></p>
+        </div>
+        <div className="rounded-xl bg-or-500 p-4 text-navy-900">
+          <p className="text-xs text-navy-900/60">Rang</p>
+          <p className="font-display text-2xl font-bold">{b.rang ?? "—"}{b.effectif ? <span className="text-sm font-normal">/{b.effectif}</span> : ""}</p>
+        </div>
+        <div className="rounded-xl border border-navy-900/15 p-4">
+          <p className="text-xs text-navy-900/50">Mention</p>
+          <p className="font-display text-xl font-bold text-navy-900">{b.mention || "—"}</p>
+        </div>
+      </div>
+      <div className="mt-6 flex items-end justify-between text-xs text-navy-900/40">
+        <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
+        <span>{b.ecole} · {b.sigle}</span>
+      </div>
     </div>
   );
 }
