@@ -15,6 +15,13 @@ export default function Enseignants() {
   const [matieres, setMatieres] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null); // null | 'new' | enseignant
+  const [codes, setCodes] = useState({}); // enseignant_id -> code d'accès
+
+  async function genererCode(id) {
+    setErreur("");
+    try { const code = await api.genererCodeEnseignant(id); setCodes((s) => ({ ...s, [id]: code })); }
+    catch (e) { setErreur(e.message); }
+  }
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -73,6 +80,7 @@ export default function Enseignants() {
                     <th className="px-6 py-3 font-medium">Enseignant</th>
                     <th className="px-6 py-3 font-medium">Spécialité</th>
                     <th className="px-6 py-3 font-medium">Contact</th>
+                    <th className="px-6 py-3 font-medium">Compte</th>
                     <th className="px-6 py-3 text-right font-medium"></th>
                   </tr>
                 </thead>
@@ -82,6 +90,15 @@ export default function Enseignants() {
                       <td className="px-6 py-3 font-medium text-navy-900">{e.prenom} {e.nom}</td>
                       <td className="px-6 py-3 text-navy-900/70">{e.specialite || "—"}</td>
                       <td className="px-6 py-3 text-navy-900/60">{e.telephone || e.email || "—"}</td>
+                      <td className="px-6 py-3">
+                        {e.profil_id ? (
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">✓ compte lié</span>
+                        ) : codes[e.id] ? (
+                          <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codes[e.id]}</span>
+                        ) : (
+                          <button onClick={() => genererCode(e.id)} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button>
+                        )}
+                      </td>
                       <td className="px-6 py-3 text-right">
                         <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
                         <button onClick={() => wrap(() => api.supprimerEnseignant(e.id))} className="ml-3 text-xs text-rose-500 hover:underline">supprimer</button>

@@ -35,6 +35,21 @@ export async function supprimerEnseignant(id) {
   if (error) throw error;
 }
 
+// --- Compte enseignant (liaison par code, comme l'espace parent) ---
+// Côté admin : génère/renouvelle le code d'accès d'un enseignant.
+export async function genererCodeEnseignant(enseignantId) {
+  const { data, error } = await supabase.rpc("generer_code_enseignant", { p_enseignant: enseignantId });
+  if (error) throw error;
+  return data;
+}
+
+// Côté enseignant : relie son compte via le code reçu.
+export async function lierEnseignant(code) {
+  const { data, error } = await supabase.rpc("lier_enseignant", { p_code: code });
+  if (error) throw error;
+  return data;
+}
+
 // --- Affectations ---
 export async function getAffectations(ecoleId, anneeId) {
   let q = supabase

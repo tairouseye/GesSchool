@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { lierParent } from "@/lib/parent.js";
+import { lierEnseignant } from "@/lib/enseignants.js";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 
@@ -10,7 +11,7 @@ import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 export default function Bienvenue() {
   const { utilisateur, aProfil, estParent, deconnexion, rafraichirProfil } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState(null); // null | 'parent'
+  const [mode, setMode] = useState(null); // null | 'parent' | 'enseignant'
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
   const [enCours, setEnCours] = useState(false);
@@ -24,15 +25,23 @@ export default function Bienvenue() {
     setErreur("");
     setEnCours(true);
     try {
-      await lierParent(code.trim());
-      await rafraichirProfil();
-      navigate("/parent", { replace: true });
+      if (mode === "enseignant") {
+        await lierEnseignant(code.trim());
+        await rafraichirProfil();
+        navigate("/", { replace: true });
+      } else {
+        await lierParent(code.trim());
+        await rafraichirProfil();
+        navigate("/parent", { replace: true });
+      }
     } catch (err) {
       setErreur(/invalide/i.test(err.message) ? "Code invalide. Vérifiez auprès de l'établissement." : err.message);
     } finally {
       setEnCours(false);
     }
   }
+
+  const estCode = mode === "parent" || mode === "enseignant";
 
   return (
     <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
@@ -43,11 +52,13 @@ export default function Bienvenue() {
           <p className="text-sm text-creme/60">{utilisateur?.email}</p>
         </div>
 
-        {mode === "parent" ? (
+        {estCode ? (
           <div className="rounded-2xl bg-white p-7 shadow-xl">
-            <h2 className="font-display text-lg font-semibold text-navy-900">Espace parent</h2>
+            <h2 className="font-display text-lg font-semibold text-navy-900">
+              {mode === "enseignant" ? "Espace enseignant" : "Espace parent"}
+            </h2>
             <p className="mt-1 text-sm text-navy-900/60">
-              Saisissez le <strong>code de liaison</strong> communiqué par l'établissement de votre enfant.
+              Saisissez le <strong>code de liaison</strong> communiqué par {mode === "enseignant" ? "votre établissement" : "l'établissement de votre enfant"}.
             </p>
             <form onSubmit={lier} className="mt-4 space-y-4">
               <Champ
@@ -67,7 +78,7 @@ export default function Bienvenue() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <button
               onClick={() => navigate("/onboarding")}
               className="rounded-2xl bg-white p-6 text-left shadow-xl transition hover:ring-2 hover:ring-or-500"
@@ -75,6 +86,14 @@ export default function Bienvenue() {
               <div className="text-2xl">🏫</div>
               <p className="mt-3 font-display text-lg font-bold text-navy-900">Je gère une école</p>
               <p className="mt-1 text-sm text-navy-900/50">Créer mon établissement et son espace d'administration.</p>
+            </button>
+            <button
+              onClick={() => setMode("enseignant")}
+              className="rounded-2xl bg-white p-6 text-left shadow-xl transition hover:ring-2 hover:ring-or-500"
+            >
+              <div className="text-2xl">🧑‍🏫</div>
+              <p className="mt-3 font-display text-lg font-bold text-navy-900">Je suis un enseignant</p>
+              <p className="mt-1 text-sm text-navy-900/50">Gérer ma classe et mes matières avec un code de liaison.</p>
             </button>
             <button
               onClick={() => setMode("parent")}
