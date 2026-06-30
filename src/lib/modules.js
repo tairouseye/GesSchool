@@ -4,7 +4,7 @@
 export const MODULES = [
   { id: "scolarite", label: "Scolarité", desc: "Élèves, inscriptions, structure, documents", cles: ["eleves", "structure", "certificats"] },
   { id: "evaluations", label: "Évaluations", desc: "Notes & bulletins", cles: ["notes", "bulletins"] },
-  { id: "vie_scolaire", label: "Vie scolaire", desc: "Appel, cahier de textes, absences, emploi du temps, fournitures", cles: ["appel", "cahier", "vie_scolaire", "emploi", "fournitures"] },
+  { id: "vie_scolaire", label: "Vie scolaire", desc: "Appel, cahier de textes, absences, emploi du temps, fournitures", cles: ["appel", "cahier", "progression", "vie_scolaire", "emploi", "fournitures"] },
   { id: "finances", label: "Finances", desc: "Paiements, recouvrement, comptabilité", cles: ["paiements", "recouvrement", "comptabilite"] },
   { id: "rh", label: "RH & paie", desc: "Personnel, contrats, paie, enseignants", cles: ["rh", "enseignants"] },
   { id: "communication", label: "Communication", desc: "Annonces & messagerie", cles: ["annonces", "messagerie"] },

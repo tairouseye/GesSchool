@@ -26,6 +26,7 @@ export const ESPACES = [
       { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
       { to: "/appel", label: "Appel", icone: "✅", cle: "appel" },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier" },
+      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression" },
       { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
       { to: "/structure", label: "Structure", icone: "🏫", cle: "structure" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },

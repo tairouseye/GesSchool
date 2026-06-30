@@ -34,6 +34,7 @@ import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
 import Fournitures from "@/pages/Fournitures.jsx";
 import Appel from "@/pages/Appel.jsx";
 import CahierTextes from "@/pages/CahierTextes.jsx";
+import Progression from "@/pages/Progression.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import Certificats from "@/pages/Certificats.jsx";
 import SuperAdmin from "@/pages/SuperAdmin.jsx";
@@ -114,6 +115,7 @@ export default function App() {
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
             <Route path="/appel" element={<Garde cle="appel"><Appel /></Garde>} />
             <Route path="/cahier-textes" element={<Garde cle="cahier"><CahierTextes /></Garde>} />
+            <Route path="/progression" element={<Garde cle="progression"><Progression /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

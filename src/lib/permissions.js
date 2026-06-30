@@ -23,6 +23,7 @@ const ACCES = {
   _pedagogie: ["enseignant", "surveillant"], // accueil Pédagogie
   appel: ["enseignant", "surveillant"],
   cahier: ["enseignant", "surveillant"],
+  progression: ["enseignant"],
   _gestion: ["comptable"], // accueil Gestion
   eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
   notes: ["enseignant"],
