@@ -136,29 +136,90 @@ export default function Bulletins() {
         )}
       </div>
 
-      <Modale
-        ouvert={!!bulletinActif}
+      <ModaleBulletin
+        resultat={bulletinActif}
+        ecole={ecole} classe={classe} periode={periode} annee={annee}
+        ecoleId={ecoleId} classeId={classeId} periodeId={periodeId} effectif={resultats?.effectif}
         onFermer={() => setBulletinActif(null)}
-        titre="Bulletin"
-        large
-      >
-        {bulletinActif && (
-          <>
-            <BulletinImprimable
-              ecole={ecole}
-              classe={classe}
-              periode={periode}
-              annee={annee}
-              resultat={bulletinActif}
-            />
-            <div className="no-print mt-5 flex justify-end gap-2">
-              <Bouton variante="fantome" onClick={() => setBulletinActif(null)}>Fermer</Bouton>
-              <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
-            </div>
-          </>
-        )}
-      </Modale>
+        onErreur={setErreur}
+      />
     </>
+  );
+}
+
+const DECISIONS = [
+  "", "Admis(e) en classe supérieure", "Passage en classe supérieure", "Redouble la classe",
+  "Félicitations", "Encouragements", "Tableau d'honneur", "Avertissement (travail)", "Blâme (conduite)",
+];
+
+function ModaleBulletin({ resultat, ecole, classe, periode, annee, ecoleId, classeId, periodeId, effectif, onFermer, onErreur }) {
+  const [appGen, setAppGen] = useState("");
+  const [decision, setDecision] = useState("");
+  const [appMat, setAppMat] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    if (resultat) { setAppGen(""); setDecision(""); setAppMat({}); setMsg(""); }
+  }, [resultat]);
+
+  if (!resultat) return null;
+  const majMat = (id, v) => setAppMat((s) => ({ ...s, [id]: v }));
+
+  async function publier() {
+    setSaving(true); setMsg(""); onErreur("");
+    try {
+      await api.publierUnBulletin(ecoleId, classeId, periodeId, resultat, {
+        effectif, appreciation_generale: appGen, decision, appreciations: appMat,
+      });
+      setMsg("Bulletin publié ✓ — visible par le parent.");
+    } catch (e) { onErreur(e.message); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <Modale ouvert={!!resultat} onFermer={onFermer} titre={`Bulletin — ${resultat.eleve.prenom} ${resultat.eleve.nom}`} large>
+      {/* Saisie des appréciations (non imprimée) */}
+      <div className="no-print mb-5 space-y-3 rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+        <p className="text-sm font-medium text-navy-900/70">Appréciations par matière</p>
+        <div className="space-y-1.5">
+          {resultat.lignes.map((l) => (
+            <div key={l.matiere_id} className="flex items-center gap-2">
+              <span className="w-40 shrink-0 text-sm text-navy-900/70">{l.matiere}</span>
+              <input value={appMat[l.matiere_id] || ""} onChange={(e) => majMat(l.matiere_id, e.target.value)}
+                placeholder="Appréciation…"
+                className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-1.5 text-sm outline-none focus:border-or-500" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Appréciation générale</span>
+            <textarea value={appGen} onChange={(e) => setAppGen(e.target.value)} rows={2}
+              placeholder="Conseil de classe…"
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Décision du conseil</span>
+            <select value={decision} onChange={(e) => setDecision(e.target.value)}
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              {DECISIONS.map((d) => <option key={d} value={d}>{d || "—"}</option>)}
+            </select>
+          </label>
+        </div>
+        {msg && <p className="text-sm text-emerald-600">{msg}</p>}
+        <div className="flex justify-end gap-2">
+          <Bouton variante="or" onClick={publier} disabled={saving}>{saving ? "Publication…" : "📤 Enregistrer & publier"}</Bouton>
+        </div>
+      </div>
+
+      <BulletinImprimable ecole={ecole} classe={classe} periode={periode} annee={annee}
+        resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} />
+      <div className="no-print mt-5 flex justify-end gap-2">
+        <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
+        <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+      </div>
+    </Modale>
   );
 }
 
@@ -178,7 +239,7 @@ function Sel({ label, value, onChange, options }) {
 }
 
 // Document bulletin (réutilisé pour l'aperçu ET l'impression PDF).
-function BulletinImprimable({ ecole, classe, periode, annee, resultat }) {
+function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {} }) {
   const totalCoef = resultat.lignes.reduce((s, l) => s + l.coef, 0);
   return (
     <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
@@ -202,7 +263,8 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat }) {
             <th className="py-2 font-medium">Matière</th>
             <th className="py-2 text-center font-medium">Moyenne</th>
             <th className="py-2 text-center font-medium">Coef.</th>
-            <th className="py-2 text-right font-medium">Pts</th>
+            <th className="py-2 text-center font-medium">Pts</th>
+            <th className="py-2 font-medium">Appréciation</th>
           </tr>
         </thead>
         <tbody>
@@ -211,13 +273,14 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat }) {
               <td className="py-2 font-medium text-navy-900">{l.matiere}</td>
               <td className="py-2 text-center font-mono">{l.moyenne != null ? l.moyenne.toFixed(2) : "—"}</td>
               <td className="py-2 text-center font-mono text-navy-900/60">{l.coef}</td>
-              <td className="py-2 text-right font-mono text-navy-900/60">
+              <td className="py-2 text-center font-mono text-navy-900/60">
                 {l.moyenne != null ? (l.moyenne * l.coef).toFixed(2) : "—"}
               </td>
+              <td className="py-2 text-xs text-navy-900/70">{appMat[l.matiere_id] || ""}</td>
             </tr>
           ))}
           {resultat.lignes.length === 0 && (
-            <tr><td colSpan={4} className="py-3 text-navy-900/40">Aucune note saisie.</td></tr>
+            <tr><td colSpan={5} className="py-3 text-navy-900/40">Aucune note saisie.</td></tr>
           )}
         </tbody>
       </table>
@@ -238,6 +301,13 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat }) {
           <p className="font-display text-xl font-bold text-navy-900">{resultat.mention}</p>
         </div>
       </div>
+
+      {(appGen || decision) && (
+        <div className="mt-6 space-y-2 rounded-xl border border-navy-900/10 bg-creme/40 p-4 text-sm">
+          {appGen && <p className="text-navy-900/80"><b className="text-navy-900/50">Appréciation générale :</b> {appGen}</p>}
+          {decision && <p className="text-navy-900/80"><b className="text-navy-900/50">Décision du conseil :</b> {decision}</p>}
+        </div>
+      )}
 
       <div className="mt-6 flex items-end justify-between text-xs text-navy-900/40">
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>

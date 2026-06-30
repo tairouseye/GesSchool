@@ -218,7 +218,7 @@ function BulletinParent({ b, lignes }) {
 
       <table className="mt-6 w-full text-left text-sm">
         <thead className="border-b border-navy-900/15 text-navy-900/50">
-          <tr><th className="py-2 font-medium">Matière</th><th className="py-2 text-center font-medium">Moyenne</th><th className="py-2 text-center font-medium">Coef.</th><th className="py-2 text-right font-medium">Pts</th></tr>
+          <tr><th className="py-2 font-medium">Matière</th><th className="py-2 text-center font-medium">Moyenne</th><th className="py-2 text-center font-medium">Coef.</th><th className="py-2 text-center font-medium">Pts</th><th className="py-2 font-medium">Appréciation</th></tr>
         </thead>
         <tbody>
           {lignes.map((l, i) => (
@@ -226,10 +226,11 @@ function BulletinParent({ b, lignes }) {
               <td className="py-2 font-medium text-navy-900">{l.matiere}</td>
               <td className="py-2 text-center font-mono">{l.moyenne != null ? Number(l.moyenne).toFixed(2) : "—"}</td>
               <td className="py-2 text-center font-mono text-navy-900/60">{l.coefficient}</td>
-              <td className="py-2 text-right font-mono text-navy-900/60">{l.moyenne != null ? (Number(l.moyenne) * Number(l.coefficient)).toFixed(2) : "—"}</td>
+              <td className="py-2 text-center font-mono text-navy-900/60">{l.moyenne != null ? (Number(l.moyenne) * Number(l.coefficient)).toFixed(2) : "—"}</td>
+              <td className="py-2 text-xs text-navy-900/70">{l.appreciation || ""}</td>
             </tr>
           ))}
-          {lignes.length === 0 && <tr><td colSpan={4} className="py-3 text-navy-900/40">—</td></tr>}
+          {lignes.length === 0 && <tr><td colSpan={5} className="py-3 text-navy-900/40">—</td></tr>}
         </tbody>
       </table>
 
@@ -247,6 +248,14 @@ function BulletinParent({ b, lignes }) {
           <p className="font-display text-xl font-bold text-navy-900">{b.mention || "—"}</p>
         </div>
       </div>
+
+      {(b.appreciation || b.decision) && (
+        <div className="mt-6 space-y-2 rounded-xl border border-navy-900/10 bg-creme/40 p-4 text-sm">
+          {b.appreciation && <p className="text-navy-900/80"><b className="text-navy-900/50">Appréciation générale :</b> {b.appreciation}</p>}
+          {b.decision && <p className="text-navy-900/80"><b className="text-navy-900/50">Décision du conseil :</b> {b.decision}</p>}
+        </div>
+      )}
+
       <div className="mt-6 flex items-end justify-between text-xs text-navy-900/40">
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
         <span>{b.ecole} · {b.sigle}</span>
