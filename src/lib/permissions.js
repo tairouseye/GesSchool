@@ -22,6 +22,7 @@ const ACCES = {
   dashboard: "*",
   _pedagogie: ["enseignant", "surveillant"], // accueil Pédagogie
   appel: ["enseignant", "surveillant"],
+  cahier: ["enseignant", "surveillant"],
   _gestion: ["comptable"], // accueil Gestion
   eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
   notes: ["enseignant"],

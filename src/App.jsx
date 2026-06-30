@@ -33,6 +33,7 @@ import Pilotage from "@/pages/Pilotage.jsx";
 import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
 import Fournitures from "@/pages/Fournitures.jsx";
 import Appel from "@/pages/Appel.jsx";
+import CahierTextes from "@/pages/CahierTextes.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import SuperAdmin from "@/pages/SuperAdmin.jsx";
 
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
             <Route path="/appel" element={<Garde cle="appel"><Appel /></Garde>} />
+            <Route path="/cahier-textes" element={<Garde cle="cahier"><CahierTextes /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

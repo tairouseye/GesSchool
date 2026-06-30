@@ -5,6 +5,7 @@ import {
   ecolePaiementInfos, declarerPaiement, enfantDeclarations,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
+import { enfantCahier } from "@/lib/cahier.js";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -22,17 +23,18 @@ export default function ParentEnfant() {
   const [fournitures, setFournitures] = useState([]);
   const [infos, setInfos] = useState({});
   const [declarations, setDeclarations] = useState([]);
+  const [cahier, setCahier] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
   const charger = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl] = await Promise.all([
+      const [n, f, a, e, four, inf, decl, cah] = await Promise.all([
         enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
-        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id),
+        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id),
       ]);
       setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
-      setFournitures(four); setInfos(inf); setDeclarations(decl);
+      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah);
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
   }, [id]);
@@ -45,7 +47,7 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -57,6 +59,8 @@ export default function ParentEnfant() {
         <p className="text-sm text-navy-900/50">Chargement…</p>
       ) : onglet === "notes" ? (
         <Notes notes={notes} />
+      ) : onglet === "cahier" ? (
+        <Cahier entrees={cahier} />
       ) : onglet === "emploi" ? (
         <Emploi creneaux={emploi} />
       ) : onglet === "fournitures" ? (
@@ -144,6 +148,30 @@ function Emploi({ creneaux }) {
           </Carte>
         );
       })}
+    </div>
+  );
+}
+
+function Cahier({ entrees }) {
+  if (entrees.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune entrée dans le cahier de textes.</Carte>;
+  const fmtD = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" }) : "");
+  return (
+    <div className="space-y-3">
+      {entrees.map((e, i) => (
+        <Carte key={i} className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs text-or-600">{fmtD(e.date_seance)}</span>
+            {e.matiere && <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/70">{e.matiere}</span>}
+          </div>
+          {e.contenu && <p className="mt-2 whitespace-pre-wrap text-sm text-navy-900/80">{e.contenu}</p>}
+          {e.devoirs && (
+            <p className="mt-1.5 whitespace-pre-wrap text-sm text-navy-900/80">
+              <b className="text-or-600">📘 Devoirs :</b> {e.devoirs}
+              {e.date_pour && <span className="ml-1 text-xs text-navy-900/50">(pour le {fmtD(e.date_pour)})</span>}
+            </p>
+          )}
+        </Carte>
+      ))}
     </div>
   );
 }
