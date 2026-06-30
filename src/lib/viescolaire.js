@@ -68,6 +68,16 @@ export async function getAbsencesRecentes(ecoleId, limit = 100) {
   return data ?? [];
 }
 
+// Absences/retards d'une classe sur une période (pour les statistiques).
+export async function getAbsencesPeriode(ecoleId, classeId, debut, fin) {
+  let q = supabase.from("absences").select("eleve_id, type").eq("ecole_id", ecoleId).eq("classe_id", classeId);
+  if (debut) q = q.gte("date_abs", debut);
+  if (fin) q = q.lte("date_abs", fin);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data ?? [];
+}
+
 // --- Incidents (sanctions / observations / félicitations) ---
 export async function getIncidents(ecoleId, limit = 100) {
   const { data, error } = await supabase

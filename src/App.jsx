@@ -35,6 +35,8 @@ import Fournitures from "@/pages/Fournitures.jsx";
 import Appel from "@/pages/Appel.jsx";
 import CahierTextes from "@/pages/CahierTextes.jsx";
 import Progression from "@/pages/Progression.jsx";
+import Assiduite from "@/pages/Assiduite.jsx";
+import Classement from "@/pages/Classement.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import Certificats from "@/pages/Certificats.jsx";
 import Demandes from "@/pages/Demandes.jsx";
@@ -117,6 +119,8 @@ export default function App() {
             <Route path="/appel" element={<Garde cle="appel"><Appel /></Garde>} />
             <Route path="/cahier-textes" element={<Garde cle="cahier"><CahierTextes /></Garde>} />
             <Route path="/progression" element={<Garde cle="progression"><Progression /></Garde>} />
+            <Route path="/assiduite" element={<Garde cle="assiduite"><Assiduite /></Garde>} />
+            <Route path="/classement" element={<Garde cle="classement"><Classement /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

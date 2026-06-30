@@ -28,6 +28,8 @@ const ACCES = {
   eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
   notes: ["enseignant"],
   bulletins: ["enseignant"],
+  classement: ["enseignant"],
+  assiduite: ["enseignant", "surveillant"],
   structure: [],
   enseignants: ["rh"],
   vie_scolaire: ["surveillant", "enseignant"],
