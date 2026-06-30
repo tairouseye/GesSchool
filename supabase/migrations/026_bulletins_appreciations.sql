@@ -4,7 +4,8 @@
 --  décision du conseil de classe aux RPC parent.
 -- =====================================================================
 
-create or replace function public.enfant_bulletins(p_eleve uuid)
+drop function if exists public.enfant_bulletins(uuid);
+create function public.enfant_bulletins(p_eleve uuid)
 returns table(
   id uuid, periode text, ordre int, moyenne numeric, rang int, effectif int, mention text,
   appreciation text, decision text,
@@ -27,7 +28,8 @@ begin
     order by p.ordre;
 end $$;
 
-create or replace function public.enfant_bulletin_lignes(p_bulletin uuid)
+drop function if exists public.enfant_bulletin_lignes(uuid);
+create function public.enfant_bulletin_lignes(p_bulletin uuid)
 returns table(matiere text, moyenne numeric, coefficient numeric, appreciation text)
 language plpgsql security definer set search_path = public as $$
 declare v_eleve uuid;
