@@ -173,17 +173,18 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
         ) : (
           <table className="w-full text-left text-sm">
             <thead className="bg-creme text-navy-900/50">
-              <tr><th className="px-6 py-2 font-medium">Date</th><th className="px-6 py-2 font-medium">Élève</th><th className="px-6 py-2 font-medium">Classe</th><th className="px-6 py-2 font-medium">Type</th><th className="px-6 py-2 font-medium">Justification</th></tr>
+              <tr><th className="px-6 py-2 font-medium">Date</th><th className="px-6 py-2 font-medium">Élève</th><th className="px-6 py-2 font-medium">Classe</th><th className="px-6 py-2 font-medium">Type</th><th className="px-6 py-2 font-medium">Justif. parent</th><th className="px-6 py-2 font-medium">Statut</th></tr>
             </thead>
             <tbody>
-              {recents.map((a) => {
-                const s = api.STATUTS_JUSTIF[a.statut] || api.STATUTS_JUSTIF.non_justifie;
-                return (
-                  <tr key={a.id} className="border-t border-navy-900/5">
+              {recents.map((a) => (
+                  <tr key={a.id} className={`border-t border-navy-900/5 ${a.statut === "en_attente" ? "bg-or-500/5" : ""}`}>
                     <td className="px-6 py-2 font-mono text-xs">{a.date_abs}</td>
                     <td className="px-6 py-2 font-medium text-navy-900">{a.eleves?.prenom} {a.eleves?.nom}</td>
                     <td className="px-6 py-2 text-navy-900/60">{a.classes?.libelle}</td>
                     <td className="px-6 py-2 capitalize">{a.type === "retard" ? "Retard" : "Absence"}</td>
+                    <td className="px-6 py-2 text-navy-900/70">
+                      {a.justification ? <span title={a.justification}>« {a.justification.length > 40 ? a.justification.slice(0, 40) + "…" : a.justification} »</span> : <span className="text-navy-900/30">—</span>}
+                    </td>
                     <td className="px-6 py-2">
                       <select value={a.statut} onChange={async (e) => { try { await api.justifierAbsence(a.id, e.target.value); chargerRecents(); } catch (er) { onErreur(er.message); } }}
                         className="rounded-lg border border-navy-900/15 bg-white px-2 py-1 text-xs outline-none focus:border-or-500">
@@ -191,8 +192,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
                       </select>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         )}

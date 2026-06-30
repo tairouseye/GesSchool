@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
-  ecolePaiementInfos, declarerPaiement, enfantDeclarations,
+  ecolePaiementInfos, declarerPaiement, enfantDeclarations, justifierAbsenceParent,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
@@ -68,7 +68,7 @@ export default function ParentEnfant() {
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={charger} onErreur={setErreur} />
       ) : (
-        <Absences absences={absences} />
+        <Absences absences={absences} onChange={charger} onErreur={setErreur} />
       )}
     </div>
   );
@@ -322,26 +322,66 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
   );
 }
 
-function Absences({ absences }) {
+function Absences({ absences, onChange, onErreur }) {
+  const [justif, setJustif] = useState(null); // absence à justifier
   if (absences.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune absence enregistrée 🎉</Carte>;
   const lib = { non_justifie: "Non justifié", en_attente: "En attente", justifie: "Justifié" };
+  const ton = { non_justifie: "text-rose-600", en_attente: "text-or-600", justifie: "text-emerald-700" };
   return (
-    <Carte className="overflow-hidden">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50">
-          <tr><th className="px-6 py-2 font-medium">Date</th><th className="px-6 py-2 font-medium">Type</th><th className="px-6 py-2 font-medium">Motif</th><th className="px-6 py-2 font-medium">Statut</th></tr>
-        </thead>
-        <tbody>
-          {absences.map((a, i) => (
-            <tr key={i} className="border-t border-navy-900/5">
-              <td className="px-6 py-2 font-mono text-xs">{a.date_abs}</td>
-              <td className="px-6 py-2 capitalize">{a.type === "retard" ? "Retard" : "Absence"}</td>
-              <td className="px-6 py-2 text-navy-900/60">{a.motif || "—"}</td>
-              <td className="px-6 py-2">{lib[a.statut] || a.statut}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Carte>
+    <div className="space-y-2">
+      {absences.map((a, i) => (
+        <Carte key={a.id || i} className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <p className="text-sm">
+              <span className="font-mono text-xs text-navy-900/50">{a.date_abs}</span>{" "}
+              <span className="font-medium text-navy-900 capitalize">{a.type === "retard" ? "Retard" : "Absence"}</span>
+              {a.motif && <span className="text-navy-900/50"> · {a.motif}</span>}
+            </p>
+            {a.justification && <p className="mt-0.5 text-xs text-navy-900/50">Votre justification : « {a.justification} »</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-medium ${ton[a.statut] || ""}`}>{lib[a.statut] || a.statut}</span>
+            {a.statut === "non_justifie" && (
+              <button onClick={() => setJustif(a)} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Justifier</button>
+            )}
+          </div>
+        </Carte>
+      ))}
+
+      <ModaleJustif
+        absence={justif} onFermer={() => setJustif(null)}
+        onEnvoyer={async (texte) => {
+          try { await justifierAbsenceParent(justif.id, texte); setJustif(null); await onChange(); }
+          catch (e) { onErreur(e.message); }
+        }}
+      />
+    </div>
+  );
+}
+
+function ModaleJustif({ absence, onFermer, onEnvoyer }) {
+  const [texte, setTexte] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  useEffect(() => { if (absence) setTexte(""); }, [absence]);
+  if (!absence) return null;
+  return (
+    <Modale ouvert={!!absence} onFermer={onFermer} titre={`Justifier l'absence du ${absence.date_abs}`}>
+      <div className="space-y-4">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Motif de l'absence</span>
+          <textarea value={texte} onChange={(e) => setTexte(e.target.value)} rows={3}
+            placeholder="Ex. : enfant malade, rendez-vous médical…"
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
+        </label>
+        <p className="text-xs text-navy-900/40">Votre justification sera transmise à l'établissement pour validation.</p>
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton disabled={envoi || !texte.trim()}
+            onClick={async () => { setEnvoi(true); await onEnvoyer(texte.trim()); setEnvoi(false); }}>
+            {envoi ? "…" : "Envoyer"}
+          </Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }

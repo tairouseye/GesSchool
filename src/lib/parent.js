@@ -26,6 +26,11 @@ export async function enfantAbsences(eleveId) {
   return data ?? [];
 }
 
+export async function justifierAbsenceParent(absenceId, texte) {
+  const { error } = await supabase.rpc("justifier_absence_parent", { p_absence: absenceId, p_texte: texte });
+  if (error) throw error;
+}
+
 export async function enfantEmploi(eleveId) {
   const { data, error } = await supabase.rpc("enfant_emploi", { p_eleve: eleveId });
   if (error) throw error;
