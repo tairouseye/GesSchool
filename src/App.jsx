@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
 import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
 import { espaceParDefaut } from "@/lib/espaces.js";
+import { estRoleComplet } from "@/lib/permissions.js";
 import Layout from "@/composants/Layout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
 import MotDePasseOublie from "@/pages/MotDePasseOublie.jsx";
@@ -31,12 +32,17 @@ import RH from "@/pages/RH.jsx";
 import Pilotage from "@/pages/Pilotage.jsx";
 import AccueilPedagogie from "@/pages/AccueilPedagogie.jsx";
 import Fournitures from "@/pages/Fournitures.jsx";
+import Appel from "@/pages/Appel.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import SuperAdmin from "@/pages/SuperAdmin.jsx";
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
   const { roles, estPromoteur } = useAuth();
+  // Un enseignant « pur » arrive directement sur l'appel de sa classe.
+  if (roles.includes("enseignant") && !estRoleComplet(roles) && !estPromoteur) {
+    return <Navigate to="/appel" replace />;
+  }
   const espace = espaceParDefaut(roles, estPromoteur);
   return <Navigate to={espace?.accueil || "/gestion"} replace />;
 }
@@ -104,6 +110,7 @@ export default function App() {
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
+            <Route path="/appel" element={<Garde cle="appel"><Appel /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

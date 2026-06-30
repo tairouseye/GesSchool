@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/bmd tech/.claude/projects/**)",
+      "Read(//c/Users/bmd tech/.claude/**)",
+      "PowerShell(try { $j = Get-Content \"C:\\\\Users\\\\bmd tech\\\\.claude\\\\settings.json\" -Raw | ConvertFrom-Json; Write-Output \"JSON valide. cleanupPeriodDays = $\\($j.cleanupPeriodDays\\)\" } catch { Write-Output \"ERREUR JSON: $_\" })",
+      "Bash(git checkout *)",
+      "Bash(git commit -m ' *)",
+      "WebFetch(domain:ges-sco.com)",
+      "WebSearch",
+      "WebFetch(domain:www.ges-sco.com)",
+      "Bash(gh pr create --base main --head securite/rls-par-role-et-migrations-016-018 --title 'Sécurité RLS par rôle + console super-admin versionnée + relances d'\\\\''impayés' --body ' *)",
+      "PowerShell($v = \\(Get-Command gh -ErrorAction SilentlyContinue\\); if \\($v\\) { \"gh: $\\($v.Source\\)\" } else { \"gh absent\" })",
+      "PowerShell(winget install --id GitHub.cli --silent --accept-source-agreements --accept-package-agreements 2>&1)",
+      "Bash(cat)",
+      "Bash(printf '\\\\n---\\\\n\\\\n# Partie 1 — Démarrer en 30 minutes\\\\n\\\\n')",
+      "Bash(tail -n +2 quickstart-admin.md)",
+      "Bash(printf '\\\\n---\\\\n\\\\n# Partie 2 — Guide complet d'\\\\''utilisation\\\\n\\\\n')",
+      "Bash(tail -n +2 mode-emploi.md)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\bmd tech\\.claude"
+    ]
+  }
+}

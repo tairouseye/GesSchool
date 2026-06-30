@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>GesSchool — Flyer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --navy:#0B1F3A; --or:#C9A227; --creme:#F7F5EF; --gris:#5b6472;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  @page{ size:A4; margin:0; }
+  html,body{ background:#e9e9e9; }
+  body{ font-family:Inter,system-ui,Arial,sans-serif; color:var(--navy); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page{
+    width:210mm; height:297mm; margin:0 auto; background:var(--creme);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .display{ font-family:'Space Grotesk',Inter,sans-serif; }
+
+  /* En-tête */
+  header{ background:var(--navy); color:var(--creme); padding:14mm 14mm 10mm; position:relative; }
+  .marque{ display:flex; align-items:center; gap:5mm; }
+  .seal{ width:20mm; height:20mm; border-radius:50%; border:2.2mm solid var(--or); display:grid; place-items:center;
+    font-family:'Space Grotesk'; font-weight:700; color:var(--or); font-size:7mm; letter-spacing:.5mm; }
+  h1{ font-family:'Space Grotesk'; font-size:13mm; line-height:1; font-weight:700; }
+  h1 .or{ color:var(--or); }
+  .tagline{ margin-top:3mm; font-size:4.6mm; color:#cfd6e0; max-width:150mm; }
+  .url{ position:absolute; top:14mm; right:14mm; font-size:3.4mm; color:var(--or); text-align:right; }
+
+  /* Corps */
+  main{ padding:9mm 14mm; flex:1; display:flex; flex-direction:column; gap:6mm; }
+  .accroche{ font-family:'Space Grotesk'; font-size:5.4mm; line-height:1.3; }
+  .accroche b{ color:var(--or); }
+
+  .grille{ display:grid; grid-template-columns:repeat(3,1fr); gap:4mm; }
+  .carte{ background:#fff; border:0.3mm solid rgba(11,31,58,.12); border-radius:4mm; padding:4mm; }
+  .carte .ico{ font-size:6mm; }
+  .carte h3{ font-family:'Space Grotesk'; font-size:4mm; margin:1.5mm 0 1mm; }
+  .carte p{ font-size:3.2mm; color:var(--gris); line-height:1.35; }
+
+  .deux{ display:grid; grid-template-columns:1.15fr .85fr; gap:6mm; align-items:start; }
+  .bloc h2{ font-family:'Space Grotesk'; font-size:4.6mm; margin-bottom:2.5mm; color:var(--navy); }
+  ul{ list-style:none; display:flex; flex-direction:column; gap:1.6mm; }
+  li{ font-size:3.5mm; padding-left:6mm; position:relative; color:#33415a; }
+  li::before{ content:"✓"; position:absolute; left:0; color:var(--or); font-weight:700; }
+
+  .roi{ background:var(--navy); color:var(--creme); border-radius:4mm; padding:5mm; }
+  .roi .t{ font-family:'Space Grotesk'; color:var(--or); font-size:4.2mm; margin-bottom:2mm; }
+  .roi p{ font-size:3.5mm; line-height:1.45; color:#dde3ec; }
+
+  .offres{ display:grid; grid-template-columns:repeat(3,1fr); gap:4mm; }
+  .offre{ border:0.4mm solid rgba(11,31,58,.15); border-radius:4mm; padding:4mm; background:#fff; }
+  .offre.mid{ border-color:var(--or); box-shadow:0 0 0 1mm rgba(201,162,39,.15); }
+  .offre .n{ font-family:'Space Grotesk'; font-weight:700; font-size:4.4mm; }
+  .offre .d{ font-size:3.1mm; color:var(--gris); margin-top:1.5mm; line-height:1.35; }
+  .badge{ display:inline-block; background:var(--or); color:var(--navy); font-size:2.6mm; font-weight:700;
+    border-radius:10mm; padding:.6mm 2.5mm; margin-bottom:1.5mm; }
+
+  /* Pied */
+  footer{ background:var(--or); color:var(--navy); padding:6mm 14mm; display:flex; justify-content:space-between; align-items:center; }
+  footer .cta{ font-family:'Space Grotesk'; font-weight:700; font-size:5mm; }
+  footer .contact{ font-size:3.6mm; text-align:right; line-height:1.5; }
+  footer .contact b{ font-weight:700; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="url">Essayez la démo<br/>tairouseye.github.io/GesSchool</div>
+      <div class="marque">
+        <div class="seal">GS</div>
+        <h1>Ges<span class="or">School</span></h1>
+      </div>
+      <p class="tagline">La gestion scolaire, simple et complète — du bureau du directeur au téléphone des parents.</p>
+    </header>
+
+    <main>
+      <p class="accroche">Fini les cahiers, l'Excel et le papier. <b>Un seul outil</b> pour la scolarité, les finances, la RH et les parents.</p>
+
+      <div class="grille">
+        <div class="carte"><div class="ico">🎓</div><h3>Pédagogie</h3><p>Notes, bulletins imprimables, emploi du temps, vie scolaire.</p></div>
+        <div class="carte"><div class="ico">💼</div><h3>Gestion & finances</h3><p>Inscriptions, facturation, recouvrement, comptabilité.</p></div>
+        <div class="carte"><div class="ico">🧑‍💼</div><h3>RH & paie</h3><p>Personnel, contrats, bulletins de paie automatiques.</p></div>
+        <div class="carte"><div class="ico">👪</div><h3>Espace parents</h3><p>Résultats, absences, fournitures, alertes et messagerie.</p></div>
+        <div class="carte"><div class="ico">📱</div><h3>Paiement mobile</h3><p>Wave, Orange Money, Free Money — depuis le téléphone.</p></div>
+        <div class="carte"><div class="ico">🎯</div><h3>Pilotage</h3><p>Vue d'ensemble, même pour plusieurs établissements.</p></div>
+      </div>
+
+      <div class="deux">
+        <div class="bloc">
+          <h2>Pourquoi GesSchool</h2>
+          <ul>
+            <li>Mobile-first : s'installe comme une app, sans store</li>
+            <li>Adapté au Sénégal : mobile money, français, hors-ligne léger</li>
+            <li>Chaque école cloisonnée, chaque rôle voit ce qui le concerne</li>
+            <li>Modulaire : activez uniquement ce dont vous avez besoin</li>
+            <li>Sans installation, mises à jour automatiques</li>
+          </ul>
+        </div>
+        <div class="roi">
+          <div class="t">L'argument qui compte 💰</div>
+          <p>Le module Finances <b>se rembourse seul</b> : quelques pour-cent d'impayés récupérés grâce au suivi et au paiement mobile couvrent l'abonnement.</p>
+        </div>
+      </div>
+
+      <div class="bloc">
+        <h2>Des offres à la carte</h2>
+        <div class="offres">
+          <div class="offre"><div class="n">Socle</div><div class="d">Scolarité + bulletins + espace parents.</div></div>
+          <div class="offre mid"><span class="badge">POPULAIRE</span><div class="n">Standard</div><div class="d">Socle + vie scolaire + finances & paiement mobile.</div></div>
+          <div class="offre"><div class="n">Premium</div><div class="d">Standard + RH/paie + pilotage multi-écoles.</div></div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="cta">Demandez une démonstration gratuite</div>
+      <div class="contact">
+        <b>Téléphone :</b> __ ___ __ __<br/>
+        <b>Email :</b> contact@votre-ecole.sn
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

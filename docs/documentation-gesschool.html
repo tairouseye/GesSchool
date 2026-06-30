@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"/>
+<title>Documentation GesSchool</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  :root { --navy:#0B1F3A; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); line-height: 1.55; font-size: 12.5px; margin: 0; }
+  .cover { background: var(--navy); color: var(--creme); padding: 26px 30px; border-radius: 0 0 14px 14px;
+           display:flex; align-items:center; gap:18px; }
+  .seal { width:60px; height:60px; border-radius:50%; border:3px solid var(--or); color:var(--or);
+          display:grid; place-items:center; font-weight:800; font-size:20px; letter-spacing:1px; flex:0 0 auto; }
+  .cover h1 { margin:0; font-size:24px; }
+  .cover p { margin:4px 0 0; color:rgba(251,247,239,.7); font-size:13px; }
+  main { padding: 8px 30px 40px; max-width: 880px; }
+  h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; }
+  h2 { font-size:17px; color:var(--navy); margin-top:24px; }
+  h3 { font-size:14px; color:var(--navy); margin-top:18px; }
+  h2, h3 { break-after: avoid; }
+  p { margin: 7px 0; }
+  ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { background:#eef0f3; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:.92em; color:var(--navy); }
+  strong { color: var(--navy); }
+  hr { border:0; border-top:1px solid #e3e6ea; margin:18px 0; }
+  blockquote { margin:10px 0; padding:8px 14px; background:var(--creme); border-left:3px solid var(--or);
+               border-radius:0 8px 8px 0; color:#3a4757; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; break-inside:avoid; }
+  th { background:var(--navy); color:var(--creme); text-align:left; padding:7px 9px; font-weight:600; }
+  td { border-bottom:1px solid #e3e6ea; padding:6px 9px; vertical-align:top; }
+  tbody tr:nth-child(even){ background:#faf9f6; }
+  .foot { color:#8a94a0; font-size:10.5px; text-align:center; padding:14px; }
+</style></head>
+<body>
+  <div class="cover"><div class="seal">GS</div><div><h1>Documentation GesSchool</h1><p>Démarrage rapide · Manuel complet · Guide parent</p></div></div>
+  <main><p>Documentation officielle d'utilisation de <strong>GesSchool</strong>, application web (PWA) de gestion scolaire multi-écoles. Ce document réunit en un seul fichier le démarrage rapide, le manuel complet et le guide destiné aux parents.</p>
+<h2>Sommaire</h2>
+<ul><li><strong>Partie 1 — Démarrer en 30 minutes</strong> : l'essentiel pour rendre une école opérationnelle.</li>
+<li><strong>Partie 2 — Guide complet d'utilisation</strong> : toutes les fonctionnalités, écran par écran.</li>
+<li><strong>Partie 3 — Guide parent</strong> : à remettre aux familles.</li>
+</ul>
+<hr/>
+<h1>Partie 1 — Démarrer en 30 minutes</h1>
+<p>Le strict nécessaire pour rendre votre école opérationnelle sur GesSchool.</p>
+<h2>Étape 1 — Créer l'école (5 min)</h2>
+<p>Inscription → <strong>Je gère une école</strong> → assistant en 3 étapes : identité (nom, sigle, logo), cycles ouverts, responsable + année scolaire (trimestres ou semestres). <strong>L'année et les périodes sont créées automatiquement.</strong></p>
+<h2>Étape 2 — Construire la structure (10 min) · menu *Structure*</h2>
+<ol><li>Ajoutez vos <strong>niveaux</strong> (6e, CP, Seconde…).</li>
+<li><strong>Générez les classes</strong> en lot (base du nom + nombre + suffixe A/B/C).</li>
+<li>Ajoutez les <strong>matières</strong> (avec code).</li>
+<li>Lycée : créez les <strong>séries</strong> puis la <strong>grille de coefficients</strong>.</li>
+</ol>
+<h2>Étape 3 — Inscrire les élèves (10 min) · menu *Élèves*</h2>
+<ul><li><strong>+ Nouvel élève</strong> (un par un), ou <strong>↑ Importer (Excel)</strong> pour toute une liste.</li>
+<li>Astuce import : la colonne <strong>Classe</strong> doit correspondre exactement au libellé d'une classe créée à l'étape 2.</li>
+</ul>
+<h2>Étape 4 — Préparer la facturation (5 min) · menu *Paiements*</h2>
+<ol><li>Onglet <strong>Grille tarifaire</strong> : créez vos frais (Inscription, Scolarité…), cochez « obligatoire ».</li>
+<li>Onglet <strong>Paiement mobile</strong> : saisissez vos numéros Wave / OM / Free Money.</li>
+<li><strong>⚡ Générer en lot</strong> : une facture par élève d'un niveau, en un clic.</li>
+</ol>
+<h2>Ensuite, au quotidien</h2>
+<ul><li><strong>Notes</strong> puis <strong>Bulletins</strong> (impression PDF en 1 clic).</li>
+<li><strong>Recouvrement</strong> : relances automatiques des impayés + rappels push aux parents.</li>
+<li><strong>Espace parent</strong> : générez un <strong>Code parent</strong> depuis la fiche élève et donnez-le aux familles.</li>
+</ul>
+<hr/>
+<p>Astuce : activez seulement les <strong>modules</strong> dont vous avez besoin (menu *Paramètres → Modules actifs*).</p>
+<hr/>
+<h1>Partie 2 — Guide complet d'utilisation</h1>
+<p>Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien. Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur.</p>
+<hr/>
+<h2>0. Concepts de base (à lire une fois)</h2>
+<p><strong>GesSchool</strong> organise le travail en <strong>espaces</strong> selon le métier de chaque utilisateur :</p>
+<table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Contient</th></tr></thead><tbody><tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Enseignants, surveillants</td><td>Élèves, Structure, Notes, Bulletins, Emploi du temps, Vie scolaire, Fournitures</td></tr>
+<tr><td><strong>Gestion</strong></td><td>💼</td><td>Comptables, administration</td><td>Élèves, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres</td></tr>
+<tr><td><strong>RH &amp; Paie</strong></td><td>🧑‍💼</td><td>RH</td><td>Personnel &amp; paie, Enseignants</td></tr>
+<tr><td><strong>Pilotage</strong></td><td>🎯</td><td>Promoteur / direction</td><td>Vue consolidée de toutes ses écoles</td></tr>
+</tbody></table>
+<ul><li>L'<strong>administrateur</strong> et la <strong>direction</strong> voient <strong>tous les espaces</strong>. Les autres rôles ne voient que le leur.</li>
+<li>Le sélecteur d'espace est en haut à gauche (visible si vous avez accès à plusieurs).</li>
+<li>Chaque <strong>module</strong> (Finances, Évaluations, etc.) peut être activé/désactivé par école (voir Paramètres).</li>
+</ul>
+<p><strong>Rôles disponibles :</strong> Administrateur, Direction, Enseignant, Comptable, RH, Surveillant, Parent, Super-admin.</p>
+<hr/>
+<h2>1. Créer son compte et son école</h2>
+<h3>1.1 Créer le compte</h3>
+<ol><li>Ouvrir l'application → page <strong>Connexion</strong>.</li>
+<li>Onglet <strong>Inscription</strong> → saisir e-mail + mot de passe (min. 6 caractères) → <strong>Créer le compte</strong>.</li>
+<li>Selon la configuration, un e-mail de confirmation peut être demandé : le valider, puis se connecter.</li>
+</ol>
+<h3>1.2 Choisir son profil</h3>
+<p>Au premier accès, l'écran <strong>Bienvenue</strong> propose :</p>
+<ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (c'est votre cas en tant qu'admin).</li>
+<li><strong>👪 Je suis un parent</strong> → rejoint un enfant avec un code de liaison (voir §9).</li>
+</ul>
+<h3>1.3 Assistant de création (3 étapes)</h3>
+<p>En cliquant sur « Je gère une école » :</p>
+<ol><li><strong>Identité</strong> : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.</li>
+<li><strong>Cycles ouverts</strong> : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).</li>
+<li><strong>Responsable &amp; année</strong> : votre prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage <strong>Trimestres (3)</strong> ou <strong>Semestres (2)</strong>.</li>
+<li><strong>Créer l'établissement</strong>.</li>
+</ol>
+<p>➡️ À la fin, l'école, ses cycles, votre compte admin, l'année scolaire et les périodes sont créés automatiquement. Vous arrivez sur le tableau de bord.</p>
+<hr/>
+<h2>2. Configuration initiale (à faire en premier)</h2>
+<h3>2.1 Structure académique (menu <strong>Structure</strong>)</h3>
+<p>C'est le squelette de l'école. Ordre logique : <strong>Niveaux → Classes → Matières → (Séries) → Coefficients</strong>.</p>
+<ul><li><strong>Niveaux</strong> : dans chaque cycle, taper un niveau (ex. « 6e », « CP », « Seconde ») → <strong>+ Niveau</strong>.</li>
+<li><strong>Classes</strong> (génération en lot) : sur une ligne de niveau, choisir la *base du nom* (ex. 6e), le *nombre* de classes, le *suffixe* (A,B,C / 1,2,3 / aucun), éventuellement une *série* et un *effectif max* → <strong>+ Générer</strong>. L'aperçu montre les classes à créer (les doublons sont ignorés).</li>
+<li><strong>Matières</strong> : libellé + code (ex. MATH) + cycle optionnel → <strong>+ Ajouter</strong>.</li>
+<li><strong>Séries</strong> (lycée uniquement) : créer L, S2… ou cliquer <strong>+ Pré-remplir les séries standard</strong>.</li>
+<li><strong>Grille de coefficients</strong> : choisir une *portée* (une série OU un niveau), puis saisir le coefficient de chaque matière (laisser vide = matière non comptée). Saisi une fois, il s'applique à toutes les classes concernées.</li>
+</ul>
+<h3>2.2 Paramètres (menu <strong>Paramètres</strong>)</h3>
+<ul><li><strong>Établissement</strong> : nom, sigle, devise (XOF par défaut), couleurs.</li>
+<li><strong>Matricule des élèves</strong> : préfixe, séparateur, nombre de chiffres. Aperçu en direct (ex. <code>GS-25-0001</code>). Généré automatiquement à chaque inscription.</li>
+<li><strong>Relances automatiques</strong> (si module Finances actif) : voir §6.4.</li>
+<li><strong>Modules actifs</strong> : activer/désactiver des modules. Un module désactivé disparaît des menus.</li>
+</ul>
+<h3>2.3 Coordonnées de paiement mobile (menu <strong>Paiements → onglet Paiement mobile</strong>)</h3>
+<p>Saisir vos numéros <strong>Wave / Orange Money / Free Money</strong>. Ils seront affichés aux parents pour régler les factures.</p>
+<hr/>
+<h2>3. Élèves &amp; inscriptions (menu <strong>Élèves</strong>)</h2>
+<h3>3.1 Ajouter un élève (un par un)</h3>
+<p><strong>+ Nouvel élève</strong> → prénom, nom, sexe, naissance, classe (inscription immédiate), et un responsable optionnel (prénom, nom, téléphone, lien). Le <strong>matricule est généré automatiquement</strong>.</p>
+<h3>3.2 Importer en masse (Excel/CSV)</h3>
+<p><strong>↑ Importer (Excel)</strong> :</p>
+<ol><li>Choisir le fichier (1ʳᵉ ligne = en-têtes).</li>
+<li>Vérifier l'<strong>association des colonnes</strong> (Prénom et Nom obligatoires ; Sexe, Date de naissance, Lieu, Matricule, Classe optionnels). Les colonnes sont devinées automatiquement.</li>
+<li>⚠️ La colonne <strong>Classe</strong> doit correspondre <strong>exactement</strong> au libellé d'une classe existante pour inscrire l'élève.</li>
+<li><strong>Importer</strong> → un récapitulatif indique les élèves créés / inscrits / ignorés.</li>
+</ol>
+<h3>3.3 Rechercher / filtrer</h3>
+<p>Barre de recherche (nom ou matricule) + filtres par <strong>classe</strong> et par <strong>statut</strong>.</p>
+<h3>3.4 Fiche élève (clic sur une ligne)</h3>
+<ul><li><strong>État civil</strong> : modifier, ajouter une <strong>photo</strong>, supprimer l'élève.</li>
+<li><strong>Responsables</strong> : ajouter un tuteur ; bouton <strong>Code parent</strong> = génère un code à 8 caractères à communiquer au parent (voir §9) ; marquer responsable légal / paiement.</li>
+<li><strong>Inscriptions</strong> : inscrire / changer de classe (option redoublant).</li>
+</ul>
+<blockquote>Édition réservée à l'administration et au comptable. Enseignants/surveillants sont en lecture seule.</blockquote>
+<hr/>
+<h2>4. Notes (menu <strong>Notes</strong>)</h2>
+<ol><li>Choisir <strong>Classe</strong>, <strong>Période</strong>, <strong>Matière</strong>.</li>
+<li><strong>+ Ajouter</strong> une évaluation : type (devoir, composition, examen, interro, tp, oral, projet), libellé, <strong>barème</strong> (ex. 20), <strong>coefficient</strong>, date.</li>
+<li>Cliquer sur l'évaluation → saisir les notes élève par élève (cocher <strong>Absent</strong> si besoin) → <strong>Enregistrer</strong>.</li>
+</ol>
+<blockquote>Les notes sont automatiquement ramenées sur 20 selon le barème lors du calcul des bulletins.</blockquote>
+<hr/>
+<h2>5. Bulletins (menu <strong>Bulletins</strong>)</h2>
+<ol><li>Choisir <strong>Classe</strong> + <strong>Période</strong> → <strong>Calculer les bulletins</strong>.</li>
+<li>Le tableau affiche <strong>rang, moyenne, mention</strong> pour chaque élève.</li>
+<li>Cliquer <strong>Bulletin →</strong> pour voir le bulletin individuel (avec cachet de l'école) → <strong>Imprimer / PDF</strong>.</li>
+</ol>
+<p>Moyennes pondérées par les coefficients de matière ; mentions automatiques (Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16).</p>
+<hr/>
+<h2>6. Paiements &amp; recouvrement (espace Gestion)</h2>
+<h3>6.1 Grille tarifaire (menu <strong>Paiements → onglet Grille tarifaire</strong>)</h3>
+<p>Créer les frais : libellé (Scolarité, Inscription, Cantine…), montant, <strong>niveau</strong> ciblé ou tous, <strong>Mensuel</strong> (récurrent), <strong>Obligatoire</strong> (facturé automatiquement en lot).</p>
+<h3>6.2 Facturer</h3>
+<ul><li><strong>+ Nouvelle facture</strong> : un élève, une échéance, des lignes (choisir un frais pré-rempli ou saisir librement) → <strong>Créer la facture</strong>.</li>
+<li><strong>⚡ Générer en lot</strong> : choisir un <strong>niveau</strong>, cocher les frais (les obligatoires sont pré-cochés), une échéance → <strong>Générer</strong>. Une facture par élève ; les élèves déjà facturés sont ignorés (pas de doublon).</li>
+</ul>
+<h3>6.3 Encaisser</h3>
+<p>Cliquer une facture → <strong>reçu imprimable</strong> + historique des encaissements. Dans « Encaisser un paiement » : montant, <strong>mode</strong> (espèces, Wave, OM…), référence, date → <strong>Encaisser</strong>. Le statut de la facture (payée / partielle / en retard) se met à jour tout seul. <strong>Imprimer le reçu</strong> disponible.</p>
+<h3>6.4 Déclarations de paiement mobile (onglet <strong>Déclarations</strong>)</h3>
+<p>Quand un parent déclare un paiement mobile (voir §9), il apparaît ici : <strong>valider</strong> (enregistre l'encaissement et solde la facture) ou <strong>rejeter</strong>.</p>
+<h3>6.5 Recouvrement &amp; relances (menu <strong>Recouvrement</strong>)</h3>
+<ul><li>Vue <strong>Impayés</strong> : total dû, dont en retard, liste par élève avec jours de retard et contact payeur.</li>
+<li><strong>Relancer (push)</strong> : envoie une notification + push au parent.</li>
+<li><strong>WhatsApp</strong> : ouvre un message pré-rempli (ou le copie si aucun numéro).</li>
+<li>Onglet <strong>Historique</strong> : journal de toutes les relances envoyées.</li>
+<li><strong>Relances automatiques</strong> (Paramètres) : créer des <strong>paliers</strong> (ex. J+1, J+7, J+15 après l'échéance) avec un message type. Le système envoie les rappels chaque jour automatiquement. Bouton <strong>Relancer tous les retards</strong> pour un envoi immédiat.</li>
+</ul>
+<hr/>
+<h2>7. Vie scolaire, emploi du temps, fournitures, communication</h2>
+<ul><li><strong>Vie scolaire</strong> (Pédagogie) : saisie des <strong>absences/retards</strong> et incidents. Une absence saisie notifie automatiquement les parents.</li>
+<li><strong>Emploi du temps</strong> (Pédagogie) : créneaux par classe (jour, horaires, matière, enseignant, salle).</li>
+<li><strong>Fournitures</strong> (Pédagogie) : liste des fournitures par classe, visible par les parents.</li>
+<li><strong>Annonces</strong> (Gestion) : publier une annonce (toute l'école, parents, une classe…).</li>
+<li><strong>Messagerie</strong> (Gestion) : échanges école ↔ parents.</li>
+</ul>
+<hr/>
+<h2>8. RH &amp; Paie · Comptabilité</h2>
+<ul><li><strong>RH &amp; Paie</strong> (espace RH) : fiches <strong>personnel</strong>, contrats, <strong>fiches de paie</strong>. Marquer un salaire payé crée automatiquement une dépense en comptabilité.</li>
+<li><strong>Enseignants</strong> (espace RH) : annuaire des enseignants et affectations classe/matière.</li>
+<li><strong>Comptabilité</strong> (Gestion) : recettes, <strong>dépenses</strong> (avec justificatif), trésorerie.</li>
+</ul>
+<hr/>
+<h2>9. Espace parent</h2>
+<h3>9.1 Donner l'accès à un parent</h3>
+<ol><li>Côté école : Fiche élève → Responsables → <strong>Code parent</strong> → un code à 8 caractères s'affiche.</li>
+<li>Communiquer ce code au parent (WhatsApp, papier…).</li>
+</ol>
+<h3>9.2 Côté parent</h3>
+<ol><li>Le parent crée un compte (Inscription) → écran Bienvenue → <strong>Je suis un parent</strong> → saisir le <strong>code de liaison</strong>.</li>
+<li>Il accède à l'espace parent : pour chaque enfant, onglets <strong>Notes, Emploi du temps, Fournitures, Paiements, Absences</strong>.</li>
+<li><strong>Payer une facture</strong> : choisir Wave/OM/Free Money → payer depuis son appli mobile sur le numéro de l'école (référence = n° de facture) → <strong>Déclarer le paiement</strong>. L'école valide ensuite (§6.4).</li>
+</ol>
+<p>Un même code peut couvrir plusieurs enfants si le tuteur est rattaché à plusieurs élèves.</p>
+<hr/>
+<h2>10. Notifications push</h2>
+<p>Les parents (et le personnel) peuvent activer les <strong>notifications push</strong> sur leur appareil. Ils reçoivent alors une alerte pour : nouvelle note, absence, nouvelle facture, <strong>rappel de paiement</strong>. Sur mobile, installer l'app (PWA) via « Ajouter à l'écran d'accueil » améliore l'expérience.</p>
+<hr/>
+<h2>11. Console super-admin (éditeur du SaaS)</h2>
+<p>Réservée au propriétaire de GesSchool (vous). Accès via le lien <strong>🛠️ Console super-admin</strong> en bas du menu.</p>
+<ul><li>Liste de <strong>toutes les écoles clientes</strong> : effectif, plan, statut d'abonnement, échéance.</li>
+<li>Bouton <strong>gérer</strong> : appliquer un <strong>plan/abonnement</strong>, changer le <strong>statut</strong>, ajuster finement les <strong>modules</strong> activés d'une école.</li>
+</ul>
+<h3>Promoteur multi-écoles (espace Pilotage)</h3>
+<p>Un promoteur propriétaire de plusieurs écoles voit une <strong>synthèse consolidée</strong> (effectifs, facturé/payé, trésorerie, masse salariale) et peut <strong>« entrer »</strong> dans une école pour la gérer.</p>
+<hr/>
+<h2>12. Récapitulatif des rôles</h2>
+<table><thead><tr><th>Rôle</th><th>Accès principal</th></tr></thead><tbody><tr><td><strong>Administrateur / Direction</strong></td><td>Tout (tous les espaces)</td></tr>
+<tr><td><strong>Comptable</strong></td><td>Gestion : élèves, paiements, recouvrement, comptabilité</td></tr>
+<tr><td><strong>Enseignant</strong></td><td>Pédagogie : notes, bulletins, emploi du temps, vie scolaire (élèves en lecture)</td></tr>
+<tr><td><strong>Surveillant</strong></td><td>Pédagogie : vie scolaire (absences)</td></tr>
+<tr><td><strong>RH</strong></td><td>RH &amp; Paie : personnel, paie, enseignants</td></tr>
+<tr><td><strong>Parent</strong></td><td>Espace parent : suivi de ses enfants</td></tr>
+<tr><td><strong>Super-admin</strong></td><td>Console de pilotage du SaaS</td></tr>
+</tbody></table>
+<hr/>
+<h2>13. Dépannage rapide</h2>
+<ul><li><strong>« Je ne vois pas un menu »</strong> → le module est peut-être désactivé (Paramètres → Modules) ou votre rôle n'y a pas accès.</li>
+<li><strong>« Impossible d'inscrire un élève »</strong> → aucune classe créée : passez par <strong>Structure</strong> d'abord.</li>
+<li><strong>« L'import n'inscrit pas en classe »</strong> → la colonne Classe ne correspond pas au libellé exact d'une classe existante.</li>
+<li><strong>« Le parent ne reçoit pas le push »</strong> → vérifier qu'il a activé les notifications et installé l'app ; le rappel reste visible dans son espace même sans push.</li>
+<li><strong>Mot de passe oublié</strong> → lien « Mot de passe oublié ? » sur la page de connexion.</li>
+</ul>
+<hr/>
+<p>*GesSchool — gestion scolaire multi-écoles. Document à jour des fonctionnalités courantes (élèves, notes, bulletins, paiements, recouvrement &amp; relances, espace parent, RH, comptabilité).*</p>
+<hr/>
+<h1>Partie 3 — Guide parent</h1>
+<p>Suivez la scolarité de votre enfant et payez en ligne, depuis votre téléphone.</p>
+<h2>1. Créer votre compte</h2>
+<ol><li>Ouvrez l'application GesSchool dans votre navigateur.</li>
+<li>Onglet <strong>Inscription</strong> → votre e-mail + un mot de passe → <strong>Créer le compte</strong>.</li>
+</ol>
+<h2>2. Rejoindre votre enfant</h2>
+<ol><li>Demandez à l'école votre <strong>code de liaison</strong> (8 caractères, ex. <code>3F9A2B7C</code>).</li>
+<li>À l'écran d'accueil, choisissez <strong>👪 Je suis un parent</strong>.</li>
+<li>Saisissez le code → <strong>Accéder à l'espace parent</strong>.</li>
+</ol>
+<blockquote>Un seul code suffit même si vous avez plusieurs enfants dans l'école.</blockquote>
+<h2>3. Consulter</h2>
+<p>Pour chaque enfant, des onglets : <strong>Notes</strong>, <strong>Emploi du temps</strong>, <strong>Fournitures</strong>, <strong>Paiements</strong>, <strong>Absences</strong>. Tout est mis à jour en temps réel par l'école.</p>
+<h2>4. Payer une facture (mobile money)</h2>
+<ol><li>Onglet <strong>Paiements</strong> → bouton <strong>Payer</strong> sur la facture concernée.</li>
+<li>Choisissez <strong>Wave / Orange Money / Free Money</strong> → le numéro de l'école s'affiche.</li>
+<li>Payez depuis votre application mobile money, en indiquant le <strong>numéro de facture</strong> en référence.</li>
+<li>Revenez et <strong>Déclarez le paiement</strong> (montant + réf. de la transaction).</li>
+<li>L'école valide : la facture passe à « payée ».</li>
+</ol>
+<h2>5. Notifications</h2>
+<p>Activez les <strong>notifications</strong> pour être prévenu des nouvelles notes, absences, factures et rappels de paiement. Sur téléphone, « Ajouter à l'écran d'accueil » installe l'app comme une appli classique.</p>
+<hr/>
+<p>Besoin d'aide ? Contactez le secrétariat de l'établissement.</p>
+</main>
+  <div class="foot">GesSchool — gestion scolaire multi-écoles · document généré le 29/06/2026</div>
+</body></html>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte } from "@/composants/ui.jsx";
@@ -37,10 +38,10 @@ export default function AccueilPedagogie() {
       <div className="space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <Carte className="p-6">
-          <h2 className="font-display text-xl font-bold text-navy-900">Bonjour {profil?.prenom} 👋</h2>
-          <p className="mt-1 text-sm text-navy-900/50">Suivi pédagogique de l'établissement.</p>
-        </Carte>
+        <Link to="/appel" className="block rounded-2xl bg-navy-900 p-6 text-creme shadow-sm transition hover:bg-navy-800">
+          <p className="font-display text-xl font-bold">✅ Faire l'appel</p>
+          <p className="mt-1 text-sm text-creme/70">Bonjour {profil?.prenom} — pointe les présents/absents de ta classe en un clic.</p>
+        </Link>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Kpi label="Élèves inscrits" valeur={stats ? String(stats.effectif) : "—"} ton="or" />

@@ -21,6 +21,7 @@ export const LIBELLES_ROLES = {
 const ACCES = {
   dashboard: "*",
   _pedagogie: ["enseignant", "surveillant"], // accueil Pédagogie
+  appel: ["enseignant", "surveillant"],
   _gestion: ["comptable"], // accueil Gestion
   eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
   notes: ["enseignant"],
