@@ -1,7 +1,7 @@
 # GesSchool — Mode d'emploi
 
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
-Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur.
+Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
 ---
 
@@ -9,16 +9,18 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 
 **GesSchool** organise le travail en **espaces** selon le métier de chaque utilisateur :
 
-| Espace | Icône | Pour qui | Contient |
+| Espace | Icône | Pour qui | Menus |
 |---|---|---|---|
-| **Pédagogie** | 🎓 | Enseignants, surveillants | Élèves, Structure, Notes, Bulletins, Emploi du temps, Vie scolaire, Fournitures |
-| **Gestion** | 💼 | Comptables, administration | Élèves, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres |
+| **Pédagogie** | 🎓 | Enseignants, surveillants | Accueil, **Appel**, **Cahier de textes**, **Progression**, Élèves (lecture), Structure, Notes, Bulletins, **Classement**, Emploi du temps, Vie scolaire, **Assiduité**, Fournitures |
+| **Gestion** | 💼 | Administration, comptables | Accueil, Élèves & inscriptions, **Documents**, **Demandes**, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres |
 | **RH & Paie** | 🧑‍💼 | RH | Personnel & paie, Enseignants |
 | **Pilotage** | 🎯 | Promoteur / direction | Vue consolidée de toutes ses écoles |
+| **Parent** | 👪 | Familles | Suivi de chaque enfant (voir §13) |
 
 - L'**administrateur** et la **direction** voient **tous les espaces**. Les autres rôles ne voient que le leur.
-- Le sélecteur d'espace est en haut à gauche (visible si vous avez accès à plusieurs).
-- Chaque **module** (Finances, Évaluations, etc.) peut être activé/désactivé par école (voir Paramètres).
+- Le **sélecteur d'espace** est en haut à gauche de la barre latérale (visible si vous avez accès à plusieurs).
+- Chaque **module** (Finances, Évaluations, RH…) peut être activé/désactivé par école (Paramètres → Modules).
+- Chacun **atterrit dans son espace** à la connexion (un enseignant arrive directement sur l'**Appel**).
 
 **Rôles disponibles :** Administrateur, Direction, Enseignant, Comptable, RH, Surveillant, Parent, Super-admin.
 
@@ -28,187 +30,211 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 
 ### 1.1 Créer le compte
 1. Ouvrir l'application → page **Connexion**.
-2. Onglet **Inscription** → saisir e-mail + mot de passe (min. 6 caractères) → **Créer le compte**.
+2. Onglet **Inscription** → e-mail + mot de passe (min. 6 caractères) → **Créer le compte**.
 3. Selon la configuration, un e-mail de confirmation peut être demandé : le valider, puis se connecter.
 
 ### 1.2 Choisir son profil
-Au premier accès, l'écran **Bienvenue** propose :
-- **🏫 Je gère une école** → crée l'établissement (c'est votre cas en tant qu'admin).
-- **👪 Je suis un parent** → rejoint un enfant avec un code de liaison (voir §9).
+Au premier accès, l'écran **Bienvenue** propose trois entrées :
+- **🏫 Je gère une école** → crée l'établissement (cas de l'admin/promoteur).
+- **🧑‍🏫 Je suis un enseignant** → relie son compte à sa fiche avec un **code** (voir §4).
+- **👪 Je suis un parent** → rejoint un enfant avec un **code de liaison** (voir §13).
 
-### 1.3 Assistant de création (3 étapes)
-En cliquant sur « Je gère une école » :
+### 1.3 Assistant de création de l'école (3 étapes)
 1. **Identité** : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.
 2. **Cycles ouverts** : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).
-3. **Responsable & année** : votre prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage **Trimestres (3)** ou **Semestres (2)**.
+3. **Responsable & année** : prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage **Trimestres (3)** ou **Semestres (2)**.
 4. **Créer l'établissement**.
 
-➡️ À la fin, l'école, ses cycles, votre compte admin, l'année scolaire et les périodes sont créés automatiquement. Vous arrivez sur le tableau de bord.
+➡️ L'école, ses cycles, votre compte admin, l'année et les périodes sont créés automatiquement.
 
 ---
 
-## 2. Configuration initiale (à faire en premier)
+## 2. Configuration initiale
 
 ### 2.1 Structure académique (menu **Structure**)
-C'est le squelette de l'école. Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficients**.
-
-- **Niveaux** : dans chaque cycle, taper un niveau (ex. « 6e », « CP », « Seconde ») → **+ Niveau**.
-- **Classes** (génération en lot) : sur une ligne de niveau, choisir la *base du nom* (ex. 6e), le *nombre* de classes, le *suffixe* (A,B,C / 1,2,3 / aucun), éventuellement une *série* et un *effectif max* → **+ Générer**. L'aperçu montre les classes à créer (les doublons sont ignorés).
-- **Matières** : libellé + code (ex. MATH) + cycle optionnel → **+ Ajouter**.
-- **Séries** (lycée uniquement) : créer L, S2… ou cliquer **+ Pré-remplir les séries standard**.
-- **Grille de coefficients** : choisir une *portée* (une série OU un niveau), puis saisir le coefficient de chaque matière (laisser vide = matière non comptée). Saisi une fois, il s'applique à toutes les classes concernées.
+Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficients**.
+- **Niveaux** : dans chaque cycle, taper un niveau (6e, CP, Seconde) → **+ Niveau**.
+- **Classes** (génération en lot) : base du nom + nombre + suffixe (A,B,C / 1,2,3 / aucun) + série + effectif → **+ Générer** (doublons ignorés).
+- **Matières** : libellé + code (ex. MATH).
+- **Séries** (lycée) : créer L, S2… ou **+ Pré-remplir les séries standard**.
+- **Grille de coefficients** : choisir une portée (série OU niveau), saisir le coefficient de chaque matière (vide = non comptée).
 
 ### 2.2 Paramètres (menu **Paramètres**)
-- **Établissement** : nom, sigle, devise (XOF par défaut), couleurs.
-- **Matricule des élèves** : préfixe, séparateur, nombre de chiffres. Aperçu en direct (ex. `GS-25-0001`). Généré automatiquement à chaque inscription.
-- **Relances automatiques** (si module Finances actif) : voir §6.4.
-- **Modules actifs** : activer/désactiver des modules. Un module désactivé disparaît des menus.
+- **Établissement** : nom, sigle, devise, couleurs.
+- **Matricule** : préfixe, séparateur, nombre de chiffres (aperçu ex. `GS-25-0001`).
+- **Modules actifs** : activer/désactiver des modules (un module désactivé disparaît des menus et bloque l'accès).
 
-### 2.3 Coordonnées de paiement mobile (menu **Paiements → onglet Paiement mobile**)
-Saisir vos numéros **Wave / Orange Money / Free Money**. Ils seront affichés aux parents pour régler les factures.
+### 2.3 Paiement mobile (menu **Paiements → onglet Paiement mobile**)
+Saisir vos numéros **Wave / Orange Money / Free Money** (affichés aux parents pour régler les factures).
 
 ---
 
 ## 3. Élèves & inscriptions (menu **Élèves**)
 
-### 3.1 Ajouter un élève (un par un)
-**+ Nouvel élève** → prénom, nom, sexe, naissance, classe (inscription immédiate), et un responsable optionnel (prénom, nom, téléphone, lien). Le **matricule est généré automatiquement**.
+- **+ Nouvel élève** : prénom, nom, sexe, naissance, classe, responsable optionnel. **Matricule auto**.
+- **↑ Importer (Excel)** : fichier .xlsx/.csv → associer les colonnes (Prénom, Nom obligatoires) → la colonne **Classe** doit correspondre **exactement** au libellé d'une classe existante → **Importer**.
+- **Recherche/filtres** : nom/matricule, classe, statut.
+- **Fiche élève** (clic) : état civil + **photo**, **Responsables** (+ bouton **Code parent**, §13), **Inscriptions**.
 
-### 3.2 Importer en masse (Excel/CSV)
-**↑ Importer (Excel)** :
-1. Choisir le fichier (1ʳᵉ ligne = en-têtes).
-2. Vérifier l'**association des colonnes** (Prénom et Nom obligatoires ; Sexe, Date de naissance, Lieu, Matricule, Classe optionnels). Les colonnes sont devinées automatiquement.
-3. ⚠️ La colonne **Classe** doit correspondre **exactement** au libellé d'une classe existante pour inscrire l'élève.
-4. **Importer** → un récapitulatif indique les élèves créés / inscrits / ignorés.
-
-### 3.3 Rechercher / filtrer
-Barre de recherche (nom ou matricule) + filtres par **classe** et par **statut**.
-
-### 3.4 Fiche élève (clic sur une ligne)
-- **État civil** : modifier, ajouter une **photo**, supprimer l'élève.
-- **Responsables** : ajouter un tuteur ; bouton **Code parent** = génère un code à 8 caractères à communiquer au parent (voir §9) ; marquer responsable légal / paiement.
-- **Inscriptions** : inscrire / changer de classe (option redoublant).
-
-> Édition réservée à l'administration et au comptable. Enseignants/surveillants sont en lecture seule.
+> Édition réservée à l'administration et au comptable ; enseignants/surveillants en lecture seule.
 
 ---
 
-## 4. Notes (menu **Notes**)
+## 4. Comptes du personnel enseignant (espace RH → **Enseignants**)
 
+Pour qu'un enseignant gère sa classe/matière, il lui faut un **compte relié à sa fiche** :
+1. Créer (ou ouvrir) la fiche de l'enseignant (prénom, nom, **e-mail** conseillé).
+2. Cliquer **« Code d'accès »** → un code à 8 caractères s'affiche → le communiquer à l'enseignant.
+3. L'enseignant crée un compte (Inscription) → **« 🧑‍🏫 Je suis un enseignant »** → saisit le code.
+4. ✅ Son compte est relié (rôle *enseignant*), il arrive sur l'**Appel** ; côté admin un badge **« ✓ compte lié »** apparaît.
+
+**Affectations** : onglet *Affectations* → relier enseignant × classe × matière (alimente aussi les coefficients).
+
+---
+
+## 5. Le quotidien de l'enseignant (espace Pédagogie)
+
+### 5.1 Appel (menu **Appel**)
+À l'ouverture, l'enseignant voit **la liste des élèves de sa classe**. Il pointe **Présent / Absent / Retard** puis **Valide l'appel**.
+➡️ Les absences partent **à l'administration** (Vie scolaire) **et** aux **parents des absents** (alerte 🔔).
+
+### 5.2 Cahier de textes (menu **Cahier de textes**)
+Pour une classe : ajouter une **séance** (date, matière, contenu fait, **devoirs** + « pour le… »). Visible par l'administration et les **parents**.
+
+### 5.3 Progression (menu **Progression**)
+Planifier ses leçons à l'avance (chapitre, matière, période, date prévue) et suivre le statut **À faire / En cours / Fait**.
+
+### 5.4 Assiduité (menu **Assiduité**)
+Absences/retards **par élève** sur une période et par classe (les élèves à ≥ 5 incidents sont surlignés).
+
+---
+
+## 6. Notes (menu **Notes**)
 1. Choisir **Classe**, **Période**, **Matière**.
-2. **+ Ajouter** une évaluation : type (devoir, composition, examen, interro, tp, oral, projet), libellé, **barème** (ex. 20), **coefficient**, date.
-3. Cliquer sur l'évaluation → saisir les notes élève par élève (cocher **Absent** si besoin) → **Enregistrer**.
+2. **+ Ajouter** une évaluation : type, libellé, **barème**, **coefficient**, date.
+3. Cliquer l'évaluation → saisir les notes (cocher **Absent** si besoin) → **Enregistrer**.
 
-> Les notes sont automatiquement ramenées sur 20 selon le barème lors du calcul des bulletins.
-
----
-
-## 5. Bulletins (menu **Bulletins**)
-
-1. Choisir **Classe** + **Période** → **Calculer les bulletins**.
-2. Le tableau affiche **rang, moyenne, mention** pour chaque élève.
-3. Cliquer **Bulletin →** pour voir le bulletin individuel (avec cachet de l'école) → **Imprimer / PDF**.
-
-Moyennes pondérées par les coefficients de matière ; mentions automatiques (Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16).
+> Les notes sont ramenées sur 20 selon le barème lors du calcul des bulletins.
 
 ---
 
-## 6. Paiements & recouvrement (espace Gestion)
+## 7. Bulletins (menu **Bulletins**)
 
-### 6.1 Grille tarifaire (menu **Paiements → onglet Grille tarifaire**)
-Créer les frais : libellé (Scolarité, Inscription, Cantine…), montant, **niveau** ciblé ou tous, **Mensuel** (récurrent), **Obligatoire** (facturé automatiquement en lot).
+1. Choisir **Classe** + **Période** → **Calculer les bulletins** (rang, moyenne, mention).
+2. Cliquer **Bulletin →** pour ouvrir le bulletin d'un élève :
+   - Saisir les **appréciations par matière**, l'**appréciation générale** et la **décision du conseil de classe** (Admis(e), Redouble, Félicitations…).
+   - **📤 Enregistrer & publier** → le bulletin (avec appréciations) devient visible par le **parent**.
+   - **Imprimer / PDF** (avec cachet de l'école).
+3. **📤 Publier aux parents** (en-tête) publie les **moyennes** de toute la classe d'un coup. *(Pour les appréciations, publier chaque bulletin individuellement.)*
 
-### 6.2 Facturer
-- **+ Nouvelle facture** : un élève, une échéance, des lignes (choisir un frais pré-rempli ou saisir librement) → **Créer la facture**.
-- **⚡ Générer en lot** : choisir un **niveau**, cocher les frais (les obligatoires sont pré-cochés), une échéance → **Générer**. Une facture par élève ; les élèves déjà facturés sont ignorés (pas de doublon).
-
-### 6.3 Encaisser
-Cliquer une facture → **reçu imprimable** + historique des encaissements. Dans « Encaisser un paiement » : montant, **mode** (espèces, Wave, OM…), référence, date → **Encaisser**. Le statut de la facture (payée / partielle / en retard) se met à jour tout seul. **Imprimer le reçu** disponible.
-
-### 6.4 Déclarations de paiement mobile (onglet **Déclarations**)
-Quand un parent déclare un paiement mobile (voir §9), il apparaît ici : **valider** (enregistre l'encaissement et solde la facture) ou **rejeter**.
-
-### 6.5 Recouvrement & relances (menu **Recouvrement**)
-- Vue **Impayés** : total dû, dont en retard, liste par élève avec jours de retard et contact payeur.
-  - **Relancer (push)** : envoie une notification + push au parent.
-  - **WhatsApp** : ouvre un message pré-rempli (ou le copie si aucun numéro).
-- Onglet **Historique** : journal de toutes les relances envoyées.
-- **Relances automatiques** (Paramètres) : créer des **paliers** (ex. J+1, J+7, J+15 après l'échéance) avec un message type. Le système envoie les rappels chaque jour automatiquement. Bouton **Relancer tous les retards** pour un envoi immédiat.
+Mentions automatiques : Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16.
 
 ---
 
-## 7. Vie scolaire, emploi du temps, fournitures, communication
-
-- **Vie scolaire** (Pédagogie) : saisie des **absences/retards** et incidents. Une absence saisie notifie automatiquement les parents.
-- **Emploi du temps** (Pédagogie) : créneaux par classe (jour, horaires, matière, enseignant, salle).
-- **Fournitures** (Pédagogie) : liste des fournitures par classe, visible par les parents.
-- **Annonces** (Gestion) : publier une annonce (toute l'école, parents, une classe…).
-- **Messagerie** (Gestion) : échanges école ↔ parents.
+## 8. Classement & tableau d'honneur (menu **Classement**)
+Choisir **Classe + Période** → **Calculer** :
+- **Classement complet** (rang, moyenne, distinction).
+- **Distinctions automatiques** : Encouragements (≥12), Tableau d'honneur (≥14), Félicitations (≥16).
+- **🖨️ Imprimer le tableau d'honneur** (document avec cachet, à afficher/distribuer).
 
 ---
 
-## 8. RH & Paie · Comptabilité
+## 9. Documents administratifs (espace Gestion)
 
-- **RH & Paie** (espace RH) : fiches **personnel**, contrats, **fiches de paie**. Marquer un salaire payé crée automatiquement une dépense en comptabilité.
-- **Enseignants** (espace RH) : annuaire des enseignants et affectations classe/matière.
-- **Comptabilité** (Gestion) : recettes, **dépenses** (avec justificatif), trésorerie.
+### 9.1 Certificats & attestations (menu **Documents**)
+Choisir un **élève** + un **type** (certificat de scolarité, attestation d'inscription, de fréquentation) + signataire/ville/date → **Imprimer / PDF**. Les informations (matricule, classe, naissance, année) sont remplies automatiquement, avec accords (né/née) et cachet.
 
----
-
-## 9. Espace parent
-
-### 9.1 Donner l'accès à un parent
-1. Côté école : Fiche élève → Responsables → **Code parent** → un code à 8 caractères s'affiche.
-2. Communiquer ce code au parent (WhatsApp, papier…).
-
-### 9.2 Côté parent
-1. Le parent crée un compte (Inscription) → écran Bienvenue → **Je suis un parent** → saisir le **code de liaison**.
-2. Il accède à l'espace parent : pour chaque enfant, onglets **Notes, Emploi du temps, Fournitures, Paiements, Absences**.
-3. **Payer une facture** : choisir Wave/OM/Free Money → payer depuis son appli mobile sur le numéro de l'école (référence = n° de facture) → **Déclarer le paiement**. L'école valide ensuite (§6.4).
-
-Un même code peut couvrir plusieurs enfants si le tuteur est rattaché à plusieurs élèves.
+### 9.2 Demandes de documents (menu **Demandes**)
+File des demandes envoyées par les parents (voir §13). Pour chacune : **En cours / Marquer prêt / Rejeter** + une **réponse** (« à retirer au secrétariat »). Le parent est **notifié** automatiquement.
 
 ---
 
-## 10. Notifications push
+## 10. Paiements & recouvrement (espace Gestion)
 
-Les parents (et le personnel) peuvent activer les **notifications push** sur leur appareil. Ils reçoivent alors une alerte pour : nouvelle note, absence, nouvelle facture, **rappel de paiement**. Sur mobile, installer l'app (PWA) via « Ajouter à l'écran d'accueil » améliore l'expérience.
+### 10.1 Grille tarifaire (**Paiements → Grille tarifaire**)
+Frais : libellé, montant, **niveau** ciblé ou tous, **Mensuel**, **Obligatoire**.
+
+### 10.2 Facturer
+- **+ Nouvelle facture** (un élève, échéance, lignes).
+- **⚡ Générer en lot** (par niveau ; frais obligatoires pré-cochés ; pas de doublon).
+
+### 10.3 Encaisser
+Cliquer une facture → reçu imprimable + encaissements. Saisir montant, **mode**, référence, date → **Encaisser** (statut mis à jour automatiquement).
+
+### 10.4 Déclarations de paiement mobile (onglet **Déclarations**)
+Les paiements mobiles déclarés par les parents apparaissent ici : **valider** (solde la facture) ou **rejeter**.
+
+### 10.5 Recouvrement (menu **Recouvrement**)
+Impayés (total, retards, contact), **Relancer** (notification/push), **WhatsApp**, historique.
 
 ---
 
-## 11. Console super-admin (éditeur du SaaS)
-
-Réservée au propriétaire de GesSchool (vous). Accès via le lien **🛠️ Console super-admin** en bas du menu.
-- Liste de **toutes les écoles clientes** : effectif, plan, statut d'abonnement, échéance.
-- Bouton **gérer** : appliquer un **plan/abonnement**, changer le **statut**, ajuster finement les **modules** activés d'une école.
-
-### Promoteur multi-écoles (espace Pilotage)
-Un promoteur propriétaire de plusieurs écoles voit une **synthèse consolidée** (effectifs, facturé/payé, trésorerie, masse salariale) et peut **« entrer »** dans une école pour la gérer.
+## 11. Vie scolaire, emploi du temps, fournitures, communication
+- **Vie scolaire** (Pédagogie) : absences/retards + incidents. Une absence notifie les parents ; la **justification du parent** apparaît avec un statut à **valider** (Justifié / Non justifié).
+- **Emploi du temps** (Pédagogie) : créneaux par classe.
+- **Fournitures** (Pédagogie) : liste par niveau, visible des parents.
+- **Annonces** (Gestion) : publier vers toute l'école / parents / une classe.
+- **Messagerie** (Gestion) : fil de discussion école ↔ parents.
 
 ---
 
-## 12. Récapitulatif des rôles
+## 12. RH & Paie · Comptabilité
+- **RH & Paie** : fiches **personnel**, contrats, **fiches de paie** (un salaire « payé » crée une dépense en comptabilité).
+- **Enseignants** : annuaire + affectations + **codes d'accès** (§4).
+- **Comptabilité** (Gestion) : recettes, **dépenses** (avec justificatif), trésorerie, synthèse/résultat.
+
+---
+
+## 13. Espace parent
+
+### 13.1 Donner l'accès
+Fiche élève → Responsables → **Code parent** → communiquer le code au parent.
+
+### 13.2 Côté parent
+Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant, onglets :
+- **Notes**, **Bulletins** (consultables/imprimables, avec appréciations & décision), **Cahier de textes** (séances + devoirs), **Emploi du temps**, **Fournitures**.
+- **Paiements** : régler une facture par **mobile money** (le numéro de l'école + la référence s'affichent) → **Déclarer le paiement** (l'école valide, §10.4).
+- **Absences** : **Justifier** une absence (motif) → l'école valide.
+- **Documents** : **Demander** un document (certificat…) → suivre le statut.
+- En-tête : 💬 **Messagerie** et 🔔 **Alertes** (+ bouton **Activer** les notifications push).
+
+Un même code couvre **tous les enfants** rattachés au tuteur.
+
+---
+
+## 14. Notifications push
+Parents et personnel peuvent **activer les notifications** sur leur appareil (alerte même app fermée) : nouvelle note, absence, facture, document prêt, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.
+
+---
+
+## 15. Console super-admin & Pilotage
+- **🛠️ Console super-admin** (lien en bas du menu, réservé au propriétaire du SaaS) : toutes les écoles clientes, leur **plan/abonnement**, **statut**, et **modules** activés (vendre à la carte, suspendre un impayé).
+- **Pilotage** (promoteur multi-écoles) : **synthèse consolidée** (effectifs, recouvrement, trésorerie, masse salariale) + **« Gérer cette école »**.
+
+---
+
+## 16. Récapitulatif des rôles
 
 | Rôle | Accès principal |
 |---|---|
-| **Administrateur / Direction** | Tout (tous les espaces) |
+| **Administrateur / Direction** | Tous les espaces |
 | **Comptable** | Gestion : élèves, paiements, recouvrement, comptabilité |
-| **Enseignant** | Pédagogie : notes, bulletins, emploi du temps, vie scolaire (élèves en lecture) |
-| **Surveillant** | Pédagogie : vie scolaire (absences) |
+| **Enseignant** | Pédagogie : appel, cahier de textes, progression, notes, bulletins, classement, assiduité |
+| **Surveillant** | Pédagogie : appel, vie scolaire, assiduité |
 | **RH** | RH & Paie : personnel, paie, enseignants |
 | **Parent** | Espace parent : suivi de ses enfants |
 | **Super-admin** | Console de pilotage du SaaS |
 
 ---
 
-## 13. Dépannage rapide
-
-- **« Je ne vois pas un menu »** → le module est peut-être désactivé (Paramètres → Modules) ou votre rôle n'y a pas accès.
-- **« Impossible d'inscrire un élève »** → aucune classe créée : passez par **Structure** d'abord.
-- **« L'import n'inscrit pas en classe »** → la colonne Classe ne correspond pas au libellé exact d'une classe existante.
-- **« Le parent ne reçoit pas le push »** → vérifier qu'il a activé les notifications et installé l'app ; le rappel reste visible dans son espace même sans push.
-- **Mot de passe oublié** → lien « Mot de passe oublié ? » sur la page de connexion.
+## 17. Dépannage rapide
+- **« Je ne vois pas un menu »** → module désactivé (Paramètres → Modules) ou rôle sans accès.
+- **« L'enseignant ne voit pas sa classe »** → vérifier qu'il a saisi son **code d'accès** et qu'il est **prof principal** ou **affecté** à une classe.
+- **« Impossible d'inscrire un élève »** → créer d'abord une classe via **Structure**.
+- **« L'import n'inscrit pas en classe »** → la colonne Classe ne correspond pas au libellé exact.
+- **« Le parent ne reçoit pas le push »** → vérifier l'activation des notifications / l'installation de l'app ; l'alerte reste visible dans son espace.
+- **Mot de passe oublié** → lien sur la page de connexion.
 
 ---
 
-*GesSchool — gestion scolaire multi-écoles. Document à jour des fonctionnalités courantes (élèves, notes, bulletins, paiements, recouvrement & relances, espace parent, RH, comptabilité).*
+*GesSchool — gestion scolaire multi-écoles, « zéro papier » : appel, cahier de textes, progression, notes, bulletins & appréciations, classement, assiduité, certificats, demandes de documents, paiements & paiement mobile, recouvrement, RH & paie, comptabilité, communication, espace parent, multi-écoles et modules à la carte.*

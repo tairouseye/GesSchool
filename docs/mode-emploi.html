@@ -17,7 +17,8 @@
   h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; }
   h2 { font-size:17px; color:var(--navy); margin-top:24px; }
   h3 { font-size:14px; color:var(--navy); margin-top:18px; }
-  h2, h3 { break-after: avoid; }
+  h2, h3, h4 { break-after: avoid; }
+  h4 { font-size:12.5px; color:var(--navy); margin-top:14px; }
   p { margin: 7px 0; }
   ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
   li { margin: 3px 0; }
@@ -34,168 +35,188 @@
 </style></head>
 <body>
   <div class="cover"><div class="seal">GS</div><div><h1>GesSchool — Mode d'emploi</h1><p>Guide complet d'utilisation</p></div></div>
-  <main><h1>GesSchool — Mode d'emploi</h1>
-<p>Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien. Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur.</p>
+  <main>
+<h1>GesSchool — Mode d'emploi</h1>
+<p>Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien. Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.</p>
 <hr/>
 <h2>0. Concepts de base (à lire une fois)</h2>
 <p><strong>GesSchool</strong> organise le travail en <strong>espaces</strong> selon le métier de chaque utilisateur :</p>
-<table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Contient</th></tr></thead><tbody><tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Enseignants, surveillants</td><td>Élèves, Structure, Notes, Bulletins, Emploi du temps, Vie scolaire, Fournitures</td></tr>
-<tr><td><strong>Gestion</strong></td><td>💼</td><td>Comptables, administration</td><td>Élèves, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres</td></tr>
+<table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Menus</th></tr></thead><tbody><tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Enseignants, surveillants</td><td>Accueil, <strong>Appel</strong>, <strong>Cahier de textes</strong>, <strong>Progression</strong>, Élèves (lecture), Structure, Notes, Bulletins, <strong>Classement</strong>, Emploi du temps, Vie scolaire, <strong>Assiduité</strong>, Fournitures</td></tr>
+<tr><td><strong>Gestion</strong></td><td>💼</td><td>Administration, comptables</td><td>Accueil, Élèves &amp; inscriptions, <strong>Documents</strong>, <strong>Demandes</strong>, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres</td></tr>
 <tr><td><strong>RH &amp; Paie</strong></td><td>🧑‍💼</td><td>RH</td><td>Personnel &amp; paie, Enseignants</td></tr>
 <tr><td><strong>Pilotage</strong></td><td>🎯</td><td>Promoteur / direction</td><td>Vue consolidée de toutes ses écoles</td></tr>
+<tr><td><strong>Parent</strong></td><td>👪</td><td>Familles</td><td>Suivi de chaque enfant (voir §13)</td></tr>
 </tbody></table>
 <ul><li>L'<strong>administrateur</strong> et la <strong>direction</strong> voient <strong>tous les espaces</strong>. Les autres rôles ne voient que le leur.</li>
-<li>Le sélecteur d'espace est en haut à gauche (visible si vous avez accès à plusieurs).</li>
-<li>Chaque <strong>module</strong> (Finances, Évaluations, etc.) peut être activé/désactivé par école (voir Paramètres).</li>
+<li>Le <strong>sélecteur d'espace</strong> est en haut à gauche de la barre latérale (visible si vous avez accès à plusieurs).</li>
+<li>Chaque <strong>module</strong> (Finances, Évaluations, RH…) peut être activé/désactivé par école (Paramètres → Modules).</li>
+<li>Chacun <strong>atterrit dans son espace</strong> à la connexion (un enseignant arrive directement sur l'<strong>Appel</strong>).</li>
 </ul>
 <p><strong>Rôles disponibles :</strong> Administrateur, Direction, Enseignant, Comptable, RH, Surveillant, Parent, Super-admin.</p>
 <hr/>
 <h2>1. Créer son compte et son école</h2>
 <h3>1.1 Créer le compte</h3>
 <ol><li>Ouvrir l'application → page <strong>Connexion</strong>.</li>
-<li>Onglet <strong>Inscription</strong> → saisir e-mail + mot de passe (min. 6 caractères) → <strong>Créer le compte</strong>.</li>
+<li>Onglet <strong>Inscription</strong> → e-mail + mot de passe (min. 6 caractères) → <strong>Créer le compte</strong>.</li>
 <li>Selon la configuration, un e-mail de confirmation peut être demandé : le valider, puis se connecter.</li>
 </ol>
 <h3>1.2 Choisir son profil</h3>
-<p>Au premier accès, l'écran <strong>Bienvenue</strong> propose :</p>
-<ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (c'est votre cas en tant qu'admin).</li>
-<li><strong>👪 Je suis un parent</strong> → rejoint un enfant avec un code de liaison (voir §9).</li>
+<p>Au premier accès, l'écran <strong>Bienvenue</strong> propose trois entrées :</p>
+<ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (cas de l'admin/promoteur).</li>
+<li><strong>🧑‍🏫 Je suis un enseignant</strong> → relie son compte à sa fiche avec un <strong>code</strong> (voir §4).</li>
+<li><strong>👪 Je suis un parent</strong> → rejoint un enfant avec un <strong>code de liaison</strong> (voir §13).</li>
 </ul>
-<h3>1.3 Assistant de création (3 étapes)</h3>
-<p>En cliquant sur « Je gère une école » :</p>
+<h3>1.3 Assistant de création de l'école (3 étapes)</h3>
 <ol><li><strong>Identité</strong> : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.</li>
 <li><strong>Cycles ouverts</strong> : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).</li>
-<li><strong>Responsable &amp; année</strong> : votre prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage <strong>Trimestres (3)</strong> ou <strong>Semestres (2)</strong>.</li>
+<li><strong>Responsable &amp; année</strong> : prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage <strong>Trimestres (3)</strong> ou <strong>Semestres (2)</strong>.</li>
 <li><strong>Créer l'établissement</strong>.</li>
 </ol>
-<p>➡️ À la fin, l'école, ses cycles, votre compte admin, l'année scolaire et les périodes sont créés automatiquement. Vous arrivez sur le tableau de bord.</p>
+<p>➡️ L'école, ses cycles, votre compte admin, l'année et les périodes sont créés automatiquement.</p>
 <hr/>
-<h2>2. Configuration initiale (à faire en premier)</h2>
+<h2>2. Configuration initiale</h2>
 <h3>2.1 Structure académique (menu <strong>Structure</strong>)</h3>
-<p>C'est le squelette de l'école. Ordre logique : <strong>Niveaux → Classes → Matières → (Séries) → Coefficients</strong>.</p>
-<ul><li><strong>Niveaux</strong> : dans chaque cycle, taper un niveau (ex. « 6e », « CP », « Seconde ») → <strong>+ Niveau</strong>.</li>
-<li><strong>Classes</strong> (génération en lot) : sur une ligne de niveau, choisir la *base du nom* (ex. 6e), le *nombre* de classes, le *suffixe* (A,B,C / 1,2,3 / aucun), éventuellement une *série* et un *effectif max* → <strong>+ Générer</strong>. L'aperçu montre les classes à créer (les doublons sont ignorés).</li>
-<li><strong>Matières</strong> : libellé + code (ex. MATH) + cycle optionnel → <strong>+ Ajouter</strong>.</li>
-<li><strong>Séries</strong> (lycée uniquement) : créer L, S2… ou cliquer <strong>+ Pré-remplir les séries standard</strong>.</li>
-<li><strong>Grille de coefficients</strong> : choisir une *portée* (une série OU un niveau), puis saisir le coefficient de chaque matière (laisser vide = matière non comptée). Saisi une fois, il s'applique à toutes les classes concernées.</li>
+<p>Ordre logique : <strong>Niveaux → Classes → Matières → (Séries) → Coefficients</strong>.</p>
+<ul><li><strong>Niveaux</strong> : dans chaque cycle, taper un niveau (6e, CP, Seconde) → <strong>+ Niveau</strong>.</li>
+<li><strong>Classes</strong> (génération en lot) : base du nom + nombre + suffixe (A,B,C / 1,2,3 / aucun) + série + effectif → <strong>+ Générer</strong> (doublons ignorés).</li>
+<li><strong>Matières</strong> : libellé + code (ex. MATH).</li>
+<li><strong>Séries</strong> (lycée) : créer L, S2… ou <strong>+ Pré-remplir les séries standard</strong>.</li>
+<li><strong>Grille de coefficients</strong> : choisir une portée (série OU niveau), saisir le coefficient de chaque matière (vide = non comptée).</li>
 </ul>
 <h3>2.2 Paramètres (menu <strong>Paramètres</strong>)</h3>
-<ul><li><strong>Établissement</strong> : nom, sigle, devise (XOF par défaut), couleurs.</li>
-<li><strong>Matricule des élèves</strong> : préfixe, séparateur, nombre de chiffres. Aperçu en direct (ex. <code>GS-25-0001</code>). Généré automatiquement à chaque inscription.</li>
-<li><strong>Relances automatiques</strong> (si module Finances actif) : voir §6.4.</li>
-<li><strong>Modules actifs</strong> : activer/désactiver des modules. Un module désactivé disparaît des menus.</li>
+<ul><li><strong>Établissement</strong> : nom, sigle, devise, couleurs.</li>
+<li><strong>Matricule</strong> : préfixe, séparateur, nombre de chiffres (aperçu ex. <code>GS-25-0001</code>).</li>
+<li><strong>Modules actifs</strong> : activer/désactiver des modules (un module désactivé disparaît des menus et bloque l'accès).</li>
 </ul>
-<h3>2.3 Coordonnées de paiement mobile (menu <strong>Paiements → onglet Paiement mobile</strong>)</h3>
-<p>Saisir vos numéros <strong>Wave / Orange Money / Free Money</strong>. Ils seront affichés aux parents pour régler les factures.</p>
+<h3>2.3 Paiement mobile (menu <strong>Paiements → onglet Paiement mobile</strong>)</h3>
+<p>Saisir vos numéros <strong>Wave / Orange Money / Free Money</strong> (affichés aux parents pour régler les factures).</p>
 <hr/>
 <h2>3. Élèves &amp; inscriptions (menu <strong>Élèves</strong>)</h2>
-<h3>3.1 Ajouter un élève (un par un)</h3>
-<p><strong>+ Nouvel élève</strong> → prénom, nom, sexe, naissance, classe (inscription immédiate), et un responsable optionnel (prénom, nom, téléphone, lien). Le <strong>matricule est généré automatiquement</strong>.</p>
-<h3>3.2 Importer en masse (Excel/CSV)</h3>
-<p><strong>↑ Importer (Excel)</strong> :</p>
-<ol><li>Choisir le fichier (1ʳᵉ ligne = en-têtes).</li>
-<li>Vérifier l'<strong>association des colonnes</strong> (Prénom et Nom obligatoires ; Sexe, Date de naissance, Lieu, Matricule, Classe optionnels). Les colonnes sont devinées automatiquement.</li>
-<li>⚠️ La colonne <strong>Classe</strong> doit correspondre <strong>exactement</strong> au libellé d'une classe existante pour inscrire l'élève.</li>
-<li><strong>Importer</strong> → un récapitulatif indique les élèves créés / inscrits / ignorés.</li>
-</ol>
-<h3>3.3 Rechercher / filtrer</h3>
-<p>Barre de recherche (nom ou matricule) + filtres par <strong>classe</strong> et par <strong>statut</strong>.</p>
-<h3>3.4 Fiche élève (clic sur une ligne)</h3>
-<ul><li><strong>État civil</strong> : modifier, ajouter une <strong>photo</strong>, supprimer l'élève.</li>
-<li><strong>Responsables</strong> : ajouter un tuteur ; bouton <strong>Code parent</strong> = génère un code à 8 caractères à communiquer au parent (voir §9) ; marquer responsable légal / paiement.</li>
-<li><strong>Inscriptions</strong> : inscrire / changer de classe (option redoublant).</li>
+<ul><li><strong>+ Nouvel élève</strong> : prénom, nom, sexe, naissance, classe, responsable optionnel. <strong>Matricule auto</strong>.</li>
+<li><strong>↑ Importer (Excel)</strong> : fichier .xlsx/.csv → associer les colonnes (Prénom, Nom obligatoires) → la colonne <strong>Classe</strong> doit correspondre <strong>exactement</strong> au libellé d'une classe existante → <strong>Importer</strong>.</li>
+<li><strong>Recherche/filtres</strong> : nom/matricule, classe, statut.</li>
+<li><strong>Fiche élève</strong> (clic) : état civil + <strong>photo</strong>, <strong>Responsables</strong> (+ bouton <strong>Code parent</strong>, §13), <strong>Inscriptions</strong>.</li>
 </ul>
-<blockquote>Édition réservée à l'administration et au comptable. Enseignants/surveillants sont en lecture seule.</blockquote>
+<blockquote>Édition réservée à l'administration et au comptable ; enseignants/surveillants en lecture seule.</blockquote>
 <hr/>
-<h2>4. Notes (menu <strong>Notes</strong>)</h2>
+<h2>4. Comptes du personnel enseignant (espace RH → <strong>Enseignants</strong>)</h2>
+<p>Pour qu'un enseignant gère sa classe/matière, il lui faut un <strong>compte relié à sa fiche</strong> :</p>
+<ol><li>Créer (ou ouvrir) la fiche de l'enseignant (prénom, nom, <strong>e-mail</strong> conseillé).</li>
+<li>Cliquer <strong>« Code d'accès »</strong> → un code à 8 caractères s'affiche → le communiquer à l'enseignant.</li>
+<li>L'enseignant crée un compte (Inscription) → <strong>« 🧑‍🏫 Je suis un enseignant »</strong> → saisit le code.</li>
+<li>✅ Son compte est relié (rôle <em>enseignant</em>), il arrive sur l'<strong>Appel</strong> ; côté admin un badge <strong>« ✓ compte lié »</strong> apparaît.</li>
+</ol>
+<p><strong>Affectations</strong> : onglet <em>Affectations</em> → relier enseignant × classe × matière (alimente aussi les coefficients).</p>
+<hr/>
+<h2>5. Le quotidien de l'enseignant (espace Pédagogie)</h2>
+<h3>5.1 Appel (menu <strong>Appel</strong>)</h3>
+<p>À l'ouverture, l'enseignant voit <strong>la liste des élèves de sa classe</strong>. Il pointe <strong>Présent / Absent / Retard</strong> puis <strong>Valide l'appel</strong>. ➡️ Les absences partent <strong>à l'administration</strong> (Vie scolaire) <strong>et</strong> aux <strong>parents des absents</strong> (alerte 🔔).</p>
+<h3>5.2 Cahier de textes (menu <strong>Cahier de textes</strong>)</h3>
+<p>Pour une classe : ajouter une <strong>séance</strong> (date, matière, contenu fait, <strong>devoirs</strong> + « pour le… »). Visible par l'administration et les <strong>parents</strong>.</p>
+<h3>5.3 Progression (menu <strong>Progression</strong>)</h3>
+<p>Planifier ses leçons à l'avance (chapitre, matière, période, date prévue) et suivre le statut <strong>À faire / En cours / Fait</strong>.</p>
+<h3>5.4 Assiduité (menu <strong>Assiduité</strong>)</h3>
+<p>Absences/retards <strong>par élève</strong> sur une période et par classe (les élèves à ≥ 5 incidents sont surlignés).</p>
+<hr/>
+<h2>6. Notes (menu <strong>Notes</strong>)</h2>
 <ol><li>Choisir <strong>Classe</strong>, <strong>Période</strong>, <strong>Matière</strong>.</li>
-<li><strong>+ Ajouter</strong> une évaluation : type (devoir, composition, examen, interro, tp, oral, projet), libellé, <strong>barème</strong> (ex. 20), <strong>coefficient</strong>, date.</li>
-<li>Cliquer sur l'évaluation → saisir les notes élève par élève (cocher <strong>Absent</strong> si besoin) → <strong>Enregistrer</strong>.</li>
+<li><strong>+ Ajouter</strong> une évaluation : type, libellé, <strong>barème</strong>, <strong>coefficient</strong>, date.</li>
+<li>Cliquer l'évaluation → saisir les notes (cocher <strong>Absent</strong> si besoin) → <strong>Enregistrer</strong>.</li>
 </ol>
-<blockquote>Les notes sont automatiquement ramenées sur 20 selon le barème lors du calcul des bulletins.</blockquote>
+<blockquote>Les notes sont ramenées sur 20 selon le barème lors du calcul des bulletins.</blockquote>
 <hr/>
-<h2>5. Bulletins (menu <strong>Bulletins</strong>)</h2>
-<ol><li>Choisir <strong>Classe</strong> + <strong>Période</strong> → <strong>Calculer les bulletins</strong>.</li>
-<li>Le tableau affiche <strong>rang, moyenne, mention</strong> pour chaque élève.</li>
-<li>Cliquer <strong>Bulletin →</strong> pour voir le bulletin individuel (avec cachet de l'école) → <strong>Imprimer / PDF</strong>.</li>
+<h2>7. Bulletins (menu <strong>Bulletins</strong>)</h2>
+<ol><li>Choisir <strong>Classe</strong> + <strong>Période</strong> → <strong>Calculer les bulletins</strong> (rang, moyenne, mention).</li>
+<li>Cliquer <strong>Bulletin →</strong> pour ouvrir le bulletin d'un élève :</li>
+<li>Saisir les <strong>appréciations par matière</strong>, l'<strong>appréciation générale</strong> et la <strong>décision du conseil de classe</strong> (Admis(e), Redouble, Félicitations…).</li>
+<li><strong>📤 Enregistrer &amp; publier</strong> → le bulletin (avec appréciations) devient visible par le <strong>parent</strong>.</li>
+<li><strong>Imprimer / PDF</strong> (avec cachet de l'école).</li>
+<li><strong>📤 Publier aux parents</strong> (en-tête) publie les <strong>moyennes</strong> de toute la classe d'un coup. <em>(Pour les appréciations, publier chaque bulletin individuellement.)</em></li>
 </ol>
-<p>Moyennes pondérées par les coefficients de matière ; mentions automatiques (Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16).</p>
+<p>Mentions automatiques : Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16.</p>
 <hr/>
-<h2>6. Paiements &amp; recouvrement (espace Gestion)</h2>
-<h3>6.1 Grille tarifaire (menu <strong>Paiements → onglet Grille tarifaire</strong>)</h3>
-<p>Créer les frais : libellé (Scolarité, Inscription, Cantine…), montant, <strong>niveau</strong> ciblé ou tous, <strong>Mensuel</strong> (récurrent), <strong>Obligatoire</strong> (facturé automatiquement en lot).</p>
-<h3>6.2 Facturer</h3>
-<ul><li><strong>+ Nouvelle facture</strong> : un élève, une échéance, des lignes (choisir un frais pré-rempli ou saisir librement) → <strong>Créer la facture</strong>.</li>
-<li><strong>⚡ Générer en lot</strong> : choisir un <strong>niveau</strong>, cocher les frais (les obligatoires sont pré-cochés), une échéance → <strong>Générer</strong>. Une facture par élève ; les élèves déjà facturés sont ignorés (pas de doublon).</li>
-</ul>
-<h3>6.3 Encaisser</h3>
-<p>Cliquer une facture → <strong>reçu imprimable</strong> + historique des encaissements. Dans « Encaisser un paiement » : montant, <strong>mode</strong> (espèces, Wave, OM…), référence, date → <strong>Encaisser</strong>. Le statut de la facture (payée / partielle / en retard) se met à jour tout seul. <strong>Imprimer le reçu</strong> disponible.</p>
-<h3>6.4 Déclarations de paiement mobile (onglet <strong>Déclarations</strong>)</h3>
-<p>Quand un parent déclare un paiement mobile (voir §9), il apparaît ici : <strong>valider</strong> (enregistre l'encaissement et solde la facture) ou <strong>rejeter</strong>.</p>
-<h3>6.5 Recouvrement &amp; relances (menu <strong>Recouvrement</strong>)</h3>
-<ul><li>Vue <strong>Impayés</strong> : total dû, dont en retard, liste par élève avec jours de retard et contact payeur.</li>
-<li><strong>Relancer (push)</strong> : envoie une notification + push au parent.</li>
-<li><strong>WhatsApp</strong> : ouvre un message pré-rempli (ou le copie si aucun numéro).</li>
-<li>Onglet <strong>Historique</strong> : journal de toutes les relances envoyées.</li>
-<li><strong>Relances automatiques</strong> (Paramètres) : créer des <strong>paliers</strong> (ex. J+1, J+7, J+15 après l'échéance) avec un message type. Le système envoie les rappels chaque jour automatiquement. Bouton <strong>Relancer tous les retards</strong> pour un envoi immédiat.</li>
+<h2>8. Classement &amp; tableau d'honneur (menu <strong>Classement</strong>)</h2>
+<p>Choisir <strong>Classe + Période</strong> → <strong>Calculer</strong> :</p>
+<ul><li><strong>Classement complet</strong> (rang, moyenne, distinction).</li>
+<li><strong>Distinctions automatiques</strong> : Encouragements (≥12), Tableau d'honneur (≥14), Félicitations (≥16).</li>
+<li><strong>🖨️ Imprimer le tableau d'honneur</strong> (document avec cachet, à afficher/distribuer).</li>
 </ul>
 <hr/>
-<h2>7. Vie scolaire, emploi du temps, fournitures, communication</h2>
-<ul><li><strong>Vie scolaire</strong> (Pédagogie) : saisie des <strong>absences/retards</strong> et incidents. Une absence saisie notifie automatiquement les parents.</li>
-<li><strong>Emploi du temps</strong> (Pédagogie) : créneaux par classe (jour, horaires, matière, enseignant, salle).</li>
-<li><strong>Fournitures</strong> (Pédagogie) : liste des fournitures par classe, visible par les parents.</li>
-<li><strong>Annonces</strong> (Gestion) : publier une annonce (toute l'école, parents, une classe…).</li>
-<li><strong>Messagerie</strong> (Gestion) : échanges école ↔ parents.</li>
+<h2>9. Documents administratifs (espace Gestion)</h2>
+<h3>9.1 Certificats &amp; attestations (menu <strong>Documents</strong>)</h3>
+<p>Choisir un <strong>élève</strong> + un <strong>type</strong> (certificat de scolarité, attestation d'inscription, de fréquentation) + signataire/ville/date → <strong>Imprimer / PDF</strong>. Les informations (matricule, classe, naissance, année) sont remplies automatiquement, avec accords (né/née) et cachet.</p>
+<h3>9.2 Demandes de documents (menu <strong>Demandes</strong>)</h3>
+<p>File des demandes envoyées par les parents (voir §13). Pour chacune : <strong>En cours / Marquer prêt / Rejeter</strong> + une <strong>réponse</strong> (« à retirer au secrétariat »). Le parent est <strong>notifié</strong> automatiquement.</p>
+<hr/>
+<h2>10. Paiements &amp; recouvrement (espace Gestion)</h2>
+<h3>10.1 Grille tarifaire (<strong>Paiements → Grille tarifaire</strong>)</h3>
+<p>Frais : libellé, montant, <strong>niveau</strong> ciblé ou tous, <strong>Mensuel</strong>, <strong>Obligatoire</strong>.</p>
+<h3>10.2 Facturer</h3>
+<ul><li><strong>+ Nouvelle facture</strong> (un élève, échéance, lignes).</li>
+<li><strong>⚡ Générer en lot</strong> (par niveau ; frais obligatoires pré-cochés ; pas de doublon).</li>
+</ul>
+<h3>10.3 Encaisser</h3>
+<p>Cliquer une facture → reçu imprimable + encaissements. Saisir montant, <strong>mode</strong>, référence, date → <strong>Encaisser</strong> (statut mis à jour automatiquement).</p>
+<h3>10.4 Déclarations de paiement mobile (onglet <strong>Déclarations</strong>)</h3>
+<p>Les paiements mobiles déclarés par les parents apparaissent ici : <strong>valider</strong> (solde la facture) ou <strong>rejeter</strong>.</p>
+<h3>10.5 Recouvrement (menu <strong>Recouvrement</strong>)</h3>
+<p>Impayés (total, retards, contact), <strong>Relancer</strong> (notification/push), <strong>WhatsApp</strong>, historique.</p>
+<hr/>
+<h2>11. Vie scolaire, emploi du temps, fournitures, communication</h2>
+<ul><li><strong>Vie scolaire</strong> (Pédagogie) : absences/retards + incidents. Une absence notifie les parents ; la <strong>justification du parent</strong> apparaît avec un statut à <strong>valider</strong> (Justifié / Non justifié).</li>
+<li><strong>Emploi du temps</strong> (Pédagogie) : créneaux par classe.</li>
+<li><strong>Fournitures</strong> (Pédagogie) : liste par niveau, visible des parents.</li>
+<li><strong>Annonces</strong> (Gestion) : publier vers toute l'école / parents / une classe.</li>
+<li><strong>Messagerie</strong> (Gestion) : fil de discussion école ↔ parents.</li>
 </ul>
 <hr/>
-<h2>8. RH &amp; Paie · Comptabilité</h2>
-<ul><li><strong>RH &amp; Paie</strong> (espace RH) : fiches <strong>personnel</strong>, contrats, <strong>fiches de paie</strong>. Marquer un salaire payé crée automatiquement une dépense en comptabilité.</li>
-<li><strong>Enseignants</strong> (espace RH) : annuaire des enseignants et affectations classe/matière.</li>
-<li><strong>Comptabilité</strong> (Gestion) : recettes, <strong>dépenses</strong> (avec justificatif), trésorerie.</li>
+<h2>12. RH &amp; Paie · Comptabilité</h2>
+<ul><li><strong>RH &amp; Paie</strong> : fiches <strong>personnel</strong>, contrats, <strong>fiches de paie</strong> (un salaire « payé » crée une dépense en comptabilité).</li>
+<li><strong>Enseignants</strong> : annuaire + affectations + <strong>codes d'accès</strong> (§4).</li>
+<li><strong>Comptabilité</strong> (Gestion) : recettes, <strong>dépenses</strong> (avec justificatif), trésorerie, synthèse/résultat.</li>
 </ul>
 <hr/>
-<h2>9. Espace parent</h2>
-<h3>9.1 Donner l'accès à un parent</h3>
-<ol><li>Côté école : Fiche élève → Responsables → <strong>Code parent</strong> → un code à 8 caractères s'affiche.</li>
-<li>Communiquer ce code au parent (WhatsApp, papier…).</li>
-</ol>
-<h3>9.2 Côté parent</h3>
-<ol><li>Le parent crée un compte (Inscription) → écran Bienvenue → <strong>Je suis un parent</strong> → saisir le <strong>code de liaison</strong>.</li>
-<li>Il accède à l'espace parent : pour chaque enfant, onglets <strong>Notes, Emploi du temps, Fournitures, Paiements, Absences</strong>.</li>
-<li><strong>Payer une facture</strong> : choisir Wave/OM/Free Money → payer depuis son appli mobile sur le numéro de l'école (référence = n° de facture) → <strong>Déclarer le paiement</strong>. L'école valide ensuite (§6.4).</li>
-</ol>
-<p>Un même code peut couvrir plusieurs enfants si le tuteur est rattaché à plusieurs élèves.</p>
-<hr/>
-<h2>10. Notifications push</h2>
-<p>Les parents (et le personnel) peuvent activer les <strong>notifications push</strong> sur leur appareil. Ils reçoivent alors une alerte pour : nouvelle note, absence, nouvelle facture, <strong>rappel de paiement</strong>. Sur mobile, installer l'app (PWA) via « Ajouter à l'écran d'accueil » améliore l'expérience.</p>
-<hr/>
-<h2>11. Console super-admin (éditeur du SaaS)</h2>
-<p>Réservée au propriétaire de GesSchool (vous). Accès via le lien <strong>🛠️ Console super-admin</strong> en bas du menu.</p>
-<ul><li>Liste de <strong>toutes les écoles clientes</strong> : effectif, plan, statut d'abonnement, échéance.</li>
-<li>Bouton <strong>gérer</strong> : appliquer un <strong>plan/abonnement</strong>, changer le <strong>statut</strong>, ajuster finement les <strong>modules</strong> activés d'une école.</li>
+<h2>13. Espace parent</h2>
+<h3>13.1 Donner l'accès</h3>
+<p>Fiche élève → Responsables → <strong>Code parent</strong> → communiquer le code au parent.</p>
+<h3>13.2 Côté parent</h3>
+<p>Inscription → <strong>Je suis un parent</strong> → saisir le <strong>code</strong>. Pour chaque enfant, onglets :</p>
+<ul><li><strong>Notes</strong>, <strong>Bulletins</strong> (consultables/imprimables, avec appréciations &amp; décision), <strong>Cahier de textes</strong> (séances + devoirs), <strong>Emploi du temps</strong>, <strong>Fournitures</strong>.</li>
+<li><strong>Paiements</strong> : régler une facture par <strong>mobile money</strong> (le numéro de l'école + la référence s'affichent) → <strong>Déclarer le paiement</strong> (l'école valide, §10.4).</li>
+<li><strong>Absences</strong> : <strong>Justifier</strong> une absence (motif) → l'école valide.</li>
+<li><strong>Documents</strong> : <strong>Demander</strong> un document (certificat…) → suivre le statut.</li>
+<li>En-tête : 💬 <strong>Messagerie</strong> et 🔔 <strong>Alertes</strong> (+ bouton <strong>Activer</strong> les notifications push).</li>
 </ul>
-<h3>Promoteur multi-écoles (espace Pilotage)</h3>
-<p>Un promoteur propriétaire de plusieurs écoles voit une <strong>synthèse consolidée</strong> (effectifs, facturé/payé, trésorerie, masse salariale) et peut <strong>« entrer »</strong> dans une école pour la gérer.</p>
+<p>Un même code couvre <strong>tous les enfants</strong> rattachés au tuteur.</p>
 <hr/>
-<h2>12. Récapitulatif des rôles</h2>
-<table><thead><tr><th>Rôle</th><th>Accès principal</th></tr></thead><tbody><tr><td><strong>Administrateur / Direction</strong></td><td>Tout (tous les espaces)</td></tr>
+<h2>14. Notifications push</h2>
+<p>Parents et personnel peuvent <strong>activer les notifications</strong> sur leur appareil (alerte même app fermée) : nouvelle note, absence, facture, document prêt, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.</p>
+<hr/>
+<h2>15. Console super-admin &amp; Pilotage</h2>
+<ul><li><strong>🛠️ Console super-admin</strong> (lien en bas du menu, réservé au propriétaire du SaaS) : toutes les écoles clientes, leur <strong>plan/abonnement</strong>, <strong>statut</strong>, et <strong>modules</strong> activés (vendre à la carte, suspendre un impayé).</li>
+<li><strong>Pilotage</strong> (promoteur multi-écoles) : <strong>synthèse consolidée</strong> (effectifs, recouvrement, trésorerie, masse salariale) + <strong>« Gérer cette école »</strong>.</li>
+</ul>
+<hr/>
+<h2>16. Récapitulatif des rôles</h2>
+<table><thead><tr><th>Rôle</th><th>Accès principal</th></tr></thead><tbody><tr><td><strong>Administrateur / Direction</strong></td><td>Tous les espaces</td></tr>
 <tr><td><strong>Comptable</strong></td><td>Gestion : élèves, paiements, recouvrement, comptabilité</td></tr>
-<tr><td><strong>Enseignant</strong></td><td>Pédagogie : notes, bulletins, emploi du temps, vie scolaire (élèves en lecture)</td></tr>
-<tr><td><strong>Surveillant</strong></td><td>Pédagogie : vie scolaire (absences)</td></tr>
+<tr><td><strong>Enseignant</strong></td><td>Pédagogie : appel, cahier de textes, progression, notes, bulletins, classement, assiduité</td></tr>
+<tr><td><strong>Surveillant</strong></td><td>Pédagogie : appel, vie scolaire, assiduité</td></tr>
 <tr><td><strong>RH</strong></td><td>RH &amp; Paie : personnel, paie, enseignants</td></tr>
 <tr><td><strong>Parent</strong></td><td>Espace parent : suivi de ses enfants</td></tr>
 <tr><td><strong>Super-admin</strong></td><td>Console de pilotage du SaaS</td></tr>
 </tbody></table>
 <hr/>
-<h2>13. Dépannage rapide</h2>
-<ul><li><strong>« Je ne vois pas un menu »</strong> → le module est peut-être désactivé (Paramètres → Modules) ou votre rôle n'y a pas accès.</li>
-<li><strong>« Impossible d'inscrire un élève »</strong> → aucune classe créée : passez par <strong>Structure</strong> d'abord.</li>
-<li><strong>« L'import n'inscrit pas en classe »</strong> → la colonne Classe ne correspond pas au libellé exact d'une classe existante.</li>
-<li><strong>« Le parent ne reçoit pas le push »</strong> → vérifier qu'il a activé les notifications et installé l'app ; le rappel reste visible dans son espace même sans push.</li>
-<li><strong>Mot de passe oublié</strong> → lien « Mot de passe oublié ? » sur la page de connexion.</li>
+<h2>17. Dépannage rapide</h2>
+<ul><li><strong>« Je ne vois pas un menu »</strong> → module désactivé (Paramètres → Modules) ou rôle sans accès.</li>
+<li><strong>« L'enseignant ne voit pas sa classe »</strong> → vérifier qu'il a saisi son <strong>code d'accès</strong> et qu'il est <strong>prof principal</strong> ou <strong>affecté</strong> à une classe.</li>
+<li><strong>« Impossible d'inscrire un élève »</strong> → créer d'abord une classe via <strong>Structure</strong>.</li>
+<li><strong>« L'import n'inscrit pas en classe »</strong> → la colonne Classe ne correspond pas au libellé exact.</li>
+<li><strong>« Le parent ne reçoit pas le push »</strong> → vérifier l'activation des notifications / l'installation de l'app ; l'alerte reste visible dans son espace.</li>
+<li><strong>Mot de passe oublié</strong> → lien sur la page de connexion.</li>
 </ul>
 <hr/>
-<p>*GesSchool — gestion scolaire multi-écoles. Document à jour des fonctionnalités courantes (élèves, notes, bulletins, paiements, recouvrement &amp; relances, espace parent, RH, comptabilité).*</p>
-</main>
-  <div class="foot">GesSchool — gestion scolaire multi-écoles · document généré le 28/06/2026</div>
+<p><em>GesSchool — gestion scolaire multi-écoles, « zéro papier » : appel, cahier de textes, progression, notes, bulletins &amp; appréciations, classement, assiduité, certificats, demandes de documents, paiements &amp; paiement mobile, recouvrement, RH &amp; paie, comptabilité, communication, espace parent, multi-écoles et modules à la carte.</em></p>
+  </main>
+  <div class="foot">GesSchool — gestion scolaire multi-écoles</div>
 </body></html>
