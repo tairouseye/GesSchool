@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, enfantDeclarations, justifierAbsenceParent,
-  enfantBulletins, enfantBulletinLignes,
+  enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
@@ -27,17 +27,18 @@ export default function ParentEnfant() {
   const [declarations, setDeclarations] = useState([]);
   const [cahier, setCahier] = useState([]);
   const [bulletins, setBulletins] = useState([]);
+  const [demandes, setDemandes] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
   const charger = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl, cah, bul] = await Promise.all([
+      const [n, f, a, e, four, inf, decl, cah, bul, dem] = await Promise.all([
         enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
-        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id),
+        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id), mesDemandes(),
       ]);
       setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
-      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul);
+      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul); setDemandes(dem);
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
   }, [id]);
@@ -50,7 +51,7 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"]].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -72,6 +73,8 @@ export default function ParentEnfant() {
         <Fournitures items={fournitures} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={charger} onErreur={setErreur} />
+      ) : onglet === "documents" ? (
+        <Documents eleveId={id} demandes={demandes} onChange={charger} onErreur={setErreur} />
       ) : (
         <Absences absences={absences} onChange={charger} onErreur={setErreur} />
       )}
@@ -260,6 +263,66 @@ function BulletinParent({ b, lignes }) {
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
         <span>{b.ecole} · {b.sigle}</span>
       </div>
+    </div>
+  );
+}
+
+function Documents({ eleveId, demandes, onChange, onErreur }) {
+  const [type, setType] = useState("scolarite");
+  const [message, setMessage] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const fmtD = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
+  const lib = { en_attente: "En attente", en_cours: "En cours", pret: "Prêt ✓", rejete: "Rejeté" };
+  const ton = { en_attente: "text-or-600", en_cours: "text-navy-900/60", pret: "text-emerald-700", rejete: "text-rose-600" };
+  const typeLib = Object.fromEntries(TYPES_DOCUMENT);
+
+  async function envoyer() {
+    if (!type) return;
+    setEnvoi(true); onErreur("");
+    try { await demanderDocument(eleveId, type, message.trim()); setMessage(""); await onChange(); }
+    catch (e) { onErreur(e.message); }
+    finally { setEnvoi(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Carte className="p-5">
+        <h3 className="mb-3 font-display font-semibold text-navy-900">Demander un document</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type de document</span>
+            <select value={type} onChange={(e) => setType(e.target.value)}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              {TYPES_DOCUMENT.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Précisions (optionnel)</span>
+            <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Motif, urgence…"
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
+          </label>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Bouton onClick={envoyer} disabled={envoi}>{envoi ? "Envoi…" : "Envoyer la demande"}</Bouton>
+        </div>
+      </Carte>
+
+      {demandes.length > 0 && (
+        <Carte className="p-5">
+          <h3 className="mb-2 font-display font-semibold text-navy-900">Mes demandes</h3>
+          <ul className="divide-y divide-navy-900/5">
+            {demandes.map((d) => (
+              <li key={d.id} className="py-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-navy-900">{typeLib[d.type] || d.type} <span className="text-xs text-navy-900/40">· {d.eleve} · {fmtD(d.created_at)}</span></span>
+                  <span className={`text-xs font-medium ${ton[d.statut] || ""}`}>{lib[d.statut] || d.statut}</span>
+                </div>
+                {d.reponse && <p className="mt-0.5 text-xs text-navy-900/50">Réponse : {d.reponse}</p>}
+              </li>
+            ))}
+          </ul>
+        </Carte>
+      )}
     </div>
   );
 }

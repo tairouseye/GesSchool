@@ -37,6 +37,7 @@ import CahierTextes from "@/pages/CahierTextes.jsx";
 import Progression from "@/pages/Progression.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import Certificats from "@/pages/Certificats.jsx";
+import Demandes from "@/pages/Demandes.jsx";
 import SuperAdmin from "@/pages/SuperAdmin.jsx";
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="/messagerie" element={<Garde cle="messagerie"><Messagerie /></Garde>} />
             <Route path="/parametres" element={<Garde cle="parametres"><Parametres /></Garde>} />
             <Route path="/certificats" element={<Garde cle="certificats"><Certificats /></Garde>} />
+            <Route path="/demandes" element={<Garde cle="demandes"><Demandes /></Garde>} />
             <Route path="/comptabilite" element={<Garde cle="comptabilite"><Comptabilite /></Garde>} />
             <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>

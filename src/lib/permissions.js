@@ -40,6 +40,7 @@ const ACCES = {
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],
   certificats: [],
+  demandes: [],
   rh: ["rh"],
 };
 

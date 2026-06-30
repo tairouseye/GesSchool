@@ -31,6 +31,26 @@ export async function justifierAbsenceParent(absenceId, texte) {
   if (error) throw error;
 }
 
+// --- Demandes de documents ---
+export const TYPES_DOCUMENT = [
+  ["scolarite", "Certificat de scolarité"],
+  ["inscription", "Attestation d'inscription"],
+  ["frequentation", "Attestation de fréquentation"],
+  ["bulletin", "Bulletin"],
+  ["autre", "Autre"],
+];
+
+export async function demanderDocument(eleveId, type, message) {
+  const { error } = await supabase.rpc("demander_document", { p_eleve: eleveId, p_type: type, p_message: message || null });
+  if (error) throw error;
+}
+
+export async function mesDemandes() {
+  const { data, error } = await supabase.rpc("mes_demandes");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function enfantBulletins(eleveId) {
   const { data, error } = await supabase.rpc("enfant_bulletins", { p_eleve: eleveId });
   if (error) throw error;
