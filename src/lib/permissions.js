@@ -38,6 +38,7 @@ const ACCES = {
   paiements: ["comptable"],
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],
+  certificats: [],
   rh: ["rh"],
 };
 

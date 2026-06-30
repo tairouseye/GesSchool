@@ -2,7 +2,7 @@
 // Une école avec modules_actifs = null a TOUS les modules (compat ascendante).
 
 export const MODULES = [
-  { id: "scolarite", label: "Scolarité", desc: "Élèves, inscriptions, structure", cles: ["eleves", "structure"] },
+  { id: "scolarite", label: "Scolarité", desc: "Élèves, inscriptions, structure, documents", cles: ["eleves", "structure", "certificats"] },
   { id: "evaluations", label: "Évaluations", desc: "Notes & bulletins", cles: ["notes", "bulletins"] },
   { id: "vie_scolaire", label: "Vie scolaire", desc: "Appel, cahier de textes, absences, emploi du temps, fournitures", cles: ["appel", "cahier", "vie_scolaire", "emploi", "fournitures"] },
   { id: "finances", label: "Finances", desc: "Paiements, recouvrement, comptabilité", cles: ["paiements", "recouvrement", "comptabilite"] },
