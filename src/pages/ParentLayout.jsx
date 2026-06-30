@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
+import Tour from "@/composants/Tour.jsx";
+import { TOUR_PARENT } from "@/lib/tours.js";
 
 // Espace parent — coque légère (pas de sidebar de gestion).
 export default function ParentLayout() {
@@ -10,12 +12,22 @@ export default function ParentLayout() {
   const location = useLocation();
   const [nonLues, setNonLues] = useState(0);
   const [msgNonLus, setMsgNonLus] = useState(0);
+  const [tour, setTour] = useState(false);
 
   // Rafraîchit les compteurs (alertes + messages) à chaque navigation.
   useEffect(() => {
     compterNonLues().then(setNonLues).catch(() => {});
     mesMessagesNonLus().then(setMsgNonLus).catch(() => {});
   }, [location.pathname]);
+
+  // Visite guidée au premier accès.
+  useEffect(() => {
+    if (localStorage.getItem("tour_parent_v1") !== "done") {
+      const t = setTimeout(() => setTour(true), 700);
+      return () => clearTimeout(t);
+    }
+  }, []);
+  const fermerTour = () => { setTour(false); localStorage.setItem("tour_parent_v1", "done"); };
   return (
     <div className="min-h-full bg-creme">
       <header className="flex items-center justify-between border-b border-navy-900/10 bg-navy-900 px-6 py-4 text-creme">
@@ -26,7 +38,7 @@ export default function ParentLayout() {
           </span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
-          <Link to="/parent/messages" className="relative" title="Messagerie">
+          <Link to="/parent/messages" className="relative" title="Messagerie" data-tour="messagerie">
             <span className="text-xl">💬</span>
             {msgNonLus > 0 && (
               <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
@@ -34,7 +46,7 @@ export default function ParentLayout() {
               </span>
             )}
           </Link>
-          <Link to="/parent/notifications" className="relative" title="Alertes">
+          <Link to="/parent/notifications" className="relative" title="Alertes" data-tour="alertes">
             <span className="text-xl">🔔</span>
             {nonLues > 0 && (
               <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
@@ -42,6 +54,8 @@ export default function ParentLayout() {
               </span>
             )}
           </Link>
+          <button data-tour="aide-parent" onClick={() => setTour(true)} title="Visite guidée"
+            className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
           <span className="hidden text-creme/70 sm:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
           <button onClick={deconnexion} className="rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
@@ -54,6 +68,8 @@ export default function ParentLayout() {
       <footer className="pb-6 text-center font-mono text-[10px] text-navy-900/30">
         GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}
       </footer>
+
+      <Tour steps={TOUR_PARENT} ouvert={tour} onFermer={fermerTour} />
     </div>
   );
 }

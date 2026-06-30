@@ -5,6 +5,8 @@ import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
 import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, itemsEspace } from "@/lib/espaces.js";
 import { moduleActif } from "@/lib/modules.js";
+import Tour from "@/composants/Tour.jsx";
+import { TOUR_STAFF } from "@/lib/tours.js";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage
 // (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
@@ -14,7 +16,17 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
+  const [tour, setTour] = useState(false);
   const sigle = ecole?.sigle || "GS";
+
+  // Visite guidée au premier accès (une fois).
+  useEffect(() => {
+    if (localStorage.getItem("tour_staff_v1") !== "done") {
+      const t = setTimeout(() => setTour(true), 700);
+      return () => clearTimeout(t);
+    }
+  }, []);
+  const fermerTour = () => { setTour(false); localStorage.setItem("tour_staff_v1", "done"); };
 
   // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un
   // menu visible (rôle + module actif).
@@ -63,7 +75,7 @@ export default function Layout() {
 
         {/* Sélecteur d'espace (si accès à plusieurs) */}
         {accessibles.length > 1 ? (
-          <div className="px-3 pb-2">
+          <div className="px-3 pb-2" data-tour="espaces">
             <p className="mb-1 px-1 text-[10px] uppercase tracking-wide text-creme/40">Espace</p>
             <div className="grid grid-cols-2 gap-1">
               {accessibles.map((e) => (
@@ -81,14 +93,14 @@ export default function Layout() {
             </div>
           </div>
         ) : (
-          <div className="px-5 pb-2">
+          <div className="px-5 pb-2" data-tour="espaces">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-800/60 px-3 py-1 text-xs text-creme/70">
               {espaceCourant?.icone} {espaceCourant?.label}
             </span>
           </div>
         )}
 
-        <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3">
+        <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3" data-tour="menu">
           {items.map((item) => (
             <NavLink
               key={item.to}
@@ -107,9 +119,15 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="border-t border-navy-800 px-5 py-4">
-          <p className="truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
-          <p className="truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
+        <div className="border-t border-navy-800 px-5 py-4" data-tour="profil">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
+              <p className="truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
+            </div>
+            <button data-tour="aide" onClick={() => setTour(true)} title="Visite guidée"
+              className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
+          </div>
           {estSuperAdmin && (
             <Link to="/super-admin" className="mt-3 block rounded-lg bg-or-500/20 px-3 py-1.5 text-center text-xs font-medium text-or-500 hover:bg-or-500/30">
               🛠️ Console super-admin
@@ -132,6 +150,8 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
     </div>
   );
 }

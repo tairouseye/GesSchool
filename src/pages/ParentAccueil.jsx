@@ -42,7 +42,7 @@ export default function ParentAccueil() {
           Aucun enfant rattaché à votre compte. Contactez l'établissement.
         </Carte>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-tour="enfants">
           {enfants.map((e) => (
             <Link
               key={e.eleve_id}
