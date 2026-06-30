@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
-import { majEcole, majConfigMatricule } from "@/lib/academique.js";
+import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires } from "@/lib/academique.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 import * as relancesApi from "@/lib/relances.js";
@@ -27,7 +27,8 @@ export default function Parametres() {
         <Alerte ton="erreur">{erreur}</Alerte>
         {info && <Alerte ton="succes">{info}</Alerte>}
 
-        <ProfilEcole ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} />
+        <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
+        <Signataires ecoleId={ecoleId} onErreur={setErreur} />
         <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
         {moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
@@ -174,20 +175,40 @@ function ModaleRegle({ regle, onFermer, onValider }) {
   );
 }
 
-function ProfilEcole({ ecole, onSave }) {
-  const [f, setF] = useState({ nom: "", sigle: "", devise: "XOF", couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227" });
+function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
+  const [f, setF] = useState({ nom: "", sigle: "", devise: "XOF", couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null });
+  const [up, setUp] = useState("");
   useEffect(() => {
     if (!ecole) return;
     setF({
       nom: ecole.nom || "", sigle: ecole.sigle || "", devise: ecole.devise || "XOF",
       couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
       couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
+      logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
     });
   }, [ecole]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  async function televerser(champ, file, prefixe) {
+    if (!file) return;
+    setUp(champ); onErreur?.("");
+    try { maj(champ, await televerserAsset(ecoleId, file, prefixe)); }
+    catch (e) { onErreur?.(e.message); }
+    finally { setUp(""); }
+  }
+
   return (
     <Carte className="p-6">
       <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Établissement</h3>
+
+      {/* Logo & cachet */}
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <AssetUpload label="Logo de l'école" valeur={f.logo_url} occupe={up === "logo_url"}
+          onFichier={(file) => televerser("logo_url", file, "logo")} onRetirer={() => maj("logo_url", null)} />
+        <AssetUpload label="Cachet (image)" valeur={f.cachet_url} occupe={up === "cachet_url"}
+          onFichier={(file) => televerser("cachet_url", file, "cachet")} onRetirer={() => maj("cachet_url", null)} />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
         <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
@@ -283,6 +304,102 @@ function Matricule({ ecole, onSave }) {
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
         <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
+      </div>
+    </Carte>
+  );
+}
+
+function AssetUpload({ label, valeur, occupe, onFichier, onRetirer }) {
+  return (
+    <div>
+      <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{label}</span>
+      <div className="flex items-center gap-3 rounded-xl border border-navy-900/10 p-3">
+        {valeur
+          ? <img src={valeur} alt="" className="h-12 w-12 rounded object-contain ring-1 ring-navy-900/10" />
+          : <span className="grid h-12 w-12 place-items-center rounded bg-navy-900/5 text-xs text-navy-900/30">—</span>}
+        <div className="flex-1 text-xs">
+          <label className="cursor-pointer text-navy-700 hover:text-or-500">
+            {occupe ? "Envoi…" : valeur ? "Changer l'image" : "Téléverser une image"}
+            <input type="file" accept="image/*" className="hidden" disabled={occupe}
+              onChange={(e) => e.target.files?.[0] && onFichier(e.target.files[0])} />
+          </label>
+          {valeur && <button onClick={onRetirer} className="ml-3 text-rose-500 hover:underline">retirer</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Signataires({ ecoleId, onErreur }) {
+  const [liste, setListe] = useState([]);
+  const [f, setF] = useState({ fonction: "", nom: "", signature_url: null });
+  const [up, setUp] = useState(false);
+  const [info, setInfo] = useState("");
+
+  const recharger = useCallback(async () => {
+    try { setListe(await getSignataires(ecoleId)); } catch (e) { onErreur?.(e.message); }
+  }, [ecoleId]); // eslint-disable-line
+
+  useEffect(() => { recharger(); }, [recharger]);
+
+  async function sauver(nouvelle) {
+    setInfo("");
+    try { await setSignataires(ecoleId, nouvelle); setListe(nouvelle); setInfo("Enregistré ✓"); }
+    catch (e) { onErreur?.(e.message); }
+  }
+  async function uploadSig(file) {
+    if (!file) return;
+    setUp(true); onErreur?.("");
+    try { const url = await televerserAsset(ecoleId, file, "signature"); setF((s) => ({ ...s, signature_url: url })); }
+    catch (e) { onErreur?.(e.message); }
+    finally { setUp(false); }
+  }
+  function ajouter() {
+    if (!f.fonction.trim()) return;
+    sauver([...liste, { fonction: f.fonction.trim(), nom: f.nom.trim(), signature_url: f.signature_url }]);
+    setF({ fonction: "", nom: "", signature_url: null });
+  }
+
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Signataires</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Responsables et leur signature scannée — proposés sur les documents officiels (certificats, bulletins…).
+      </p>
+      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+
+      <div className="space-y-2">
+        {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun signataire.</p>}
+        {liste.map((s, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-navy-900/10 px-4 py-2">
+            <div className="flex items-center gap-3">
+              {s.signature_url
+                ? <img src={s.signature_url} alt="" className="h-8 w-24 rounded object-contain" />
+                : <span className="text-xs text-navy-900/30">(sans signature)</span>}
+              <span className="text-sm"><b className="text-navy-900">{s.fonction}</b>{s.nom ? ` — ${s.nom}` : ""}</span>
+            </div>
+            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-500 hover:underline">retirer</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Champ label="Fonction *" value={f.fonction} onChange={(e) => setF((s) => ({ ...s, fonction: e.target.value }))} placeholder="Le Directeur" />
+        <Champ label="Nom (optionnel)" value={f.nom} onChange={(e) => setF((s) => ({ ...s, nom: e.target.value }))} />
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Signature</span>
+          <div className="flex items-center gap-2 rounded-xl border border-navy-900/10 p-2">
+            {f.signature_url && <img src={f.signature_url} alt="" className="h-8 w-16 object-contain" />}
+            <label className="cursor-pointer text-xs text-navy-700 hover:text-or-500">
+              {up ? "Envoi…" : f.signature_url ? "Changer" : "Téléverser"}
+              <input type="file" accept="image/*" className="hidden" disabled={up}
+                onChange={(e) => e.target.files?.[0] && uploadSig(e.target.files[0])} />
+            </label>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex justify-end">
+        <Bouton onClick={ajouter} disabled={!f.fonction.trim()}>+ Ajouter</Bouton>
       </div>
     </Carte>
   );

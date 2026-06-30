@@ -244,6 +244,31 @@ export async function majEcole(ecoleId, champs) {
   if (error) throw error;
 }
 
+// Téléverse un visuel de l'école (logo, cachet, signature) → bucket public 'ecoles'.
+export async function televerserAsset(ecoleId, file, prefixe = "asset") {
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  const chemin = `${ecoleId}/${prefixe}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("ecoles").upload(chemin, file, { upsert: true });
+  if (error) throw error;
+  return supabase.storage.from("ecoles").getPublicUrl(chemin).data.publicUrl;
+}
+
+// Signataires de l'école (responsables + signature), stockés dans parametres.
+export async function getSignataires(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur")
+    .eq("ecole_id", ecoleId).eq("cle", "signataires").maybeSingle();
+  if (error) throw error;
+  return Array.isArray(data?.valeur) ? data.valeur : [];
+}
+
+export async function setSignataires(ecoleId, liste) {
+  const { error } = await supabase
+    .from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "signataires", valeur: liste }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
 export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur }) {
   const { error } = await supabase
     .from("ecoles")
