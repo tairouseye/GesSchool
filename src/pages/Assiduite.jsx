@@ -6,7 +6,7 @@ import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getAbsencesPeriode } from "@/lib/viescolaire.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
-import { estRoleComplet } from "@/lib/permissions.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 
 export default function Assiduite() {
   const { ecoleId, utilisateur, profil, roles } = useAuth();
@@ -24,8 +24,9 @@ export default function Assiduite() {
         const an = await getAnneeCourante(ecoleId);
         setAnnee(an);
         if (an?.date_debut && !debut) setDebut(an.date_debut);
-        const ens = estRoleComplet(roles) ? null : await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
-        const cls = estRoleComplet(roles) ? await getClasses(ecoleId, an?.id) : await getMesClasses(ecoleId, an?.id, ens?.id);
+        const toutes = voitToutesClasses(roles);
+        const ens = toutes ? null : await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
+        const cls = toutes ? await getClasses(ecoleId, an?.id) : await getMesClasses(ecoleId, an?.id, ens?.id);
         setClasses(cls);
         if (cls.length) setClasseId(cls[0].id);
       } catch (e) { setErreur(e.message); }

@@ -1,52 +1,76 @@
-// GesSchool — permissions par rôle (RBAC).
-// Les « rôles complets » voient tout (promoteur / direction / admin).
-// Les autres rôles n'ont accès qu'aux pages de leur métier.
+// GesSchool — permissions par rôle (RBAC hiérarchique).
+// Modèle de délégation : le promoteur (admin_ecole) configure l'école et crée
+// les responsables ; chaque responsable est CLOISONNÉ à son domaine et gère ses
+// propres sous-utilisateurs.
+//   - admin_ecole / super_admin : accès complet (tous les espaces + config).
+//   - direction  = Responsable pédagogique (espace Pédagogie).
+//   - comptable  = Responsable Gestion / finances.
+//   - rh         = Responsable RH & Paie.
+//   - secretaire = Secrétaire / Caisse (opérationnel Gestion).
 
-export const ROLES_COMPLETS = ["super_admin", "admin_ecole", "direction"];
+// Les « rôles complets » voient tout. NB : `direction` N'EST PLUS complet — il
+// est désormais responsable pédagogique cloisonné.
+export const ROLES_COMPLETS = ["super_admin", "admin_ecole"];
 
 // Libellés lisibles des rôles (pour l'UI).
 export const LIBELLES_ROLES = {
   super_admin: "Super admin",
-  admin_ecole: "Administrateur",
-  direction: "Direction",
+  admin_ecole: "Promoteur",
+  direction: "Responsable pédagogique",
+  comptable: "Comptable / Gestion",
+  rh: "Responsable RH",
+  secretaire: "Secrétaire / Caisse",
   enseignant: "Enseignant",
-  comptable: "Comptable",
-  rh: "RH",
   surveillant: "Surveillant",
   parent: "Parent",
 };
 
 // Pour chaque page : rôles autorisés EN PLUS des rôles complets.
-//  "*"  = tout le personnel ;  []  = réservé aux rôles complets.
+//  "*"  = tout le personnel ;  []  = réservé aux rôles complets (promoteur).
 const ACCES = {
   dashboard: "*",
-  _pedagogie: ["enseignant", "surveillant"], // accueil Pédagogie
-  appel: ["enseignant", "surveillant"],
-  cahier: ["enseignant", "surveillant"],
-  progression: ["enseignant"],
-  _gestion: ["comptable"], // accueil Gestion
-  eleves: ["surveillant", "enseignant", "comptable"], // présent en Pédagogie ET Gestion
-  notes: ["enseignant"],
-  bulletins: ["enseignant"],
-  classement: ["enseignant"],
-  assiduite: ["enseignant", "surveillant"],
-  structure: [],
-  enseignants: ["rh"],
-  vie_scolaire: ["surveillant", "enseignant"],
-  emploi: ["enseignant"],
-  fournitures: ["enseignant"],
-  annonces: [],
-  messagerie: [],
-  parametres: [],
-  paiements: ["comptable"],
+
+  // --- Espace Pédagogie — responsable : direction (voit tout l'espace) ---
+  _pedagogie: ["direction", "enseignant", "surveillant"], // accueil Pédagogie
+  appel: ["direction", "enseignant", "surveillant"],
+  cahier: ["direction", "enseignant", "surveillant"],
+  progression: ["direction", "enseignant"],
+  notes: ["direction", "enseignant"],
+  bulletins: ["direction", "enseignant"],
+  classement: ["direction", "enseignant"],
+  assiduite: ["direction", "enseignant", "surveillant"],
+  vie_scolaire: ["direction", "surveillant", "enseignant"],
+  emploi: ["direction", "enseignant"],
+  fournitures: ["direction", "enseignant"],
+  structure: ["direction"],
+
+  // Élèves — présent en Pédagogie ET Gestion.
+  eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
+
+  // --- Espace Gestion — responsable : comptable ; opérationnel : secretaire ---
+  _gestion: ["comptable", "secretaire"], // accueil Gestion
+  certificats: ["comptable", "secretaire"],
+  demandes: ["comptable", "secretaire"],
+  paiements: ["comptable", "secretaire"],
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],
-  certificats: [],
-  demandes: [],
+
+  // --- Communication (partagée pédagogie + gestion) ---
+  annonces: ["direction", "comptable"],
+  messagerie: ["direction", "comptable"],
+
+  // --- Espace RH — responsable : rh ---
   rh: ["rh"],
+  enseignants: ["rh"],
+
+  // --- Configuration — promoteur uniquement ---
+  parametres: [],
+
+  // --- Gestion des membres — managers pouvant déléguer ---
+  membres: ["direction", "rh", "comptable"],
 };
 
-// Ordre des pages → sert aussi à déterminer la page d'atterrissage.
+// Ordre des pages → sert aussi à déterminer la page d'atterrissage de repli.
 export const PAGES = [
   { cle: "dashboard", path: "/" },
   { cle: "eleves", path: "/eleves" },
@@ -82,8 +106,41 @@ export function premierePage(roles) {
   return p ? p.path : "/";
 }
 
-// L'édition des élèves est réservée au côté Gestion (les rôles purement
-// pédagogiques — enseignant/surveillant — sont en lecture seule).
+// « Voit toutes les classes » (pas seulement les siennes) : promoteur + le
+// responsable pédagogique (direction). Utilisé par les pages pédago pour
+// afficher tout l'établissement au lieu des seules classes de l'enseignant.
+export function voitToutesClasses(roles) {
+  return estRoleComplet(roles) || (roles || []).includes("direction");
+}
+
+// Gestion des accès parents (génération de codes tuteur sur la fiche élève) :
+// promoteur + responsable pédagogique.
+export function peutGererParents(roles) {
+  return estRoleComplet(roles) || (roles || []).includes("direction");
+}
+
+// L'édition des élèves (CRUD / inscriptions) est réservée au côté Gestion.
 export function peutEditerEleves(roles) {
-  return estRoleComplet(roles) || (roles || []).includes("comptable");
+  return estRoleComplet(roles) || (roles || []).some((r) => ["comptable", "secretaire"].includes(r));
+}
+
+// --- Matrice de délégation : quels rôles chaque rôle peut inviter/gérer ---
+export const ROLES_INVITABLES = {
+  super_admin: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent"],
+  admin_ecole: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent"],
+  direction: ["enseignant", "surveillant", "parent"],
+  rh: ["secretaire"],
+  comptable: ["secretaire"],
+};
+
+// Union des rôles qu'un utilisateur (avec ces rôles) peut inviter/gérer.
+export function rolesInvitables(roles) {
+  const set = new Set();
+  (roles || []).forEach((r) => (ROLES_INVITABLES[r] || []).forEach((x) => set.add(x)));
+  return [...set];
+}
+
+// Peut-il accéder à la gestion des membres (déléguer au moins un rôle) ?
+export function peutGererMembres(roles) {
+  return estRoleComplet(roles) || rolesInvitables(roles).length > 0;
 }

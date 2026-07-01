@@ -21,7 +21,7 @@ export const ESPACES = [
     label: "Pédagogie",
     icone: "🎓",
     accueil: "/pedagogie",
-    roles: ["enseignant", "surveillant"],
+    roles: ["direction", "enseignant", "surveillant"], // direction = responsable pédagogique
     items: [
       { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
       { to: "/appel", label: "Appel", icone: "✅", cle: "appel" },
@@ -36,6 +36,7 @@ export const ESPACES = [
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire" },
       { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite" },
       { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
     ],
   },
   {
@@ -43,7 +44,7 @@ export const ESPACES = [
     label: "Gestion",
     icone: "💼",
     accueil: "/gestion",
-    roles: ["comptable"],
+    roles: ["comptable", "secretaire"], // comptable = responsable ; secretaire = opérationnel
     items: [
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
       { to: "/eleves", label: "Élèves & inscriptions", icone: "👤", cle: "eleves" },
@@ -54,6 +55,7 @@ export const ESPACES = [
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
     ],
   },
@@ -66,6 +68,7 @@ export const ESPACES = [
     items: [
       { to: "/rh", label: "Personnel & paie", icone: "🧑‍💼", cle: "rh", exact: true },
       { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
     ],
   },
 ];

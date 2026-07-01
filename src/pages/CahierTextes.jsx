@@ -4,7 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
-import { estRoleComplet } from "@/lib/permissions.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 import * as api from "@/lib/cahier.js";
 
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -29,8 +29,8 @@ export default function CahierTextes() {
         setMatieres(mat);
         const ens = await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
         setEnseignant(ens);
-        // Admin/direction : toutes les classes ; enseignant : ses classes.
-        const cls = estRoleComplet(roles)
+        // Promoteur/direction : toutes les classes ; enseignant : ses classes.
+        const cls = voitToutesClasses(roles)
           ? await getClasses(ecoleId, an?.id)
           : await getMesClasses(ecoleId, an?.id, ens?.id);
         setClasses(cls);

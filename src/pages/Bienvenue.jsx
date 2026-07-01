@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { lierParent } from "@/lib/parent.js";
 import { lierEnseignant } from "@/lib/enseignants.js";
+import { rejoindre } from "@/lib/membres.js";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 
@@ -11,10 +12,16 @@ import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 export default function Bienvenue() {
   const { utilisateur, aProfil, estParent, deconnexion, rafraichirProfil } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState(null); // null | 'parent' | 'enseignant'
+  const [mode, setMode] = useState(null); // null | 'parent' | 'enseignant' | 'membre'
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
   const [enCours, setEnCours] = useState(false);
+
+  // Lien d'invitation : code mémorisé par /rejoindre → pré-remplir en mode membre.
+  useEffect(() => {
+    const c = localStorage.getItem("invit_code");
+    if (c) { setCode(c.toUpperCase()); setMode("membre"); }
+  }, []);
 
   // Déjà rattaché → rediriger
   if (estParent) return <Navigate to="/parent" replace />;
@@ -25,7 +32,12 @@ export default function Bienvenue() {
     setErreur("");
     setEnCours(true);
     try {
-      if (mode === "enseignant") {
+      if (mode === "membre") {
+        await rejoindre(code.trim());
+        localStorage.removeItem("invit_code");
+        await rafraichirProfil();
+        navigate("/", { replace: true });
+      } else if (mode === "enseignant") {
         await lierEnseignant(code.trim());
         await rafraichirProfil();
         navigate("/", { replace: true });
@@ -41,7 +53,8 @@ export default function Bienvenue() {
     }
   }
 
-  const estCode = mode === "parent" || mode === "enseignant";
+  const estCode = mode === "parent" || mode === "enseignant" || mode === "membre";
+  const libelleEspace = mode === "membre" ? "Espace personnel" : mode === "enseignant" ? "Espace enseignant" : "Espace parent";
 
   return (
     <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
@@ -54,15 +67,13 @@ export default function Bienvenue() {
 
         {estCode ? (
           <div className="rounded-2xl bg-white p-7 shadow-xl">
-            <h2 className="font-display text-lg font-semibold text-navy-900">
-              {mode === "enseignant" ? "Espace enseignant" : "Espace parent"}
-            </h2>
+            <h2 className="font-display text-lg font-semibold text-navy-900">{libelleEspace}</h2>
             <p className="mt-1 text-sm text-navy-900/60">
-              Saisissez le <strong>code de liaison</strong> communiqué par {mode === "enseignant" ? "votre établissement" : "l'établissement de votre enfant"}.
+              Saisissez le <strong>code d'invitation</strong> communiqué par {mode === "parent" ? "l'établissement de votre enfant" : "votre établissement"}.
             </p>
             <form onSubmit={lier} className="mt-4 space-y-4">
               <Champ
-                label="Code de liaison"
+                label="Code d'invitation"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="EX. 3F9A2B7C"
@@ -70,15 +81,18 @@ export default function Bienvenue() {
               />
               <Alerte ton="erreur">{erreur}</Alerte>
               <Bouton type="submit" className="w-full" disabled={enCours || !code.trim()}>
-                {enCours ? "Liaison…" : "Accéder à l'espace parent"}
+                {enCours ? "Liaison…" : "Rejoindre l'établissement"}
               </Bouton>
             </form>
-            <button onClick={() => setMode(null)} className="mt-4 text-sm text-navy-700 hover:text-or-500">
+            <button
+              onClick={() => { setMode(null); setCode(""); setErreur(""); localStorage.removeItem("invit_code"); }}
+              className="mt-4 text-sm text-navy-700 hover:text-or-500"
+            >
               ← Retour
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <button
               onClick={() => navigate("/onboarding")}
               className="rounded-2xl bg-white p-6 text-left shadow-xl transition hover:ring-2 hover:ring-or-500"
@@ -86,6 +100,14 @@ export default function Bienvenue() {
               <div className="text-2xl">🏫</div>
               <p className="mt-3 font-display text-lg font-bold text-navy-900">Je gère une école</p>
               <p className="mt-1 text-sm text-navy-900/50">Créer mon établissement et son espace d'administration.</p>
+            </button>
+            <button
+              onClick={() => setMode("membre")}
+              className="rounded-2xl bg-white p-6 text-left shadow-xl transition hover:ring-2 hover:ring-or-500"
+            >
+              <div className="text-2xl">🧑‍💼</div>
+              <p className="mt-3 font-display text-lg font-bold text-navy-900">Je suis un membre du personnel</p>
+              <p className="mt-1 text-sm text-navy-900/50">Responsable, comptable, secrétaire, surveillant… avec un code d'invitation.</p>
             </button>
             <button
               onClick={() => setMode("enseignant")}

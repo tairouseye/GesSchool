@@ -10,7 +10,7 @@ import { moduleActif } from "@/lib/modules.js";
 //  - rôle requis non détenu → page « accès refusé »
 // Garde de l'espace STAFF (admin/direction/enseignant…).
 export default function RouteProtegee({ children, role, exigeProfil = true }) {
-  const { estConnecte, aProfil, estParent, aRole, chargement } = useAuth();
+  const { estConnecte, aProfil, estParent, estSuspendu, aRole, chargement } = useAuth();
   const location = useLocation();
 
   if (chargement) return <Ecran chargement />;
@@ -18,6 +18,8 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
   if (!estConnecte) {
     return <Navigate to="/connexion" replace state={{ from: location }} />;
   }
+
+  if (estSuspendu) return <EcranSuspendu />;
 
   // Un parent n'a rien à faire dans l'espace de gestion → espace parent.
   if (estParent) {
@@ -64,11 +66,31 @@ export function GardePromoteur({ children }) {
 
 // Garde de l'ESPACE PARENT.
 export function RouteParent({ children }) {
-  const { estConnecte, estParent, aProfil, chargement } = useAuth();
+  const { estConnecte, estParent, estSuspendu, aProfil, chargement } = useAuth();
   if (chargement) return <Ecran chargement />;
   if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (estSuspendu) return <EcranSuspendu />;
   if (!estParent) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
   return children;
+}
+
+// Écran affiché lorsqu'un compte a été suspendu par un responsable.
+function EcranSuspendu() {
+  const { deconnexion } = useAuth();
+  return (
+    <div className="grid min-h-full place-items-center bg-navy-900 px-4 text-creme">
+      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+        <Cachet size={72} className="text-or-500/60" />
+        <h1 className="font-display text-xl font-bold">Compte suspendu</h1>
+        <p className="text-sm text-creme/70">
+          Votre accès a été suspendu par l'administration de l'établissement. Contactez votre responsable pour le réactiver.
+        </p>
+        <button onClick={deconnexion} className="rounded-xl bg-or-500 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-or-400">
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function Ecran({ chargement, message }) {

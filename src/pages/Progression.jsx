@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getPeriodes } from "@/lib/bulletins.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
-import { estRoleComplet } from "@/lib/permissions.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 import * as api from "@/lib/progression.js";
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
@@ -30,7 +30,7 @@ export default function Progression() {
         setMatieres(mat); setPeriodes(per);
         const ens = await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
         setEnseignant(ens);
-        const cls = estRoleComplet(roles)
+        const cls = voitToutesClasses(roles)
           ? await getClasses(ecoleId, an?.id)
           : await getMesClasses(ecoleId, an?.id, ens?.id);
         setClasses(cls);

@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
 import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
 import { espaceParDefaut } from "@/lib/espaces.js";
@@ -40,7 +40,20 @@ import Classement from "@/pages/Classement.jsx";
 import Parametres from "@/pages/Parametres.jsx";
 import Certificats from "@/pages/Certificats.jsx";
 import Demandes from "@/pages/Demandes.jsx";
+import Membres from "@/pages/Membres.jsx";
 import SuperAdmin from "@/pages/SuperAdmin.jsx";
+
+// Lien profond d'invitation : /rejoindre?code=XXXX → mémorise le code puis
+// oriente vers la connexion (nouveau membre) ou l'accueil (déjà rattaché).
+function Rejoindre() {
+  const { estConnecte, aProfil } = useAuth();
+  const [params] = useSearchParams();
+  const code = params.get("code");
+  if (code) { try { localStorage.setItem("invit_code", code.toUpperCase()); } catch { /* ignore */ } }
+  if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (aProfil) return <Navigate to="/" replace />;
+  return <Navigate to="/bienvenue" replace />;
+}
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
@@ -63,6 +76,7 @@ export default function App() {
           <Route path="/connexion" element={<Connexion />} />
           <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
           <Route path="/reinitialiser" element={<ReinitMotDePasse />} />
+          <Route path="/rejoindre" element={<Rejoindre />} />
 
           {/* Connecté sans profil → choix (école ou parent) */}
           <Route
@@ -133,6 +147,7 @@ export default function App() {
             <Route path="/parametres" element={<Garde cle="parametres"><Parametres /></Garde>} />
             <Route path="/certificats" element={<Garde cle="certificats"><Certificats /></Garde>} />
             <Route path="/demandes" element={<Garde cle="demandes"><Demandes /></Garde>} />
+            <Route path="/membres" element={<Garde cle="membres"><Membres /></Garde>} />
             <Route path="/comptabilite" element={<Garde cle="comptabilite"><Comptabilite /></Garde>} />
             <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>

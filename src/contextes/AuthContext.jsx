@@ -107,6 +107,7 @@ export function AuthProvider({ children }) {
     estPromoteur: ecolesPossedees.length > 0,
     estConnecte: !!session,
     aProfil: !!profil,
+    estSuspendu: !!profil && profil.actif === false,
     estParent: roles.includes("parent"),
     estSuperAdmin: roles.includes("super_admin"),
     chargement,
