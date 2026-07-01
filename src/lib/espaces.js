@@ -14,7 +14,10 @@ export const ESPACES = [
     accueil: "/pilotage",
     roles: [], // réservé promoteur + rôles complets
     promoteur: true,
-    items: [{ to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" }],
+    items: [
+      { to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
+    ],
   },
   {
     id: "pedagogie",

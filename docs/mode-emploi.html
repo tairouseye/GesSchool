@@ -23,6 +23,9 @@
   ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
   li { margin: 3px 0; }
   code { background:#eef0f3; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:.92em; color:var(--navy); }
+  pre { background:var(--creme); border:1px solid #e3e6ea; border-left:3px solid var(--or); border-radius:8px;
+        padding:10px 14px; overflow:auto; break-inside:avoid; margin:12px 0; }
+  pre code { background:none; padding:0; color:#3a4757; font-size:11.5px; line-height:1.4; white-space:pre; }
   strong { color: var(--navy); }
   hr { border:0; border-top:1px solid #e3e6ea; margin:18px 0; }
   blockquote { margin:10px 0; padding:8px 14px; background:var(--creme); border-left:3px solid var(--or);
@@ -41,18 +44,18 @@
 <hr/>
 <h2>0. Concepts de base (à lire une fois)</h2>
 <p><strong>GesSchool</strong> organise le travail en <strong>espaces</strong> selon le métier de chaque utilisateur :</p>
-<table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Menus</th></tr></thead><tbody><tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Enseignants, surveillants</td><td>Accueil, <strong>Appel</strong>, <strong>Cahier de textes</strong>, <strong>Progression</strong>, Élèves (lecture), Structure, Notes, Bulletins, <strong>Classement</strong>, Emploi du temps, Vie scolaire, <strong>Assiduité</strong>, Fournitures</td></tr>
-<tr><td><strong>Gestion</strong></td><td>💼</td><td>Administration, comptables</td><td>Accueil, Élèves &amp; inscriptions, <strong>Documents</strong>, <strong>Demandes</strong>, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, Paramètres</td></tr>
-<tr><td><strong>RH &amp; Paie</strong></td><td>🧑‍💼</td><td>RH</td><td>Personnel &amp; paie, Enseignants</td></tr>
-<tr><td><strong>Pilotage</strong></td><td>🎯</td><td>Promoteur / direction</td><td>Vue consolidée de toutes ses écoles</td></tr>
+<table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Menus</th></tr></thead><tbody><tr><td><strong>Pilotage</strong></td><td>🎯</td><td>Promoteur (accès total)</td><td>Vue consolidée de toutes ses écoles, <strong>Membres</strong></td></tr>
+<tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Responsable pédagogique, enseignants, surveillants</td><td>Accueil, <strong>Appel</strong>, <strong>Cahier de textes</strong>, <strong>Progression</strong>, Élèves (lecture), Structure, Notes, Bulletins, <strong>Classement</strong>, Emploi du temps, Vie scolaire, <strong>Assiduité</strong>, Fournitures, <strong>Membres</strong></td></tr>
+<tr><td><strong>Gestion</strong></td><td>💼</td><td>Comptable, secrétaire / caisse</td><td>Accueil, Élèves &amp; inscriptions, <strong>Documents</strong>, <strong>Demandes</strong>, Paiements, Recouvrement, Comptabilité, Annonces, Messagerie, <strong>Membres</strong>, Paramètres</td></tr>
+<tr><td><strong>RH &amp; Paie</strong></td><td>🧑‍💼</td><td>Responsable RH</td><td>Personnel &amp; paie, Enseignants, <strong>Membres</strong></td></tr>
 <tr><td><strong>Parent</strong></td><td>👪</td><td>Familles</td><td>Suivi de chaque enfant (voir §13)</td></tr>
 </tbody></table>
-<ul><li>L'<strong>administrateur</strong> et la <strong>direction</strong> voient <strong>tous les espaces</strong>. Les autres rôles ne voient que le leur.</li>
+<ul><li>Le <strong>promoteur</strong> (créateur de l'école) voit <strong>tous les espaces</strong> et configure l'établissement. Les <strong>responsables</strong> (pédagogique, RH, comptable) sont <strong>cloisonnés à leur domaine</strong> ; chacun <strong>gère ses propres accès</strong> (voir §4).</li>
 <li>Le <strong>sélecteur d'espace</strong> est en haut à gauche de la barre latérale (visible si vous avez accès à plusieurs).</li>
 <li>Chaque <strong>module</strong> (Finances, Évaluations, RH…) peut être activé/désactivé par école (Paramètres → Modules).</li>
-<li>Chacun <strong>atterrit dans son espace</strong> à la connexion (un enseignant arrive directement sur l'<strong>Appel</strong>).</li>
+<li>Chacun <strong>atterrit dans son espace</strong> à la connexion (un enseignant arrive directement sur l'<strong>Appel</strong>, un responsable pédagogique sur la Pédagogie…).</li>
 </ul>
-<p><strong>Rôles disponibles :</strong> Administrateur, Direction, Enseignant, Comptable, RH, Surveillant, Parent, Super-admin.</p>
+<p><strong>Rôles disponibles :</strong> Promoteur, Responsable pédagogique, Comptable / Gestion, Responsable RH, Secrétaire / Caisse, Enseignant, Surveillant, Parent, Super-admin.</p>
 <hr/>
 <h2>1. Créer son compte et son école</h2>
 <h3>1.1 Créer le compte</h3>
@@ -61,11 +64,13 @@
 <li>Selon la configuration, un e-mail de confirmation peut être demandé : le valider, puis se connecter.</li>
 </ol>
 <h3>1.2 Choisir son profil</h3>
-<p>Au premier accès, l'écran <strong>Bienvenue</strong> propose trois entrées :</p>
-<ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (cas de l'admin/promoteur).</li>
+<p>Au premier accès, l'écran <strong>Bienvenue</strong> propose quatre entrées :</p>
+<ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (cas du <strong>promoteur</strong>).</li>
+<li><strong>🧑‍💼 Je suis un membre du personnel</strong> → rejoint l'établissement avec un <strong>code d'invitation</strong> (responsable, comptable, secrétaire, surveillant… voir §4).</li>
 <li><strong>🧑‍🏫 Je suis un enseignant</strong> → relie son compte à sa fiche avec un <strong>code</strong> (voir §4).</li>
 <li><strong>👪 Je suis un parent</strong> → rejoint un enfant avec un <strong>code de liaison</strong> (voir §13).</li>
 </ul>
+<blockquote>Si vous avez reçu un <strong>lien d'invitation</strong> (<code>…/#/rejoindre?code=…</code>), il vous suffit de l'ouvrir : après création du compte, le code est pré-rempli automatiquement.</blockquote>
 <h3>1.3 Assistant de création de l'école (3 étapes)</h3>
 <ol><li><strong>Identité</strong> : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.</li>
 <li><strong>Cycles ouverts</strong> : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).</li>
@@ -97,16 +102,41 @@
 <li><strong>Recherche/filtres</strong> : nom/matricule, classe, statut.</li>
 <li><strong>Fiche élève</strong> (clic) : état civil + <strong>photo</strong>, <strong>Responsables</strong> (+ bouton <strong>Code parent</strong>, §13), <strong>Inscriptions</strong>.</li>
 </ul>
-<blockquote>Édition réservée à l'administration et au comptable ; enseignants/surveillants en lecture seule.</blockquote>
+<blockquote>Édition réservée au promoteur, au comptable et à la secrétaire ; enseignants/surveillants en lecture seule. Le <strong>code parent</strong> peut aussi être généré par le <strong>responsable pédagogique</strong>.</blockquote>
 <hr/>
-<h2>4. Comptes du personnel enseignant (espace RH → <strong>Enseignants</strong>)</h2>
-<p>Pour qu'un enseignant gère sa classe/matière, il lui faut un <strong>compte relié à sa fiche</strong> :</p>
-<ol><li>Créer (ou ouvrir) la fiche de l'enseignant (prénom, nom, <strong>e-mail</strong> conseillé).</li>
-<li>Cliquer <strong>« Code d'accès »</strong> → un code à 8 caractères s'affiche → le communiquer à l'enseignant.</li>
-<li>L'enseignant crée un compte (Inscription) → <strong>« 🧑‍🏫 Je suis un enseignant »</strong> → saisit le code.</li>
-<li>✅ Son compte est relié (rôle <em>enseignant</em>), il arrive sur l'<strong>Appel</strong> ; côté admin un badge <strong>« ✓ compte lié »</strong> apparaît.</li>
+<h2>4. Membres de l'équipe &amp; délégation des accès (menu <strong>Membres</strong>)</h2>
+<p>GesSchool fonctionne en <strong>cascade de délégation</strong> : le <strong>promoteur</strong> configure l'école puis crée les <strong>responsables</strong> ; chaque responsable, cloisonné à son domaine, crée et gère à son tour <strong>ses</strong> sous-utilisateurs.</p>
+<pre><code>Promoteur                → configure l'école, garde un raccourci total
+ ├─ Responsable pédagogique → invite profs, surveillants, parents
+ ├─ Responsable RH          → invite le personnel (secrétaire / caisse)
+ └─ Comptable / Gestion     → invite une secrétaire / caisse</code></pre>
+<h3>4.1 Qui peut inviter qui</h3>
+<table><thead><tr><th>Vous êtes…</th><th>Vous pouvez inviter/gérer</th></tr></thead><tbody><tr><td><strong>Promoteur</strong></td><td>Tous les rôles (responsables + n'importe quel compte, en dépannage)</td></tr>
+<tr><td><strong>Responsable pédagogique</strong></td><td>Enseignant, Surveillant, Parent</td></tr>
+<tr><td><strong>Responsable RH</strong></td><td>Secrétaire / Caisse</td></tr>
+<tr><td><strong>Comptable / Gestion</strong></td><td>Secrétaire / Caisse</td></tr>
+</tbody></table>
+<h3>4.2 Inviter un membre</h3>
+<ol><li>Ouvrir le menu <strong>Membres</strong> (présent dans votre espace).</li>
+<li><strong>+ Inviter un membre</strong> → choisir le <strong>rôle</strong> (limité à ce que vous avez le droit de déléguer) + e-mail (optionnel) → <strong>Générer le code d'invitation</strong>.</li>
+<li>Un <strong>code à 8 caractères</strong> et un <strong>lien</strong> s'affichent → les transmettre via <strong>Copier</strong>, <strong>WhatsApp</strong> ou <strong>Email</strong>.</li>
 </ol>
-<p><strong>Affectations</strong> : onglet <em>Affectations</em> → relier enseignant × classe × matière (alimente aussi les coefficients).</p>
+<h3>4.3 Rejoindre (côté invité)</h3>
+<ol><li>L'invité crée un compte (Inscription) puis choisit <strong>« 🧑‍💼 Je suis un membre du personnel »</strong> et saisit le code — ou ouvre directement le <strong>lien d'invitation</strong> (code pré-rempli).</li>
+<li>✅ Son compte est créé avec le bon rôle et il atterrit dans <strong>son espace</strong>.</li>
+</ol>
+<h3>4.4 Enseignants reliés à leur fiche (cas particulier)</h3>
+<p>Pour qu'un enseignant retrouve <strong>ses</strong> classes (Appel, Notes…), son compte doit correspondre à sa <strong>fiche</strong> :</p>
+<ol><li>Espace RH/Pédagogie → <strong>Enseignants</strong> → ouvrir la fiche (prénom, nom, <strong>e-mail</strong> conseillé).</li>
+<li><strong>« Code d'accès »</strong> → communiquer le code → l'enseignant choisit <strong>« 🧑‍🏫 Je suis un enseignant »</strong> et le saisit.</li>
+<li>Le compte est relié (badge <strong>« ✓ compte lié »</strong>). <em>Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.</em></li>
+<li><strong>Affectations</strong> : onglet <em>Affectations</em> → relier enseignant × classe × matière (alimente aussi les coefficients).</li>
+</ol>
+<h3>4.5 Révoquer ou suspendre</h3>
+<p>Dans <strong>Membres</strong>, sur chaque personne que vous gérez :</p>
+<ul><li><strong>✕</strong> sur un rôle → retire ce rôle.</li>
+<li><strong>Suspendre</strong> → bloque immédiatement l'accès (écran « Compte suspendu ») ; <strong>Réactiver</strong> le rétablit.</li>
+</ul>
 <hr/>
 <h2>5. Le quotidien de l'enseignant (espace Pédagogie)</h2>
 <h3>5.1 Appel (menu <strong>Appel</strong>)</h3>
@@ -198,17 +228,22 @@
 </ul>
 <hr/>
 <h2>16. Récapitulatif des rôles</h2>
-<table><thead><tr><th>Rôle</th><th>Accès principal</th></tr></thead><tbody><tr><td><strong>Administrateur / Direction</strong></td><td>Tous les espaces</td></tr>
-<tr><td><strong>Comptable</strong></td><td>Gestion : élèves, paiements, recouvrement, comptabilité</td></tr>
-<tr><td><strong>Enseignant</strong></td><td>Pédagogie : appel, cahier de textes, progression, notes, bulletins, classement, assiduité</td></tr>
-<tr><td><strong>Surveillant</strong></td><td>Pédagogie : appel, vie scolaire, assiduité</td></tr>
-<tr><td><strong>RH</strong></td><td>RH &amp; Paie : personnel, paie, enseignants</td></tr>
-<tr><td><strong>Parent</strong></td><td>Espace parent : suivi de ses enfants</td></tr>
-<tr><td><strong>Super-admin</strong></td><td>Console de pilotage du SaaS</td></tr>
+<table><thead><tr><th>Rôle</th><th>Accès principal</th><th>Peut inviter</th></tr></thead><tbody><tr><td><strong>Promoteur</strong></td><td>Tous les espaces + configuration (Paramètres, Modules)</td><td>Tout le monde</td></tr>
+<tr><td><strong>Responsable pédagogique</strong></td><td>Pédagogie (toutes les classes) + Structure + <strong>codes parents</strong></td><td>Enseignant, Surveillant, Parent</td></tr>
+<tr><td><strong>Comptable / Gestion</strong></td><td>Gestion : paiements, recouvrement, comptabilité, communication</td><td>Secrétaire / Caisse</td></tr>
+<tr><td><strong>Secrétaire / Caisse</strong></td><td>Gestion opérationnel : élèves &amp; inscriptions, documents, demandes, encaissement</td><td>—</td></tr>
+<tr><td><strong>Responsable RH</strong></td><td>RH &amp; Paie : personnel, paie, enseignants</td><td>Secrétaire / Caisse</td></tr>
+<tr><td><strong>Enseignant</strong></td><td>Pédagogie : appel, cahier de textes, progression, notes, bulletins, classement, assiduité</td><td>—</td></tr>
+<tr><td><strong>Surveillant</strong></td><td>Pédagogie : appel, vie scolaire, assiduité</td><td>—</td></tr>
+<tr><td><strong>Parent</strong></td><td>Espace parent : suivi de ses enfants</td><td>—</td></tr>
+<tr><td><strong>Super-admin</strong></td><td>Console de pilotage du SaaS</td><td>—</td></tr>
 </tbody></table>
 <hr/>
 <h2>17. Dépannage rapide</h2>
 <ul><li><strong>« Je ne vois pas un menu »</strong> → module désactivé (Paramètres → Modules) ou rôle sans accès.</li>
+<li><strong>« Comment ajouter un responsable / une secrétaire ? »</strong> → menu <strong>Membres</strong> → <strong>+ Inviter un membre</strong> (voir §4).</li>
+<li><strong>« Compte suspendu »</strong> au démarrage → votre accès a été suspendu par un responsable ; demandez sa réactivation (menu Membres → Réactiver).</li>
+<li><strong>« Je n'ai pas le menu Membres »</strong> → seuls le promoteur et les responsables (pédagogique, RH, comptable) peuvent déléguer des accès.</li>
 <li><strong>« L'enseignant ne voit pas sa classe »</strong> → vérifier qu'il a saisi son <strong>code d'accès</strong> et qu'il est <strong>prof principal</strong> ou <strong>affecté</strong> à une classe.</li>
 <li><strong>« Impossible d'inscrire un élève »</strong> → créer d'abord une classe via <strong>Structure</strong>.</li>
 <li><strong>« L'import n'inscrit pas en classe »</strong> → la colonne Classe ne correspond pas au libellé exact.</li>
