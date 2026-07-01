@@ -4,12 +4,13 @@
 --  domaine) invite/gère ses propres sous-utilisateurs via un code + lien.
 --    admin_ecole → tous | direction → enseignant/surveillant/parent
 --    rh → secretaire     | comptable → secretaire
---  ⚠️ La 1re instruction (ALTER TYPE ... ADD VALUE) ajoute le rôle 'secretaire'.
---     Si l'éditeur SQL refuse (« unsafe use of new value »), exécute cette
+--  ⚠️ Le type enum est qualifié `public.role_systeme` (le SQL Editor ne le
+--     résolvait pas sans schéma). Si l'ADD VALUE échoue (« unsafe use of new
+--     value » ou « cannot run inside a transaction block »), exécute cette
 --     ligne SEULE d'abord, puis relance le reste du fichier.
 -- =====================================================================
 
-alter type role_systeme add value if not exists 'secretaire';
+alter type public.role_systeme add value if not exists 'secretaire';
 
 -- --------------------------------------------------------------------
 --  Table des invitations (code + lien partageable)
@@ -17,7 +18,7 @@ alter type role_systeme add value if not exists 'secretaire';
 create table if not exists public.invitations (
   id          uuid primary key default gen_random_uuid(),
   ecole_id    uuid not null references ecoles(id) on delete cascade,
-  role        role_systeme not null,
+  role        public.role_systeme not null,
   code        text not null unique,
   email       text,
   cree_par    uuid references profils(id) on delete set null,
@@ -61,7 +62,7 @@ begin
   end if;
   v_code := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
   insert into public.invitations (ecole_id, role, code, email, cree_par)
-  values (v_ecole, p_role::role_systeme, v_code, nullif(p_email, ''), auth.uid());
+  values (v_ecole, p_role::public.role_systeme, v_code, nullif(p_email, ''), auth.uid());
   return v_code;
 end $$;
 
@@ -122,7 +123,7 @@ begin
     raise exception 'Non autorisé à gérer ce rôle.';
   end if;
   delete from public.profil_roles
-    where profil_id = p_profil and ecole_id = v_ecole and role = p_role::role_systeme;
+    where profil_id = p_profil and ecole_id = v_ecole and role = p_role::public.role_systeme;
 end $$;
 
 create or replace function public.suspendre_membre(p_profil uuid, p_suspendu boolean)
