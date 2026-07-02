@@ -3,6 +3,10 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
+**📑 Accès rapide** — cliquez sur une rubrique pour y aller directement :
+
+[SOMMAIRE]
+
 ---
 
 ## 0. Concepts de base (à lire une fois)

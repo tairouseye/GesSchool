@@ -14,12 +14,14 @@
   .cover h1 { margin:0; font-size:24px; }
   .cover p { margin:4px 0 0; color:rgba(251,247,239,.7); font-size:13px; }
   main { padding: 8px 30px 40px; max-width: 880px; }
-  h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; }
-  h2 { font-size:17px; color:var(--navy); margin-top:24px; }
-  h3 { font-size:14px; color:var(--navy); margin-top:18px; }
+  h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; scroll-margin-top:12px; }
+  h2 { font-size:17px; color:var(--navy); margin-top:24px; scroll-margin-top:12px; }
+  h3 { font-size:14px; color:var(--navy); margin-top:18px; scroll-margin-top:12px; }
   h2, h3, h4 { break-after: avoid; }
-  h4 { font-size:12.5px; color:var(--navy); margin-top:14px; }
+  h4 { font-size:12.5px; color:var(--navy); margin-top:14px; scroll-margin-top:12px; }
   p { margin: 7px 0; }
+  a { color:#1d5fb0; text-decoration:none; }
+  a:hover { text-decoration:underline; }
   ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
   li { margin: 3px 0; }
   code { background:#eef0f3; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:.92em; color:var(--navy); }
@@ -34,15 +36,23 @@
   th { background:var(--navy); color:var(--creme); text-align:left; padding:7px 9px; font-weight:600; }
   td { border-bottom:1px solid #e3e6ea; padding:6px 9px; vertical-align:top; }
   tbody tr:nth-child(even){ background:#faf9f6; }
+  .toc { background:var(--creme); border:1px solid #ece6d8; border-radius:12px; padding:14px 18px; margin:14px 0; break-inside:avoid; }
+  .toc-t { margin:0 0 8px; font-weight:700; color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:.5px; }
+  .toc ul { list-style:none; margin:0; padding:0; columns:2; column-gap:26px; }
+  .toc li { margin:2px 0; break-inside:avoid; }
+  .toc li.sub { padding-left:14px; font-size:11.5px; }
+  .toc li.sub a { color:#5a6675; }
   .foot { color:#8a94a0; font-size:10.5px; text-align:center; padding:14px; }
 </style></head>
 <body>
   <div class="cover"><div class="seal">GS</div><div><h1>GesSchool — Mode d'emploi</h1><p>Guide complet d'utilisation</p></div></div>
   <main>
-<h1>GesSchool — Mode d'emploi</h1>
+<h1 id="gesschool-mode-d-emploi">GesSchool — Mode d'emploi</h1>
 <p>Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien. Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.</p>
+<p><strong>📑 Accès rapide</strong> — cliquez sur une rubrique pour y aller directement :</p>
+<nav class="toc"><p class="toc-t">Accès rapide</p><ul><li class=""><a href="#0-concepts-de-base-a-lire-une-fois">0. Concepts de base (à lire une fois)</a></li><li class=""><a href="#1-creer-son-compte-et-son-ecole">1. Créer son compte et son école</a></li><li class="sub"><a href="#1-1-creer-le-compte">1.1 Créer le compte</a></li><li class="sub"><a href="#1-2-choisir-son-profil">1.2 Choisir son profil</a></li><li class="sub"><a href="#1-3-assistant-de-creation-de-l-ecole-3-etapes">1.3 Assistant de création de l'école (3 étapes)</a></li><li class=""><a href="#2-configuration-initiale">2. Configuration initiale</a></li><li class="sub"><a href="#2-1-structure-academique-menu-structure">2.1 Structure académique (menu Structure)</a></li><li class="sub"><a href="#2-2-parametres-menu-parametres">2.2 Paramètres (menu Paramètres)</a></li><li class="sub"><a href="#2-3-paiement-mobile-menu-paiements-onglet-paiement-mobile">2.3 Paiement mobile (menu Paiements → onglet Paiement mobile)</a></li><li class=""><a href="#3-eleves-inscriptions-menu-eleves">3. Élèves &amp; inscriptions (menu Élèves)</a></li><li class=""><a href="#4-membres-de-l-equipe-delegation-des-acces-menu-membres">4. Membres de l'équipe &amp; délégation des accès (menu Membres)</a></li><li class="sub"><a href="#4-1-qui-peut-inviter-qui">4.1 Qui peut inviter qui</a></li><li class="sub"><a href="#4-2-inviter-un-membre">4.2 Inviter un membre</a></li><li class="sub"><a href="#4-3-rejoindre-cote-invite">4.3 Rejoindre (côté invité)</a></li><li class="sub"><a href="#4-4-enseignants-relies-a-leur-fiche-cas-particulier">4.4 Enseignants reliés à leur fiche (cas particulier)</a></li><li class="sub"><a href="#4-5-invitations-en-attente">4.5 Invitations en attente</a></li><li class="sub"><a href="#4-6-revoquer-ou-suspendre">4.6 Révoquer ou suspendre</a></li><li class=""><a href="#5-le-quotidien-de-l-enseignant-espace-pedagogie">5. Le quotidien de l'enseignant (espace Pédagogie)</a></li><li class="sub"><a href="#5-1-appel-menu-appel">5.1 Appel (menu Appel)</a></li><li class="sub"><a href="#5-2-cahier-de-textes-menu-cahier-de-textes">5.2 Cahier de textes (menu Cahier de textes)</a></li><li class="sub"><a href="#5-3-progression-menu-progression">5.3 Progression (menu Progression)</a></li><li class="sub"><a href="#5-4-assiduite-menu-assiduite">5.4 Assiduité (menu Assiduité)</a></li><li class=""><a href="#6-notes-menu-notes">6. Notes (menu Notes)</a></li><li class=""><a href="#7-bulletins-menu-bulletins">7. Bulletins (menu Bulletins)</a></li><li class=""><a href="#8-classement-tableau-d-honneur-menu-classement">8. Classement &amp; tableau d'honneur (menu Classement)</a></li><li class=""><a href="#9-documents-administratifs-espace-gestion">9. Documents administratifs (espace Gestion)</a></li><li class="sub"><a href="#9-1-certificats-attestations-menu-documents">9.1 Certificats &amp; attestations (menu Documents)</a></li><li class="sub"><a href="#9-2-demandes-de-documents-menu-demandes">9.2 Demandes de documents (menu Demandes)</a></li><li class=""><a href="#10-paiements-recouvrement-espace-gestion">10. Paiements &amp; recouvrement (espace Gestion)</a></li><li class="sub"><a href="#10-1-grille-tarifaire-paiements-grille-tarifaire">10.1 Grille tarifaire (Paiements → Grille tarifaire)</a></li><li class="sub"><a href="#10-2-facturer">10.2 Facturer</a></li><li class="sub"><a href="#10-3-encaisser">10.3 Encaisser</a></li><li class="sub"><a href="#10-4-declarations-de-paiement-mobile-onglet-declarations">10.4 Déclarations de paiement mobile (onglet Déclarations)</a></li><li class="sub"><a href="#10-5-recouvrement-menu-recouvrement">10.5 Recouvrement (menu Recouvrement)</a></li><li class=""><a href="#11-vie-scolaire-emploi-du-temps-fournitures-communication">11. Vie scolaire, emploi du temps, fournitures, communication</a></li><li class=""><a href="#12-rh-paie-comptabilite">12. RH &amp; Paie · Comptabilité</a></li><li class=""><a href="#13-espace-parent">13. Espace parent</a></li><li class="sub"><a href="#13-1-donner-l-acces">13.1 Donner l'accès</a></li><li class="sub"><a href="#13-2-cote-parent">13.2 Côté parent</a></li><li class=""><a href="#14-notifications-push">14. Notifications push</a></li><li class=""><a href="#15-console-super-admin-pilotage">15. Console super-admin &amp; Pilotage</a></li><li class=""><a href="#16-recapitulatif-des-roles">16. Récapitulatif des rôles</a></li><li class=""><a href="#17-depannage-rapide">17. Dépannage rapide</a></li></ul></nav>
 <hr/>
-<h2>0. Concepts de base (à lire une fois)</h2>
+<h2 id="0-concepts-de-base-a-lire-une-fois">0. Concepts de base (à lire une fois)</h2>
 <p><strong>GesSchool</strong> organise le travail en <strong>espaces</strong> selon le métier de chaque utilisateur :</p>
 <table><thead><tr><th>Espace</th><th>Icône</th><th>Pour qui</th><th>Menus</th></tr></thead><tbody><tr><td><strong>Pilotage</strong></td><td>🎯</td><td>Promoteur (accès total)</td><td>Vue consolidée de toutes ses écoles, <strong>Membres</strong></td></tr>
 <tr><td><strong>Pédagogie</strong></td><td>🎓</td><td>Responsable pédagogique, enseignants, surveillants</td><td>Accueil, <strong>Appel</strong>, <strong>Cahier de textes</strong>, <strong>Progression</strong>, Élèves (lecture), Structure, Notes, Bulletins, <strong>Classement</strong>, Emploi du temps, Vie scolaire, <strong>Assiduité</strong>, Fournitures, <strong>Membres</strong></td></tr>
@@ -57,13 +67,13 @@
 </ul>
 <p><strong>Rôles disponibles :</strong> Promoteur, Responsable pédagogique, Comptable / Gestion, Responsable RH, Secrétaire / Caisse, Enseignant, Surveillant, Parent, Super-admin.</p>
 <hr/>
-<h2>1. Créer son compte et son école</h2>
-<h3>1.1 Créer le compte</h3>
+<h2 id="1-creer-son-compte-et-son-ecole">1. Créer son compte et son école</h2>
+<h3 id="1-1-creer-le-compte">1.1 Créer le compte</h3>
 <ol><li>Ouvrir l'application → page <strong>Connexion</strong>.</li>
 <li>Onglet <strong>Inscription</strong> → e-mail + mot de passe (min. 6 caractères) → <strong>Créer le compte</strong>.</li>
 <li>Selon la configuration, un e-mail de confirmation peut être demandé : le valider, puis se connecter.</li>
 </ol>
-<h3>1.2 Choisir son profil</h3>
+<h3 id="1-2-choisir-son-profil">1.2 Choisir son profil</h3>
 <p>Au premier accès, l'écran <strong>Bienvenue</strong> propose quatre entrées :</p>
 <ul><li><strong>🏫 Je gère une école</strong> → crée l'établissement (cas du <strong>promoteur</strong>).</li>
 <li><strong>🧑‍💼 Je suis un membre du personnel</strong> → rejoint l'établissement avec un <strong>code d'invitation</strong> (responsable, comptable, secrétaire, surveillant… voir §4).</li>
@@ -71,7 +81,7 @@
 <li><strong>👪 Je suis un parent</strong> → rejoint un enfant avec un <strong>code de liaison</strong> (voir §13).</li>
 </ul>
 <blockquote>Si vous avez reçu un <strong>lien d'invitation</strong> (<code>…/#/rejoindre?code=…</code>), il vous suffit de l'ouvrir : après création du compte, le code est pré-rempli automatiquement.</blockquote>
-<h3>1.3 Assistant de création de l'école (3 étapes)</h3>
+<h3 id="1-3-assistant-de-creation-de-l-ecole-3-etapes">1.3 Assistant de création de l'école (3 étapes)</h3>
 <ol><li><strong>Identité</strong> : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.</li>
 <li><strong>Cycles ouverts</strong> : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).</li>
 <li><strong>Responsable &amp; année</strong> : prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage <strong>Trimestres (3)</strong> ou <strong>Semestres (2)</strong>.</li>
@@ -79,8 +89,8 @@
 </ol>
 <p>➡️ L'école, ses cycles, votre compte admin, l'année et les périodes sont créés automatiquement.</p>
 <hr/>
-<h2>2. Configuration initiale</h2>
-<h3>2.1 Structure académique (menu <strong>Structure</strong>)</h3>
+<h2 id="2-configuration-initiale">2. Configuration initiale</h2>
+<h3 id="2-1-structure-academique-menu-structure">2.1 Structure académique (menu <strong>Structure</strong>)</h3>
 <p>Ordre logique : <strong>Niveaux → Classes → Matières → (Séries) → Coefficients</strong>.</p>
 <ul><li><strong>Niveaux</strong> : dans chaque cycle, taper un niveau (6e, CP, Seconde) → <strong>+ Niveau</strong>.</li>
 <li><strong>Classes</strong> (génération en lot) : base du nom + nombre + suffixe (A,B,C / 1,2,3 / aucun) + série + effectif → <strong>+ Générer</strong> (doublons ignorés).</li>
@@ -88,15 +98,15 @@
 <li><strong>Séries</strong> (lycée) : créer L, S2… ou <strong>+ Pré-remplir les séries standard</strong>.</li>
 <li><strong>Grille de coefficients</strong> : choisir une portée (série OU niveau), saisir le coefficient de chaque matière (vide = non comptée).</li>
 </ul>
-<h3>2.2 Paramètres (menu <strong>Paramètres</strong>)</h3>
+<h3 id="2-2-parametres-menu-parametres">2.2 Paramètres (menu <strong>Paramètres</strong>)</h3>
 <ul><li><strong>Établissement</strong> : nom, sigle, devise, couleurs.</li>
 <li><strong>Matricule</strong> : préfixe, séparateur, nombre de chiffres (aperçu ex. <code>GS-25-0001</code>).</li>
 <li><strong>Modules actifs</strong> : activer/désactiver des modules (un module désactivé disparaît des menus et bloque l'accès).</li>
 </ul>
-<h3>2.3 Paiement mobile (menu <strong>Paiements → onglet Paiement mobile</strong>)</h3>
+<h3 id="2-3-paiement-mobile-menu-paiements-onglet-paiement-mobile">2.3 Paiement mobile (menu <strong>Paiements → onglet Paiement mobile</strong>)</h3>
 <p>Saisir vos numéros <strong>Wave / Orange Money / Free Money</strong> (affichés aux parents pour régler les factures).</p>
 <hr/>
-<h2>3. Élèves &amp; inscriptions (menu <strong>Élèves</strong>)</h2>
+<h2 id="3-eleves-inscriptions-menu-eleves">3. Élèves &amp; inscriptions (menu <strong>Élèves</strong>)</h2>
 <ul><li><strong>+ Nouvel élève</strong> : prénom, nom, sexe, naissance, classe, responsable optionnel. <strong>Matricule auto</strong>.</li>
 <li><strong>↑ Importer (Excel)</strong> : fichier .xlsx/.csv → associer les colonnes (Prénom, Nom obligatoires) → la colonne <strong>Classe</strong> doit correspondre <strong>exactement</strong> au libellé d'une classe existante → <strong>Importer</strong>.</li>
 <li><strong>Recherche/filtres</strong> : nom/matricule, classe, statut.</li>
@@ -104,61 +114,61 @@
 </ul>
 <blockquote>Édition réservée au promoteur, au comptable et à la secrétaire ; enseignants/surveillants en lecture seule. Le <strong>code parent</strong> peut aussi être généré par le <strong>responsable pédagogique</strong>.</blockquote>
 <hr/>
-<h2>4. Membres de l'équipe &amp; délégation des accès (menu <strong>Membres</strong>)</h2>
+<h2 id="4-membres-de-l-equipe-delegation-des-acces-menu-membres">4. Membres de l'équipe &amp; délégation des accès (menu <strong>Membres</strong>)</h2>
 <p>GesSchool fonctionne en <strong>cascade de délégation</strong> : le <strong>promoteur</strong> configure l'école puis crée les <strong>responsables</strong> ; chaque responsable, cloisonné à son domaine, crée et gère à son tour <strong>ses</strong> sous-utilisateurs.</p>
 <pre><code>Promoteur                → configure l'école, garde un raccourci total
  ├─ Responsable pédagogique → invite profs, surveillants, parents
  ├─ Responsable RH          → invite le personnel (secrétaire / caisse)
  └─ Comptable / Gestion     → invite une secrétaire / caisse</code></pre>
-<h3>4.1 Qui peut inviter qui</h3>
+<h3 id="4-1-qui-peut-inviter-qui">4.1 Qui peut inviter qui</h3>
 <table><thead><tr><th>Vous êtes…</th><th>Vous pouvez inviter/gérer</th></tr></thead><tbody><tr><td><strong>Promoteur</strong></td><td>Tous les rôles (responsables + n'importe quel compte, en dépannage)</td></tr>
 <tr><td><strong>Responsable pédagogique</strong></td><td>Enseignant, Surveillant, Parent</td></tr>
 <tr><td><strong>Responsable RH</strong></td><td>Secrétaire / Caisse</td></tr>
 <tr><td><strong>Comptable / Gestion</strong></td><td>Secrétaire / Caisse</td></tr>
 </tbody></table>
-<h3>4.2 Inviter un membre</h3>
+<h3 id="4-2-inviter-un-membre">4.2 Inviter un membre</h3>
 <ol><li>Ouvrir le menu <strong>Membres</strong> (présent dans votre espace).</li>
 <li><strong>+ Inviter un membre</strong> → choisir le <strong>rôle</strong> (limité à ce que vous avez le droit de déléguer) + e-mail (optionnel) → <strong>Générer le code d'invitation</strong>.</li>
 <li>Un <strong>code à 8 caractères</strong> et un <strong>lien</strong> s'affichent → les transmettre via <strong>Copier</strong>, <strong>WhatsApp</strong> ou <strong>Email</strong>.</li>
 </ol>
 <blockquote>🔒 <strong>Verrouillage par e-mail (optionnel)</strong> : si vous renseignez l'e-mail, l'invitation n'est utilisable <strong>que</strong> par un compte créé avec <strong>cette</strong> adresse (plus sûr). Laissez vide pour un code utilisable par tout destinataire (utile pour le personnel sans e-mail). Dans tous les cas, transmettez le code <strong>en privé</strong>.</blockquote>
-<h3>4.3 Rejoindre (côté invité)</h3>
+<h3 id="4-3-rejoindre-cote-invite">4.3 Rejoindre (côté invité)</h3>
 <ol><li>L'invité crée un compte (Inscription) puis choisit <strong>« 🧑‍💼 Je suis un membre du personnel »</strong> et saisit le code — ou ouvre directement le <strong>lien d'invitation</strong> (code pré-rempli).</li>
 <li>✅ Son compte est créé avec le bon rôle et il atterrit dans <strong>son espace</strong>.</li>
 </ol>
-<h3>4.4 Enseignants reliés à leur fiche (cas particulier)</h3>
+<h3 id="4-4-enseignants-relies-a-leur-fiche-cas-particulier">4.4 Enseignants reliés à leur fiche (cas particulier)</h3>
 <p>Pour qu'un enseignant retrouve <strong>ses</strong> classes (Appel, Notes…), son compte doit correspondre à sa <strong>fiche</strong> :</p>
 <ol><li>Espace RH/Pédagogie → <strong>Enseignants</strong> → ouvrir la fiche (prénom, nom, <strong>e-mail</strong> conseillé).</li>
 <li><strong>« Code d'accès »</strong> → communiquer le code → l'enseignant choisit <strong>« 🧑‍🏫 Je suis un enseignant »</strong> et le saisit.</li>
 <li>Le compte est relié (badge <strong>« ✓ compte lié »</strong>). <em>Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.</em></li>
 <li><strong>Affectations</strong> : onglet <em>Affectations</em> → relier enseignant × classe × matière (alimente aussi les coefficients).</li>
 </ol>
-<h3>4.5 Invitations en attente</h3>
+<h3 id="4-5-invitations-en-attente">4.5 Invitations en attente</h3>
 <p>Sous la liste des membres, la section <strong>« Invitations en attente »</strong> liste les codes générés <strong>non encore utilisés</strong> (rôle, code, 🔒 email ou « ouverte », date). Vous pouvez <strong>Copier le lien</strong> pour renvoyer l'invitation, ou l'<strong>Annuler</strong> (le code devient inutilisable).</p>
-<h3>4.6 Révoquer ou suspendre</h3>
+<h3 id="4-6-revoquer-ou-suspendre">4.6 Révoquer ou suspendre</h3>
 <p>Dans <strong>Membres</strong>, sur chaque personne que vous gérez :</p>
 <ul><li><strong>✕</strong> sur un rôle → retire ce rôle.</li>
 <li><strong>Suspendre</strong> → bloque immédiatement l'accès (écran « Compte suspendu ») ; <strong>Réactiver</strong> le rétablit.</li>
 </ul>
 <hr/>
-<h2>5. Le quotidien de l'enseignant (espace Pédagogie)</h2>
-<h3>5.1 Appel (menu <strong>Appel</strong>)</h3>
+<h2 id="5-le-quotidien-de-l-enseignant-espace-pedagogie">5. Le quotidien de l'enseignant (espace Pédagogie)</h2>
+<h3 id="5-1-appel-menu-appel">5.1 Appel (menu <strong>Appel</strong>)</h3>
 <p>À l'ouverture, l'enseignant voit <strong>la liste des élèves de sa classe</strong>. Il pointe <strong>Présent / Absent / Retard</strong> puis <strong>Valide l'appel</strong>. ➡️ Les absences partent <strong>à l'administration</strong> (Vie scolaire) <strong>et</strong> aux <strong>parents des absents</strong> (alerte 🔔).</p>
-<h3>5.2 Cahier de textes (menu <strong>Cahier de textes</strong>)</h3>
+<h3 id="5-2-cahier-de-textes-menu-cahier-de-textes">5.2 Cahier de textes (menu <strong>Cahier de textes</strong>)</h3>
 <p>Pour une classe : ajouter une <strong>séance</strong> (date, matière, contenu fait, <strong>devoirs</strong> + « pour le… »). Visible par l'administration et les <strong>parents</strong>.</p>
-<h3>5.3 Progression (menu <strong>Progression</strong>)</h3>
+<h3 id="5-3-progression-menu-progression">5.3 Progression (menu <strong>Progression</strong>)</h3>
 <p>Planifier ses leçons à l'avance (chapitre, matière, période, date prévue) et suivre le statut <strong>À faire / En cours / Fait</strong>.</p>
-<h3>5.4 Assiduité (menu <strong>Assiduité</strong>)</h3>
+<h3 id="5-4-assiduite-menu-assiduite">5.4 Assiduité (menu <strong>Assiduité</strong>)</h3>
 <p>Absences/retards <strong>par élève</strong> sur une période et par classe (les élèves à ≥ 5 incidents sont surlignés).</p>
 <hr/>
-<h2>6. Notes (menu <strong>Notes</strong>)</h2>
+<h2 id="6-notes-menu-notes">6. Notes (menu <strong>Notes</strong>)</h2>
 <ol><li>Choisir <strong>Classe</strong>, <strong>Période</strong>, <strong>Matière</strong>.</li>
 <li><strong>+ Ajouter</strong> une évaluation : type, libellé, <strong>barème</strong>, <strong>coefficient</strong>, date.</li>
 <li>Cliquer l'évaluation → saisir les notes (cocher <strong>Absent</strong> si besoin) → <strong>Enregistrer</strong>.</li>
 </ol>
 <blockquote>Les notes sont ramenées sur 20 selon le barème lors du calcul des bulletins.</blockquote>
 <hr/>
-<h2>7. Bulletins (menu <strong>Bulletins</strong>)</h2>
+<h2 id="7-bulletins-menu-bulletins">7. Bulletins (menu <strong>Bulletins</strong>)</h2>
 <ol><li>Choisir <strong>Classe</strong> + <strong>Période</strong> → <strong>Calculer les bulletins</strong> (rang, moyenne, mention).</li>
 <li>Cliquer <strong>Bulletin →</strong> pour ouvrir le bulletin d'un élève :</li>
 <li>Saisir les <strong>appréciations par matière</strong>, l'<strong>appréciation générale</strong> et la <strong>décision du conseil de classe</strong> (Admis(e), Redouble, Félicitations…).</li>
@@ -168,34 +178,34 @@
 </ol>
 <p>Mentions automatiques : Passable ≥10, Assez Bien ≥12, Bien ≥14, Très Bien ≥16.</p>
 <hr/>
-<h2>8. Classement &amp; tableau d'honneur (menu <strong>Classement</strong>)</h2>
+<h2 id="8-classement-tableau-d-honneur-menu-classement">8. Classement &amp; tableau d'honneur (menu <strong>Classement</strong>)</h2>
 <p>Choisir <strong>Classe + Période</strong> → <strong>Calculer</strong> :</p>
 <ul><li><strong>Classement complet</strong> (rang, moyenne, distinction).</li>
 <li><strong>Distinctions automatiques</strong> : Encouragements (≥12), Tableau d'honneur (≥14), Félicitations (≥16).</li>
 <li><strong>🖨️ Imprimer le tableau d'honneur</strong> (document avec cachet, à afficher/distribuer).</li>
 </ul>
 <hr/>
-<h2>9. Documents administratifs (espace Gestion)</h2>
-<h3>9.1 Certificats &amp; attestations (menu <strong>Documents</strong>)</h3>
+<h2 id="9-documents-administratifs-espace-gestion">9. Documents administratifs (espace Gestion)</h2>
+<h3 id="9-1-certificats-attestations-menu-documents">9.1 Certificats &amp; attestations (menu <strong>Documents</strong>)</h3>
 <p>Choisir un <strong>élève</strong> + un <strong>type</strong> (certificat de scolarité, attestation d'inscription, de fréquentation) + signataire/ville/date → <strong>Imprimer / PDF</strong>. Les informations (matricule, classe, naissance, année) sont remplies automatiquement, avec accords (né/née) et cachet.</p>
-<h3>9.2 Demandes de documents (menu <strong>Demandes</strong>)</h3>
+<h3 id="9-2-demandes-de-documents-menu-demandes">9.2 Demandes de documents (menu <strong>Demandes</strong>)</h3>
 <p>File des demandes envoyées par les parents (voir §13). Pour chacune : <strong>En cours / Marquer prêt / Rejeter</strong> + une <strong>réponse</strong> (« à retirer au secrétariat »). Le parent est <strong>notifié</strong> automatiquement.</p>
 <hr/>
-<h2>10. Paiements &amp; recouvrement (espace Gestion)</h2>
-<h3>10.1 Grille tarifaire (<strong>Paiements → Grille tarifaire</strong>)</h3>
+<h2 id="10-paiements-recouvrement-espace-gestion">10. Paiements &amp; recouvrement (espace Gestion)</h2>
+<h3 id="10-1-grille-tarifaire-paiements-grille-tarifaire">10.1 Grille tarifaire (<strong>Paiements → Grille tarifaire</strong>)</h3>
 <p>Frais : libellé, montant, <strong>niveau</strong> ciblé ou tous, <strong>Mensuel</strong>, <strong>Obligatoire</strong>.</p>
-<h3>10.2 Facturer</h3>
+<h3 id="10-2-facturer">10.2 Facturer</h3>
 <ul><li><strong>+ Nouvelle facture</strong> (un élève, échéance, lignes).</li>
 <li><strong>⚡ Générer en lot</strong> (par niveau ; frais obligatoires pré-cochés ; pas de doublon).</li>
 </ul>
-<h3>10.3 Encaisser</h3>
+<h3 id="10-3-encaisser">10.3 Encaisser</h3>
 <p>Cliquer une facture → reçu imprimable + encaissements. Saisir montant, <strong>mode</strong>, référence, date → <strong>Encaisser</strong> (statut mis à jour automatiquement).</p>
-<h3>10.4 Déclarations de paiement mobile (onglet <strong>Déclarations</strong>)</h3>
+<h3 id="10-4-declarations-de-paiement-mobile-onglet-declarations">10.4 Déclarations de paiement mobile (onglet <strong>Déclarations</strong>)</h3>
 <p>Les paiements mobiles déclarés par les parents apparaissent ici : <strong>valider</strong> (solde la facture) ou <strong>rejeter</strong>.</p>
-<h3>10.5 Recouvrement (menu <strong>Recouvrement</strong>)</h3>
+<h3 id="10-5-recouvrement-menu-recouvrement">10.5 Recouvrement (menu <strong>Recouvrement</strong>)</h3>
 <p>Impayés (total, retards, contact), <strong>Relancer</strong> (notification/push), <strong>WhatsApp</strong>, historique.</p>
 <hr/>
-<h2>11. Vie scolaire, emploi du temps, fournitures, communication</h2>
+<h2 id="11-vie-scolaire-emploi-du-temps-fournitures-communication">11. Vie scolaire, emploi du temps, fournitures, communication</h2>
 <ul><li><strong>Vie scolaire</strong> (Pédagogie) : absences/retards + incidents. Une absence notifie les parents ; la <strong>justification du parent</strong> apparaît avec un statut à <strong>valider</strong> (Justifié / Non justifié).</li>
 <li><strong>Emploi du temps</strong> (Pédagogie) : créneaux par classe.</li>
 <li><strong>Fournitures</strong> (Pédagogie) : liste par niveau, visible des parents.</li>
@@ -203,16 +213,16 @@
 <li><strong>Messagerie</strong> (Gestion) : fil de discussion école ↔ parents.</li>
 </ul>
 <hr/>
-<h2>12. RH &amp; Paie · Comptabilité</h2>
+<h2 id="12-rh-paie-comptabilite">12. RH &amp; Paie · Comptabilité</h2>
 <ul><li><strong>RH &amp; Paie</strong> : fiches <strong>personnel</strong>, contrats, <strong>fiches de paie</strong> (un salaire « payé » crée une dépense en comptabilité).</li>
 <li><strong>Enseignants</strong> : annuaire + affectations + <strong>codes d'accès</strong> (§4).</li>
 <li><strong>Comptabilité</strong> (Gestion) : recettes, <strong>dépenses</strong> (avec justificatif), trésorerie, synthèse/résultat.</li>
 </ul>
 <hr/>
-<h2>13. Espace parent</h2>
-<h3>13.1 Donner l'accès</h3>
+<h2 id="13-espace-parent">13. Espace parent</h2>
+<h3 id="13-1-donner-l-acces">13.1 Donner l'accès</h3>
 <p>Fiche élève → Responsables → <strong>Code parent</strong> → communiquer le code au parent.</p>
-<h3>13.2 Côté parent</h3>
+<h3 id="13-2-cote-parent">13.2 Côté parent</h3>
 <p>Inscription → <strong>Je suis un parent</strong> → saisir le <strong>code</strong>. Pour chaque enfant, onglets :</p>
 <ul><li><strong>Notes</strong>, <strong>Bulletins</strong> (consultables/imprimables, avec appréciations &amp; décision), <strong>Cahier de textes</strong> (séances + devoirs), <strong>Emploi du temps</strong>, <strong>Fournitures</strong>.</li>
 <li><strong>Paiements</strong> : régler une facture par <strong>mobile money</strong> (le numéro de l'école + la référence s'affichent) → <strong>Déclarer le paiement</strong> (l'école valide, §10.4).</li>
@@ -222,15 +232,15 @@
 </ul>
 <p>Un même code couvre <strong>tous les enfants</strong> rattachés au tuteur.</p>
 <hr/>
-<h2>14. Notifications push</h2>
+<h2 id="14-notifications-push">14. Notifications push</h2>
 <p>Parents et personnel peuvent <strong>activer les notifications</strong> sur leur appareil (alerte même app fermée) : nouvelle note, absence, facture, document prêt, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.</p>
 <hr/>
-<h2>15. Console super-admin &amp; Pilotage</h2>
+<h2 id="15-console-super-admin-pilotage">15. Console super-admin &amp; Pilotage</h2>
 <ul><li><strong>🛠️ Console super-admin</strong> (lien en bas du menu, réservé au propriétaire du SaaS) : toutes les écoles clientes, leur <strong>plan/abonnement</strong>, <strong>statut</strong>, et <strong>modules</strong> activés (vendre à la carte, suspendre un impayé).</li>
 <li><strong>Pilotage</strong> (promoteur multi-écoles) : <strong>synthèse consolidée</strong> (effectifs, recouvrement, trésorerie, masse salariale) + <strong>« Gérer cette école »</strong>.</li>
 </ul>
 <hr/>
-<h2>16. Récapitulatif des rôles</h2>
+<h2 id="16-recapitulatif-des-roles">16. Récapitulatif des rôles</h2>
 <table><thead><tr><th>Rôle</th><th>Accès principal</th><th>Peut inviter</th></tr></thead><tbody><tr><td><strong>Promoteur</strong></td><td>Tous les espaces + configuration (Paramètres, Modules)</td><td>Tout le monde</td></tr>
 <tr><td><strong>Responsable pédagogique</strong></td><td>Pédagogie (toutes les classes) + Structure + <strong>codes parents</strong></td><td>Enseignant, Surveillant, Parent</td></tr>
 <tr><td><strong>Comptable / Gestion</strong></td><td>Gestion : paiements, recouvrement, comptabilité, communication</td><td>Secrétaire / Caisse</td></tr>
@@ -242,7 +252,7 @@
 <tr><td><strong>Super-admin</strong></td><td>Console de pilotage du SaaS</td><td>—</td></tr>
 </tbody></table>
 <hr/>
-<h2>17. Dépannage rapide</h2>
+<h2 id="17-depannage-rapide">17. Dépannage rapide</h2>
 <ul><li><strong>« Je ne vois pas un menu »</strong> → module désactivé (Paramètres → Modules) ou rôle sans accès.</li>
 <li><strong>« Comment ajouter un responsable / une secrétaire ? »</strong> → menu <strong>Membres</strong> → <strong>+ Inviter un membre</strong> (voir §4).</li>
 <li><strong>« Compte suspendu »</strong> au démarrage → votre accès a été suspendu par un responsable ; demandez sa réactivation (menu Membres → Réactiver).</li>
