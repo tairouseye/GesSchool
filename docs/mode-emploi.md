@@ -107,6 +107,8 @@ Promoteur                → configure l'école, garde un raccourci total
 2. **+ Inviter un membre** → choisir le **rôle** (limité à ce que vous avez le droit de déléguer) + e-mail (optionnel) → **Générer le code d'invitation**.
 3. Un **code à 8 caractères** et un **lien** s'affichent → les transmettre via **Copier**, **WhatsApp** ou **Email**.
 
+> 🔒 **Verrouillage par e-mail (optionnel)** : si vous renseignez l'e-mail, l'invitation n'est utilisable **que** par un compte créé avec **cette** adresse (plus sûr). Laissez vide pour un code utilisable par tout destinataire (utile pour le personnel sans e-mail). Dans tous les cas, transmettez le code **en privé**.
+
 ### 4.3 Rejoindre (côté invité)
 1. L'invité crée un compte (Inscription) puis choisit **« 🧑‍💼 Je suis un membre du personnel »** et saisit le code — ou ouvre directement le **lien d'invitation** (code pré-rempli).
 2. ✅ Son compte est créé avec le bon rôle et il atterrit dans **son espace**.

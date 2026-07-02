@@ -131,9 +131,11 @@ function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
   }, [ouvert]); // eslint-disable-line
 
   const lien = code ? lienInvitation(code) : "";
+  const verrou = code && email.trim(); // invitation verrouillée sur l'email
   const message = code
     ? `Bonjour, vous êtes invité(e) à rejoindre ${ecole?.nom || "notre établissement"} sur GesSchool en tant que ${LIBELLES_ROLES[role] || role}. `
       + `Ouvrez ce lien puis saisissez le code ${code} : ${lien}`
+      + (verrou ? ` (Créez votre compte avec l'adresse ${email.trim()}.)` : "")
     : "";
 
   async function generer(e) {
@@ -161,8 +163,14 @@ function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
               {rolesPossibles.map((r) => <option key={r} value={r}>{LIBELLES_ROLES[r] || r}</option>)}
             </select>
           </label>
-          <Champ label="Email (optionnel)" type="email" value={email}
-            onChange={(e) => setEmail(e.target.value)} placeholder="personne@exemple.com" />
+          <div>
+            <Champ label="Email (optionnel)" type="email" value={email}
+              onChange={(e) => setEmail(e.target.value)} placeholder="personne@exemple.com" />
+            <p className="mt-1.5 text-xs text-navy-900/50">
+              🔒 Si vous renseignez un email, l'invitation sera <strong>verrouillée</strong> sur cette adresse
+              (la personne devra créer son compte avec). Laissez vide pour un code utilisable par tout destinataire.
+            </p>
+          </div>
           <Alerte ton="erreur">{erreur}</Alerte>
           <Bouton type="submit" className="w-full" disabled={enCours || !role}>
             {enCours ? "Génération…" : "Générer le code d'invitation"}
@@ -173,6 +181,9 @@ function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
           <div className="rounded-xl border border-or-500/30 bg-or-500/5 p-4 text-center">
             <p className="text-xs text-navy-900/50">Code d'invitation ({LIBELLES_ROLES[role] || role})</p>
             <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-or-600">{code}</p>
+            {verrou && (
+              <p className="mt-2 text-xs text-navy-900/60">🔒 Verrouillé sur <strong>{email.trim()}</strong></p>
+            )}
           </div>
           <p className="text-xs text-navy-900/60">
             La personne crée son compte sur GesSchool puis saisit ce code (ou ouvre le lien) pour rejoindre l'établissement.
