@@ -4,6 +4,14 @@
 --  le parent est notifié (notification + push si configuré).
 -- =====================================================================
 
+-- Traitement des demandes = domaine Gestion (comptable/secrétaire) ; le
+-- responsable pédagogique 'direction' en est exclu. Défini ici aussi pour que
+-- la migration soit auto-suffisante si jouée avant 033.
+create or replace function est_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select est_super_admin() or a_role('admin_ecole')
+$$;
+
 create table if not exists demandes_documents (
   id          uuid primary key default gen_random_uuid(),
   ecole_id    uuid not null references ecoles(id) on delete cascade,
@@ -60,7 +68,9 @@ begin
   select * into d from demandes_documents where id = p_demande;
   if d is null then raise exception 'Demande introuvable.'; end if;
   if not est_super_admin() and d.ecole_id <> ecole_courante() then raise exception 'Accès refusé.'; end if;
-  if not est_gestion() then raise exception 'Réservé à l''administration.'; end if;
+  if not (est_admin() or a_role('comptable') or a_role('secretaire')) then
+    raise exception 'Réservé à l''administration.';
+  end if;
 
   update demandes_documents
     set statut = p_statut, reponse = p_reponse, traite_par = auth.uid(), traite_le = now()

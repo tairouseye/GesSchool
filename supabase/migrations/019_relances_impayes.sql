@@ -5,6 +5,14 @@
 --  Voir docs/spec-relances-impayes.md.
 -- =====================================================================
 
+-- Recouvrement = domaine Gestion (comptable) → réservé au promoteur + comptable
+-- (le responsable pédagogique 'direction' en est exclu). Défini ici aussi pour
+-- que la migration soit auto-suffisante si jouée avant 033.
+create or replace function est_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select est_super_admin() or a_role('admin_ecole')
+$$;
+
 -- ---------------------------------------------------------------------
 --  1) Tables
 -- ---------------------------------------------------------------------
@@ -55,14 +63,14 @@ begin
       || 'using (est_super_admin() or ecole_id = ecole_courante());', t);
     execute format(
       'create policy %1$s_ins on %1$I for insert '
-      || 'with check (est_super_admin() or (ecole_id = ecole_courante() and (est_gestion() or a_role(''comptable''))));', t);
+      || 'with check (est_super_admin() or (ecole_id = ecole_courante() and (est_admin() or a_role(''comptable''))));', t);
     execute format(
       'create policy %1$s_upd on %1$I for update '
-      || 'using (est_super_admin() or (ecole_id = ecole_courante() and (est_gestion() or a_role(''comptable'')))) '
-      || 'with check (est_super_admin() or (ecole_id = ecole_courante() and (est_gestion() or a_role(''comptable''))));', t);
+      || 'using (est_super_admin() or (ecole_id = ecole_courante() and (est_admin() or a_role(''comptable'')))) '
+      || 'with check (est_super_admin() or (ecole_id = ecole_courante() and (est_admin() or a_role(''comptable''))));', t);
     execute format(
       'create policy %1$s_del on %1$I for delete '
-      || 'using (est_super_admin() or (ecole_id = ecole_courante() and (est_gestion() or a_role(''comptable''))));', t);
+      || 'using (est_super_admin() or (ecole_id = ecole_courante() and (est_admin() or a_role(''comptable''))));', t);
   end loop;
 end $$;
 
@@ -143,7 +151,7 @@ revoke execute on function public.executer_relances(uuid) from public;
 create or replace function public.relancer_tout()
 returns integer language plpgsql security definer set search_path = public as $$
 begin
-  if not est_gestion() then raise exception 'Réservé à la direction / l''administration.'; end if;
+  if not est_admin() then raise exception 'Réservé à la direction / l''administration.'; end if;
   return public.executer_relances(ecole_courante());
 end $$;
 grant execute on function public.relancer_tout() to authenticated;
@@ -166,7 +174,7 @@ begin
 
   if r is null then raise exception 'Facture introuvable.'; end if;
   if not est_super_admin() and r.ecole_id <> v_ecole then raise exception 'Accès refusé.'; end if;
-  if not (est_gestion() or a_role('comptable')) then raise exception 'Réservé au comptable.'; end if;
+  if not (est_admin() or a_role('comptable')) then raise exception 'Réservé au comptable.'; end if;
 
   v_msg := 'Rappel de paiement : '
         || trim(to_char(coalesce(r.reste,0), 'FM999G999G999G990')) || ' ' || coalesce(r.devise,'XOF')
@@ -200,7 +208,7 @@ begin
   where e.id = p_eleve;
   if r is null then raise exception 'Élève introuvable.'; end if;
   if not est_super_admin() and r.ecole_id <> v_ecole then raise exception 'Accès refusé.'; end if;
-  if not (est_gestion() or a_role('comptable')) then raise exception 'Réservé au comptable.'; end if;
+  if not (est_admin() or a_role('comptable')) then raise exception 'Réservé au comptable.'; end if;
 
   -- Total restant dû + échéance la plus ancienne (factures non soldées)
   select coalesce(sum(f.montant_total - f.montant_paye), 0), min(f.date_echeance)
