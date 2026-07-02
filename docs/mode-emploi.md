@@ -120,7 +120,10 @@ Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doi
 3. Le compte est relié (badge **« ✓ compte lié »**). *Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.*
 4. **Affectations** : onglet *Affectations* → relier enseignant × classe × matière (alimente aussi les coefficients).
 
-### 4.5 Révoquer ou suspendre
+### 4.5 Invitations en attente
+Sous la liste des membres, la section **« Invitations en attente »** liste les codes générés **non encore utilisés** (rôle, code, 🔒 email ou « ouverte », date). Vous pouvez **Copier le lien** pour renvoyer l'invitation, ou l'**Annuler** (le code devient inutilisable).
+
+### 4.6 Révoquer ou suspendre
 Dans **Membres**, sur chaque personne que vous gérez :
 - **✕** sur un rôle → retire ce rôle.
 - **Suspendre** → bloque immédiatement l'accès (écran « Compte suspendu ») ; **Réactiver** le rétablit.

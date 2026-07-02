@@ -3,7 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
-import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation } from "@/lib/membres.js";
+import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
 
 export default function Membres() {
   const { roles, ecole, profil } = useAuth();
@@ -11,6 +11,7 @@ export default function Membres() {
   const complet = estRoleComplet(roles);
 
   const [membres, setMembres] = useState([]);
+  const [invitations, setInvitations] = useState([]);
   const [erreur, setErreur] = useState("");
   const [ok, setOk] = useState("");
   const [modale, setModale] = useState(false);
@@ -18,7 +19,9 @@ export default function Membres() {
   const charger = useCallback(async () => {
     setErreur("");
     try {
-      setMembres(await getMembres());
+      const [m, inv] = await Promise.all([getMembres(), getInvitations()]);
+      setMembres(m);
+      setInvitations(inv);
     } catch (e) { setErreur(e.message); }
   }, []);
 
@@ -45,6 +48,21 @@ export default function Membres() {
       await charger();
     } catch (e) { setErreur(e.message); }
   }
+
+  async function annuler(inv) {
+    if (!window.confirm(`Annuler l'invitation ${inv.code} (${LIBELLES_ROLES[inv.role] || inv.role}) ?`)) return;
+    setErreur(""); setOk("");
+    try {
+      await annulerInvitation(inv.id);
+      setOk("Invitation annulée.");
+      await charger();
+    } catch (e) { setErreur(e.message); }
+  }
+
+  const copierLien = async (code) => {
+    try { await navigator.clipboard.writeText(lienInvitation(code)); setOk("Lien copié."); } catch { /* ignore */ }
+  };
+  const dateCourte = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 
   return (
     <>
@@ -106,6 +124,43 @@ export default function Membres() {
             })
           )}
         </Carte>
+
+        {invitations.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-navy-900/70">
+              Invitations en attente ({invitations.length})
+            </h2>
+            <Carte className="divide-y divide-navy-900/5">
+              {invitations.map((inv) => {
+                const gerable = complet || invitables.includes(inv.role);
+                return (
+                  <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-lg bg-or-500/10 px-2 py-0.5 text-xs font-medium text-navy-800">
+                          {LIBELLES_ROLES[inv.role] || inv.role}
+                        </span>
+                        <span className="font-mono text-sm font-bold tracking-widest text-or-600">{inv.code}</span>
+                        {inv.email
+                          ? <span className="text-xs text-navy-900/60">🔒 {inv.email}</span>
+                          : <span className="text-xs text-navy-900/40">ouverte</span>}
+                      </p>
+                      <p className="mt-0.5 text-xs text-navy-900/40">
+                        créée le {dateCourte(inv.created_at)}{inv.cree_par_nom ? ` · par ${inv.cree_par_nom}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Bouton variante="fantome" className="!py-1.5 text-xs" onClick={() => copierLien(inv.code)}>Copier le lien</Bouton>
+                      {gerable && (
+                        <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-600" onClick={() => annuler(inv)}>Annuler</Bouton>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </Carte>
+          </div>
+        )}
       </div>
 
       <ModaleInvitation

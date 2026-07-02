@@ -35,6 +35,19 @@ export async function suspendreMembre(profilId, suspendu) {
   if (error) throw error;
 }
 
+// Liste des invitations en attente (codes générés non utilisés).
+export async function getInvitations() {
+  const { data, error } = await supabase.rpc("invitations_ecole");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Annule une invitation en attente.
+export async function annulerInvitation(id) {
+  const { error } = await supabase.rpc("annuler_invitation", { p_id: id });
+  if (error) throw error;
+}
+
 // Construit le lien d'invitation partageable (compatible HashRouter).
 export function lienInvitation(code) {
   const base = `${window.location.origin}${window.location.pathname}`;
