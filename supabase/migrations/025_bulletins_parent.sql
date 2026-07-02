@@ -4,6 +4,10 @@
 --  le parent le consulte/imprime via des RPC sécurisées.
 -- =====================================================================
 
+-- La fonction peut préexister avec un type de retour différent (versions
+-- antérieures) → on la supprime avant de la recréer.
+drop function if exists public.enfant_bulletins(uuid);
+
 create or replace function public.enfant_bulletins(p_eleve uuid)
 returns table(
   id uuid, periode text, ordre int, moyenne numeric, rang int, effectif int, mention text,
@@ -24,6 +28,8 @@ begin
     where b.eleve_id = p_eleve
     order by p.ordre;
 end $$;
+
+drop function if exists public.enfant_bulletin_lignes(uuid);
 
 create or replace function public.enfant_bulletin_lignes(p_bulletin uuid)
 returns table(matiere text, moyenne numeric, coefficient numeric)
