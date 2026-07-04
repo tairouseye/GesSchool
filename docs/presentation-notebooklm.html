@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"/>
+<title>GesSchool — Mode d'emploi</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  :root { --navy:#0B1F3A; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); line-height: 1.55; font-size: 12.5px; margin: 0; }
+  .cover { background: var(--navy); color: var(--creme); padding: 26px 30px; border-radius: 0 0 14px 14px;
+           display:flex; align-items:center; gap:18px; }
+  .seal { width:60px; height:60px; border-radius:50%; border:3px solid var(--or); color:var(--or);
+          display:grid; place-items:center; font-weight:800; font-size:20px; letter-spacing:1px; flex:0 0 auto; }
+  .cover h1 { margin:0; font-size:24px; }
+  .cover p { margin:4px 0 0; color:rgba(251,247,239,.7); font-size:13px; }
+  main { padding: 8px 30px 40px; max-width: 880px; }
+  h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; scroll-margin-top:12px; }
+  h2 { font-size:17px; color:var(--navy); margin-top:24px; scroll-margin-top:12px; }
+  h3 { font-size:14px; color:var(--navy); margin-top:18px; scroll-margin-top:12px; }
+  h2, h3, h4 { break-after: avoid; }
+  h4 { font-size:12.5px; color:var(--navy); margin-top:14px; scroll-margin-top:12px; }
+  p { margin: 7px 0; }
+  a { color:#1d5fb0; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { background:#eef0f3; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:.92em; color:var(--navy); }
+  pre { background:var(--creme); border:1px solid #e3e6ea; border-left:3px solid var(--or); border-radius:8px;
+        padding:10px 14px; overflow:auto; break-inside:avoid; margin:12px 0; }
+  pre code { background:none; padding:0; color:#3a4757; font-size:11.5px; line-height:1.4; white-space:pre; }
+  strong { color: var(--navy); }
+  hr { border:0; border-top:1px solid #e3e6ea; margin:18px 0; }
+  blockquote { margin:10px 0; padding:8px 14px; background:var(--creme); border-left:3px solid var(--or);
+               border-radius:0 8px 8px 0; color:#3a4757; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; break-inside:avoid; }
+  th { background:var(--navy); color:var(--creme); text-align:left; padding:7px 9px; font-weight:600; }
+  td { border-bottom:1px solid #e3e6ea; padding:6px 9px; vertical-align:top; }
+  tbody tr:nth-child(even){ background:#faf9f6; }
+  .toc { background:var(--creme); border:1px solid #ece6d8; border-radius:12px; padding:14px 18px; margin:14px 0; break-inside:avoid; }
+  .toc-t { margin:0 0 8px; font-weight:700; color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:.5px; }
+  .toc ul { list-style:none; margin:0; padding:0; columns:2; column-gap:26px; }
+  .toc li { margin:2px 0; break-inside:avoid; }
+  .toc li.sub { padding-left:14px; font-size:11.5px; }
+  .toc li.sub a { color:#5a6675; }
+  .foot { color:#8a94a0; font-size:10.5px; text-align:center; padding:14px; }
+</style></head>
+<body>
+  <div class="cover"><div class="seal">GS</div><div><h1>GesSchool — Mode d'emploi</h1><p>Guide complet d'utilisation</p></div></div>
+  <main>
+<h1 id="gesschool-script-de-presentation-source-pour-notebooklm">GesSchool — Script de présentation (source pour NotebookLM)</h1>
+<blockquote><strong>À quoi sert ce document ?</strong> C'est une <strong>source prête pour NotebookLM</strong> (notebooklm.google.com). Il est écrit pour être transformé automatiquement en <strong>PowerPoint</strong> et en <strong>vidéo / Audio Overview</strong>.  <strong>Mode d'emploi (5 minutes) :</strong> 1. Ouvrez <strong>NotebookLM</strong> → <em>Créer un notebook</em>. 2. <strong>Ajoutez des sources</strong> : ce fichier <code>presentation-notebooklm.md</code> <strong>et</strong> le mode    d'emploi <code>mode-emploi.md</code> (pour les détails). Le flyer et la doc produit peuvent    aussi être ajoutés. 3. Cliquez sur <strong>Video Overview</strong> (ou <strong>Audio Overview</strong>) → <em>Générer</em>. Pour orienter    le ton, saisissez une consigne : « Présentation commerciale de 3 minutes en    français, à destination des directeurs d'écoles privées au Sénégal. » 4. Pour les <strong>diapositives</strong> : utilisez la fonction de génération de slides / ou    copiez la structure « Plan de diapositives » en fin de document dans    Google Slides / PowerPoint.  Chaque section ci‑dessous = <strong>une diapositive</strong> : un <strong>titre</strong> puis un texte de <strong>narration</strong> (ce que la voix off doit dire). Français, phrases courtes, concret.</blockquote>
+<hr/>
+<h2 id="diapo-1-gesschool-toute-l-ecole-dans-une-seule-application">Diapo 1 — GesSchool : toute l'école dans une seule application</h2>
+<p>GesSchool est une application de gestion scolaire conçue pour les établissements d'Afrique de l'Ouest, en particulier le Sénégal. Elle réunit, au même endroit, la scolarité, les notes et bulletins, les paiements, la comptabilité, les ressources humaines et la communication avec les familles. Accessible depuis un ordinateur, une tablette ou un simple téléphone, via un navigateur, et installable comme une application. Une seule plateforme, pour tout le quotidien de l'école.</p>
+<h2 id="diapo-2-le-probleme-une-gestion-eclatee-et-beaucoup-de-papier">Diapo 2 — Le problème : une gestion éclatée et beaucoup de papier</h2>
+<p>Aujourd'hui, beaucoup d'écoles jonglent avec des cahiers, des fichiers Excel dispersés et des reçus papier. Les notes se calculent à la main, les impayés se suivent de mémoire, et les parents sont peu informés. Résultat : des erreurs, du temps perdu, et un manque de visibilité pour la direction. Le promoteur, lui, ne sait pas en temps réel où en sont les effectifs, la trésorerie ou le recouvrement.</p>
+<h2 id="diapo-3-la-solution-une-plateforme-unique-claire-et-mobile">Diapo 3 — La solution : une plateforme unique, claire et mobile</h2>
+<p>GesSchool remplace tout cela par une application unique, moderne et rapide. Chaque métier de l'école y retrouve son espace de travail dédié. Les données sont centralisées, sécurisées et sauvegardées. Les calculs — moyennes, rangs, soldes — sont automatiques. Et les parents suivent la scolarité de leurs enfants depuis leur téléphone. Le tout pensé pour fonctionner même sur une connexion modeste.</p>
+<h2 id="diapo-4-des-espaces-de-travail-par-metier">Diapo 4 — Des espaces de travail par métier</h2>
+<p>L'application s'organise en espaces d'usage. L'espace Pédagogie pour les enseignants et la vie scolaire. L'espace Gestion pour les inscriptions, les paiements et la comptabilité. L'espace Ressources humaines et paie. L'espace Pilotage pour le promoteur, avec une vue consolidée. Et l'espace Parent pour les familles. Chacun n'accède qu'à ce qui le concerne, ce qui rend l'outil simple à prendre en main.</p>
+<h2 id="diapo-5-une-logique-de-delegation-du-promoteur-jusqu-aux-enseignants">Diapo 5 — Une logique de délégation, du promoteur jusqu'aux enseignants</h2>
+<p>C'est l'un des points forts de GesSchool : la gestion des accès en cascade. Le promoteur configure l'établissement, puis crée ses responsables : un responsable pédagogique, un responsable des ressources humaines, un comptable. Chaque responsable, cloisonné à son domaine, invite et gère à son tour ses propres utilisateurs. Le responsable pédagogique crée les comptes des enseignants, des surveillants et donne l'accès aux parents. Chacun délègue ce qui le concerne, sans jamais voir ce qui ne le regarde pas.</p>
+<h2 id="diapo-6-inviter-un-membre-en-un-instant">Diapo 6 — Inviter un membre en un instant</h2>
+<p>Créer un accès est immédiat. On choisit un rôle, on génère un code d'invitation et un lien partageable. On l'envoie par WhatsApp, par e‑mail ou on le copie. La personne crée son compte, saisit le code, et se retrouve directement dans son espace. On peut verrouiller une invitation sur une adresse e‑mail précise pour plus de sécurité, suivre les invitations en attente, révoquer un rôle ou suspendre un accès à tout moment.</p>
+<h2 id="diapo-7-eleves-et-inscriptions-sans-ressaisie">Diapo 7 — Élèves et inscriptions, sans ressaisie</h2>
+<p>La gestion des élèves est centrale et fluide. On crée une fiche complète avec photo, on attribue un matricule automatiquement, et on inscrit l'élève dans sa classe. Pour les grands effectifs, un import Excel permet d'enregistrer des listes entières en quelques secondes. Chaque fiche élève réunit l'état civil, les responsables, les inscriptions, et un accès direct pour écrire au parent.</p>
+<h2 id="diapo-8-notes-et-bulletins-calcules-automatiquement">Diapo 8 — Notes et bulletins calculés automatiquement</h2>
+<p>Les enseignants saisissent les notes par classe et par matière. GesSchool calcule les moyennes pondérées par coefficient, les rangs et les mentions. Les bulletins sont générés, enrichis d'appréciations par matière et de la décision du conseil de classe, puis imprimables en un clic. Le classement et le tableau d'honneur valorisent les meilleurs élèves de chaque période. Fini les calculs manuels et les erreurs de report.</p>
+<h2 id="diapo-9-le-zero-papier-au-quotidien">Diapo 9 — Le « zéro papier » au quotidien</h2>
+<p>GesSchool numérise tout le quotidien pédagogique. L'appel se fait en classe depuis le téléphone du professeur. Le cahier de textes consigne les séances et les devoirs. Le cahier de progression suit l'avancement du programme. Les absences et les retards sont enregistrés, et les parents notifiés immédiatement, avec possibilité de justifier en ligne. Moins de papier, plus de traçabilité.</p>
+<h2 id="diapo-10-paiements-recouvrement-et-paiement-mobile">Diapo 10 — Paiements, recouvrement et paiement mobile</h2>
+<p>Côté finances, GesSchool gère une grille tarifaire par niveau et la facturation, y compris en lot pour toute une classe. L'encaissement met à jour le solde automatiquement et édite un reçu. Les parents peuvent régler par Wave, Orange Money ou Free Money et déclarer leur paiement dans l'application. Le module de recouvrement liste les impayés, envoie des rappels par notification ou WhatsApp, et déclenche des relances automatiques chaque jour.</p>
+<h2 id="diapo-11-comptabilite-ressources-humaines-et-paie">Diapo 11 — Comptabilité, ressources humaines et paie</h2>
+<p>L'école tient son livre de caisse : recettes, dépenses avec justificatifs, trésorerie et résultat. Le module ressources humaines gère le personnel, les contrats et les fiches de paie ; un salaire payé crée automatiquement la dépense correspondante en comptabilité. Tout est relié, cohérent, et réservé aux bonnes personnes grâce au cloisonnement des accès.</p>
+<h2 id="diapo-12-l-espace-parent-la-scolarite-dans-la-poche">Diapo 12 — L'espace parent : la scolarité dans la poche</h2>
+<p>Les parents disposent d'un espace dédié. Ils suivent les notes, les bulletins, le cahier de textes, l'emploi du temps, les fournitures et les paiements de chaque enfant. Ils reçoivent des alertes — nouvelle note, absence, facture, document prêt — même l'application fermée. Ils peuvent justifier une absence, demander un document, et échanger directement avec l'école par messagerie. Un parent dont les enfants sont dans plusieurs établissements gère tout depuis un seul compte.</p>
+<h2 id="diapo-13-communiquer-avec-les-familles-simplement">Diapo 13 — Communiquer avec les familles, simplement</h2>
+<p>L'école publie des annonces vers toute l'école, une classe ou l'ensemble des parents. La messagerie permet un échange direct : pour écrire à un parent, il suffit de rechercher l'élève, et la conversation avec son responsable s'ouvre aussitôt. La communication devient naturelle, rattachée à l'élève concerné.</p>
+<h2 id="diapo-14-securite-et-confidentialite-par-conception">Diapo 14 — Sécurité et confidentialité par conception</h2>
+<p>Chaque établissement est isolé : une école ne voit jamais les données d'une autre. Les accès sont contrôlés au niveau de la base de données, pas seulement de l'écran : un responsable pédagogique ne peut pas atteindre les finances, et inversement. Les documents sensibles sont protégés, les comptes suspendus sont bloqués, et les données sont sauvegardées. La confidentialité des familles est respectée de bout en bout.</p>
+<h2 id="diapo-15-piloter-toute-l-activite-en-un-coup-d-il">Diapo 15 — Piloter toute l'activité en un coup d'œil</h2>
+<p>Pour le promoteur, l'espace Pilotage offre une vue consolidée : effectifs, recouvrement, trésorerie, masse salariale — pour une école ou pour plusieurs. Il peut passer d'un établissement à l'autre et prendre ses décisions sur des chiffres à jour, sans attendre un rapport de fin de mois.</p>
+<h2 id="diapo-16-une-offre-modulaire-a-la-carte">Diapo 16 — Une offre modulaire, à la carte</h2>
+<p>GesSchool s'adapte au budget et aux besoins de chaque école. Les modules — scolarité, évaluations, vie scolaire, finances, ressources humaines, communication, pilotage — s'activent à la carte. On démarre avec l'essentiel, on ajoute le reste quand on veut. L'application s'installe comme une application mobile, fonctionne sur tous les appareils, et ne demande aucune infrastructure côté école.</p>
+<h2 id="diapo-17-gesschool-l-ecole-sereine">Diapo 17 — GesSchool, l'école sereine</h2>
+<p>GesSchool, c'est moins de papier, moins d'erreurs, plus de temps pour l'essentiel : l'éducation. Une direction qui pilote, un personnel qui gagne du temps, des parents informés et rassurés. Une seule application, pour toute l'école. Passez à GesSchool.</p>
+<hr/>
+<h2 id="plan-de-diapositives-a-copier-dans-powerpoint-google-slides">Plan de diapositives (à copier dans PowerPoint / Google Slides)</h2>
+<ol><li><strong>GesSchool</strong> — Toute l'école dans une seule application</li>
+<li><strong>Le problème</strong> — Gestion éclatée, beaucoup de papier</li>
+<li><strong>La solution</strong> — Une plateforme unique, claire et mobile</li>
+<li><strong>Des espaces par métier</strong> — Pédagogie · Gestion · RH · Pilotage · Parent</li>
+<li><strong>Délégation en cascade</strong> — Du promoteur aux enseignants</li>
+<li><strong>Inviter un membre</strong> — Code + lien, en un instant</li>
+<li><strong>Élèves &amp; inscriptions</strong> — Fiches, matricule auto, import Excel</li>
+<li><strong>Notes &amp; bulletins</strong> — Moyennes, rangs, mentions, appréciations</li>
+<li><strong>Zéro papier</strong> — Appel, cahier de textes, progression, absences</li>
+<li><strong>Paiements &amp; recouvrement</strong> — Facturation, paiement mobile, relances</li>
+<li><strong>Comptabilité &amp; RH/Paie</strong> — Livre de caisse, personnel, salaires</li>
+<li><strong>Espace parent</strong> — Notes, bulletins, alertes, multi‑écoles</li>
+<li><strong>Communication</strong> — Annonces + messagerie par élève</li>
+<li><strong>Sécurité</strong> — Cloisonnement, isolation par école, confidentialité</li>
+<li><strong>Pilotage</strong> — Vue consolidée multi‑écoles</li>
+<li><strong>Offre modulaire</strong> — Modules à la carte, PWA installable</li>
+<li><strong>Conclusion</strong> — GesSchool, l'école sereine</li>
+</ol>
+<hr/>
+<h2 id="fiche-express-pour-l-audio-overview-le-resume">Fiche express (pour l'Audio Overview / le résumé)</h2>
+<ul><li><strong>Nom</strong> : GesSchool — application de gestion scolaire (PWA).</li>
+<li><strong>Cible</strong> : écoles privées et établissements d'Afrique de l'Ouest (Sénégal).</li>
+<li><strong>Promesse</strong> : centraliser toute la gestion de l'école ; « zéro papier » ; parents connectés.</li>
+<li><strong>Différenciateurs</strong> : délégation hiérarchique des accès ; cloisonnement de sécurité en base ; paiement mobile (Wave/Orange Money/Free Money) ; multi‑écoles ; modules à la carte ; fonctionne sur téléphone.</li>
+<li><strong>Modules</strong> : scolarité, évaluations, vie scolaire, finances, RH &amp; paie, communication, pilotage.</li>
+<li><strong>Appel à l'action</strong> : essayer GesSchool et activer les modules selon les besoins.</li>
+</ul>
+  </main>
+  <div class="foot">GesSchool — gestion scolaire multi-écoles</div>
+</body></html>
