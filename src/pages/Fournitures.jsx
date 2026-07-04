@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import { getNiveaux, getFournitures, creerFourniture, supprimerFourniture } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
@@ -41,10 +41,10 @@ export default function Fournitures() {
       <div className="space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <FormFourniture niveaux={niveaux} onAjout={(f) => wrap(() => creerFourniture(ecoleId, f))} />
+        <FormFourniture niveaux={niveaux} onAjout={(f) => wrap(() => creerFourniture(ecoleId, f), "Fourniture ajoutée.")} />
 
-        {groupes.length === 0 ? (
-          <Carte className="p-8 text-sm text-navy-900/50">Aucune fourniture. Ajoute la première ci-dessus.</Carte>
+        {items.length === 0 ? (
+          <EtatVide icone="🎒" titre="Aucune fourniture">Ajoutez la première fourniture avec le formulaire ci-dessus.</EtatVide>
         ) : (
           groupes.map((g) => (
             <Carte key={g.id || "tous"} className="p-6">

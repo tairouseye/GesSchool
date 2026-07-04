@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
 import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
+import { EtatVide } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Membres() {
@@ -82,10 +83,14 @@ export default function Membres() {
           )}
         </div>
 
+        {membres.length === 0 ? (
+          <EtatVide icone="👥" titre="Aucun membre"
+            action={invitables.length > 0 ? <Bouton onClick={() => setModale(true)}>+ Inviter un membre</Bouton> : null}>
+            Invitez les responsables et le personnel de votre établissement pour qu'ils accèdent à leur espace.
+          </EtatVide>
+        ) : (
         <Carte className="divide-y divide-navy-900/5">
-          {membres.length === 0 ? (
-            <p className="p-6 text-sm text-navy-900/40">Aucun membre pour le moment.</p>
-          ) : (
+          {(
             membres.map((m) => {
               const estMoi = m.id === profil?.id;
               const rolesGerables = (m.roles || []).filter(gereRole);
@@ -126,6 +131,7 @@ export default function Membres() {
             })
           )}
         </Carte>
+        )}
 
         {invitations.length > 0 && (
           <div className="space-y-2">

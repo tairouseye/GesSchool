@@ -151,13 +151,13 @@ export default function Paiements() {
         ) : onglet === "declarations" ? (
           <PanneauDeclarations
             declarations={declarations} devise={devise}
-            onValider={(id) => wrap(() => api.validerDeclaration(id))}
-            onRejeter={(id) => wrap(() => api.rejeterDeclaration(id))}
+            onValider={(id) => wrap(() => api.validerDeclaration(id), "Paiement validé.")}
+            onRejeter={(id) => wrap(() => api.rejeterDeclaration(id), "Déclaration rejetée.")}
           />
         ) : onglet === "mobile" ? (
           <PanneauMobile
             infos={mobileInfos}
-            onSave={(v) => wrap(() => api.setPaiementMobile(ecoleId, v))}
+            onSave={(v) => wrap(() => api.setPaiementMobile(ecoleId, v), "Numéros enregistrés.")}
           />
         ) : (
           <PanneauFrais
@@ -171,7 +171,7 @@ export default function Paiements() {
         ouvert={modaleNouvelle}
         onFermer={() => setModaleNouvelle(false)}
         ecoleId={ecoleId} annee={annee} eleves={eleves} frais={frais} devise={devise}
-        onCree={() => { setModaleNouvelle(false); recharger(); }}
+        onCree={() => { setModaleNouvelle(false); recharger(); toast.succes("Facture créée."); }}
         onErreur={setErreur}
       />
 
@@ -179,7 +179,7 @@ export default function Paiements() {
         ouvert={modaleLot}
         onFermer={() => setModaleLot(false)}
         ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} inscrits={inscrits} devise={devise}
-        onTermine={() => { setModaleLot(false); recharger(); }}
+        onTermine={() => { setModaleLot(false); recharger(); toast.succes("Factures générées."); }}
         onErreur={setErreur}
       />
 
@@ -426,6 +426,7 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais
 }
 
 function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateur, onChange }) {
+  const toast = useToast();
   const [facture, setFacture] = useState(null);
   const [pay, setPay] = useState({ montant: "", mode: "wave", reference: "", date_paiement: "" });
   const [erreur, setErreur] = useState("");
@@ -455,7 +456,8 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
       setPay((p) => ({ ...p, reference: "" }));
       await recharger();
       onChange();
-    } catch (er) { setErreur(er.message); }
+      toast.succes("Encaissement enregistré.");
+    } catch (er) { setErreur(er.message); toast.erreur(er.message); }
   }
 
   return (

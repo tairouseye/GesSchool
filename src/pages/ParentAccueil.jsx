@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { annoncesParent } from "@/lib/annonces.js";
-import { Carte, Alerte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
+import { Carte, Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 
 const fmtDate = (d) =>
@@ -42,12 +42,12 @@ export default function ParentAccueil() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       {chargement ? (
-        <p className="text-sm text-navy-900/50">Chargement…</p>
+        <SkeletonListe lignes={2} />
       ) : enfants.length === 0 ? (
-        <Carte className="p-8 text-sm text-navy-900/50">
-          Aucun enfant rattaché à votre compte. Ajoutez le <strong>code</strong> remis par l'établissement
-          (bouton « + Ajouter un enfant »), ou contactez l'établissement.
-        </Carte>
+        <EtatVide icone="👪" titre="Aucun enfant rattaché"
+          action={<Bouton onClick={() => setModale(true)}>+ Ajouter un enfant</Bouton>}>
+          Saisissez le <strong>code</strong> remis par l'établissement pour suivre la scolarité de votre enfant.
+        </EtatVide>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-tour="enfants">
           {enfants.map((e) => (

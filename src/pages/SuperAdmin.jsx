@@ -103,8 +103,8 @@ export default function SuperAdmin() {
 
       <ModaleEcole
         ecole={edit} plans={plans} onFermer={() => setEdit(null)}
-        onAbonnement={(planId, statut, fin) => wrap(async () => { await api.definirAbonnement(edit.ecole_id, planId, statut, fin); setEdit(null); })}
-        onModules={(mods) => wrap(async () => { await api.definirModules(edit.ecole_id, mods); setEdit(null); })}
+        onAbonnement={(planId, statut, fin) => wrap(async () => { await api.definirAbonnement(edit.ecole_id, planId, statut, fin); setEdit(null); }, "Abonnement mis à jour.")}
+        onModules={(mods) => wrap(async () => { await api.definirModules(edit.ecole_id, mods); setEdit(null); }, "Modules mis à jour.")}
       />
     </div>
   );

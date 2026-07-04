@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { peutEditerEleves } from "@/lib/permissions.js";
@@ -117,11 +117,15 @@ export default function Eleves() {
           </div>
 
           {chargement ? (
-            <div className="p-8 text-sm text-navy-900/50">Chargement…</div>
+            <div className="p-4"><SkeletonListe lignes={6} /></div>
           ) : filtres.length === 0 ? (
-            <div className="p-8 text-sm text-navy-900/50">
-              {eleves.length === 0 ? "Aucun élève. Créez le premier avec « + Nouvel élève »." : "Aucun résultat."}
-            </div>
+            eleves.length === 0 ? (
+              <EtatVide icone="🎓" titre="Aucun élève" className="m-4">
+                Créez le premier élève avec « + Nouvel élève », ou importez une liste depuis Excel.
+              </EtatVide>
+            ) : (
+              <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun élève ne correspond à votre recherche.</EtatVide>
+            )
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="bg-creme text-navy-900/50">

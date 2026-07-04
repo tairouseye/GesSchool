@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -74,7 +74,10 @@ export default function Enseignants() {
         {onglet === "enseignants" ? (
           <Carte className="overflow-hidden">
             {enseignants.length === 0 ? (
-              <p className="p-8 text-sm text-navy-900/50">Aucun enseignant. Ajoutez-en avec « + Nouvel enseignant ».</p>
+              <EtatVide icone="🧑‍🏫" titre="Aucun enseignant"
+                action={<Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>}>
+                Ajoutez vos enseignants, puis reliez leur compte avec un code d'accès.
+              </EtatVide>
             ) : (
               <table className="w-full text-left text-sm">
                 <thead className="bg-creme text-navy-900/50">

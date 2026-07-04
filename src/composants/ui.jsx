@@ -69,6 +69,41 @@ export function Modale({ ouvert, onFermer, titre, children, large = false }) {
   );
 }
 
+// État vide homogène (liste sans données) : icône + titre + explication + action.
+export function EtatVide({ icone = "📭", titre, children, action, className = "" }) {
+  return (
+    <div className={`grid place-items-center rounded-2xl border border-dashed border-navy-900/15 bg-white/60 px-6 py-12 text-center ${className}`}>
+      <div className="text-4xl">{icone}</div>
+      {titre && <p className="mt-3 font-display text-lg font-semibold text-navy-900">{titre}</p>}
+      {children && <p className="mt-1 max-w-md text-sm text-navy-900/50">{children}</p>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+// Bloc « squelette » animé pour les chargements.
+export function Skeleton({ className = "" }) {
+  return <div className={`animate-pulse rounded-lg bg-navy-900/10 ${className}`} />;
+}
+
+// Liste de cartes-squelettes (remplace « Chargement… »).
+export function SkeletonListe({ lignes = 5, className = "" }) {
+  return (
+    <div className={`space-y-2 ${className}`} aria-hidden="true">
+      {Array.from({ length: lignes }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-2xl border border-navy-900/10 bg-white p-4">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-1/3" />
+            <Skeleton className="h-3 w-1/5" />
+          </div>
+          <Skeleton className="h-6 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Alerte({ ton = "erreur", children }) {
   if (!children) return null;
   const tons = {

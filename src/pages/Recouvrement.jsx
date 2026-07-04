@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte } from "@/composants/ui.jsx";
+import { Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
 import { getAnneeCourante } from "@/lib/academique.js";
@@ -121,11 +121,11 @@ export default function Recouvrement() {
 
             <Carte className="overflow-hidden">
               {chargement ? (
-                <p className="p-8 text-sm text-navy-900/50">Chargement…</p>
+                <div className="p-4"><SkeletonListe lignes={5} /></div>
               ) : liste.length === 0 ? (
-                <p className="p-8 text-sm text-navy-900/40">
-                  {filtre === "retard" ? "Aucun impayé en retard 🎉" : "Aucun impayé."}
-                </p>
+                <EtatVide icone={filtre === "retard" ? "🎉" : "✅"} titre={filtre === "retard" ? "Aucun impayé en retard" : "Aucun impayé"} className="m-4">
+                  {filtre === "retard" ? "Toutes les échéances passées sont réglées." : "Aucune scolarité impayée pour ce filtre."}
+                </EtatVide>
               ) : (
                 <table className="w-full text-left text-sm">
                   <thead className="bg-creme text-navy-900/50">
