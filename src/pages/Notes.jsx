@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 
@@ -236,7 +236,7 @@ function GrilleNotes({ ecoleId, classeId, anneeId, evaluation, onErreur }) {
         </div>
       </div>
       {eleves.length === 0 ? (
-        <p className="p-6 text-sm text-navy-900/40">Aucun élève inscrit dans cette classe.</p>
+        <EtatVide icone="✎" titre="Aucun élève inscrit">Inscrivez des élèves dans cette classe pour saisir les notes.</EtatVide>
       ) : (
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">

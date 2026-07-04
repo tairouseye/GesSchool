@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
@@ -132,7 +132,7 @@ export default function Appel() {
 
             <Carte className="divide-y divide-navy-900/5">
               {eleves.length === 0 ? (
-                <p className="p-6 text-sm text-navy-900/40">Aucun élève inscrit dans cette classe.</p>
+                <EtatVide icone="✅" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe.</EtatVide>
               ) : eleves.map((e) => (
                 <div key={e.id} className="flex flex-wrap items-center justify-between gap-3 p-3 sm:px-5">
                   <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span>

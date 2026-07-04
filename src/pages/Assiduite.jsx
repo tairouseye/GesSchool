@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Champ, Carte, Alerte } from "@/composants/ui.jsx";
+import { Champ, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getAbsencesPeriode } from "@/lib/viescolaire.js";
@@ -83,7 +83,7 @@ export default function Assiduite() {
         </div>
 
         {classes.length === 0 ? (
-          <Carte className="p-6 text-sm text-navy-900/50">Aucune classe à afficher.</Carte>
+          <EtatVide icone="📊" titre="Aucune classe à afficher">Aucune classe ne vous est rattachée pour le moment.</EtatVide>
         ) : (
           <Carte className="overflow-hidden">
             <table className="w-full text-left text-sm">

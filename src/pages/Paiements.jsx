@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
 import { getEleves } from "@/lib/eleves.js";
@@ -279,7 +279,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErre
 function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   const modeLabel = (m) => (api.MODES.find((x) => x[0] === m) || [])[1] || m;
   if (declarations.length === 0) {
-    return <Carte className="p-8 text-sm text-navy-900/50">Aucune déclaration de paiement en attente.</Carte>;
+    return <EtatVide icone="📲" titre="Aucune déclaration">Aucun paiement mobile déclaré par les parents en attente.</EtatVide>;
   }
   return (
     <Carte className="overflow-hidden">

@@ -8,7 +8,7 @@ import {
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import Cachet from "@/composants/Cachet.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -60,7 +60,7 @@ export default function ParentEnfant() {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-navy-900/50">Chargement…</p>
+        <SkeletonListe lignes={4} />
       ) : onglet === "notes" ? (
         <Notes notes={notes} />
       ) : onglet === "bulletins" ? (

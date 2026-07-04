@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
@@ -101,7 +101,7 @@ export default function Bulletins() {
               )}
             </div>
             {resultats.eleves.length === 0 ? (
-              <p className="p-6 text-sm text-navy-900/40">Aucun élève inscrit.</p>
+              <EtatVide icone="🎓" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe pour cette période.</EtatVide>
             ) : (
               <table className="w-full text-left text-sm">
                 <thead className="bg-creme text-navy-900/50">

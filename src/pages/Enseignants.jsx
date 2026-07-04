@@ -185,7 +185,7 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
       </Carte>
 
       {Object.keys(parClasse).length === 0 ? (
-        <Carte className="p-6 text-sm text-navy-900/40">Aucune affectation pour l'instant.</Carte>
+        <EtatVide icone="🗂️" titre="Aucune affectation">Affectez des matières aux enseignants avec le formulaire ci-dessus.</EtatVide>
       ) : (
         classes
           .filter((c) => parClasse[c.id])

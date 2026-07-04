@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
@@ -200,7 +200,7 @@ function KpiCarte({ label, valeur, suffixe, ton, note }) {
 function Tresorerie({ soldes, devise, onSuppr }) {
   const typeLabel = (t) => (api.TYPES_COMPTE.find((x) => x[0] === t) || [])[1] || t;
   if (soldes.length === 0) {
-    return <Carte className="p-8 text-sm text-navy-900/50">Aucun compte. Crée ta caisse / banque avec « + Compte ».</Carte>;
+    return <EtatVide icone="🏦" titre="Aucun compte">Créez votre caisse ou banque avec « + Compte ».</EtatVide>;
   }
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -230,7 +230,7 @@ function Mouvements({ type, items, devise, onSuppr }) {
   const champTiers = type === "recette" ? "source" : "beneficiaire";
   const tiersLabel = type === "recette" ? "Source" : "Bénéficiaire";
   if (items.length === 0) {
-    return <Carte className="p-8 text-sm text-navy-900/50">Aucune {type} sur la période.</Carte>;
+    return <EtatVide icone="💰" titre={`Aucune ${type}`}>Rien sur la période sélectionnée.</EtatVide>;
   }
   return (
     <Carte className="overflow-hidden">

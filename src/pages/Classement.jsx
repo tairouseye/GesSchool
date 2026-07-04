@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
@@ -104,7 +104,7 @@ export default function Classement() {
                 </div>
               </div>
               {honneur.length === 0 ? (
-                <p className="mt-6 text-sm text-navy-900/40">Aucun élève distingué sur cette période.</p>
+                <EtatVide icone="🏆" titre="Aucun classement" className="mt-6">Lancez le calcul pour établir le classement de la période.</EtatVide>
               ) : (
                 <table className="mt-6 w-full text-left text-sm">
                   <thead className="border-b border-navy-900/15 text-navy-900/50">

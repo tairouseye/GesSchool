@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
@@ -80,7 +80,7 @@ export default function CahierTextes() {
             />
 
             {entrees.length === 0 ? (
-              <Carte className="p-6 text-sm text-navy-900/40">Aucune entrée pour cette classe.</Carte>
+              <EtatVide icone="📓" titre="Aucune entrée">Ajoutez une séance et son contenu pour cette classe.</EtatVide>
             ) : (
               <div className="space-y-3">
                 {entrees.map((e) => (

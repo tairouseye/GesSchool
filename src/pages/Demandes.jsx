@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
 import * as api from "@/lib/demandes.js";
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
@@ -42,7 +42,9 @@ export default function Demandes() {
         </div>
 
         {liste.length === 0 ? (
-          <Carte className="p-8 text-sm text-navy-900/50">Aucune demande{filtre === "a_traiter" ? " à traiter" : ""}.</Carte>
+          <EtatVide icone="📥" titre="Aucune demande">
+            {filtre === "a_traiter" ? "Aucune demande à traiter pour le moment." : "Aucune demande de document enregistrée."}
+          </EtatVide>
         ) : (
           liste.map((d) => (
             <LigneDemande key={d.id} d={d} onTraite={(statut, reponse) => api.traiterDemande(d.id, statut, reponse).then(recharger).catch((e) => setErreur(e.message))} />

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/viescolaire.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getEleves } from "@/lib/eleves.js";
@@ -123,9 +123,9 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
       {classeId && (
         <Carte className="overflow-hidden">
           {chargement ? (
-            <p className="p-6 text-sm text-navy-900/50">Chargement…</p>
+            <div className="p-4"><SkeletonListe lignes={4} /></div>
           ) : eleves.length === 0 ? (
-            <p className="p-6 text-sm text-navy-900/40">Aucun élève inscrit dans cette classe.</p>
+            <EtatVide icone="📋" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe.</EtatVide>
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="bg-creme text-navy-900/50">

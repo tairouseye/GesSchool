@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/pilotage.js";
 
@@ -62,9 +62,9 @@ export default function Pilotage() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         {chargement ? (
-          <p className="text-sm text-navy-900/50">Chargement…</p>
+          <SkeletonListe lignes={3} />
         ) : lignes.length === 0 ? (
-          <Carte className="p-8 text-sm text-navy-900/50">Aucune école rattachée à votre compte.</Carte>
+          <EtatVide icone="🏫" titre="Aucune école">Aucune école n'est rattachée à votre compte de promoteur.</EtatVide>
         ) : (
           <>
             {/* KPIs consolidés */}

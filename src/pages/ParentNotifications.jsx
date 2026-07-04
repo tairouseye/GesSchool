@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { mesNotifications, marquerLue, marquerToutesLues } from "@/lib/parent.js";
 import { pushSupporte, etatPush, activerPush, desactiverPush } from "@/lib/push.js";
-import { Carte, Alerte, Bouton } from "@/composants/ui.jsx";
+import { Carte, Alerte, Bouton, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
@@ -93,9 +93,9 @@ export default function ParentNotifications() {
       <PushToggle onErreur={setErreur} />
 
       {chargement ? (
-        <p className="text-sm text-navy-900/50">Chargement…</p>
+        <SkeletonListe lignes={4} />
       ) : items.length === 0 ? (
-        <Carte className="p-8 text-sm text-navy-900/50">Aucune alerte pour le moment.</Carte>
+        <EtatVide icone="🔔" titre="Aucune alerte">Vous n'avez aucune notification pour le moment.</EtatVide>
       ) : (
         <div className="space-y-2">
           {items.map((n) => (
