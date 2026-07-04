@@ -41,13 +41,15 @@ export default function Annonces() {
     recharger();
   }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
+  const wrap = async (fn, msg) => {
     try {
       await fn();
       await recharger();
+      if (msg) toast.succes(msg);
+      return true;
     } catch (e) {
-      setErreur(e.message);
+      toast.erreur(e.message || "Une erreur est survenue.");
+      return false;
     }
   };
 
@@ -83,7 +85,7 @@ export default function Annonces() {
                   </p>
                 </div>
                 <button
-                  onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) { await wrap(() => api.supprimerAnnonce(a.id)); toast.succes("Annonce supprimée."); } }}
+                  onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id), "Annonce supprimée."); }}
                   className="shrink-0 text-xs text-rose-500 hover:underline"
                 >
                   supprimer

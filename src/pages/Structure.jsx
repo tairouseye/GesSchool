@@ -52,13 +52,15 @@ export default function Structure() {
     recharger();
   }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
+  const wrap = async (fn, msg) => {
     try {
       await fn();
       await recharger();
+      if (msg) toast.succes(msg);
+      return true;
     } catch (e) {
-      setErreur(e.message);
+      toast.erreur(e.message || "Une erreur est survenue.");
+      return false;
     }
   };
 
@@ -98,11 +100,11 @@ export default function Structure() {
               onAjoutNiveau={(libelle, ordre) =>
                 wrap(() => api.creerNiveau(ecoleId, cycle.id, libelle, ordre))
               }
-              onSupprNiveau={async (id) => { if (await confirmer("Supprimer ce niveau ? (impossible s'il a des classes)")) { await wrap(() => api.supprimerNiveau(id)); toast.succes("Niveau supprimé."); } }}
+              onSupprNiveau={async (id) => { if (await confirmer("Supprimer ce niveau ? (impossible s'il a des classes)")) wrap(() => api.supprimerNiveau(id), "Niveau supprimé."); }}
               onGenererClasses={(niveauId, libelles, eff, serieId) =>
                 wrap(() => api.creerClassesEnLot(ecoleId, niveauId, annee.id, libelles, eff, serieId))
               }
-              onSupprClasse={async (id) => { if (await confirmer("Supprimer cette classe ?")) { await wrap(() => api.supprimerClasse(id)); toast.succes("Classe supprimée."); } }}
+              onSupprClasse={async (id) => { if (await confirmer("Supprimer cette classe ?")) wrap(() => api.supprimerClasse(id), "Classe supprimée."); }}
             />
           ))}
         </div>
@@ -114,7 +116,7 @@ export default function Structure() {
           onAjout={(libelle, code, cycleId) =>
             wrap(() => api.creerMatiere(ecoleId, libelle, code, cycleId))
           }
-          onSuppr={async (id) => { if (await confirmer("Supprimer cette matière ?")) { await wrap(() => api.supprimerMatiere(id)); toast.succes("Matière supprimée."); } }}
+          onSuppr={async (id) => { if (await confirmer("Supprimer cette matière ?")) wrap(() => api.supprimerMatiere(id), "Matière supprimée."); }}
         />
 
         {/* Séries (lycée uniquement) */}
@@ -122,7 +124,7 @@ export default function Structure() {
           <PanneauSeries
             series={series}
             onAjout={(code, libelle) => wrap(() => api.creerSerie(ecoleId, code, libelle, series.length + 1))}
-            onSuppr={async (id) => { if (await confirmer("Supprimer cette série ?")) { await wrap(() => api.supprimerSerie(id)); toast.succes("Série supprimée."); } }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette série ?")) wrap(() => api.supprimerSerie(id), "Série supprimée."); }}
             onSemer={() => wrap(() => api.semerSeriesStandard(ecoleId, series))}
           />
         )}

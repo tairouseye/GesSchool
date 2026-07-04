@@ -51,7 +51,7 @@ export default function CahierTextes() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => { setErreur(""); try { await fn(); await recharger(); } catch (e) { setErreur(e.message); } };
+  const wrap = async (fn, msg) => { try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; } catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; } };
 
   return (
     <>
@@ -91,7 +91,7 @@ export default function CahierTextes() {
                         {e.matieres?.libelle && <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/70">{e.matieres.libelle}</span>}
                         {e.enseignants && <span className="text-xs text-navy-900/40">{e.enseignants.prenom} {e.enseignants.nom}</span>}
                       </div>
-                      <button onClick={async () => { if (await confirmer("Supprimer cette entrée ?")) { await wrap(() => api.supprimerEntree(e.id)); toast.succes("Entrée supprimée."); } }}
+                      <button onClick={async () => { if (await confirmer("Supprimer cette entrée ?")) wrap(() => api.supprimerEntree(e.id), "Entrée supprimée."); }}
                         className="shrink-0 text-xs text-rose-500 hover:underline">supprimer</button>
                     </div>
                     {e.contenu && <p className="mt-2 whitespace-pre-wrap text-sm text-navy-900/80"><b className="text-navy-900/50">Séance :</b> {e.contenu}</p>}

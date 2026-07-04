@@ -7,7 +7,7 @@ import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents } from "@/lib/permissions.js";
-import { useConfirm } from "@/composants/Feedback.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
 
 export default function FicheEleve() {
@@ -17,6 +17,7 @@ export default function FicheEleve() {
   const peutEditer = peutEditerEleves(roles);
   const gereParents = peutGererParents(roles); // responsable pédagogique : codes parents
   const confirmer = useConfirm();
+  const toast = useToast();
   const [eleve, setEleve] = useState(null);
   const [tuteurs, setTuteurs] = useState([]);
   const [inscriptions, setInscriptions] = useState([]);
@@ -56,13 +57,15 @@ export default function FicheEleve() {
     recharger();
   }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
+  const wrap = async (fn, msg) => {
     try {
       await fn();
       await recharger();
+      if (msg) toast.succes(msg);
+      return true;
     } catch (e) {
-      setErreur(e.message);
+      toast.erreur(e.message || "Une erreur est survenue.");
+      return false;
     }
   };
 
@@ -139,7 +142,7 @@ export default function FicheEleve() {
                   wrap(async () => {
                     await api.supprimerEleve(eleve.id);
                     navigate("/eleves");
-                  });
+                  }, "Élève supprimé.");
                 }
               }}
             >

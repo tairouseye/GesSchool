@@ -4,9 +4,12 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Enseignants() {
   const { ecoleId } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const [onglet, setOnglet] = useState("enseignants");
   const [annee, setAnnee] = useState(null);
   const [enseignants, setEnseignants] = useState([]);
@@ -18,9 +21,8 @@ export default function Enseignants() {
   const [codes, setCodes] = useState({}); // enseignant_id -> code d'accès
 
   async function genererCode(id) {
-    setErreur("");
     try { const code = await api.genererCodeEnseignant(id); setCodes((s) => ({ ...s, [id]: code })); }
-    catch (e) { setErreur(e.message); }
+    catch (e) { toast.erreur(e.message); }
   }
 
   const recharger = useCallback(async () => {
@@ -45,9 +47,9 @@ export default function Enseignants() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
-    try { await fn(); await recharger(); } catch (e) { setErreur(e.message); }
+  const wrap = async (fn, msg) => {
+    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
   return (
@@ -101,7 +103,7 @@ export default function Enseignants() {
                       </td>
                       <td className="px-6 py-3 text-right">
                         <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                        <button onClick={() => wrap(() => api.supprimerEnseignant(e.id))} className="ml-3 text-xs text-rose-500 hover:underline">supprimer</button>
+                        <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-rose-500 hover:underline">supprimer</button>
                       </td>
                     </tr>
                   ))}
@@ -127,7 +129,7 @@ export default function Enseignants() {
             if (modale === "new") await api.creerEnseignant(ecoleId, data);
             else await api.majEnseignant(modale.id, data);
             setModale(null);
-          })
+          }, "Enseignant enregistré.")
         }
       />
     </>

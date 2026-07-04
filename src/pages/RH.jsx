@@ -52,14 +52,16 @@ export default function RH() {
   useEffect(() => { recharger(); }, [recharger]);
   useEffect(() => { rechargerPaie(); }, [rechargerPaie]);
 
-  const wrap = async (fn, apresPaie = false) => {
-    setErreur("");
+  const wrap = async (fn, apresPaie = false, msg) => {
     try {
       await fn();
       await recharger();
       if (apresPaie) await rechargerPaie();
+      if (msg) toast.succes(msg);
+      return true;
     } catch (e) {
-      setErreur(e.message);
+      toast.erreur(e.message || "Une erreur est survenue.");
+      return false;
     }
   };
 
@@ -96,7 +98,7 @@ export default function RH() {
         {onglet === "personnel" ? (
           <PanneauPersonnel
             personnels={personnels} contrats={contrats} devise={devise}
-            onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) { await wrap(() => api.supprimerPersonnel(id)); toast.succes("Personnel supprimé."); } }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id), false, "Personnel supprimé."); }}
           />
         ) : (
           <PanneauPaie

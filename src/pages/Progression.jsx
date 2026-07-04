@@ -51,7 +51,7 @@ export default function Progression() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => { setErreur(""); try { await fn(); await recharger(); } catch (e) { setErreur(e.message); } };
+  const wrap = async (fn, msg) => { try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; } catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; } };
 
   const compteurs = etapes.reduce((a, e) => { a[e.statut] = (a[e.statut] || 0) + 1; return a; }, {});
 
@@ -113,7 +113,7 @@ export default function Progression() {
                             </button>
                           ))}
                         </div>
-                        <button onClick={async () => { if (await confirmer("Supprimer cette leçon ?")) { await wrap(() => api.supprimerEtape(e.id)); toast.succes("Leçon supprimée."); } }}
+                        <button onClick={async () => { if (await confirmer("Supprimer cette leçon ?")) wrap(() => api.supprimerEtape(e.id), "Leçon supprimée."); }}
                           className="text-xs text-rose-500 hover:underline">✕</button>
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires } from "@/lib/academique.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
-import { useConfirm } from "@/composants/Feedback.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 
 const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD"];
@@ -45,10 +45,10 @@ const MODELE_DEFAUT =
 
 function RelancesConfig({ ecoleId, estGestion }) {
   const confirmer = useConfirm();
+  const toast = useToast();
   const [regles, setRegles] = useState([]);
   const [edit, setEdit] = useState(null); // règle en cours d'édition / création
   const [erreur, setErreur] = useState("");
-  const [info, setInfo] = useState("");
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -59,15 +59,14 @@ function RelancesConfig({ ecoleId, estGestion }) {
   useEffect(() => { recharger(); }, [recharger]);
 
   const wrap = async (fn, msg) => {
-    setErreur(""); setInfo("");
-    try { await fn(); await recharger(); if (msg) setInfo(msg); }
-    catch (e) { setErreur(e.message); }
+    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
   const lancerTout = () =>
     wrap(async () => {
       const n = await relancesApi.lancerTout();
-      setInfo(`${n} relance(s) envoyée(s).`);
+      toast.succes(`${n} relance(s) envoyée(s).`);
     });
 
   return (
@@ -85,7 +84,6 @@ function RelancesConfig({ ecoleId, estGestion }) {
       </p>
 
       <Alerte ton="erreur">{erreur}</Alerte>
-      {info && <Alerte ton="succes">{info}</Alerte>}
 
       <div className="mt-3 space-y-2">
         {regles.length === 0 && (

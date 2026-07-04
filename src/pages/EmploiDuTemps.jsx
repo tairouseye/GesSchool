@@ -5,11 +5,13 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/emploi.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getEnseignants } from "@/lib/enseignants.js";
+import { useToast } from "@/composants/Feedback.jsx";
 
 const hhmm = (t) => (t ? t.slice(0, 5) : "");
 
 export default function EmploiDuTemps() {
   const { ecoleId } = useAuth();
+  const toast = useToast();
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
   const [matieres, setMatieres] = useState([]);
@@ -41,7 +43,7 @@ export default function EmploiDuTemps() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => { setErreur(""); try { await fn(); await recharger(); } catch (e) { setErreur(e.message); } };
+  const wrap = async (fn, msg) => { try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; } catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; } };
 
   return (
     <>

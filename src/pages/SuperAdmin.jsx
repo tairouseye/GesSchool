@@ -5,6 +5,7 @@ import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
+import { useToast } from "@/composants/Feedback.jsx";
 
 const TONS = {
   actif: "bg-emerald-500/10 text-emerald-700",
@@ -16,6 +17,7 @@ const TONS = {
 
 export default function SuperAdmin() {
   const { profil, deconnexion } = useAuth();
+  const toast = useToast();
   const [ecoles, setEcoles] = useState([]);
   const [plans, setPlans] = useState([]);
   const [erreur, setErreur] = useState("");
@@ -31,9 +33,9 @@ export default function SuperAdmin() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
-    try { await fn(); await recharger(); } catch (e) { setErreur(e.message); }
+  const wrap = async (fn, msg) => {
+    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
   const totalEleves = ecoles.reduce((s, e) => s + Number(e.effectif || 0), 0);

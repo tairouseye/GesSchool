@@ -6,11 +6,13 @@ import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
 import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getNiveaux } from "@/lib/academique.js";
+import { useToast } from "@/composants/Feedback.jsx";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
 export default function Paiements() {
   const { ecoleId, ecole, utilisateur } = useAuth();
+  const toast = useToast();
   const devise = ecole?.devise || "XOF";
   const [onglet, setOnglet] = useState("factures");
   const [annee, setAnnee] = useState(null);
@@ -55,9 +57,9 @@ export default function Paiements() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
-    try { await fn(); await recharger(); } catch (e) { setErreur(e.message); }
+  const wrap = async (fn, msg) => {
+    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
   const facturesFiltrees = factures.filter((f) => {

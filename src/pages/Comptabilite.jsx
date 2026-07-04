@@ -47,9 +47,9 @@ export default function Comptabilite() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const wrap = async (fn) => {
-    setErreur("");
-    try { await fn(); await recharger(); } catch (e) { setErreur(e.message); }
+  const wrap = async (fn, msg) => {
+    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
   const totalRecettes = recettes.reduce((s, r) => s + Number(r.montant || 0), 0);
@@ -97,20 +97,20 @@ export default function Comptabilite() {
         )}
 
         {onglet === "tresorerie" && (
-          <Tresorerie soldes={soldes} devise={devise} onSuppr={async (id) => { if (await confirmer("Supprimer ce compte ?")) { await wrap(() => api.supprimerCompte(id)); toast.succes("Compte supprimé."); } }} />
+          <Tresorerie soldes={soldes} devise={devise} onSuppr={async (id) => { if (await confirmer("Supprimer ce compte ?")) wrap(() => api.supprimerCompte(id), "Compte supprimé."); }} />
         )}
 
         {onglet === "recettes" && (
           <Mouvements
             type="recette" items={recettes} devise={devise}
-            onSuppr={async (id) => { if (await confirmer("Supprimer cette recette ?")) { await wrap(() => api.supprimerRecette(id)); toast.succes("Recette supprimée."); } }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette recette ?")) wrap(() => api.supprimerRecette(id), "Recette supprimée."); }}
           />
         )}
 
         {onglet === "depenses" && (
           <Mouvements
             type="depense" items={depenses} devise={devise}
-            onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) { await wrap(() => api.supprimerDepense(id)); toast.succes("Dépense supprimée."); } }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id), "Dépense supprimée."); }}
           />
         )}
       </div>
