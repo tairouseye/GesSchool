@@ -6,7 +6,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
-import { peutEditerEleves, peutGererParents } from "@/lib/permissions.js";
+import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
 
@@ -16,6 +16,7 @@ export default function FicheEleve() {
   const { ecoleId, roles } = useAuth();
   const peutEditer = peutEditerEleves(roles);
   const gereParents = peutGererParents(roles); // responsable pédagogique : codes parents
+  const peutMessage = peutVoir(roles, "messagerie");
   const confirmer = useConfirm();
   const toast = useToast();
   const [eleve, setEleve] = useState(null);
@@ -175,8 +176,16 @@ export default function FicheEleve() {
                         {t.responsable_legal && <span className="ml-2 text-navy-900/40">• légal</span>}
                       </p>
                     </div>
-                    {(peutEditer || gereParents) && (
+                    {(peutEditer || gereParents || (t.tuteurs.profil_id && peutMessage)) && (
                     <div className="flex flex-col items-end gap-1">
+                      {t.tuteurs.profil_id && peutMessage && (
+                        <button
+                          onClick={() => navigate(`/messagerie?tuteur=${t.tuteurs.id}&nom=${encodeURIComponent(`${t.tuteurs.prenom} ${t.tuteurs.nom}`)}&eleve=${encodeURIComponent(`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim())}`)}
+                          className="text-xs font-medium text-navy-700 hover:text-or-500"
+                        >
+                          ✉️ Message
+                        </button>
+                      )}
                       {codes[t.tuteurs.id] ? (
                         <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
                           {codes[t.tuteurs.id]}

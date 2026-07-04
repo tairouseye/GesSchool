@@ -157,7 +157,7 @@ export async function inscrire(ecoleId, eleveId, classeId, anneeId, statut = "in
 export async function getTuteursEleve(eleveId) {
   const { data, error } = await supabase
     .from("eleve_tuteurs")
-    .select("id, lien_parente, responsable_legal, responsable_paiement, tuteurs(id, prenom, nom, telephone, email, profession)")
+    .select("id, lien_parente, responsable_legal, responsable_paiement, tuteurs(id, prenom, nom, telephone, email, profession, profil_id)")
     .eq("eleve_id", eleveId);
   if (error) throw error;
   return data ?? [];

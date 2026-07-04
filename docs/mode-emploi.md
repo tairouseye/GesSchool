@@ -216,7 +216,7 @@ Impayés (total, retards, contact), **Relancer** (notification/push), **WhatsApp
 - **Emploi du temps** (Pédagogie) : créneaux par classe.
 - **Fournitures** (Pédagogie) : liste par niveau, visible des parents.
 - **Annonces** (Gestion) : publier vers toute l'école / parents / une classe.
-- **Messagerie** (Gestion) : fil de discussion école ↔ parents.
+- **Messagerie** (Gestion) : fil de discussion école ↔ parents. Pour écrire à un parent, **recherchez l'élève** (le parent avec un compte s'ouvre directement) — ou depuis la **fiche élève**, cliquez **✉️ Message** en face du responsable. Les conversations en cours (avec badge de non‑lus) restent listées.
 
 ---
 
