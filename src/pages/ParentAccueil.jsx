@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { mesEnfants } from "@/lib/parent.js";
+import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { annoncesParent } from "@/lib/annonces.js";
-import { Carte, Alerte } from "@/composants/ui.jsx";
+import { Carte, Alerte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";
@@ -11,35 +11,42 @@ export default function ParentAccueil() {
   const [enfants, setEnfants] = useState([]);
   const [annonces, setAnnonces] = useState([]);
   const [erreur, setErreur] = useState("");
+  const [ok, setOk] = useState("");
   const [chargement, setChargement] = useState(true);
+  const [modale, setModale] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [enf, ann] = await Promise.all([mesEnfants(), annoncesParent()]);
-        setEnfants(enf);
-        setAnnonces(ann);
-      } catch (e) {
-        setErreur(e.message);
-      } finally {
-        setChargement(false);
-      }
-    })();
+  const charger = useCallback(async () => {
+    try {
+      const [enf, ann] = await Promise.all([mesEnfants(), annoncesParent()]);
+      setEnfants(enf);
+      setAnnonces(ann);
+    } catch (e) {
+      setErreur(e.message);
+    } finally {
+      setChargement(false);
+    }
   }, []);
+
+  useEffect(() => { charger(); }, [charger]);
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-navy-900">Mes enfants</h1>
-        <p className="text-sm text-navy-900/50">Suivez la scolarité de vos enfants.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-navy-900">Mes enfants</h1>
+          <p className="text-sm text-navy-900/50">Suivez la scolarité de vos enfants.</p>
+        </div>
+        <Bouton onClick={() => { setOk(""); setModale(true); }}>+ Ajouter un enfant</Bouton>
       </div>
       <Alerte ton="erreur">{erreur}</Alerte>
+      <Alerte ton="succes">{ok}</Alerte>
 
       {chargement ? (
         <p className="text-sm text-navy-900/50">Chargement…</p>
       ) : enfants.length === 0 ? (
         <Carte className="p-8 text-sm text-navy-900/50">
-          Aucun enfant rattaché à votre compte. Contactez l'établissement.
+          Aucun enfant rattaché à votre compte. Ajoutez le <strong>code</strong> remis par l'établissement
+          (bouton « + Ajouter un enfant »), ou contactez l'établissement.
         </Carte>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-tour="enfants">
@@ -82,6 +89,55 @@ export default function ParentAccueil() {
           ))}
         </div>
       )}
+
+      <ModaleAjout
+        ouvert={modale}
+        onFermer={() => setModale(false)}
+        onLie={async () => { setModale(false); setOk("Enfant ajouté à votre compte."); await charger(); }}
+      />
     </div>
+  );
+}
+
+// Rattache un (autre) enfant via un code — y compris dans un AUTRE établissement.
+function ModaleAjout({ ouvert, onFermer, onLie }) {
+  const [code, setCode] = useState("");
+  const [erreur, setErreur] = useState("");
+  const [enCours, setEnCours] = useState(false);
+
+  async function lier(e) {
+    e.preventDefault();
+    setErreur(""); setEnCours(true);
+    try {
+      await lierParent(code.trim());
+      setCode("");
+      await onLie();
+    } catch (err) {
+      setErreur(/invalide/i.test(err.message) ? "Code invalide. Vérifiez auprès de l'établissement." : err.message);
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Ajouter un enfant">
+      <form onSubmit={lier} className="space-y-4">
+        <p className="text-sm text-navy-900/60">
+          Saisissez le <strong>code parent</strong> remis par l'établissement. Vous pouvez ajouter plusieurs enfants,
+          <strong> même dans des écoles différentes</strong> : ils apparaîtront tous ici, chacun avec son établissement.
+        </p>
+        <Champ
+          label="Code parent"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="EX. 3F9A2B7C"
+          className="font-mono tracking-widest"
+        />
+        <Alerte ton="erreur">{erreur}</Alerte>
+        <Bouton type="submit" className="w-full" disabled={enCours || !code.trim()}>
+          {enCours ? "Liaison…" : "Ajouter"}
+        </Bouton>
+      </form>
+    </Modale>
   );
 }

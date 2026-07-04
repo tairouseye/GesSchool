@@ -242,6 +242,14 @@ Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant
 
 Un même code couvre **tous les enfants** rattachés au tuteur.
 
+### 13.3 Plusieurs enfants — y compris dans des écoles différentes
+Un parent gère **tous ses enfants depuis un seul compte**, même s'ils sont scolarisés dans **des établissements différents** (utilisant tous GesSchool) :
+1. Se connecter avec **son compte** (ne pas en recréer un).
+2. Accueil parent → bouton **« + Ajouter un enfant »** → saisir le **code** remis par l'autre établissement.
+3. Le nouvel enfant apparaît dans la liste, **étiqueté avec son école** ; chaque enfant garde ses propres notes, bulletins, paiements et absences.
+
+> ⚠️ **Un seul compte, plusieurs codes.** Si vous avez déjà un compte (pour un premier enfant), **connectez‑vous** puis ajoutez le nouveau code — ne créez pas un second compte, sinon vos enfants seront répartis sur deux connexions distinctes. Les établissements restent totalement cloisonnés : chacun ne voit que ses propres élèves.
+
 ---
 
 ## 14. Notifications push
