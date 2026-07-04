@@ -251,7 +251,7 @@ function ModaleEnseignant({ ouvert, enseignant, onFermer, onValider }) {
         </div>
         <Champ label="Spécialité" value={f.specialite} onChange={(e) => maj("specialite", e.target.value)} placeholder="Mathématiques…" />
         <div className="grid grid-cols-2 gap-4">
-          <Champ label="Téléphone" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+          <Champ label="Téléphone" type="tel" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
           <Champ label="E-mail" value={f.email} onChange={(e) => maj("email", e.target.value)} />
         </div>
         <div className="flex justify-end gap-2">

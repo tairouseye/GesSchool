@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/annonces.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 
@@ -17,6 +18,8 @@ const TONS_CIBLE = {
 
 export default function Annonces() {
   const { ecoleId, utilisateur } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const [annonces, setAnnonces] = useState([]);
   const [classes, setClasses] = useState([]);
   const [erreur, setErreur] = useState("");
@@ -80,7 +83,7 @@ export default function Annonces() {
                   </p>
                 </div>
                 <button
-                  onClick={() => { if (confirm("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id)); }}
+                  onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) { await wrap(() => api.supprimerAnnonce(a.id)); toast.succes("Annonce supprimée."); } }}
                   className="shrink-0 text-xs text-rose-500 hover:underline"
                 >
                   supprimer

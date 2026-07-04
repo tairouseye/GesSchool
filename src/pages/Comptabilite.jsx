@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
 import { urlSignee } from "@/lib/stockage.js";
@@ -12,6 +13,8 @@ const debutAnnee = () => `${new Date().getFullYear()}-01-01`;
 
 export default function Comptabilite() {
   const { ecoleId, ecole, utilisateur } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const devise = ecole?.devise || "XOF";
   const [onglet, setOnglet] = useState("synthese");
   const [debut, setDebut] = useState(debutAnnee());
@@ -94,20 +97,20 @@ export default function Comptabilite() {
         )}
 
         {onglet === "tresorerie" && (
-          <Tresorerie soldes={soldes} devise={devise} onSuppr={(id) => { if (confirm("Supprimer ce compte ?")) wrap(() => api.supprimerCompte(id)); }} />
+          <Tresorerie soldes={soldes} devise={devise} onSuppr={async (id) => { if (await confirmer("Supprimer ce compte ?")) { await wrap(() => api.supprimerCompte(id)); toast.succes("Compte supprimé."); } }} />
         )}
 
         {onglet === "recettes" && (
           <Mouvements
             type="recette" items={recettes} devise={devise}
-            onSuppr={(id) => { if (confirm("Supprimer cette recette ?")) wrap(() => api.supprimerRecette(id)); }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette recette ?")) { await wrap(() => api.supprimerRecette(id)); toast.succes("Recette supprimée."); } }}
           />
         )}
 
         {onglet === "depenses" && (
           <Mouvements
             type="depense" items={depenses} devise={devise}
-            onSuppr={(id) => { if (confirm("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id)); }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) { await wrap(() => api.supprimerDepense(id)); toast.succes("Dépense supprimée."); } }}
           />
         )}
       </div>

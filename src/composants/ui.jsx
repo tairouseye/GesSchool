@@ -1,10 +1,12 @@
 // GesSchool — primitives UI partagées (identité navy/or).
+import { useEffect, useRef } from "react";
 
 export function Bouton({ children, variante = "primaire", className = "", ...props }) {
   const variantes = {
     primaire: "bg-navy-900 text-creme hover:bg-navy-800 disabled:opacity-50",
     or: "bg-or-500 text-navy-900 hover:bg-or-400 disabled:opacity-50",
     fantome: "border border-navy-900/15 bg-white text-navy-900 hover:bg-creme disabled:opacity-50",
+    danger: "bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50",
   };
   return (
     <button
@@ -35,16 +37,31 @@ export function Carte({ children, className = "" }) {
 }
 
 export function Modale({ ouvert, onFermer, titre, children, large = false }) {
+  const ref = useRef(null);
+  // Fermeture au clavier (Échap) + focus sur la boîte à l'ouverture.
+  useEffect(() => {
+    if (!ouvert) return;
+    const onKey = (e) => { if (e.key === "Escape") onFermer?.(); };
+    document.addEventListener("keydown", onKey);
+    ref.current?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [ouvert, onFermer]);
+
   if (!ouvert) return null;
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-navy-900/40 p-4" onClick={onFermer}>
       <div
-        className={`w-full ${large ? "max-w-2xl" : "max-w-lg"} rounded-2xl bg-white shadow-xl`}
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof titre === "string" ? titre : undefined}
+        tabIndex={-1}
+        className={`w-full ${large ? "max-w-2xl" : "max-w-lg"} rounded-2xl bg-white shadow-xl outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-navy-900/10 px-6 py-4">
           <h3 className="font-display text-lg font-semibold text-navy-900">{titre}</h3>
-          <button onClick={onFermer} className="text-navy-900/40 hover:text-navy-900">✕</button>
+          <button onClick={onFermer} aria-label="Fermer" className="text-navy-900/40 hover:text-navy-900">✕</button>
         </div>
         <div className="max-h-[75vh] overflow-auto p-6">{children}</div>
       </div>

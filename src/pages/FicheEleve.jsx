@@ -7,6 +7,7 @@ import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents } from "@/lib/permissions.js";
+import { useConfirm } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
 
 export default function FicheEleve() {
@@ -15,6 +16,7 @@ export default function FicheEleve() {
   const { ecoleId, roles } = useAuth();
   const peutEditer = peutEditerEleves(roles);
   const gereParents = peutGererParents(roles); // responsable pédagogique : codes parents
+  const confirmer = useConfirm();
   const [eleve, setEleve] = useState(null);
   const [tuteurs, setTuteurs] = useState([]);
   const [inscriptions, setInscriptions] = useState([]);
@@ -132,8 +134,8 @@ export default function FicheEleve() {
             <Bouton
               variante="fantome"
               className="mt-5 w-full text-rose-600"
-              onClick={() => {
-                if (confirm("Supprimer définitivement cet élève ?")) {
+              onClick={async () => {
+                if (await confirmer({ message: "Supprimer définitivement cet élève ?", confirmer: "Supprimer" })) {
                   wrap(async () => {
                     await api.supprimerEleve(eleve.id);
                     navigate("/eleves");
@@ -341,7 +343,7 @@ function ModaleTuteur({ ouvert, onFermer, onAjout }) {
         <div className="grid grid-cols-2 gap-4">
           <Champ label="Prénom *" value={t.prenom} onChange={(e) => maj("prenom", e.target.value)} required />
           <Champ label="Nom *" value={t.nom} onChange={(e) => maj("nom", e.target.value)} required />
-          <Champ label="Téléphone" value={t.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+          <Champ label="Téléphone" type="tel" value={t.telephone} onChange={(e) => maj("telephone", e.target.value)} />
           <Champ label="Lien" value={t.lien} onChange={(e) => maj("lien", e.target.value)} />
           <Champ label="E-mail" value={t.email} onChange={(e) => maj("email", e.target.value)} />
           <Champ label="Profession" value={t.profession} onChange={(e) => maj("profession", e.target.value)} />

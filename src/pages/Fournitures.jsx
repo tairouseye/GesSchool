@@ -3,9 +3,12 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { getNiveaux, getFournitures, creerFourniture, supprimerFourniture } from "@/lib/academique.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Fournitures() {
   const { ecoleId } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const [niveaux, setNiveaux] = useState([]);
   const [items, setItems] = useState([]);
   const [erreur, setErreur] = useState("");
@@ -55,7 +58,7 @@ export default function Fournitures() {
                       {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
                       {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
                     </span>
-                    <button onClick={() => { if (confirm("Supprimer cette fourniture ?")) wrap(() => supprimerFourniture(f.id)); }} className="text-xs text-rose-500 hover:underline">
+                    <button onClick={async () => { if (await confirmer("Supprimer cette fourniture ?")) { await wrap(() => supprimerFourniture(f.id)); toast.succes("Fourniture supprimée."); } }} className="text-xs text-rose-500 hover:underline">
                       supprimer
                     </button>
                   </li>

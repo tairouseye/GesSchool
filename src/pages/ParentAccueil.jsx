@@ -3,15 +3,16 @@ import { Link } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { annoncesParent } from "@/lib/annonces.js";
 import { Carte, Alerte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
+import { useToast } from "@/composants/Feedback.jsx";
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
 export default function ParentAccueil() {
+  const toast = useToast();
   const [enfants, setEnfants] = useState([]);
   const [annonces, setAnnonces] = useState([]);
   const [erreur, setErreur] = useState("");
-  const [ok, setOk] = useState("");
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
 
@@ -36,10 +37,9 @@ export default function ParentAccueil() {
           <h1 className="font-display text-2xl font-bold text-navy-900">Mes enfants</h1>
           <p className="text-sm text-navy-900/50">Suivez la scolarité de vos enfants.</p>
         </div>
-        <Bouton onClick={() => { setOk(""); setModale(true); }}>+ Ajouter un enfant</Bouton>
+        <Bouton onClick={() => setModale(true)}>+ Ajouter un enfant</Bouton>
       </div>
       <Alerte ton="erreur">{erreur}</Alerte>
-      <Alerte ton="succes">{ok}</Alerte>
 
       {chargement ? (
         <p className="text-sm text-navy-900/50">Chargement…</p>
@@ -93,7 +93,7 @@ export default function ParentAccueil() {
       <ModaleAjout
         ouvert={modale}
         onFermer={() => setModale(false)}
-        onLie={async () => { setModale(false); setOk("Enfant ajouté à votre compte."); await charger(); }}
+        onLie={async () => { setModale(false); toast.succes("Enfant ajouté à votre compte."); await charger(); }}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
 import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
+import { Feedback } from "@/composants/Feedback.jsx";
 import { espaceParDefaut } from "@/lib/espaces.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 import Layout from "@/composants/Layout.jsx";
@@ -70,6 +71,7 @@ function RedirectionAccueil() {
 export default function App() {
   return (
     <AuthProvider>
+      <Feedback>
       <HashRouter>
         <Routes>
           {/* Public */}
@@ -155,6 +157,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
+      </Feedback>
     </AuthProvider>
   );
 }

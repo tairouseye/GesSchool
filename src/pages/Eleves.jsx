@@ -416,7 +416,7 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
           <div className="grid grid-cols-2 gap-4">
             <Champ label="Prénom" value={f.t_prenom} onChange={(e) => maj("t_prenom", e.target.value)} />
             <Champ label="Nom" value={f.t_nom} onChange={(e) => maj("t_nom", e.target.value)} />
-            <Champ label="Téléphone" value={f.t_tel} onChange={(e) => maj("t_tel", e.target.value)} />
+            <Champ label="Téléphone" type="tel" value={f.t_tel} onChange={(e) => maj("t_tel", e.target.value)} />
             <Champ label="Lien" value={f.t_lien} onChange={(e) => maj("t_lien", e.target.value)} placeholder="Père, Mère, Tuteur…" />
           </div>
         </div>

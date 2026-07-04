@@ -4,16 +4,18 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
 import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Membres() {
   const { roles, ecole, profil } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const invitables = rolesInvitables(roles); // rôles que je peux déléguer
   const complet = estRoleComplet(roles);
 
   const [membres, setMembres] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [erreur, setErreur] = useState("");
-  const [ok, setOk] = useState("");
   const [modale, setModale] = useState(false);
 
   const charger = useCallback(async () => {
@@ -31,36 +33,37 @@ export default function Membres() {
   const gereRole = (r) => complet || invitables.includes(r);
 
   async function retirer(m, r) {
-    if (!window.confirm(`Retirer le rôle « ${LIBELLES_ROLES[r] || r} » à ${m.prenom} ${m.nom} ?`)) return;
-    setErreur(""); setOk("");
+    if (!(await confirmer(`Retirer le rôle « ${LIBELLES_ROLES[r] || r} » à ${m.prenom} ${m.nom} ?`))) return;
+    setErreur("");
     try {
       await revoquerRole(m.id, r);
-      setOk("Rôle retiré.");
+      toast.succes("Rôle retiré.");
       await charger();
-    } catch (e) { setErreur(e.message); }
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
   }
 
   async function suspendre(m, suspendu) {
-    setErreur(""); setOk("");
+    if (suspendu && !(await confirmer({ message: `Suspendre l'accès de ${m.prenom} ${m.nom} ?`, confirmer: "Suspendre" }))) return;
+    setErreur("");
     try {
       await suspendreMembre(m.id, suspendu);
-      setOk(suspendu ? "Membre suspendu." : "Membre réactivé.");
+      toast.succes(suspendu ? "Membre suspendu." : "Membre réactivé.");
       await charger();
-    } catch (e) { setErreur(e.message); }
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
   }
 
   async function annuler(inv) {
-    if (!window.confirm(`Annuler l'invitation ${inv.code} (${LIBELLES_ROLES[inv.role] || inv.role}) ?`)) return;
-    setErreur(""); setOk("");
+    if (!(await confirmer(`Annuler l'invitation ${inv.code} (${LIBELLES_ROLES[inv.role] || inv.role}) ?`))) return;
+    setErreur("");
     try {
       await annulerInvitation(inv.id);
-      setOk("Invitation annulée.");
+      toast.succes("Invitation annulée.");
       await charger();
-    } catch (e) { setErreur(e.message); }
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
   }
 
   const copierLien = async (code) => {
-    try { await navigator.clipboard.writeText(lienInvitation(code)); setOk("Lien copié."); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(lienInvitation(code)); toast.succes("Lien copié."); } catch { toast.erreur("Copie impossible."); }
   };
   const dateCourte = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 
@@ -69,7 +72,6 @@ export default function Membres() {
       <EnTete titre="Membres de l'équipe" sousTitre="Gérez les accès de votre établissement" />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
-        <Alerte ton="succes">{ok}</Alerte>
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-navy-900/60">

@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires } from "@/lib/academique.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
+import { useConfirm } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 
 const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD"];
@@ -43,6 +44,7 @@ const MODELE_DEFAUT =
   "Rappel {ecole} : {montant} {devise} restent dus pour {eleve} (échéance {echeance}). Merci de régulariser.";
 
 function RelancesConfig({ ecoleId, estGestion }) {
+  const confirmer = useConfirm();
   const [regles, setRegles] = useState([]);
   const [edit, setEdit] = useState(null); // règle en cours d'édition / création
   const [erreur, setErreur] = useState("");
@@ -106,7 +108,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
                 actif
               </label>
               <button onClick={() => setEdit(r)} className="text-xs font-medium text-navy-700 hover:text-or-500">éditer</button>
-              <button onClick={() => confirm("Supprimer ce palier ?") && wrap(() => relancesApi.supprimerRegle(r.id), "Palier supprimé.")}
+              <button onClick={async () => { if (await confirmer("Supprimer ce palier ?")) wrap(() => relancesApi.supprimerRegle(r.id), "Palier supprimé."); }}
                 className="text-xs font-medium text-rose-600 hover:text-rose-700">suppr.</button>
             </div>
           </div>

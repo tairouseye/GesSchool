@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
 import { MODES } from "@/lib/paiements.js";
 
@@ -17,6 +18,8 @@ const libellePeriode = (p) => {
 
 export default function RH() {
   const { ecoleId, ecole } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const devise = ecole?.devise || "XOF";
   const [onglet, setOnglet] = useState("personnel");
   const [personnels, setPersonnels] = useState([]);
@@ -93,7 +96,7 @@ export default function RH() {
         {onglet === "personnel" ? (
           <PanneauPersonnel
             personnels={personnels} contrats={contrats} devise={devise}
-            onSuppr={(id) => { if (confirm("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id)); }}
+            onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) { await wrap(() => api.supprimerPersonnel(id)); toast.succes("Personnel supprimé."); } }}
           />
         ) : (
           <PanneauPaie
@@ -289,7 +292,7 @@ function ModalePersonnel({ ouvert, onFermer, onCreer }) {
               {api.FONCTIONS.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </label>
-          <Champ label="Téléphone" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+          <Champ label="Téléphone" type="tel" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
           <Champ label="Email" type="email" value={f.email} onChange={(e) => maj("email", e.target.value)} />
         </div>
 

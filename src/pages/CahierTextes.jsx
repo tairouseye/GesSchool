@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/cahier.js";
 
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -12,6 +13,8 @@ const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { weekday: "shor
 
 export default function CahierTextes() {
   const { ecoleId, utilisateur, profil, roles } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const [annee, setAnnee] = useState(null);
   const [enseignant, setEnseignant] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -88,7 +91,7 @@ export default function CahierTextes() {
                         {e.matieres?.libelle && <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/70">{e.matieres.libelle}</span>}
                         {e.enseignants && <span className="text-xs text-navy-900/40">{e.enseignants.prenom} {e.enseignants.nom}</span>}
                       </div>
-                      <button onClick={() => { if (confirm("Supprimer cette entrée ?")) wrap(() => api.supprimerEntree(e.id)); }}
+                      <button onClick={async () => { if (await confirmer("Supprimer cette entrée ?")) { await wrap(() => api.supprimerEntree(e.id)); toast.succes("Entrée supprimée."); } }}
                         className="shrink-0 text-xs text-rose-500 hover:underline">supprimer</button>
                     </div>
                     {e.contenu && <p className="mt-2 whitespace-pre-wrap text-sm text-navy-900/80"><b className="text-navy-900/50">Séance :</b> {e.contenu}</p>}

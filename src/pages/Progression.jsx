@@ -6,12 +6,15 @@ import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getPeriodes } from "@/lib/bulletins.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/progression.js";
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 
 export default function Progression() {
   const { ecoleId, utilisateur, profil, roles } = useAuth();
+  const confirmer = useConfirm();
+  const toast = useToast();
   const [annee, setAnnee] = useState(null);
   const [enseignant, setEnseignant] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -110,7 +113,7 @@ export default function Progression() {
                             </button>
                           ))}
                         </div>
-                        <button onClick={() => { if (confirm("Supprimer cette leçon ?")) wrap(() => api.supprimerEtape(e.id)); }}
+                        <button onClick={async () => { if (await confirmer("Supprimer cette leçon ?")) { await wrap(() => api.supprimerEtape(e.id)); toast.succes("Leçon supprimée."); } }}
                           className="text-xs text-rose-500 hover:underline">✕</button>
                       </div>
                     </div>
