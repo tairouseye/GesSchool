@@ -39,7 +39,10 @@ export default function SuperAdmin() {
   };
 
   const totalEleves = ecoles.reduce((s, e) => s + Number(e.effectif || 0), 0);
+  const totalPersonnel = ecoles.reduce((s, e) => s + Number(e.nb_personnel || 0), 0);
+  const totalParents = ecoles.reduce((s, e) => s + Number(e.nb_parents || 0), 0);
   const actives = ecoles.filter((e) => e.statut === "actif").length;
+  const nf = new Intl.NumberFormat("fr-FR");
 
   return (
     <div className="min-h-full bg-creme">
@@ -58,10 +61,11 @@ export default function SuperAdmin() {
       <div className="mx-auto max-w-6xl space-y-6 p-6">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi label="Écoles clientes" valeur={String(ecoles.length)} />
           <Kpi label="Abonnements actifs" valeur={String(actives)} ton="vert" />
-          <Kpi label="Élèves (toutes écoles)" valeur={new Intl.NumberFormat("fr-FR").format(totalEleves)} />
+          <Kpi label="Élèves (toutes écoles)" valeur={nf.format(totalEleves)} />
+          <Kpi label="Comptes (personnel + parents)" valeur={nf.format(totalPersonnel + totalParents)} />
         </div>
 
         <Carte className="overflow-hidden">
@@ -69,7 +73,9 @@ export default function SuperAdmin() {
             <thead className="bg-creme text-navy-900/50">
               <tr>
                 <th className="px-5 py-3 font-medium">École</th>
-                <th className="px-5 py-3 font-medium">Effectif</th>
+                <th className="px-5 py-3 font-medium">Élèves</th>
+                <th className="px-5 py-3 font-medium">Personnel</th>
+                <th className="px-5 py-3 font-medium">Parents</th>
                 <th className="px-5 py-3 font-medium">Plan</th>
                 <th className="px-5 py-3 font-medium">Statut</th>
                 <th className="px-5 py-3 font-medium">Échéance</th>
@@ -81,6 +87,8 @@ export default function SuperAdmin() {
                 <tr key={e.ecole_id} className="border-t border-navy-900/5">
                   <td className="px-5 py-3 font-medium text-navy-900">{e.nom} <span className="text-xs text-navy-900/40">{e.sigle}</span></td>
                   <td className="px-5 py-3 font-mono text-navy-900/70">{e.effectif}</td>
+                  <td className="px-5 py-3 font-mono text-navy-900/70">{e.nb_personnel ?? "—"}</td>
+                  <td className="px-5 py-3 font-mono text-navy-900/70">{e.nb_parents ?? "—"}</td>
                   <td className="px-5 py-3">{e.plan_libelle || <span className="text-navy-900/30">—</span>}</td>
                   <td className="px-5 py-3">
                     {e.statut
@@ -94,7 +102,7 @@ export default function SuperAdmin() {
                 </tr>
               ))}
               {ecoles.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-navy-900/40">Aucune école.</td></tr>
+                <tr><td colSpan={8} className="px-5 py-8 text-center text-sm text-navy-900/40">Aucune école.</td></tr>
               )}
             </tbody>
           </table>
