@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"/>
+<title>GesSchool — Mode d'emploi</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  :root { --navy:#0B1F3A; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--ink); line-height: 1.55; font-size: 12.5px; margin: 0; }
+  .cover { background: var(--navy); color: var(--creme); padding: 26px 30px; border-radius: 0 0 14px 14px;
+           display:flex; align-items:center; gap:18px; }
+  .seal { width:60px; height:60px; border-radius:50%; border:3px solid var(--or); color:var(--or);
+          display:grid; place-items:center; font-weight:800; font-size:20px; letter-spacing:1px; flex:0 0 auto; }
+  .cover h1 { margin:0; font-size:24px; }
+  .cover p { margin:4px 0 0; color:rgba(251,247,239,.7); font-size:13px; }
+  main { padding: 8px 30px 40px; max-width: 880px; }
+  h1 { font-size:21px; color:var(--navy); border-bottom:2px solid var(--or); padding-bottom:5px; margin-top:30px; scroll-margin-top:12px; }
+  h2 { font-size:17px; color:var(--navy); margin-top:24px; scroll-margin-top:12px; }
+  h3 { font-size:14px; color:var(--navy); margin-top:18px; scroll-margin-top:12px; }
+  h2, h3, h4 { break-after: avoid; }
+  h4 { font-size:12.5px; color:var(--navy); margin-top:14px; scroll-margin-top:12px; }
+  p { margin: 7px 0; }
+  a { color:#1d5fb0; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  ul, ol { margin: 7px 0 7px 4px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { background:#eef0f3; padding:1px 5px; border-radius:4px; font-family:Consolas,monospace; font-size:.92em; color:var(--navy); }
+  pre { background:var(--creme); border:1px solid #e3e6ea; border-left:3px solid var(--or); border-radius:8px;
+        padding:10px 14px; overflow:auto; break-inside:avoid; margin:12px 0; }
+  pre code { background:none; padding:0; color:#3a4757; font-size:11.5px; line-height:1.4; white-space:pre; }
+  strong { color: var(--navy); }
+  hr { border:0; border-top:1px solid #e3e6ea; margin:18px 0; }
+  blockquote { margin:10px 0; padding:8px 14px; background:var(--creme); border-left:3px solid var(--or);
+               border-radius:0 8px 8px 0; color:#3a4757; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; break-inside:avoid; }
+  th { background:var(--navy); color:var(--creme); text-align:left; padding:7px 9px; font-weight:600; }
+  td { border-bottom:1px solid #e3e6ea; padding:6px 9px; vertical-align:top; }
+  tbody tr:nth-child(even){ background:#faf9f6; }
+  .toc { background:var(--creme); border:1px solid #ece6d8; border-radius:12px; padding:14px 18px; margin:14px 0; break-inside:avoid; }
+  .toc-t { margin:0 0 8px; font-weight:700; color:var(--navy); font-size:13px; text-transform:uppercase; letter-spacing:.5px; }
+  .toc ul { list-style:none; margin:0; padding:0; columns:2; column-gap:26px; }
+  .toc li { margin:2px 0; break-inside:avoid; }
+  .toc li.sub { padding-left:14px; font-size:11.5px; }
+  .toc li.sub a { color:#5a6675; }
+  .foot { color:#8a94a0; font-size:10.5px; text-align:center; padding:14px; }
+</style></head>
+<body>
+  <div class="cover"><div class="seal">GS</div><div><h1>GesSchool — Mode d'emploi</h1><p>Guide complet d'utilisation</p></div></div>
+  <main>
+<h1 id="gesschool-tarifs">GesSchool — Tarifs</h1>
+<p><strong>Un prix simple, par élève, dégressif. Toutes les fonctionnalités incluses. Sans frais d'installation.</strong></p>
+<p>GesSchool équipe tout votre établissement — scolarité, notes, paiements, comptabilité, RH et espace parent — pour <strong>moins de 200 FCFA par élève et par mois</strong>.</p>
+<hr/>
+<h2 id="le-principe">Le principe</h2>
+<ul><li><strong>Par élève, par an</strong> : vous ne payez que pour vos élèves inscrits.</li>
+<li><strong>Dégressif</strong> : plus votre école est grande, moins vous payez par élève.</li>
+<li><strong>Tout inclus</strong> : tous les modules, les mises à jour et le support — sans supplément.</li>
+<li><strong>Sans frais d'installation</strong> : la mise en service et la formation sont offertes.</li>
+<li><strong>Facturation annuelle</strong>, alignée sur l'année scolaire (paiement en 2 ou 3 fois possible).</li>
+</ul>
+<hr/>
+<h2 id="bareme-tarif-par-tranche-d-eleves">Barème (tarif par tranche d'élèves)</h2>
+<table><thead><tr><th>Tranche d'élèves</th><th>Prix par élève / an</th></tr></thead><tbody><tr><td>1 – 150</td><td>2 000 FCFA</td></tr>
+<tr><td>151 – 400</td><td>1 700 FCFA</td></tr>
+<tr><td>401 – 800</td><td>1 400 FCFA</td></tr>
+<tr><td>801 et +</td><td>1 100 FCFA</td></tr>
+<tr><td><strong>Minimum annuel</strong></td><td><strong>150 000 FCFA</strong></td></tr>
+</tbody></table>
+<p><em>Comme pour l'impôt, chaque tranche a son tarif : une école de 200 élèves paie les 150 premiers à 2 000 FCFA, puis les 50 suivants à 1 700 FCFA.</em></p>
+<hr/>
+<h2 id="grille-de-lecture-rapide">Grille de lecture rapide</h2>
+<table><thead><tr><th>Effectif</th><th>Prix annuel</th><th>≈ par mois</th><th>≈ par élève / mois</th></tr></thead><tbody><tr><td>≤ 100 élèves</td><td>200 000 FCFA</td><td>~16 700</td><td>—</td></tr>
+<tr><td>~150 élèves</td><td>300 000 FCFA</td><td>~25 000</td><td>~167</td></tr>
+<tr><td>~200 élèves</td><td>380 000 FCFA</td><td>~31 700</td><td>~160</td></tr>
+<tr><td>~300 élèves</td><td>550 000 FCFA</td><td>~45 800</td><td>~154</td></tr>
+<tr><td>~400 élèves</td><td>720 000 FCFA</td><td>~60 000</td><td>~150</td></tr>
+<tr><td>~600 élèves</td><td>1 000 000 FCFA</td><td>~83 300</td><td>~139</td></tr>
+<tr><td>~800 élèves</td><td>1 280 000 FCFA</td><td>~106 700</td><td>~134</td></tr>
+<tr><td>1000 élèves et +</td><td>Sur devis</td><td>—</td><td>~125</td></tr>
+</tbody></table>
+<blockquote><strong>Repère :</strong> cela représente environ <strong>1 % du chiffre d'affaires</strong> de votre école — soit bien moins que le temps et les impayés que vous économisez.</blockquote>
+<hr/>
+<h2 id="ce-qui-est-inclus-tout-sans-supplement">Ce qui est inclus (tout, sans supplément)</h2>
+<ul><li><strong>Élèves &amp; inscriptions</strong> — fiches, photos, matricule automatique, import Excel</li>
+<li><strong>Notes &amp; bulletins</strong> — moyennes, rangs, mentions, appréciations, conseil de classe</li>
+<li><strong>Vie scolaire</strong> — appel en classe, absences/retards, justifications</li>
+<li><strong>Pédagogie</strong> — cahier de textes, cahier de progression, emploi du temps, fournitures</li>
+<li><strong>Paiements &amp; recouvrement</strong> — facturation, reçus, relances, <strong>paiement mobile</strong> (Wave / Orange Money / Free Money)</li>
+<li><strong>Comptabilité</strong> — livre de caisse, dépenses, recettes, trésorerie</li>
+<li><strong>RH &amp; Paie</strong> — personnel, contrats, fiches de paie</li>
+<li><strong>Communication</strong> — annonces, messagerie avec les parents</li>
+<li><strong>Espace parent</strong> — notes, bulletins, paiements, alertes (même hors de l'école)</li>
+<li><strong>Documents</strong> — certificats &amp; attestations imprimables</li>
+<li><strong>Pilotage</strong> — vue consolidée (effectifs, recouvrement, trésorerie), y compris multi‑écoles</li>
+<li><strong>Inclus toujours</strong> : mises à jour, sauvegardes, <strong>support</strong>, et <strong>formation de mise en route</strong></li>
+</ul>
+<hr/>
+<h2 id="offre-de-lancement-ecoles-fondatrices">Offre de lancement — « Écoles fondatrices »</h2>
+<p>Les <strong>5 premières écoles</strong> bénéficient de <strong>−40 % la première année</strong>, en échange d'un témoignage. <em>Exemple : une école de ~300 élèves à 550 000 FCFA → <strong>330 000 FCFA</strong> la 1ʳᵉ année.</em></p>
+<p><strong>Parrainage :</strong> pour chaque école que vous nous recommandez et qui s'abonne, <strong>1 mois offert</strong> (ou −10 %).</p>
+<hr/>
+<h2 id="modalites">Modalités</h2>
+<ul><li><strong>Paiement</strong> : Wave, Orange Money, Free Money, ou virement.</li>
+<li><strong>Échelonnement</strong> : possibilité de régler en <strong>2 ou 3 fois</strong> dans l'année.</li>
+<li><strong>Engagement</strong> : annuel, renouvelable ; résiliable à la fin de l'année scolaire.</li>
+<li><strong>Essai</strong> : démonstration gratuite et accompagnement à la mise en route.</li>
+</ul>
+<hr/>
+<h2 id="questions-frequentes">Questions fréquentes</h2>
+<p><strong>Y a‑t‑il des frais cachés ?</strong> Non. Le prix par élève couvre tout : modules, support, mises à jour, formation.</p>
+<p><strong>Et si mon effectif change en cours d'année ?</strong> Le tarif est calculé sur l'effectif de référence de l'année ; les variations mineures ne changent rien.</p>
+<p><strong>Faut‑il un ordinateur puissant ?</strong> Non. GesSchool fonctionne dans un navigateur, sur ordinateur comme sur téléphone.</p>
+<p><strong>Mes données sont‑elles en sécurité ?</strong> Oui : chaque école est isolée des autres, les accès sont cloisonnés et les données sauvegardées.</p>
+<p><strong>Pourquoi payer chaque année ?</strong> Parce que vous recevez en continu les mises à jour, les sauvegardes et le support — comme l'électricité de votre école, c'est un service permanent.</p>
+  </main>
+  <div class="foot">GesSchool — gestion scolaire multi-écoles</div>
+</body></html>
