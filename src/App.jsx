@@ -50,6 +50,8 @@ const Certificats = lazy(() => import("@/pages/Certificats.jsx"));
 const Demandes = lazy(() => import("@/pages/Demandes.jsx"));
 const Membres = lazy(() => import("@/pages/Membres.jsx"));
 const SuperAdmin = lazy(() => import("@/pages/SuperAdmin.jsx"));
+const Cantine = lazy(() => import("@/pages/Cantine.jsx"));
+const Transport = lazy(() => import("@/pages/Transport.jsx"));
 
 // Lien profond d'invitation : /rejoindre?code=XXXX → mémorise le code puis
 // oriente vers la connexion (nouveau membre) ou l'accueil (déjà rattaché).
@@ -159,6 +161,8 @@ export default function App() {
             <Route path="/demandes" element={<Garde cle="demandes"><Demandes /></Garde>} />
             <Route path="/membres" element={<Garde cle="membres"><Membres /></Garde>} />
             <Route path="/comptabilite" element={<Garde cle="comptabilite"><Comptabilite /></Garde>} />
+            <Route path="/cantine" element={<Garde cle="cantine"><Cantine /></Garde>} />
+            <Route path="/transport" element={<Garde cle="transport"><Transport /></Garde>} />
             <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>
 

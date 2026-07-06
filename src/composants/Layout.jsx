@@ -54,7 +54,10 @@ export default function Layout() {
   const changerEspace = (e) => {
     setEspaceId(e.id);
     setMenu(false);
-    navigate(e.accueil);
+    // Va au 1er menu visible de l'espace (l'accueil peut être réservé à un autre rôle).
+    const dispo = itemsEspace(e, roles).filter((it) => moduleActif(modulesActifs, it.cle));
+    const cible = dispo.find((it) => !it.cle.startsWith("_")) || dispo[0];
+    navigate(cible?.to || e.accueil);
   };
 
   return (

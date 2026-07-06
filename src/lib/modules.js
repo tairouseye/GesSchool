@@ -8,6 +8,8 @@ export const MODULES = [
   { id: "finances", label: "Finances", desc: "Paiements, recouvrement, comptabilité", cles: ["paiements", "recouvrement", "comptabilite"] },
   { id: "rh", label: "RH & paie", desc: "Personnel, contrats, paie, enseignants", cles: ["rh", "enseignants"] },
   { id: "communication", label: "Communication", desc: "Annonces & messagerie", cles: ["annonces", "messagerie"] },
+  { id: "cantine", label: "Cantine", desc: "Abonnements, repas, menu de la semaine", cles: ["cantine"] },
+  { id: "transport", label: "Transport scolaire", desc: "Circuits, abonnements, embarquement", cles: ["transport"] },
   { id: "pilotage", label: "Pilotage", desc: "Vue consolidée multi-écoles", cles: ["_pilotage"] },
 ];
 

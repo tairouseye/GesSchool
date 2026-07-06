@@ -55,7 +55,8 @@ export const ESPACES = [
       { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes" },
       { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements" },
       { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement" },
-      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
+      { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine" },
+      { to: "/transport", label: "Transport", icone: "🚌", cle: "transport" },
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
@@ -67,10 +68,11 @@ export const ESPACES = [
     label: "RH & Paie",
     icone: "🧑‍💼",
     accueil: "/rh",
-    roles: ["rh"],
+    roles: ["rh", "comptable"], // comptable y accède pour la Comptabilité
     items: [
       { to: "/rh", label: "Personnel & paie", icone: "🧑‍💼", cle: "rh", exact: true },
       { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
+      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
     ],
   },

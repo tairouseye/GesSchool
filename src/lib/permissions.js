@@ -54,6 +54,8 @@ const ACCES = {
   paiements: ["comptable", "secretaire"],
   recouvrement: ["comptable"],
   comptabilite: ["comptable"],
+  cantine: ["comptable", "secretaire"],
+  transport: ["comptable", "secretaire"],
 
   // --- Communication (partagée pédagogie + gestion) ---
   annonces: ["direction", "comptable"],
