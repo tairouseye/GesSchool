@@ -43,6 +43,15 @@ export default function SuperAdmin() {
   const totalParents = ecoles.reduce((s, e) => s + Number(e.nb_parents || 0), 0);
   const actives = ecoles.filter((e) => e.statut === "actif").length;
   const nf = new Intl.NumberFormat("fr-FR");
+  const jours = (d) => (d ? Math.floor((Date.now() - new Date(d)) / 86400000) : null);
+  const activesRecent = ecoles.filter((e) => jours(e.derniere_activite) !== null && jours(e.derniere_activite) <= 30).length;
+  const fmtActivite = (d) => {
+    const j = jours(d);
+    if (j === null) return "jamais";
+    if (j === 0) return "aujourd'hui";
+    if (j === 1) return "hier";
+    return `il y a ${j} j`;
+  };
 
   return (
     <div className="min-h-full bg-creme">
@@ -61,9 +70,10 @@ export default function SuperAdmin() {
       <div className="mx-auto max-w-6xl space-y-6 p-6">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           <Kpi label="Écoles clientes" valeur={String(ecoles.length)} />
           <Kpi label="Abonnements actifs" valeur={String(actives)} ton="vert" />
+          <Kpi label="Actives (30 j)" valeur={String(activesRecent)} ton="vert" />
           <Kpi label="Élèves (toutes écoles)" valeur={nf.format(totalEleves)} />
           <Kpi label="Comptes (personnel + parents)" valeur={nf.format(totalPersonnel + totalParents)} />
         </div>
@@ -76,6 +86,7 @@ export default function SuperAdmin() {
                 <th className="px-5 py-3 font-medium">Élèves</th>
                 <th className="px-5 py-3 font-medium">Personnel</th>
                 <th className="px-5 py-3 font-medium">Parents</th>
+                <th className="px-5 py-3 font-medium">Activité</th>
                 <th className="px-5 py-3 font-medium">Plan</th>
                 <th className="px-5 py-3 font-medium">Statut</th>
                 <th className="px-5 py-3 font-medium">Échéance</th>
@@ -87,8 +98,16 @@ export default function SuperAdmin() {
                 <tr key={e.ecole_id} className="border-t border-navy-900/5">
                   <td className="px-5 py-3 font-medium text-navy-900">{e.nom} <span className="text-xs text-navy-900/40">{e.sigle}</span></td>
                   <td className="px-5 py-3 font-mono text-navy-900/70">{e.effectif}</td>
-                  <td className="px-5 py-3 font-mono text-navy-900/70">{e.nb_personnel ?? "—"}</td>
+                  <td className="px-5 py-3 text-navy-900/70">
+                    <span className="font-mono">{e.nb_personnel ?? "—"}</span>
+                    {e.nb_enseignants > 0 && <span className="ml-1 text-xs text-navy-900/40">· {e.nb_enseignants} ens.</span>}
+                  </td>
                   <td className="px-5 py-3 font-mono text-navy-900/70">{e.nb_parents ?? "—"}</td>
+                  <td className="px-5 py-3 text-xs">
+                    <span className={jours(e.derniere_activite) !== null && jours(e.derniere_activite) <= 30 ? "text-emerald-700" : "text-navy-900/40"}>
+                      {fmtActivite(e.derniere_activite)}
+                    </span>
+                  </td>
                   <td className="px-5 py-3">{e.plan_libelle || <span className="text-navy-900/30">—</span>}</td>
                   <td className="px-5 py-3">
                     {e.statut
@@ -102,7 +121,7 @@ export default function SuperAdmin() {
                 </tr>
               ))}
               {ecoles.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-sm text-navy-900/40">Aucune école.</td></tr>
+                <tr><td colSpan={9} className="px-5 py-8 text-center text-sm text-navy-900/40">Aucune école.</td></tr>
               )}
             </tbody>
           </table>
