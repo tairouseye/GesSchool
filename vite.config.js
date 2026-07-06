@@ -18,6 +18,17 @@ export default defineConfig({
   // Chemins relatifs : fonctionne en local ET sous un sous-chemin
   // GitHub Pages (https://user.github.io/GesSchool/).
   base: "./",
+  build: {
+    rollupOptions: {
+      output: {
+        // Libs stables isolées → meilleur cache long terme (une modif de page
+        // n'invalide pas ce chunk). Les pages sont découpées via React.lazy.
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom", "@supabase/supabase-js"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

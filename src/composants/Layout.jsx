@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
+import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
@@ -147,7 +148,9 @@ export default function Layout() {
           <span className="ml-auto font-mono text-[10px] text-creme/40">v{__APP_VERSION__}</span>
         </div>
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <Suspense fallback={<ChargementPage />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

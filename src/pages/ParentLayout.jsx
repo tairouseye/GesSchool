@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
+import { ChargementPage } from "@/composants/ui.jsx";
 import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_PARENT } from "@/lib/tours.js";
@@ -63,7 +64,9 @@ export default function ParentLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl p-6">
-        <Outlet />
+        <Suspense fallback={<ChargementPage />}>
+          <Outlet />
+        </Suspense>
       </main>
       <footer className="pb-6 text-center font-mono text-[10px] text-navy-900/30">
         GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}

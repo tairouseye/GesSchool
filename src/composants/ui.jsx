@@ -81,6 +81,15 @@ export function EtatVide({ icone = "📭", titre, children, action, className = 
   );
 }
 
+// Écran de secours pendant le chargement paresseux d'une page (React.lazy).
+export function ChargementPage() {
+  return (
+    <div className="grid min-h-[45vh] place-items-center p-8" role="status" aria-label="Chargement">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-navy-900/15 border-t-or-500" />
+    </div>
+  );
+}
+
 // Bloc « squelette » animé pour les chargements.
 export function Skeleton({ className = "" }) {
   return <div className={`animate-pulse rounded-lg bg-navy-900/10 ${className}`} />;
