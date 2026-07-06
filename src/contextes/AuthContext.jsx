@@ -84,12 +84,16 @@ export function AuthProvider({ children }) {
 
   const deconnexion = () => supabase.auth.signOut();
 
+  // Réinitialisation par CODE à 6 chiffres (évite le conflit lien ↔ HashRouter).
+  // ⚙️ Le template e-mail Supabase « Reset Password » doit contenir {{ .Token }}.
   const motDePasseOublie = (email) =>
-    supabase.auth.resetPasswordForEmail(email, {
-      // Compatible HashRouter + sous-chemin GitHub Pages.
-      redirectTo: `${window.location.href.split("#")[0]}#/reinitialiser`,
-    });
+    supabase.auth.resetPasswordForEmail(email);
 
+  // Vérifie le code reçu par e-mail → ouvre une session « recovery ».
+  const verifierCodeReset = (email, code) =>
+    supabase.auth.verifyOtp({ email: (email || "").trim(), token: (code || "").trim(), type: "recovery" });
+
+  // À appeler APRÈS verifierCodeReset (une fois la session recovery active).
   const definirMotDePasse = (motDePasse) =>
     supabase.auth.updateUser({ password: motDePasse });
 
@@ -116,6 +120,7 @@ export function AuthProvider({ children }) {
     inscription,
     deconnexion,
     motDePasseOublie,
+    verifierCodeReset,
     definirMotDePasse,
     rafraichirProfil,
   };
