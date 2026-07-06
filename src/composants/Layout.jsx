@@ -8,6 +8,7 @@ import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, items
 import { moduleActif } from "@/lib/modules.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
+import { compterASigner } from "@/lib/documents.js";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage
 // (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
@@ -18,7 +19,11 @@ export default function Layout() {
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const [tour, setTour] = useState(false);
+  const [aSigner, setASigner] = useState(0);
   const sigle = ecole?.sigle || "GS";
+
+  // Alerte « documents à signer » (rafraîchie à chaque navigation).
+  useEffect(() => { compterASigner().then(setASigner).catch(() => {}); }, [location.pathname]);
 
   // Visite guidée au premier accès (une fois).
   useEffect(() => {
@@ -119,6 +124,9 @@ export default function Layout() {
             >
               <span className="w-5 text-center">{item.icone}</span>
               {item.label}
+              {item.cle === "signatures" && aSigner > 0 && (
+                <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">{aSigner}</span>
+              )}
             </NavLink>
           ))}
         </nav>

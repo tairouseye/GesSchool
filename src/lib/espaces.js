@@ -17,6 +17,7 @@ export const ESPACES = [
     items: [
       { to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
   },
   {
@@ -40,6 +41,7 @@ export const ESPACES = [
       { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite" },
       { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
   },
   {
@@ -60,6 +62,7 @@ export const ESPACES = [
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
     ],
   },
@@ -74,6 +77,7 @@ export const ESPACES = [
       { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
   },
 ];

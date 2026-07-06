@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires } from "@/lib/academique.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
+import { getMembres } from "@/lib/membres.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 
@@ -332,15 +333,20 @@ function AssetUpload({ label, valeur, occupe, onFichier, onRetirer }) {
 
 function Signataires({ ecoleId, onErreur }) {
   const [liste, setListe] = useState([]);
-  const [f, setF] = useState({ fonction: "", nom: "", signature_url: null });
+  const [membres, setMembres] = useState([]);
+  const [f, setF] = useState({ fonction: "", nom: "", signature_url: null, profil_id: "" });
   const [up, setUp] = useState(false);
   const [info, setInfo] = useState("");
 
   const recharger = useCallback(async () => {
-    try { setListe(await getSignataires(ecoleId)); } catch (e) { onErreur?.(e.message); }
+    try {
+      setListe(await getSignataires(ecoleId));
+      try { setMembres(await getMembres()); } catch { /* pas manager : liste vide */ }
+    } catch (e) { onErreur?.(e.message); }
   }, [ecoleId]); // eslint-disable-line
 
   useEffect(() => { recharger(); }, [recharger]);
+  const nomMembre = (id) => { const m = membres.find((x) => x.id === id); return m ? `${m.prenom} ${m.nom}`.trim() || m.email : ""; };
 
   async function sauver(nouvelle) {
     setInfo("");
@@ -356,8 +362,11 @@ function Signataires({ ecoleId, onErreur }) {
   }
   function ajouter() {
     if (!f.fonction.trim()) return;
-    sauver([...liste, { fonction: f.fonction.trim(), nom: f.nom.trim(), signature_url: f.signature_url }]);
-    setF({ fonction: "", nom: "", signature_url: null });
+    sauver([...liste, {
+      fonction: f.fonction.trim(), nom: f.nom.trim(), signature_url: f.signature_url,
+      profil_id: f.profil_id || null, profil_nom: f.profil_id ? nomMembre(f.profil_id) : null,
+    }]);
+    setF({ fonction: "", nom: "", signature_url: null, profil_id: "" });
   }
 
   return (
@@ -376,16 +385,29 @@ function Signataires({ ecoleId, onErreur }) {
               {s.signature_url
                 ? <img src={s.signature_url} alt="" className="h-8 w-24 rounded object-contain" />
                 : <span className="text-xs text-navy-900/30">(sans signature)</span>}
-              <span className="text-sm"><b className="text-navy-900">{s.fonction}</b>{s.nom ? ` — ${s.nom}` : ""}</span>
+              <span className="text-sm">
+                <b className="text-navy-900">{s.fonction}</b>{s.nom ? ` — ${s.nom}` : ""}
+                {s.profil_id
+                  ? <span className="ml-2 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700">compte : {s.profil_nom || nomMembre(s.profil_id) || "lié"}</span>
+                  : <span className="ml-2 rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] text-navy-900/40">sans compte (ne peut pas valider)</span>}
+              </span>
             </div>
             <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-500 hover:underline">retirer</button>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Champ label="Fonction *" value={f.fonction} onChange={(e) => setF((s) => ({ ...s, fonction: e.target.value }))} placeholder="Le Directeur" />
         <Champ label="Nom (optionnel)" value={f.nom} onChange={(e) => setF((s) => ({ ...s, nom: e.target.value }))} />
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Compte (pour valider les documents)</span>
+          <select value={f.profil_id} onChange={(e) => setF((s) => ({ ...s, profil_id: e.target.value }))}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="">— Aucun —</option>
+            {membres.map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}{m.email ? ` (${m.email})` : ""}</option>)}
+          </select>
+        </label>
         <div>
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Signature</span>
           <div className="flex items-center gap-2 rounded-xl border border-navy-900/10 p-2">

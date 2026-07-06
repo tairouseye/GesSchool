@@ -70,6 +70,9 @@ const ACCES = {
 
   // --- Gestion des membres — managers pouvant déléguer ---
   membres: ["direction", "rh", "comptable"],
+
+  // --- Documents à signer — signataires (responsables) ---
+  signatures: ["direction", "rh", "comptable"],
 };
 
 // Ordre des pages → sert aussi à déterminer la page d'atterrissage de repli.
