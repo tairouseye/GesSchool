@@ -24,7 +24,7 @@ export const STATUTS = {
 
 // --- Frais (grille tarifaire) ---
 export async function getFrais(ecoleId, anneeId) {
-  let q = supabase.from("frais").select("*, niveaux(libelle)").eq("ecole_id", ecoleId);
+  let q = supabase.from("frais").select("*, niveaux(libelle), cycles(libelle)").eq("ecole_id", ecoleId);
   if (anneeId) q = q.or(`annee_id.eq.${anneeId},annee_id.is.null`);
   const { data, error } = await q.order("libelle");
   if (error) throw error;

@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
 import { getEleves } from "@/lib/eleves.js";
-import { getAnneeCourante, getNiveaux } from "@/lib/academique.js";
+import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast } from "@/composants/Feedback.jsx";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
@@ -20,6 +20,7 @@ export default function Paiements() {
   const [frais, setFrais] = useState([]);
   const [eleves, setEleves] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
+  const [cycles, setCycles] = useState([]);
   const [inscrits, setInscrits] = useState([]);
   const [declarations, setDeclarations] = useState([]);
   const [mobileInfos, setMobileInfos] = useState({});
@@ -34,11 +35,12 @@ export default function Paiements() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [fac, fr, els, niv, ins, decl, mob] = await Promise.all([
+      const [fac, fr, els, niv, cyc, ins, decl, mob] = await Promise.all([
         api.getFactures(ecoleId, an?.id),
         api.getFrais(ecoleId, an?.id),
         getEleves(ecoleId),
         getNiveaux(ecoleId),
+        getCycles(ecoleId),
         api.getInscritsAvecNiveau(ecoleId, an?.id),
         api.getDeclarations(ecoleId, "en_attente"),
         api.getPaiementMobile(ecoleId),
@@ -47,6 +49,7 @@ export default function Paiements() {
       setFrais(fr);
       setEleves(els);
       setNiveaux(niv);
+      setCycles(cyc);
       setInscrits(ins);
       setDeclarations(decl);
       setMobileInfos(mob);
@@ -161,7 +164,7 @@ export default function Paiements() {
           />
         ) : (
           <PanneauFrais
-            ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} devise={devise}
+            ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} cycles={cycles} devise={devise}
             onChange={recharger} onErreur={setErreur}
           />
         )}
@@ -178,7 +181,7 @@ export default function Paiements() {
       <ModaleFacturationLot
         ouvert={modaleLot}
         onFermer={() => setModaleLot(false)}
-        ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} inscrits={inscrits} devise={devise}
+        ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} cycles={cycles} inscrits={inscrits} devise={devise}
         onTermine={() => { setModaleLot(false); recharger(); toast.succes("Factures générées."); }}
         onErreur={setErreur}
       />
@@ -203,16 +206,24 @@ function Pastille({ children, ton }) {
   return <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${tons[ton]}`}>{children}</span>;
 }
 
-function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErreur }) {
-  const vide = { libelle: "", montant: "", recurrent: false, obligatoire: true, niveau_id: "" };
+// Libellé de la cible d'un frais (cycle / niveau / tous).
+function cibleFrais(fr) {
+  if (fr.cycles?.libelle) return `cycle ${fr.cycles.libelle}`;
+  if (fr.niveaux?.libelle) return fr.niveaux.libelle;
+  return "toute l'école";
+}
+
+function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange, onErreur }) {
+  const vide = { libelle: "", montant: "", recurrent: false, obligatoire: true, cible: "" };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
     <Carte className="p-6">
       <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Grille tarifaire</h3>
       <p className="mb-4 text-xs text-navy-900/40">
-        Définis les frais (inscription, scolarité, cantine…). Un frais peut viser un <b>niveau</b> précis
-        ou toute l'école. Les frais <b>obligatoires</b> sont facturés automatiquement lors de la génération en lot.
+        Un frais peut viser un <b>cycle</b> entier (scolarité identique pour tout le cycle), un <b>niveau</b> précis
+        (ex. classe d'examen à tarif différent) ou toute l'école. Les frais <b>obligatoires</b> sont facturés
+        automatiquement à la génération en lot.
       </p>
       <div className="space-y-2">
         {frais.length === 0 && <p className="text-sm text-navy-900/40">Aucun frais défini.</p>}
@@ -226,9 +237,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErre
               ) : (
                 <span className="ml-2 rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] text-navy-900/40">optionnel</span>
               )}
-              <span className="ml-2 text-xs text-navy-900/40">
-                ({fr.niveaux?.libelle || "tous niveaux"})
-              </span>
+              <span className="ml-2 text-xs text-navy-900/40">({cibleFrais(fr)})</span>
             </div>
             <div className="flex items-center gap-4">
               <span className="font-mono text-sm">{fmt(fr.montant)} {devise}</span>
@@ -243,11 +252,13 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErre
         onSubmit={async (e) => {
           e.preventDefault();
           if (!f.libelle.trim() || !f.montant) return;
+          const niveau_id = f.cible.startsWith("n:") ? f.cible.slice(2) : null;
+          const cycle_id = f.cible.startsWith("c:") ? f.cible.slice(2) : null;
           try {
             await api.creerFrais(ecoleId, {
               libelle: f.libelle.trim(), montant: Number(f.montant),
               recurrent: f.recurrent, obligatoire: f.obligatoire,
-              niveau_id: f.niveau_id || null, annee_id: annee?.id || null,
+              niveau_id, cycle_id, annee_id: annee?.id || null,
             });
             setF(vide);
             onChange();
@@ -257,11 +268,16 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, devise, onChange, onErre
         <div className="min-w-44 flex-1"><Champ label="Libellé" value={f.libelle} onChange={(e) => maj("libelle", e.target.value)} placeholder="Scolarité, Inscription…" /></div>
         <div className="w-32"><Champ label={`Montant (${devise})`} value={f.montant} onChange={(e) => maj("montant", e.target.value.replace(/[^0-9]/g, ""))} /></div>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Niveau</span>
-          <select value={f.niveau_id} onChange={(e) => maj("niveau_id", e.target.value)}
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">S'applique à</span>
+          <select value={f.cible} onChange={(e) => maj("cible", e.target.value)}
             className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
-            <option value="">Tous niveaux</option>
-            {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
+            <option value="">Toute l'école</option>
+            <optgroup label="Par cycle (scolarité)">
+              {cycles.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.libelle}</option>)}
+            </optgroup>
+            <optgroup label="Par niveau (classe d'examen…)">
+              {niveaux.map((n) => <option key={n.id} value={`n:${n.id}`}>{n.libelle}</option>)}
+            </optgroup>
           </select>
         </label>
         <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70">
@@ -561,15 +577,19 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
   );
 }
 
-function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux, inscrits, devise, onTermine, onErreur }) {
+function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux, cycles, inscrits, devise, onTermine, onErreur }) {
   const [niveauId, setNiveauId] = useState("");
   const [echeance, setEcheance] = useState("");
   const [choisis, setChoisis] = useState({}); // frais_id -> bool
   const [enCours, setEnCours] = useState(false);
   const [resultat, setResultat] = useState(null);
 
-  // Frais applicables au niveau choisi (ciblés sur ce niveau ou « tous niveaux »).
-  const applicables = frais.filter((fr) => !fr.niveau_id || fr.niveau_id === niveauId);
+  // Cycle du niveau choisi (pour appliquer les frais définis par cycle).
+  const cycleId = niveaux.find((n) => n.id === niveauId)?.cycle_id || null;
+  // Un frais s'applique s'il vise : ce niveau, le cycle du niveau, ou rien (tous).
+  const sApplique = (fr) =>
+    (!fr.niveau_id && !fr.cycle_id) || fr.niveau_id === niveauId || (fr.cycle_id && fr.cycle_id === cycleId);
+  const applicables = frais.filter(sApplique);
   const elevesNiveau = niveauId ? inscrits.filter((i) => i.niveau_id === niveauId) : [];
 
   // À chaque changement de niveau : pré-cocher les frais obligatoires.
@@ -577,7 +597,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
     if (!ouvert) return;
     const init = {};
     for (const fr of frais) {
-      if ((!fr.niveau_id || fr.niveau_id === niveauId) && fr.obligatoire) init[fr.id] = true;
+      if (sApplique(fr) && fr.obligatoire) init[fr.id] = true;
     }
     setChoisis(init);
     setResultat(null);
@@ -637,7 +657,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
                           onChange={(e) => setChoisis((s) => ({ ...s, [fr.id]: e.target.checked }))} />
                         {fr.libelle}
                         {fr.recurrent && <span className="text-xs text-or-500">mensuel</span>}
-                        <span className="text-xs text-navy-900/40">({fr.niveaux?.libelle || "tous"})</span>
+                        <span className="text-xs text-navy-900/40">({cibleFrais(fr)})</span>
                       </span>
                       <span className="font-mono text-navy-900/70">{fmt(fr.montant)} {devise}</span>
                     </label>
