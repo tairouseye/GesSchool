@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>GesSchool — Maquette module Transport scolaire</title>
+<style>
+  :root{ --navy:#0B1F3A; --navy2:#16305a; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; --ok:#0f9d6b; --warn:#c0392b; --line:#e6e2d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef0f3;color:var(--ink);font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 18px 60px}
+  h1{font-size:24px;color:var(--navy);margin:0 0 4px}
+  .sub{color:#6b7480;margin:0 0 22px}
+  .note{background:var(--creme);border-left:3px solid var(--or);border-radius:0 8px 8px 0;padding:10px 14px;margin:14px 0 26px;font-size:13px}
+  .screen{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:22px 0;box-shadow:0 1px 3px rgba(11,31,58,.06)}
+  .scr-h{display:flex;align-items:center;gap:10px;background:var(--navy);color:var(--creme);padding:12px 18px}
+  .scr-h b{font-size:15px}
+  .scr-h .tag{margin-left:auto;font-size:11px;color:rgba(251,247,239,.6);border:1px solid rgba(251,247,239,.25);border-radius:999px;padding:2px 10px}
+  .scr-b{padding:18px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{font-size:12px;padding:6px 12px;border-radius:9px;background:#f1efe9;color:#5a6675}
+  .tab.on{background:var(--or);color:var(--navy);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:14px}
+  .kpi .l{font-size:12px;color:#6b7480}
+  .kpi .v{font-size:22px;font-weight:800;color:var(--navy);margin-top:6px}
+  .kpi .v.warn{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:var(--creme);color:#6b7480;text-align:left;font-weight:600;padding:9px 12px}
+  td{border-top:1px solid var(--line);padding:9px 12px;vertical-align:middle}
+  .pill{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;display:inline-block}
+  .p-ok{background:rgba(15,157,107,.12);color:var(--ok)}
+  .p-du{background:rgba(192,57,43,.10);color:var(--warn)}
+  .p-mid{background:rgba(201,162,39,.16);color:#9a7d16}
+  .p-blue{background:rgba(29,95,176,.10);color:#1d5fb0}
+  .btn{background:var(--navy);color:var(--creme);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600}
+  .btn.or{background:var(--or);color:var(--navy)}
+  .btn.gh{background:#fff;border:1px solid var(--line);color:var(--navy)}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .spacer{flex:1}
+  .chk{width:20px;height:20px;border:2px solid var(--or);border-radius:6px;display:inline-grid;place-items:center;color:var(--navy);font-weight:800}
+  .chk.off{border-color:#cfd4da;color:transparent}
+  .parent{max-width:390px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--creme)}
+  .bignum{font-size:22px;font-weight:800;color:var(--navy)}
+  .legend{font-size:12px;color:#6b7480}
+  .stops{list-style:none;margin:8px 0 0;padding:0}
+  .stops li{position:relative;padding:6px 0 6px 22px;font-size:13px;border-left:2px solid var(--or);margin-left:6px}
+  .stops li:before{content:"";position:absolute;left:-6px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--or)}
+  .alert{background:rgba(15,157,107,.10);border:1px solid rgba(15,157,107,.3);border-radius:10px;padding:10px 12px;font-size:13px;color:#0b6b4a}
+  h2{color:var(--navy);font-size:18px;margin:34px 0 8px;border-bottom:2px solid var(--or);padding-bottom:5px}
+  code{background:#eef0f3;padding:1px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.5px;color:var(--navy)}
+  ul{margin:8px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.cols{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>🚌 GesSchool — Module Transport scolaire <span style="font-size:14px;color:#6b7480;font-weight:400">(maquette)</span></h1>
+  <p class="sub">Aperçu des écrans et du branchement sur l'existant. Module activable par école (à la carte).</p>
+  <div class="note">💡 Même patron que la Cantine : <b>abonnement → facturation</b> (réutilise Paiements/recouvrement), <b>pointage embarquement</b> (comme l'Appel, pour la sécurité), <b>espace parent</b> (circuit, horaires, <b>notifications</b>, paiement). Objectif clé : <b>savoir quel enfant est dans quel bus</b>.</div>
+
+  <!-- ÉCRAN 1 : Tableau de bord -->
+  <div class="screen">
+    <div class="scr-h">🚌 <b>Transport</b> <span class="tag">Espace Gestion</span></div>
+    <div class="scr-b">
+      <div class="tabs"><span class="tab on">Tableau de bord</span><span class="tab">Circuits</span><span class="tab">Abonnés</span><span class="tab">Embarquement</span><span class="tab">Paiements</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Abonnés transport</div><div class="v">126</div></div>
+        <div class="kpi"><div class="l">Embarqués ce matin</div><div class="v">118 / 126</div></div>
+        <div class="kpi"><div class="l">Impayés transport</div><div class="v warn">210 000 F</div></div>
+        <div class="kpi"><div class="l">Circuits actifs</div><div class="v">4</div></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <span class="legend">Bus en service : <b>3 en route</b> · 1 au dépôt</span>
+        <span class="spacer"></span>
+        <button class="btn or">+ Nouvel abonné</button>
+        <button class="btn">Facturer le mois</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 2 : Circuits -->
+  <div class="screen">
+    <div class="scr-h">🚌 <b>Transport — Circuits & véhicules</b><span class="tag">Gestion</span></div>
+    <div class="scr-b">
+      <div class="row" style="margin-bottom:12px"><span class="spacer"></span><button class="btn or">+ Nouveau circuit</button></div>
+      <table>
+        <thead><tr><th>Circuit</th><th>Véhicule</th><th>Chauffeur</th><th>Élèves</th><th>Départ</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Circuit A — Nord</b></td><td>Bus 1 (30 pl.)</td><td>M. Sarr · 77 123 45 67</td><td>28</td><td>06:30</td><td><button class="btn gh">arrêts</button></td></tr>
+          <tr><td><b>Circuit B — Centre</b></td><td>Bus 2 (30 pl.)</td><td>M. Ndiaye</td><td>30</td><td>06:45</td><td><button class="btn gh">arrêts</button></td></tr>
+          <tr><td><b>Circuit C — Ouest</b></td><td>Minibus (18 pl.)</td><td>M. Ba</td><td>16</td><td>07:00</td><td><button class="btn gh">arrêts</button></td></tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:14px;align-items:flex-start">
+        <div style="min-width:240px">
+          <div class="legend"><b>Arrêts — Circuit A</b> (avec horaires)</div>
+          <ul class="stops">
+            <li>Liberté 6 — 06:30</li>
+            <li>Sacré-Cœur — 06:42</li>
+            <li>Point E — 06:55</li>
+            <li>École — 07:15</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 3 : Abonnés -->
+  <div class="screen">
+    <div class="scr-h">🚌 <b>Transport — Abonnés</b><span class="tag">Gestion / Secrétaire</span></div>
+    <div class="scr-b">
+      <div class="row" style="margin-bottom:12px">
+        <input placeholder="🔍 Rechercher un élève…" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--line);border-radius:10px"/>
+        <button class="btn or">+ Nouvel abonné</button>
+      </div>
+      <table>
+        <thead><tr><th>Élève</th><th>Classe</th><th>Circuit</th><th>Arrêt</th><th>Trajet</th><th>Paiement</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Fatou Diop</b></td><td>CM2 A</td><td>A — Nord</td><td>Sacré-Cœur</td><td><span class="pill p-blue">aller-retour</span></td><td><span class="pill p-ok">à jour</span></td><td><button class="btn gh">gérer</button></td></tr>
+          <tr><td><b>Awa Sow</b></td><td>CE1</td><td>B — Centre</td><td>Fann</td><td><span class="pill p-blue">aller-retour</span></td><td><span class="pill p-du">7 000 F dus</span></td><td><button class="btn gh">gérer</button></td></tr>
+          <tr><td><b>Ibrahima Fall</b></td><td>5e A</td><td>A — Nord</td><td>Point E</td><td><span class="pill p-mid">aller seul</span></td><td><span class="pill p-ok">à jour</span></td><td><button class="btn gh">gérer</button></td></tr>
+        </tbody>
+      </table>
+      <p class="legend" style="margin-top:10px">↳ « Facturer le mois » crée une <b>facture transport</b> par abonné (réutilise Paiements &amp; recouvrement).</p>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 4 : Embarquement -->
+  <div class="screen">
+    <div class="scr-h">🚌 <b>Transport — Embarquement</b> <span class="tag">côté chauffeur / accompagnateur</span></div>
+    <div class="scr-b">
+      <div class="row" style="margin-bottom:12px">
+        <select style="padding:8px 12px;border:1px solid var(--line);border-radius:10px"><option>Circuit A — Nord · Matin (aller)</option></select>
+        <span class="spacer"></span>
+        <span class="legend">Embarqués : <b>3 / 4</b></span>
+        <button class="btn or">Valider &amp; notifier</button>
+      </div>
+      <table>
+        <thead><tr><th>Élève</th><th>Arrêt</th><th style="text-align:center">Embarqué</th><th style="text-align:center">Débarqué (école)</th></tr></thead>
+        <tbody>
+          <tr><td>Fatou Diop</td><td>Sacré-Cœur</td><td style="text-align:center"><span class="chk">✓</span></td><td style="text-align:center"><span class="chk">✓</span></td></tr>
+          <tr><td>Ibrahima Fall</td><td>Point E</td><td style="text-align:center"><span class="chk">✓</span></td><td style="text-align:center"><span class="chk">✓</span></td></tr>
+          <tr><td>Mariama Kane</td><td>Liberté 6</td><td style="text-align:center"><span class="chk">✓</span></td><td style="text-align:center"><span class="chk off">✓</span></td></tr>
+          <tr><td>Cheikh Gueye</td><td>Point E</td><td style="text-align:center"><span class="chk off">✓</span></td><td style="text-align:center"><span class="chk off">✓</span></td></tr>
+        </tbody>
+      </table>
+      <p class="legend" style="margin-top:10px">↳ « Valider &amp; notifier » envoie aux parents une alerte <b>« enfant embarqué »</b> / <b>« bien arrivé à l'école »</b> (réutilise le push existant). Un élève <b>non embarqué</b> est signalé.</p>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 5 : Parent -->
+  <div class="screen">
+    <div class="scr-h">👪 <b>Espace parent — Transport</b></div>
+    <div class="scr-b">
+      <div class="parent">
+        <div class="legend">Transport de Fatou Diop</div>
+        <div class="row" style="margin:6px 0 2px"><span class="bignum">Circuit A — Nord</span></div>
+        <p class="legend">Arrêt : <b>Sacré-Cœur</b> · Aller-retour · Départ 06:42</p>
+        <div class="alert" style="margin:10px 0">✅ Embarquée ce matin à <b>06:44</b> · 🏫 Arrivée à l'école <b>07:16</b></div>
+        <div class="row"><span class="pill p-ok">Paiement à jour</span><span class="legend" style="margin-left:8px">Échéance : 31 juil · 8 000 F</span></div>
+        <button class="btn or" style="margin-top:12px;width:100%">Payer par Wave / Orange Money</button>
+      </div>
+      <p class="legend" style="margin-top:10px">↳ Réutilise l'écran de <b>paiement mobile déclaratif</b> et les <b>notifications push</b> déjà présents.</p>
+    </div>
+  </div>
+
+  <!-- SPEC -->
+  <h2>Comment ça se branche (léger)</h2>
+  <div class="cols">
+    <div>
+      <b>Nouvelles tables</b>
+      <ul>
+        <li><code>transport_circuits</code> — nom, véhicule, chauffeur, horaire de départ</li>
+        <li><code>transport_arrets</code> — circuit, libellé, ordre, heure</li>
+        <li><code>transport_vehicules</code> — immat., capacité, chauffeur (nom, tél.)</li>
+        <li><code>transport_abonnements</code> — élève → circuit/arrêt, trajet (aller / A-R), tarif</li>
+        <li><code>transport_pointages</code> — date, trajet, élève, embarqué, débarqué</li>
+      </ul>
+      <b>Réutilise l'existant</b>
+      <ul>
+        <li><b>Paiements &amp; recouvrement</b> → factures &amp; relances transport</li>
+        <li><b>Fiche élève</b> → circuit/arrêt + <b>contact d'urgence</b></li>
+        <li><b>Espace parent + push</b> → circuit, horaires, alertes embarquement</li>
+        <li><b>RBAC &amp; modules</b> → activation par école</li>
+      </ul>
+    </div>
+    <div>
+      <b>Accès (cohérent avec la délégation)</b>
+      <ul>
+        <li><b>Comptable / Secrétaire</b> : abonnés, facturation, paiements</li>
+        <li><b>Chauffeur / accompagnateur</b> (rôle léger) : <b>embarquement</b> de son circuit uniquement</li>
+        <li><b>Parent</b> : circuit, horaires, notifications, paiement</li>
+      </ul>
+      <b>Sécurité (le vrai plus)</b>
+      <ul>
+        <li>Savoir en temps réel <b>quel enfant est dans quel bus</b></li>
+        <li>Alerte si un enfant <b>attendu n'est pas monté</b></li>
+        <li>Parent prévenu à l'embarquement et à l'arrivée</li>
+      </ul>
+      <b>À éviter au début</b>
+      <ul>
+        <li>GPS live → se contenter d'un statut « bus en route » + tél. chauffeur</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legend" style="margin-top:24px">Maquette statique — chiffres fictifs. Packaging possible : offre « Services » = <b>Cantine + Transport</b> en upsell. À construire après une 1ʳᵉ école cliente.</p>
+</div>
+</body></html>
