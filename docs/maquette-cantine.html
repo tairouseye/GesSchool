@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>GesSchool — Maquette module Cantine</title>
+<style>
+  :root{ --navy:#0B1F3A; --navy2:#16305a; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; --ok:#0f9d6b; --warn:#c0392b; --line:#e6e2d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef0f3;color:var(--ink);font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 18px 60px}
+  h1{font-size:24px;color:var(--navy);margin:0 0 4px}
+  .sub{color:#6b7480;margin:0 0 22px}
+  .note{background:var(--creme);border-left:3px solid var(--or);border-radius:0 8px 8px 0;padding:10px 14px;margin:14px 0 26px;font-size:13px}
+  .screen{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:22px 0;box-shadow:0 1px 3px rgba(11,31,58,.06)}
+  .scr-h{display:flex;align-items:center;gap:10px;background:var(--navy);color:var(--creme);padding:12px 18px}
+  .scr-h b{font-size:15px}
+  .scr-h .tag{margin-left:auto;font-size:11px;color:rgba(251,247,239,.6);border:1px solid rgba(251,247,239,.25);border-radius:999px;padding:2px 10px}
+  .scr-b{padding:18px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{font-size:12px;padding:6px 12px;border-radius:9px;background:#f1efe9;color:#5a6675}
+  .tab.on{background:var(--or);color:var(--navy);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:14px}
+  .kpi .l{font-size:12px;color:#6b7480}
+  .kpi .v{font-size:22px;font-weight:800;color:var(--navy);margin-top:6px}
+  .kpi .v.warn{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:var(--creme);color:#6b7480;text-align:left;font-weight:600;padding:9px 12px}
+  td{border-top:1px solid var(--line);padding:9px 12px;vertical-align:middle}
+  .pill{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;display:inline-block}
+  .p-ok{background:rgba(15,157,107,.12);color:var(--ok)}
+  .p-du{background:rgba(192,57,43,.10);color:var(--warn)}
+  .p-mid{background:rgba(201,162,39,.16);color:#9a7d16}
+  .btn{background:var(--navy);color:var(--creme);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600}
+  .btn.or{background:var(--or);color:var(--navy)}
+  .btn.gh{background:#fff;border:1px solid var(--line);color:var(--navy)}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .spacer{flex:1}
+  .chk{width:20px;height:20px;border:2px solid var(--or);border-radius:6px;display:inline-grid;place-items:center;color:var(--navy);font-weight:800}
+  .chk.off{border-color:#cfd4da;color:transparent}
+  .menu{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media(max-width:720px){.menu{grid-template-columns:repeat(2,1fr)}}
+  .day{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .day h4{margin:0;background:var(--creme);color:var(--navy);font-size:13px;padding:8px 10px}
+  .day .plat{padding:8px 10px;font-size:12.5px;border-top:1px dashed var(--line)}
+  .parent{max-width:380px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--creme)}
+  .bignum{font-size:26px;font-weight:800;color:var(--navy)}
+  .legend{font-size:12px;color:#6b7480}
+  h2{color:var(--navy);font-size:18px;margin:34px 0 8px;border-bottom:2px solid var(--or);padding-bottom:5px}
+  code{background:#eef0f3;padding:1px 6px;border-radius:5px;font-family:Consolas,monospace;font-size:12.5px;color:var(--navy)}
+  ul{margin:8px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.cols{grid-template-columns:1fr}}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>🍽️ GesSchool — Module Cantine <span style="font-size:14px;color:#6b7480;font-weight:400">(maquette)</span></h1>
+  <p class="sub">Aperçu des écrans et du branchement sur l'existant. Module activable par école (à la carte).</p>
+  <div class="note">💡 Ce module <b>réutilise</b> ce qui existe déjà : la <b>facturation/recouvrement</b> (abonnements → factures), le principe de l'<b>Appel</b> (pointage des repas), la <b>fiche élève</b> (régime/allergies) et l'<b>espace parent</b> (solde + menu). Rien de lourd : quelques écrans + 3 petites tables.</p>
+
+  <!-- ÉCRAN 1 : Tableau de bord -->
+  <div class="screen">
+    <div class="scr-h">🍽️ <b>Cantine</b> <span class="tag">Espace Gestion</span></div>
+    <div class="scr-b">
+      <div class="tabs"><span class="tab on">Tableau de bord</span><span class="tab">Abonnés</span><span class="tab">Pointage du jour</span><span class="tab">Menu</span><span class="tab">Paiements</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Abonnés cantine</div><div class="v">214</div></div>
+        <div class="kpi"><div class="l">Repas servis aujourd'hui</div><div class="v">198</div></div>
+        <div class="kpi"><div class="l">Impayés cantine</div><div class="v warn">145 000 F</div></div>
+        <div class="kpi"><div class="l">Solde prépayé (total)</div><div class="v">320 000 F</div></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <span class="legend">Formules actives : <b>Mensuel</b> (168) · <b>À la carte / prépayé</b> (46)</span>
+        <span class="spacer"></span>
+        <button class="btn or">+ Nouvel abonné</button>
+        <button class="btn">Facturer le mois</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 2 : Abonnés -->
+  <div class="screen">
+    <div class="scr-h">🍽️ <b>Cantine — Abonnés</b><span class="tag">Gestion / Secrétaire</span></div>
+    <div class="scr-b">
+      <div class="row" style="margin-bottom:12px">
+        <input placeholder="🔍 Rechercher un élève…" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--line);border-radius:10px"/>
+        <button class="btn or">+ Nouvel abonné</button>
+      </div>
+      <table>
+        <thead><tr><th>Élève</th><th>Classe</th><th>Formule</th><th>Régime</th><th>Solde / Paiement</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Fatou Diop</b></td><td>CM2 A</td><td>Mensuel</td><td><span class="pill p-mid">sans porc</span></td><td><span class="pill p-ok">à jour</span></td><td><button class="btn gh">gérer</button></td></tr>
+          <tr><td><b>Moussa Ba</b></td><td>6e B</td><td>Prépayé</td><td>—</td><td><span class="legend">Solde&nbsp;: <b>2 500 F</b></span></td><td><button class="btn gh">gérer</button></td></tr>
+          <tr><td><b>Awa Sow</b></td><td>CE1</td><td>Mensuel</td><td><span class="pill p-mid">allergie arachide</span></td><td><span class="pill p-du">3 000 F dus</span></td><td><button class="btn gh">gérer</button></td></tr>
+          <tr><td><b>Ibrahima Fall</b></td><td>5e A</td><td>Mensuel</td><td>—</td><td><span class="pill p-ok">à jour</span></td><td><button class="btn gh">gérer</button></td></tr>
+        </tbody>
+      </table>
+      <p class="legend" style="margin-top:10px">↳ « Facturer le mois » crée une <b>facture cantine</b> par abonné (réutilise le module Paiements &amp; recouvrement existant).</p>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 3 : Pointage -->
+  <div class="screen">
+    <div class="scr-h">🍽️ <b>Cantine — Pointage du jour</b> <span class="tag">comme l'Appel</span></div>
+    <div class="scr-b">
+      <div class="row" style="margin-bottom:12px">
+        <select style="padding:8px 12px;border:1px solid var(--line);border-radius:10px"><option>Lundi 6 juillet — Déjeuner</option></select>
+        <span class="spacer"></span>
+        <span class="legend">Présents : <b>3 / 4</b></span>
+        <button class="btn or">Enregistrer</button>
+      </div>
+      <table>
+        <thead><tr><th>Élève</th><th>Classe</th><th>Formule</th><th style="text-align:center">A mangé</th></tr></thead>
+        <tbody>
+          <tr><td>Fatou Diop</td><td>CM2 A</td><td>Mensuel</td><td style="text-align:center"><span class="chk">✓</span></td></tr>
+          <tr><td>Moussa Ba</td><td>6e B</td><td>Prépayé <span class="legend">(−500 F)</span></td><td style="text-align:center"><span class="chk">✓</span></td></tr>
+          <tr><td>Awa Sow</td><td>CE1</td><td>Mensuel</td><td style="text-align:center"><span class="chk off">✓</span></td></tr>
+          <tr><td>Ibrahima Fall</td><td>5e A</td><td>Mensuel</td><td style="text-align:center"><span class="chk">✓</span></td></tr>
+        </tbody>
+      </table>
+      <p class="legend" style="margin-top:10px">↳ Pour un élève <b>prépayé</b>, cocher « a mangé » <b>décompte le repas</b> de son solde automatiquement.</p>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 4 : Menu -->
+  <div class="screen">
+    <div class="scr-h">🍽️ <b>Cantine — Menu de la semaine</b> <span class="tag">visible des parents</span></div>
+    <div class="scr-b">
+      <div class="menu">
+        <div class="day"><h4>Lundi</h4><div class="plat">🍚 Riz au poisson</div><div class="plat">🍌 Fruit</div></div>
+        <div class="day"><h4>Mardi</h4><div class="plat">🍝 Pâtes bolognaise</div><div class="plat">🍎 Fruit</div></div>
+        <div class="day"><h4>Mercredi</h4><div class="plat">🍲 Mafé</div><div class="plat">🍮 Yaourt</div></div>
+        <div class="day"><h4>Jeudi</h4><div class="plat">🍗 Poulet / légumes</div><div class="plat">🍊 Fruit</div></div>
+        <div class="day"><h4>Vendredi</h4><div class="plat">🐟 Thiéboudienne</div><div class="plat">🍰 Dessert</div></div>
+      </div>
+      <div class="row" style="margin-top:12px"><span class="spacer"></span><button class="btn gh">Dupliquer la semaine</button><button class="btn or">Publier aux parents</button></div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 5 : Parent -->
+  <div class="screen">
+    <div class="scr-h">👪 <b>Espace parent — Cantine</b></div>
+    <div class="scr-b">
+      <div class="parent">
+        <div class="legend">Cantine de Fatou Diop</div>
+        <div class="row" style="margin:6px 0 2px"><span class="bignum">À jour</span><span class="pill p-ok" style="margin-left:8px">Mensuel</span></div>
+        <p class="legend">Prochaine échéance : 31 juillet · 12 000 F</p>
+        <hr style="border:none;border-top:1px solid var(--line);margin:10px 0"/>
+        <div class="legend" style="margin-bottom:6px">Menu de la semaine</div>
+        <div class="legend">Lun · Riz au poisson &nbsp;|&nbsp; Mar · Pâtes …</div>
+        <button class="btn or" style="margin-top:12px;width:100%">Payer par Wave / Orange Money</button>
+      </div>
+      <p class="legend" style="margin-top:10px">↳ Réutilise l'écran de <b>paiement mobile déclaratif</b> déjà présent dans l'espace parent.</p>
+    </div>
+  </div>
+
+  <!-- SPEC -->
+  <h2>Comment ça se branche (léger)</h2>
+  <div class="cols">
+    <div>
+      <b>Nouvelles tables (3 petites)</b>
+      <ul>
+        <li><code>cantine_abonnements</code> — élève, formule (mensuel/prépayé), tarif, statut, solde</li>
+        <li><code>cantine_repas</code> — date, élève, présent, coût décompté (le « pointage »)</li>
+        <li><code>cantine_menus</code> — semaine, jour, plats (jsonb)</li>
+      </ul>
+      <b>Réutilise l'existant (rien à refaire)</b>
+      <ul>
+        <li><b>Paiements &amp; recouvrement</b> → factures &amp; relances cantine</li>
+        <li><b>Fiche élève</b> → champ régime / allergies</li>
+        <li><b>Espace parent</b> → solde, menu, paiement mobile</li>
+        <li><b>RBAC &amp; modules</b> → activation par école, accès Gestion/Secrétaire</li>
+      </ul>
+    </div>
+    <div>
+      <b>Accès (cohérent avec la délégation)</b>
+      <ul>
+        <li><b>Comptable / Secrétaire</b> : abonnés, facturation, paiements cantine</li>
+        <li><b>Personnel cantine</b> (rôle léger) : uniquement le <b>pointage</b> + menu</li>
+        <li><b>Parent</b> : consultation solde + menu + paiement</li>
+      </ul>
+      <b>Effort &amp; poids</b>
+      <ul>
+        <li>Module <b>lazy-load</b> → 0 impact sur les écoles sans cantine</li>
+        <li>~4 écrans + 3 tables → <b>léger</b></li>
+        <li>Version « stock/denrées » = <b>optionnelle</b>, plus tard</li>
+      </ul>
+      <b>Piste commerciale</b>
+      <ul>
+        <li>Option <b>+30 000 à 50 000 F/an</b> par école (upsell)</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legend" style="margin-top:24px">Maquette statique — les chiffres sont fictifs. À construire quand tu voudras (idéalement après une 1ʳᵉ école cliente, pour coller à ses besoins réels).</p>
+</div>
+</body></html>
