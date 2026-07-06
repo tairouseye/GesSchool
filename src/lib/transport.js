@@ -2,6 +2,12 @@ import { supabase } from "@/lib/supabase.js";
 
 // GesSchool — module Transport scolaire. RLS = Gestion.
 
+// Convertit une heure "HH:MM" en minutes (vide → tout à la fin).
+function minutes(h) {
+  const m = String(h || "").match(/(\d{1,2})\D+(\d{2})/);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : 99999;
+}
+
 // --- Circuits & arrêts ---
 export async function getCircuits(ecoleId) {
   const { data, error } = await supabase
@@ -10,7 +16,11 @@ export async function getCircuits(ecoleId) {
     .eq("ecole_id", ecoleId)
     .order("nom");
   if (error) throw error;
-  return (data ?? []).map((c) => ({ ...c, arrets: (c.transport_arrets || []).sort((a, b) => a.ordre - b.ordre) }));
+  // Arrêts triés par HEURE croissante (puis ordre en cas d'égalité).
+  return (data ?? []).map((c) => ({
+    ...c,
+    arrets: (c.transport_arrets || []).sort((a, b) => minutes(a.heure) - minutes(b.heure) || (a.ordre - b.ordre)),
+  }));
 }
 
 export async function enregistrerCircuit(ecoleId, c) {
@@ -39,6 +49,13 @@ export async function ajouterArret(ecoleId, circuitId, a) {
     ecole_id: ecoleId, circuit_id: circuitId, libelle: a.libelle?.trim(),
     ordre: Number(a.ordre) || 0, heure: a.heure?.trim() || null,
   });
+  if (error) throw error;
+}
+
+export async function modifierArret(id, a) {
+  const { error } = await supabase.from("transport_arrets")
+    .update({ libelle: a.libelle?.trim(), heure: a.heure?.trim() || null })
+    .eq("id", id);
   if (error) throw error;
 }
 

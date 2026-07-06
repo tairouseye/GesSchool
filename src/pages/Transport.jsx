@@ -112,22 +112,44 @@ function Circuits({ ecoleId, circuits, wrap, confirmer }) {
 
 function Arrets({ ecoleId, circuit, wrap, confirmer }) {
   const [ajout, setAjout] = useState({ libelle: "", heure: "" });
+  const [edit, setEdit] = useState(null); // { id, libelle, heure }
+
+  async function enregistrerEdit(e) {
+    e.preventDefault();
+    if (!edit.libelle.trim()) return;
+    if (await wrap(() => api.modifierArret(edit.id, edit), "Arrêt modifié.")) setEdit(null);
+  }
+
   return (
     <div className="mt-4 border-t border-navy-900/10 pt-3">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-navy-900/40">Arrêts</p>
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-navy-900/40">Arrêts <span className="normal-case text-navy-900/30">(triés par heure)</span></p>
       {circuit.arrets.length === 0 ? <p className="text-sm text-navy-900/40">Aucun arrêt.</p> : (
         <ul className="space-y-1">
           {circuit.arrets.map((a) => (
-            <li key={a.id} className="flex items-center justify-between text-sm">
-              <span className="text-navy-900/80">📍 {a.libelle}{a.heure ? ` — ${a.heure}` : ""}</span>
-              <button onClick={async () => { if (await confirmer("Supprimer cet arrêt ?")) wrap(() => api.supprimerArret(a.id), "Arrêt supprimé."); }} className="text-xs text-rose-500 hover:underline">retirer</button>
+            <li key={a.id} className="text-sm">
+              {edit?.id === a.id ? (
+                <form onSubmit={enregistrerEdit} className="flex flex-wrap items-end gap-2">
+                  <div className="flex-1 min-w-[140px]"><Champ label="Arrêt" value={edit.libelle} onChange={(e) => setEdit((s) => ({ ...s, libelle: e.target.value }))} /></div>
+                  <div className="w-28"><Champ label="Heure" type="time" value={edit.heure} onChange={(e) => setEdit((s) => ({ ...s, heure: e.target.value }))} /></div>
+                  <Bouton type="submit" className="!py-2 text-xs">Enregistrer</Bouton>
+                  <Bouton type="button" variante="fantome" className="!py-2 text-xs" onClick={() => setEdit(null)}>Annuler</Bouton>
+                </form>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-navy-900/80">📍 {a.libelle}{a.heure ? ` — ${a.heure}` : ""}</span>
+                  <span className="shrink-0 whitespace-nowrap">
+                    <button onClick={() => setEdit({ id: a.id, libelle: a.libelle, heure: a.heure || "" })} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
+                    <button onClick={async () => { if (await confirmer("Supprimer cet arrêt ?")) wrap(() => api.supprimerArret(a.id), "Arrêt supprimé."); }} className="ml-3 text-xs text-rose-500 hover:underline">retirer</button>
+                  </span>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
       <form className="mt-2 flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); if (!ajout.libelle.trim()) return; wrap(() => api.ajouterArret(ecoleId, circuit.id, { ...ajout, ordre: circuit.arrets.length + 1 }), "Arrêt ajouté.").then(() => setAjout({ libelle: "", heure: "" })); }}>
         <div className="flex-1 min-w-[140px]"><Champ label="Arrêt" value={ajout.libelle} onChange={(e) => setAjout((s) => ({ ...s, libelle: e.target.value }))} placeholder="Sacré-Cœur" /></div>
-        <div className="w-28"><Champ label="Heure" value={ajout.heure} onChange={(e) => setAjout((s) => ({ ...s, heure: e.target.value }))} placeholder="06:42" /></div>
+        <div className="w-28"><Champ label="Heure" type="time" value={ajout.heure} onChange={(e) => setAjout((s) => ({ ...s, heure: e.target.value }))} /></div>
         <Bouton type="submit" variante="fantome" className="!py-2 text-xs">+ Ajouter</Bouton>
       </form>
     </div>
