@@ -8,6 +8,23 @@ export async function mesEnfants() {
   return data ?? [];
 }
 
+// Cantine & transport de l'enfant (0 ou 1 abonnement).
+export async function enfantCantine(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_cantine", { p_eleve: eleveId });
+  if (error) throw error;
+  return (data ?? [])[0] || null;
+}
+export async function enfantMenuCantine(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_cantine_menu", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+export async function enfantTransport(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_transport", { p_eleve: eleveId });
+  if (error) throw error;
+  return (data ?? [])[0] || null;
+}
+
 export async function enfantNotes(eleveId) {
   const { data, error } = await supabase.rpc("enfant_notes", { p_eleve: eleveId });
   if (error) throw error;

@@ -4,6 +4,7 @@ import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, enfantDeclarations, justifierAbsenceParent,
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
+  enfantCantine, enfantMenuCantine, enfantTransport,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
@@ -28,17 +29,22 @@ export default function ParentEnfant() {
   const [cahier, setCahier] = useState([]);
   const [bulletins, setBulletins] = useState([]);
   const [demandes, setDemandes] = useState([]);
+  const [cantine, setCantine] = useState(null);
+  const [menu, setMenu] = useState([]);
+  const [transport, setTransport] = useState(null);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
   const charger = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl, cah, bul, dem] = await Promise.all([
+      const [n, f, a, e, four, inf, decl, cah, bul, dem, can, men, tra] = await Promise.all([
         enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
         enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id), mesDemandes(),
+        enfantCantine(id), enfantMenuCantine(id), enfantTransport(id),
       ]);
       setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
       setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul); setDemandes(dem);
+      setCantine(can); setMenu(men); setTransport(tra);
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
   }, [id]);
@@ -51,7 +57,8 @@ export default function ParentEnfant() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"]].map(([k, l]) => (
+        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"],
+          ...(cantine ? [["cantine", "🍽️ Cantine"]] : []), ...(transport ? [["transport", "🚌 Transport"]] : [])].map(([k, l]) => (
           <button key={k} onClick={() => setOnglet(k)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
             {l}
@@ -75,10 +82,62 @@ export default function ParentEnfant() {
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={charger} onErreur={setErreur} />
       ) : onglet === "documents" ? (
         <Documents eleveId={id} demandes={demandes} onChange={charger} onErreur={setErreur} />
+      ) : onglet === "cantine" ? (
+        <CantineParent cantine={cantine} menu={menu} />
+      ) : onglet === "transport" ? (
+        <TransportParent transport={transport} />
       ) : (
         <Absences absences={absences} onChange={charger} onErreur={setErreur} />
       )}
     </div>
+  );
+}
+
+const JOURS_SEM = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const LIB_TRAJET = { aller_retour: "Aller-retour", aller: "Aller seul", retour: "Retour seul" };
+
+function CantineParent({ cantine, menu }) {
+  return (
+    <div className="space-y-4">
+      <Carte className="p-5">
+        <h3 className="font-display text-lg font-bold text-navy-900">🍽️ Cantine</h3>
+        {!cantine ? (
+          <p className="mt-1 text-sm text-navy-900/50">Aucun abonnement cantine.</p>
+        ) : (
+          <div className="mt-2 space-y-1 text-sm text-navy-900/70">
+            <p>Formule : <b className="text-navy-900">{cantine.formule === "prepaye" ? "Prépayé (au repas)" : "Mensuel"}</b>{cantine.actif ? "" : " (inactif)"}</p>
+            {cantine.formule === "prepaye"
+              ? <p>Solde restant : <b className="text-navy-900">{fmt(cantine.solde)}</b></p>
+              : <p>Tarif : <b>{fmt(cantine.tarif)}</b> / mois</p>}
+            {cantine.regime && <p>Régime / allergies : <b>{cantine.regime}</b></p>}
+          </div>
+        )}
+      </Carte>
+      {menu.length > 0 && (
+        <Carte className="p-5">
+          <h4 className="mb-2 font-semibold text-navy-900">Menu de la semaine</h4>
+          <ul className="space-y-1 text-sm text-navy-900/70">
+            {menu.map((m) => <li key={m.jour}><b className="text-navy-900">{JOURS_SEM[m.jour]}</b> : {m.plats || "—"}</li>)}
+          </ul>
+        </Carte>
+      )}
+    </div>
+  );
+}
+
+function TransportParent({ transport }) {
+  if (!transport) return <Carte className="p-6 text-sm text-navy-900/50">Aucun abonnement transport.</Carte>;
+  return (
+    <Carte className="p-5">
+      <h3 className="font-display text-lg font-bold text-navy-900">🚌 Transport scolaire</h3>
+      <div className="mt-2 space-y-1 text-sm text-navy-900/70">
+        <p>Circuit : <b className="text-navy-900">{transport.circuit || "—"}</b></p>
+        <p>Arrêt : <b>{transport.arret || "—"}</b>{transport.heure_depart ? ` · départ ${transport.heure_depart}` : ""}</p>
+        <p>Trajet : {LIB_TRAJET[transport.trajet] || transport.trajet}</p>
+        {transport.chauffeur && <p>Chauffeur : {transport.chauffeur}{transport.chauffeur_tel ? ` · ${transport.chauffeur_tel}` : ""}</p>}
+        <p>Tarif : <b>{fmt(transport.tarif)}</b> / mois</p>
+      </div>
+    </Carte>
   );
 }
 

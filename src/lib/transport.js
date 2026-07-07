@@ -113,3 +113,10 @@ export async function setPointage(ecoleId, circuitId, eleveId, date, sens, champ
   );
   if (error) throw error;
 }
+
+// Notifie les parents des élèves embarqués (circuit/date/sens). Renvoie le nb.
+export async function notifierEmbarquement(circuitId, date, sens) {
+  const { data, error } = await supabase.rpc("transport_notifier", { p_circuit: circuitId, p_date: date, p_sens: sens });
+  if (error) throw error;
+  return data;
+}

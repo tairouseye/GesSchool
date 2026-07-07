@@ -317,6 +317,12 @@ function Embarquement({ ecoleId, circuits, abonnes, classe, toast }) {
       await recharger();
     } catch (e) { toast.erreur(e.message); }
   }
+  async function notifier() {
+    const nb = liste.filter((a) => pts[a.eleve_id]?.embarque).length;
+    if (nb === 0) return toast.erreur("Aucun élève embarqué à notifier.");
+    try { const n = await api.notifierEmbarquement(circuitId, date, sens); toast.succes(`${n || 0} parent(s) notifié(s).`); }
+    catch (e) { toast.erreur(e.message); }
+  }
 
   if (circuits.length === 0) return <EtatVide icone="🚌" titre="Aucun circuit">Créez un circuit et des abonnés pour pointer l'embarquement.</EtatVide>;
   return (
@@ -334,6 +340,7 @@ function Embarquement({ ecoleId, circuits, abonnes, classe, toast }) {
         </label>
         <Champ label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <p className="ml-auto text-sm text-navy-900/60">Embarqués : <b>{liste.filter((a) => pts[a.eleve_id]?.embarque).length} / {liste.length}</b></p>
+        <Bouton className="!py-1.5 text-xs" onClick={notifier}>Notifier les parents</Bouton>
       </div>
       {liste.length === 0 ? <p className="p-6 text-sm text-navy-900/40">Aucun abonné sur ce circuit.</p> : (
         <table className="w-full text-left text-sm">
