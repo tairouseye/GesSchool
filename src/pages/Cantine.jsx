@@ -5,10 +5,14 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
 import { getAnneeCourante } from "@/lib/academique.js";
+import { facturerAbonnements } from "@/lib/paiements.js";
 import * as api from "@/lib/cantine.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const auj = () => new Date().toISOString().slice(0, 10);
+const moisCourant = () => new Date().toISOString().slice(0, 7);
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const moisLabel = (ym) => { const [a, m] = (ym || "").split("-"); return `${MOIS[Number(m) - 1] || ""} ${a}`.trim(); };
 const JOURS = [[1, "Lundi"], [2, "Mardi"], [3, "Mercredi"], [4, "Jeudi"], [5, "Vendredi"]];
 function lundiDe(d) { const x = new Date(d); const j = (x.getDay() + 6) % 7; x.setDate(x.getDate() - j); return x.toISOString().slice(0, 10); }
 
@@ -18,6 +22,8 @@ export default function Cantine() {
   const toast = useToast();
   const confirmer = useConfirm();
   const [onglet, setOnglet] = useState("abonnes");
+  const [annee, setAnnee] = useState(null);
+  const [mois, setMois] = useState(moisCourant());
   const [abonnes, setAbonnes] = useState([]);
   const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
@@ -29,6 +35,7 @@ export default function Cantine() {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
+      setAnnee(an);
       const [abo, els, insc] = await Promise.all([
         api.getAbonnements(ecoleId), getEleves(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
       ]);
@@ -45,6 +52,17 @@ export default function Cantine() {
   const classe = (id) => inscriptions[id]?.classes?.libelle || "—";
   const actifs = abonnes.filter((a) => a.actif);
   const totalSolde = abonnes.filter((a) => a.formule === "prepaye").reduce((s, a) => s + Number(a.solde || 0), 0);
+
+  async function facturer() {
+    const mensuels = actifs.filter((a) => a.formule === "mensuel" && Number(a.tarif) > 0);
+    if (mensuels.length === 0) return toast.erreur("Aucun abonné mensuel avec tarif à facturer.");
+    const lib = `Cantine — ${moisLabel(mois)}`;
+    if (!(await confirmer(`Générer la facture « ${lib} » pour ${mensuels.length} abonné(s) mensuel(s) ?`))) return;
+    try {
+      const r = await facturerAbonnements(ecoleId, annee?.id, mensuels.map((a) => ({ eleve_id: a.eleve_id, libelle: lib, montant: a.tarif })));
+      toast.succes(`${r.crees} facture(s) créée(s)${r.ignores ? ` · ${r.ignores} déjà facturé(s)` : ""}.`);
+    } catch (e) { toast.erreur(e.message); }
+  }
 
   return (
     <>
@@ -67,7 +85,13 @@ export default function Cantine() {
 
         {onglet === "abonnes" && (
           <>
-            <div className="flex justify-end"><Bouton onClick={() => setModale({})}>+ Nouvel abonné</Bouton></div>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex items-end gap-2">
+                <Champ label="Mois à facturer" type="month" value={mois} onChange={(e) => setMois(e.target.value)} />
+                <Bouton variante="fantome" onClick={facturer}>Facturer le mois</Bouton>
+              </div>
+              <Bouton onClick={() => setModale({})}>+ Nouvel abonné</Bouton>
+            </div>
             {abonnes.length === 0 ? (
               <EtatVide icone="🍽️" titre="Aucun abonné"
                 action={<Bouton onClick={() => setModale({})}>+ Nouvel abonné</Bouton>}>

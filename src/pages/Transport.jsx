@@ -5,10 +5,14 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
 import { getAnneeCourante } from "@/lib/academique.js";
+import { facturerAbonnements } from "@/lib/paiements.js";
 import * as api from "@/lib/transport.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const auj = () => new Date().toISOString().slice(0, 10);
+const moisCourant = () => new Date().toISOString().slice(0, 7);
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const moisLabel = (ym) => { const [a, m] = (ym || "").split("-"); return `${MOIS[Number(m) - 1] || ""} ${a}`.trim(); };
 const LIB_TRAJET = { aller_retour: "Aller-retour", aller: "Aller seul", retour: "Retour seul" };
 
 export default function Transport() {
@@ -17,6 +21,8 @@ export default function Transport() {
   const toast = useToast();
   const confirmer = useConfirm();
   const [onglet, setOnglet] = useState("circuits");
+  const [annee, setAnnee] = useState(null);
+  const [mois, setMois] = useState(moisCourant());
   const [circuits, setCircuits] = useState([]);
   const [abonnes, setAbonnes] = useState([]);
   const [eleves, setEleves] = useState([]);
@@ -27,6 +33,7 @@ export default function Transport() {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
+      setAnnee(an);
       const [cir, abo, els, insc] = await Promise.all([
         api.getCircuits(ecoleId), api.getAbonnements(ecoleId), getEleves(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
       ]);
@@ -41,6 +48,17 @@ export default function Transport() {
   };
   const classe = (id) => inscriptions[id]?.classes?.libelle || "—";
   const actifs = abonnes.filter((a) => a.actif);
+
+  async function facturer() {
+    const a = actifs.filter((x) => Number(x.tarif) > 0);
+    if (a.length === 0) return toast.erreur("Aucun abonné avec tarif à facturer.");
+    const lib = `Transport — ${moisLabel(mois)}`;
+    if (!(await confirmer(`Générer la facture « ${lib} » pour ${a.length} abonné(s) ?`))) return;
+    try {
+      const r = await facturerAbonnements(ecoleId, annee?.id, a.map((x) => ({ eleve_id: x.eleve_id, libelle: lib, montant: x.tarif })));
+      toast.succes(`${r.crees} facture(s) créée(s)${r.ignores ? ` · ${r.ignores} déjà facturé(s)` : ""}.`);
+    } catch (e) { toast.erreur(e.message); }
+  }
 
   return (
     <>
@@ -63,7 +81,13 @@ export default function Transport() {
 
         {onglet === "circuits" && <Circuits ecoleId={ecoleId} circuits={circuits} wrap={wrap} confirmer={confirmer} />}
         {onglet === "abonnes" && (
-          <Abonnes ecoleId={ecoleId} abonnes={abonnes} circuits={circuits} eleves={eleves} classe={classe} devise={devise} wrap={wrap} confirmer={confirmer} />
+          <>
+            <div className="flex flex-wrap items-end gap-2">
+              <Champ label="Mois à facturer" type="month" value={mois} onChange={(e) => setMois(e.target.value)} />
+              <Bouton variante="fantome" onClick={facturer}>Facturer le mois</Bouton>
+            </div>
+            <Abonnes ecoleId={ecoleId} abonnes={abonnes} circuits={circuits} eleves={eleves} classe={classe} devise={devise} wrap={wrap} confirmer={confirmer} />
+          </>
         )}
         {onglet === "embarquement" && <Embarquement ecoleId={ecoleId} circuits={circuits} abonnes={actifs} classe={classe} toast={toast} />}
       </div>

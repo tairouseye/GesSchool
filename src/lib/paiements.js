@@ -209,6 +209,29 @@ export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList
   return { crees, ignores };
 }
 
+// Facture des abonnements (cantine, transport…) : 1 facture par élève avec une
+// ligne (libellé + tarif). Ignore un élève déjà facturé pour CE libellé cette
+// année (évite les doublons d'un même mois). Retourne { crees, ignores }.
+export async function facturerAbonnements(ecoleId, anneeId, items, echeance) {
+  const { data, error } = await supabase
+    .from("facture_lignes")
+    .select("libelle, factures!inner(eleve_id, annee_id)")
+    .eq("ecole_id", ecoleId)
+    .eq("factures.annee_id", anneeId);
+  if (error) throw error;
+  const deja = new Set((data ?? []).map((d) => `${d.factures?.eleve_id}::${d.libelle}`));
+  let crees = 0, ignores = 0;
+  for (const it of items) {
+    if (!it.montant || !it.eleve_id || deja.has(`${it.eleve_id}::${it.libelle}`)) { ignores++; continue; }
+    await creerFacture(ecoleId, {
+      eleve_id: it.eleve_id, annee_id: anneeId, date_echeance: echeance || null,
+      lignes: [{ libelle: it.libelle, quantite: 1, prix_unitaire: Number(it.montant) }],
+    });
+    crees++;
+  }
+  return { crees, ignores };
+}
+
 // --- Paiement mobile (déclaratif) ---
 export const MODES_MOBILE = [
   ["wave", "Wave"],
