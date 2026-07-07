@@ -54,7 +54,10 @@ export default function Layout() {
   }, [location.pathname]);
 
   const espaceCourant = espaceParId(espaceId) || espaceParDefaut(roles, estPromoteur);
-  const items = itemsEspace(espaceCourant, roles).filter((it) => moduleActif(modulesActifs, it.cle));
+  const items = itemsEspace(espaceCourant, roles)
+    .filter((it) => moduleActif(modulesActifs, it.cle))
+    // « À signer » ne s'affiche que s'il reste des documents en attente.
+    .filter((it) => it.cle !== "signatures" || aSigner > 0);
 
   const changerEspace = (e) => {
     setEspaceId(e.id);

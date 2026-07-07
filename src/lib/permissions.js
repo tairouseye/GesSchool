@@ -71,8 +71,9 @@ const ACCES = {
   // --- Gestion des membres — managers pouvant déléguer ---
   membres: ["direction", "rh", "comptable"],
 
-  // --- Documents à signer — signataires (responsables) ---
-  signatures: ["direction", "rh", "comptable"],
+  // --- Documents à signer — tout signataire (le menu ne s'affiche que s'il
+  // reste des documents en attente, cf. Layout) ---
+  signatures: "*",
 };
 
 // Ordre des pages → sert aussi à déterminer la page d'atterrissage de repli.

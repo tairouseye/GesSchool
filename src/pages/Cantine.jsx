@@ -23,6 +23,7 @@ export default function Cantine() {
   const [inscriptions, setInscriptions] = useState({});
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null);
+  const [recharge, setRecharge] = useState(null);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -90,8 +91,7 @@ export default function Cantine() {
                         </td>
                         <td className="px-5 py-3 text-right whitespace-nowrap">
                           {a.formule === "prepaye" && (
-                            <button onClick={async () => { const m = prompt("Montant à recharger ?"); if (m) wrap(() => api.rechargerSolde(a.id, a.solde, m), "Solde rechargé."); }}
-                              className="text-xs text-emerald-700 hover:underline">+ recharger</button>
+                            <button onClick={() => setRecharge(a)} className="text-xs text-emerald-700 hover:underline">+ recharger</button>
                           )}
                           <button onClick={() => setModale(a)} className="ml-3 text-xs text-navy-700 hover:text-or-500">modifier</button>
                           <button onClick={async () => { if (await confirmer("Supprimer cet abonné ?")) wrap(() => api.supprimerAbonnement(a.id), "Abonné supprimé."); }}
@@ -113,7 +113,28 @@ export default function Cantine() {
       <ModaleAbonne ouvert={!!modale} abo={modale} eleves={eleves} abonnes={abonnes} classe={classe} devise={devise}
         onFermer={() => setModale(null)}
         onValider={(a) => wrap(async () => { await api.enregistrerAbonnement(ecoleId, a); setModale(null); }, "Abonné enregistré.")} />
+
+      <ModaleRecharge abo={recharge} devise={devise} onFermer={() => setRecharge(null)}
+        onValider={(m) => wrap(async () => { await api.rechargerSolde(recharge.id, recharge.solde, m); setRecharge(null); }, "Solde rechargé.")} />
     </>
+  );
+}
+
+function ModaleRecharge({ abo, devise, onFermer, onValider }) {
+  const [montant, setMontant] = useState("");
+  useEffect(() => { setMontant(""); }, [abo]);
+  if (!abo) return null;
+  return (
+    <Modale ouvert={!!abo} onFermer={onFermer} titre="Recharger le solde">
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!Number(montant)) return; onValider(Number(montant)); }}>
+        <p className="text-sm text-navy-900/60">{abo.eleves?.prenom} {abo.eleves?.nom} — solde actuel <b>{fmt(abo.solde)} {devise}</b></p>
+        <Champ label={`Montant à ajouter (${devise})`} type="number" value={montant} onChange={(e) => setMontant(e.target.value)} />
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton type="submit" disabled={!Number(montant)}>Recharger</Bouton>
+        </div>
+      </form>
+    </Modale>
   );
 }
 

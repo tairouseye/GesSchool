@@ -68,7 +68,7 @@ export const ESPACES = [
   },
   {
     id: "rh",
-    label: "RH & Paie",
+    label: "RH, Paie & Compta",
     icone: "🧑‍💼",
     accueil: "/rh",
     roles: ["rh", "comptable"], // comptable y accède pour la Comptabilité

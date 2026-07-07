@@ -55,6 +55,9 @@ export async function getRepas(ecoleId, date) {
 // Marque un repas pris. Pour un prépayé, décompte le tarif du solde.
 export async function marquerRepas(ecoleId, abo, date) {
   const cout = abo.formule === "prepaye" ? Number(abo.tarif) || 0 : 0;
+  if (cout > 0 && Number(abo.solde || 0) < cout) {
+    throw new Error("Solde prépayé insuffisant — rechargez d'abord.");
+  }
   const { error } = await supabase.from("cantine_repas")
     .upsert({ ecole_id: ecoleId, eleve_id: abo.eleve_id, date_repas: date, cout }, { onConflict: "ecole_id,eleve_id,date_repas" });
   if (error) throw error;
