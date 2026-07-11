@@ -39,7 +39,10 @@ export default function Parametres() {
         {moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
         )}
-        <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
+        {/* Activation des modules « à la carte » : réservée au promoteur. */}
+        {estRoleComplet(roles) && (
+          <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
+        )}
       </div>
     </>
   );

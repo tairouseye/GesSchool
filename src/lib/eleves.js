@@ -42,11 +42,23 @@ function normDate(v) {
   return null;
 }
 
+// Convertit une valeur importée selon le type du champ personnalisé.
+function coercerChampPerso(type, v) {
+  const s = (v ?? "").toString().trim();
+  if (s === "") return undefined;
+  if (type === "nombre") { const n = Number(s.replace(/\s/g, "").replace(",", ".")); return isNaN(n) ? undefined : n; }
+  if (type === "date") return normDate(v) || undefined;
+  return s; // texte / liste
+}
+
 // Import en masse : crée les élèves (+ inscriptions si la classe correspond).
-// lignes: [{ prenom, nom, sexe, date_naissance, lieu_naissance, matricule, classe }]
-export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle) {
+// lignes: [{ prenom, nom, sexe, date_naissance, lieu_naissance, matricule, classe, champs_perso }]
+// champs : définitions des champs personnalisés de l'école (pour typer champs_perso).
+export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle, champs = []) {
   const parClasse = {};
   for (const c of classes) parClasse[(c.libelle || "").trim().toLowerCase()] = c.id;
+  const typeParCle = {};
+  for (const c of champs) typeParCle[c.cle] = c.type;
   let crees = 0, ignores = 0, inscrits = 0;
   for (const r of lignes) {
     const prenom = (r.prenom || "").toString().trim();
@@ -54,12 +66,19 @@ export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle) {
     if (!prenom || !nom) { ignores++; continue; }
     let matricule = (r.matricule || "").toString().trim();
     if (!matricule) { try { matricule = await genererMatricule(ecoleId, sigle); } catch { matricule = null; } }
+    // Construit champs_perso typé à partir des colonnes mappées.
+    const champsPerso = {};
+    for (const [cle, brut] of Object.entries(r.champs_perso || {})) {
+      const val = coercerChampPerso(typeParCle[cle], brut);
+      if (val !== undefined) champsPerso[cle] = val;
+    }
     const eleve = await creerEleve(ecoleId, {
       matricule: matricule || null,
       prenom, nom,
       sexe: normSexe(r.sexe),
       date_naissance: normDate(r.date_naissance),
       lieu_naissance: (r.lieu_naissance || "").toString().trim() || null,
+      ...(Object.keys(champsPerso).length ? { champs_perso: champsPerso } : {}),
     });
     crees++;
     const cid = r.classe ? parClasse[r.classe.toString().trim().toLowerCase()] : null;

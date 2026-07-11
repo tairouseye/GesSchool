@@ -4,7 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
-import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { peutEditerEleves } from "@/lib/permissions.js";
 import Photo from "@/composants/Photo.jsx";
 
@@ -16,6 +16,7 @@ export default function Eleves() {
   const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
   const [classes, setClasses] = useState([]);
+  const [champsPerso, setChampsPerso] = useState([]);
   const [annee, setAnnee] = useState(null);
   const [recherche, setRecherche] = useState("");
   const [filtreClasse, setFiltreClasse] = useState("");
@@ -30,14 +31,16 @@ export default function Eleves() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [els, insc, cls] = await Promise.all([
+      const [els, insc, cls, champs] = await Promise.all([
         api.getEleves(ecoleId),
         api.getInscriptionsParEleve(ecoleId, an?.id),
         getClasses(ecoleId, an?.id),
+        getChampsEleve(ecoleId),
       ]);
       setEleves(els);
       setInscriptions(insc);
       setClasses(cls);
+      setChampsPerso(champs);
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -203,11 +206,14 @@ export default function Eleves() {
         sigle={ecole?.sigle}
         annee={annee}
         classes={classes}
+        champs={champsPerso}
         onFini={() => { setModaleImport(false); recharger(); }}
       />
     </>
   );
 }
+
+const TYPE_LABEL = { texte: "texte", nombre: "nombre", date: "date", liste: "liste" };
 
 const CHAMPS_IMPORT = [
   ["prenom", "Prénom *", [/pr[ée]nom/i, /first/i]],
@@ -227,7 +233,16 @@ function deviner(entetes, patterns) {
   return "";
 }
 
-function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini }) {
+// Construit un motif de reconnaissance à partir d'un texte libre (libellé de champ).
+function motifTexte(s) {
+  try {
+    return new RegExp((s || "").trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  } catch {
+    return /$^/;
+  }
+}
+
+function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs = [], onFini }) {
   const [lignes, setLignes] = useState([]);
   const [entetes, setEntetes] = useState([]);
   const [mapping, setMapping] = useState({});
@@ -251,6 +266,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini
       setLignes(rows);
       const map = {};
       for (const [cle, , pats] of CHAMPS_IMPORT) map[cle] = deviner(cols, pats);
+      for (const c of champs) map["perso:" + c.cle] = deviner(cols, [motifTexte(c.libelle), motifTexte(c.cle)]);
       setMapping(map);
     } catch (e) { setErreur("Lecture impossible : " + e.message); }
   }
@@ -262,9 +278,15 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini
       const data = lignes.map((r) => {
         const o = {};
         for (const [cle] of CHAMPS_IMPORT) o[cle] = mapping[cle] ? r[mapping[cle]] : "";
+        const cp = {};
+        for (const c of champs) {
+          const col = mapping["perso:" + c.cle];
+          if (col && r[col] !== "" && r[col] != null) cp[c.cle] = r[col];
+        }
+        o.champs_perso = cp;
         return o;
       });
-      const res = await api.importerEleves(ecoleId, annee?.id, data, classes, sigle);
+      const res = await api.importerEleves(ecoleId, annee?.id, data, classes, sigle, champs);
       setResultat(res);
     } catch (e) { setErreur(e.message); }
     finally { setEnCours(false); }
@@ -282,7 +304,8 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini
                 onChange={(e) => e.target.files?.[0] && lireFichier(e.target.files[0])}
                 className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
               <p className="mt-2 text-xs text-navy-900/40">
-                1ʳᵉ ligne = en-têtes. Colonnes reconnues : Prénom, Nom, Sexe, Date de naissance, Lieu, Matricule, Classe.
+                1ʳᵉ ligne = en-têtes. Colonnes reconnues : Prénom, Nom, Sexe, Date de naissance, Lieu, Matricule, Classe
+                {champs.length > 0 ? ", + vos champs personnalisés" : ""}. Toutes les colonnes sont associables ci-dessous.
               </p>
             </div>
 
@@ -304,6 +327,30 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, onFini
                 <p className="text-xs text-navy-900/40">
                   La colonne « Classe » doit correspondre au libellé exact d'une classe existante pour inscrire l'élève.
                 </p>
+
+                {champs.length > 0 && (
+                  <>
+                    <p className="border-t border-navy-900/10 pt-3 text-sm font-medium text-navy-900/70">
+                      Champs personnalisés de l'école
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {champs.map((c) => (
+                        <label key={c.cle} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="text-navy-900/70">
+                            {c.libelle}
+                            <span className="ml-1 text-xs text-navy-900/40">({TYPE_LABEL[c.type] || c.type})</span>
+                          </span>
+                          <select value={mapping["perso:" + c.cle] || ""}
+                            onChange={(e) => setMapping((s) => ({ ...s, ["perso:" + c.cle]: e.target.value }))}
+                            className="w-44 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-sm outline-none focus:border-or-500">
+                            <option value="">—</option>
+                            {entetes.map((h) => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-end gap-2">
                   <Bouton type="button" variante="fantome" onClick={() => { reset(); onFermer(); }}>Annuler</Bouton>
                   <Bouton type="button" onClick={importer} disabled={enCours}>
