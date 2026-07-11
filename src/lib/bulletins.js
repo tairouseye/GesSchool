@@ -187,21 +187,52 @@ export async function publierUnBulletin(ecoleId, classeId, periodeId, r, extra =
   return b.id;
 }
 
-export function mention(moy) {
+// --- Configuration de notation par école (barème, mentions, options) ---
+export const DEFAUT_NOTATION = {
+  bareme: 20,               // échelle d'affichage (20, 10, 100…)
+  moyenne_passage: 10,      // seuil d'admission (sur le barème)
+  mentions: [               // seuils décroissants sur le barème
+    { min: 16, libelle: "Très Bien" },
+    { min: 14, libelle: "Bien" },
+    { min: 12, libelle: "Assez Bien" },
+    { min: 10, libelle: "Passable" },
+  ],
+  insuffisant: "Insuffisant",
+  afficher_rang: true,
+  afficher_appreciations: true,
+  afficher_decision: true,
+};
+
+export async function getNotationConfig(ecoleId) {
+  const { data, error } = await supabase.from("parametres").select("valeur")
+    .eq("ecole_id", ecoleId).eq("cle", "notation").maybeSingle();
+  if (error) throw error;
+  return { ...DEFAUT_NOTATION, ...(data?.valeur || {}) };
+}
+
+export async function setNotationConfig(ecoleId, cfg) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "notation", valeur: cfg }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// Mention à partir de la moyenne (sur le barème) et de la config.
+export function mention(moy, cfg = DEFAUT_NOTATION) {
   if (moy == null) return "—";
-  if (moy >= 16) return "Très Bien";
-  if (moy >= 14) return "Bien";
-  if (moy >= 12) return "Assez Bien";
-  if (moy >= 10) return "Passable";
-  return "Insuffisant";
+  const ms = [...(cfg.mentions || DEFAUT_NOTATION.mentions)].sort((a, b) => Number(b.min) - Number(a.min));
+  for (const m of ms) if (moy >= Number(m.min)) return m.libelle;
+  return cfg.insuffisant || "Insuffisant";
 }
 
 // Calcule les bulletins de toute une classe pour une période.
 // Retourne : { eleves:[{eleve, moyenne, rang, mention, lignes:[{matiere, moyenne, coef}]}], effectif }
-export async function calculerBulletins(ecoleId, classeId, anneeId, periodeId, matieres) {
+export async function calculerBulletins(ecoleId, classeId, anneeId, periodeId, matieres, cfg = DEFAUT_NOTATION) {
   const eleves = await getElevesClasse(ecoleId, classeId, anneeId);
   const evals = await getEvaluations(ecoleId, classeId, periodeId);
   const coefsMatiere = await getCoefsMatiere(ecoleId, classeId, anneeId);
+  // Conversion /20 (interne) → échelle d'affichage de l'école.
+  const facteur = (Number(cfg.bareme) || 20) / 20;
+  const r2 = (x) => (x == null ? null : Math.round(x * facteur * 100) / 100);
 
   // Notes de toutes les évaluations de la période
   const evalIds = evals.map((e) => e.id);
@@ -247,14 +278,15 @@ export async function calculerBulletins(ecoleId, classeId, anneeId, periodeId, m
       sC += l.coef;
     }
     const moyenne = sC > 0 ? sN / sC : null;
-    return { eleve, lignes, moyenne };
+    // Conversion à l'échelle d'affichage de l'école (barème).
+    return { eleve, moyenne: r2(moyenne), lignes: lignes.map((l) => ({ ...l, moyenne: r2(l.moyenne) })) };
   });
 
   // Rang (par moyenne décroissante ; les sans-moyenne en fin)
   const classes = [...resultats].sort((a, b) => (b.moyenne ?? -1) - (a.moyenne ?? -1));
   classes.forEach((r, i) => {
     r.rang = r.moyenne == null ? null : i + 1;
-    r.mention = mention(r.moyenne);
+    r.mention = mention(r.moyenne, cfg);
   });
 
   return { eleves: classes, effectif: eleves.length, evaluations: evals };

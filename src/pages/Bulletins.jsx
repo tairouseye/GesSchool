@@ -21,6 +21,7 @@ export default function Bulletins() {
   const [bulletinActif, setBulletinActif] = useState(null);
   const [publication, setPublication] = useState("");
   const [enPublication, setEnPublication] = useState(false);
+  const [notation, setNotation] = useState(api.DEFAUT_NOTATION);
 
   async function publier() {
     if (!resultats) return;
@@ -38,14 +39,16 @@ export default function Bulletins() {
       try {
         const an = await getAnneeCourante(ecoleId);
         setAnnee(an);
-        const [cls, per, mat] = await Promise.all([
+        const [cls, per, mat, cfg] = await Promise.all([
           getClasses(ecoleId, an?.id),
           api.getPeriodes(ecoleId, an?.id),
           getMatieres(ecoleId),
+          api.getNotationConfig(ecoleId),
         ]);
         setClasses(cls);
         setPeriodes(per);
         setMatieres(mat);
+        setNotation(cfg);
         if (per[0]) setPeriodeId(per[0].id);
       } catch (e) {
         setErreur(e.message);
@@ -59,7 +62,7 @@ export default function Bulletins() {
     setChargement(true);
     setResultats(null);
     try {
-      const res = await api.calculerBulletins(ecoleId, classeId, annee.id, periodeId, matieres);
+      const res = await api.calculerBulletins(ecoleId, classeId, annee.id, periodeId, matieres, notation);
       setResultats(res);
     } catch (e) {
       setErreur(e.message);
@@ -137,7 +140,7 @@ export default function Bulletins() {
       </div>
 
       <ModaleBulletin
-        resultat={bulletinActif}
+        resultat={bulletinActif} notation={notation}
         ecole={ecole} classe={classe} periode={periode} annee={annee}
         ecoleId={ecoleId} classeId={classeId} periodeId={periodeId} effectif={resultats?.effectif}
         onFermer={() => setBulletinActif(null)}
@@ -152,7 +155,7 @@ const DECISIONS = [
   "Félicitations", "Encouragements", "Tableau d'honneur", "Avertissement (travail)", "Blâme (conduite)",
 ];
 
-function ModaleBulletin({ resultat, ecole, classe, periode, annee, ecoleId, classeId, periodeId, effectif, onFermer, onErreur }) {
+function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, ecoleId, classeId, periodeId, effectif, onFermer, onErreur }) {
   const [appGen, setAppGen] = useState("");
   const [decision, setDecision] = useState("");
   const [appMat, setAppMat] = useState({});
@@ -214,7 +217,7 @@ function ModaleBulletin({ resultat, ecole, classe, periode, annee, ecoleId, clas
       </div>
 
       <BulletinImprimable ecole={ecole} classe={classe} periode={periode} annee={annee}
-        resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} />
+        resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} notation={notation} />
       <div className="no-print mt-5 flex justify-end gap-2">
         <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
         <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
@@ -239,7 +242,7 @@ function Sel({ label, value, onChange, options }) {
 }
 
 // Document bulletin (réutilisé pour l'aperçu ET l'impression PDF).
-function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {} }) {
+function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {}, notation = api.DEFAUT_NOTATION }) {
   const totalCoef = resultat.lignes.reduce((s, l) => s + l.coef, 0);
   return (
     <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
@@ -289,23 +292,25 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
         <div className="rounded-xl bg-navy-900 p-4 text-creme">
           <p className="text-xs text-creme/60">Moyenne générale</p>
           <p className="font-display text-2xl font-bold">
-            {resultat.moyenne != null ? resultat.moyenne.toFixed(2) : "—"}<span className="text-sm font-normal">/20</span>
+            {resultat.moyenne != null ? resultat.moyenne.toFixed(2) : "—"}<span className="text-sm font-normal">/{notation.bareme}</span>
           </p>
         </div>
-        <div className="rounded-xl bg-or-500 p-4 text-navy-900">
-          <p className="text-xs text-navy-900/60">Rang</p>
-          <p className="font-display text-2xl font-bold">{resultat.rang ?? "—"}</p>
-        </div>
+        {notation.afficher_rang !== false && (
+          <div className="rounded-xl bg-or-500 p-4 text-navy-900">
+            <p className="text-xs text-navy-900/60">Rang</p>
+            <p className="font-display text-2xl font-bold">{resultat.rang ?? "—"}</p>
+          </div>
+        )}
         <div className="rounded-xl border border-navy-900/15 p-4">
           <p className="text-xs text-navy-900/50">Mention</p>
           <p className="font-display text-xl font-bold text-navy-900">{resultat.mention}</p>
         </div>
       </div>
 
-      {(appGen || decision) && (
+      {((notation.afficher_appreciations !== false && appGen) || (notation.afficher_decision !== false && decision)) && (
         <div className="mt-6 space-y-2 rounded-xl border border-navy-900/10 bg-creme/40 p-4 text-sm">
-          {appGen && <p className="text-navy-900/80"><b className="text-navy-900/50">Appréciation générale :</b> {appGen}</p>}
-          {decision && <p className="text-navy-900/80"><b className="text-navy-900/50">Décision du conseil :</b> {decision}</p>}
+          {notation.afficher_appreciations !== false && appGen && <p className="text-navy-900/80"><b className="text-navy-900/50">Appréciation générale :</b> {appGen}</p>}
+          {notation.afficher_decision !== false && decision && <p className="text-navy-900/80"><b className="text-navy-900/50">Décision du conseil :</b> {decision}</p>}
         </div>
       )}
 

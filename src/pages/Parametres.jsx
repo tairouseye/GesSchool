@@ -6,6 +6,7 @@ import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSigna
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 import { getMembres } from "@/lib/membres.js";
+import { getNotationConfig, setNotationConfig, DEFAUT_NOTATION } from "@/lib/bulletins.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 
@@ -31,6 +32,7 @@ export default function Parametres() {
 
         <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
         <Signataires ecoleId={ecoleId} onErreur={setErreur} />
+        <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />
         <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
         {moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
@@ -328,6 +330,71 @@ function AssetUpload({ label, valeur, occupe, onFichier, onRetirer }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function NotationConfig({ ecoleId, onErreur }) {
+  const [cfg, setCfg] = useState(DEFAUT_NOTATION);
+  const [info, setInfo] = useState("");
+  useEffect(() => { getNotationConfig(ecoleId).then(setCfg).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+
+  const maj = (k, v) => setCfg((s) => ({ ...s, [k]: v }));
+  const majMention = (i, k, v) => setCfg((s) => ({ ...s, mentions: s.mentions.map((m, j) => (j === i ? { ...m, [k]: v } : m)) }));
+
+  async function sauver() {
+    setInfo("");
+    try {
+      const clean = {
+        ...cfg,
+        bareme: Number(cfg.bareme) || 20,
+        moyenne_passage: Number(cfg.moyenne_passage) || 0,
+        mentions: (cfg.mentions || []).filter((m) => (m.libelle || "").trim())
+          .map((m) => ({ min: Number(m.min) || 0, libelle: m.libelle.trim() }))
+          .sort((a, b) => b.min - a.min),
+      };
+      await setNotationConfig(ecoleId, clean);
+      setCfg(clean); setInfo("Enregistré ✓");
+    } catch (e) { onErreur?.(e.message); }
+  }
+
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Notation &amp; bulletins</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Barème, moyenne de passage, mentions et options d'affichage. <b>Recalculez</b> les bulletins après un changement.
+      </p>
+      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Champ label="Barème (moyennes sur…)" type="number" value={cfg.bareme} onChange={(e) => maj("bareme", e.target.value)} />
+        <Champ label="Moyenne de passage" type="number" value={cfg.moyenne_passage} onChange={(e) => maj("moyenne_passage", e.target.value)} />
+      </div>
+
+      <p className="mb-1 mt-4 text-sm font-medium text-navy-900/70">Mentions (seuil ≥ → libellé)</p>
+      <div className="space-y-2">
+        {(cfg.mentions || []).map((m, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input type="number" value={m.min} onChange={(e) => majMention(i, "min", e.target.value)}
+              className="w-20 rounded-xl border border-navy-900/15 px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <input value={m.libelle} onChange={(e) => majMention(i, "libelle", e.target.value)} placeholder="Mention (ex. Très Bien)"
+              className="flex-1 rounded-xl border border-navy-900/15 px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <button onClick={() => setCfg((s) => ({ ...s, mentions: s.mentions.filter((_, j) => j !== i) }))} className="text-xs text-rose-500 hover:underline">retirer</button>
+          </div>
+        ))}
+        <button onClick={() => setCfg((s) => ({ ...s, mentions: [...(s.mentions || []), { min: 0, libelle: "" }] }))}
+          className="text-xs text-navy-700 hover:text-or-500">+ Ajouter une mention</button>
+        <p className="text-xs text-navy-900/40">En dessous du plus petit seuil : « {cfg.insuffisant || "Insuffisant"} ».</p>
+      </div>
+
+      <p className="mb-1 mt-4 text-sm font-medium text-navy-900/70">Affichage du bulletin</p>
+      <div className="flex flex-wrap gap-4 text-sm text-navy-900/70">
+        {[["afficher_rang", "Rang"], ["afficher_appreciations", "Appréciations"], ["afficher_decision", "Décision du conseil"]].map(([k, l]) => (
+          <label key={k} className="flex items-center gap-2"><input type="checkbox" checked={cfg[k] !== false} onChange={(e) => maj(k, e.target.checked)} /> {l}</label>
+        ))}
+      </div>
+
+      <div className="mt-4 flex justify-end"><Bouton onClick={sauver}>Enregistrer</Bouton></div>
+    </Carte>
   );
 }
 
