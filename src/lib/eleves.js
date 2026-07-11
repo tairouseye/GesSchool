@@ -59,7 +59,7 @@ export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle, c
   for (const c of classes) parClasse[(c.libelle || "").trim().toLowerCase()] = c.id;
   const typeParCle = {};
   for (const c of champs) typeParCle[c.cle] = c.type;
-  let crees = 0, ignores = 0, inscrits = 0;
+  let crees = 0, ignores = 0, inscrits = 0, tuteurs = 0;
   for (const r of lignes) {
     const prenom = (r.prenom || "").toString().trim();
     const nom = (r.nom || "").toString().trim();
@@ -83,8 +83,23 @@ export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle, c
     crees++;
     const cid = r.classe ? parClasse[r.classe.toString().trim().toLowerCase()] : null;
     if (cid && anneeId) { try { await inscrire(ecoleId, eleve.id, cid, anneeId); inscrits++; } catch { /* ignore */ } }
+    // Parent / tuteur (optionnel) : crée le tuteur et le lie à l'élève.
+    const pNom = (r.parent_nom || "").toString().trim();
+    if (pNom) {
+      const mots = pNom.split(/\s+/);
+      const prenomT = mots.length > 1 ? mots[0] : "";
+      const nomT = mots.length > 1 ? mots.slice(1).join(" ") : mots[0];
+      try {
+        await ajouterTuteur(
+          ecoleId, eleve.id,
+          { prenom: prenomT, nom: nomT, telephone: (r.parent_tel || "").toString().trim() || null },
+          { lien_parente: "Parent", responsable_legal: true, responsable_paiement: true }
+        );
+        tuteurs++;
+      } catch { /* ignore */ }
+    }
   }
-  return { crees, ignores, inscrits };
+  return { crees, ignores, inscrits, tuteurs };
 }
 
 export async function getEleves(ecoleId) {

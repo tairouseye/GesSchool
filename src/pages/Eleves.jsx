@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { peutEditerEleves } from "@/lib/permissions.js";
@@ -13,6 +14,9 @@ export default function Eleves() {
   const { ecoleId, ecole, roles } = useAuth();
   const peutEditer = peutEditerEleves(roles);
   const navigate = useNavigate();
+  const confirmer = useConfirm();
+  const toast = useToast();
+  const [selection, setSelection] = useState(() => new Set());
   const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
   const [classes, setClasses] = useState([]);
@@ -65,6 +69,45 @@ export default function Eleves() {
       (filtreStatut === "non_inscrit" ? !insc : insc?.statut === filtreStatut);
     return okRecherche && okClasse && okStatut;
   });
+
+  const idsFiltres = filtres.map((e) => e.id);
+  const tousCoches = idsFiltres.length > 0 && idsFiltres.every((id) => selection.has(id));
+  const toggleSel = (id) =>
+    setSelection((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleTous = () =>
+    setSelection(() => (tousCoches ? new Set() : new Set(idsFiltres)));
+
+  async function supprimerUn(e) {
+    const ok = await confirmer({
+      titre: "Supprimer l'élève",
+      message: `Supprimer définitivement ${e.prenom} ${e.nom} ? Toutes ses données (inscriptions, notes, factures, absences, liens parents…) seront perdues. Cette action est irréversible.`,
+      confirmer: "Supprimer",
+    });
+    if (!ok) return;
+    try {
+      await api.supprimerEleve(e.id);
+      setSelection((s) => { const n = new Set(s); n.delete(e.id); return n; });
+      toast.succes("Élève supprimé.");
+      await recharger();
+    } catch (err) { setErreur(err.message); }
+  }
+
+  async function supprimerSelection() {
+    const n = selection.size;
+    if (!n) return;
+    const ok = await confirmer({
+      titre: `Supprimer ${n} élève(s)`,
+      message: `Supprimer définitivement ${n} élève(s) et TOUTES leurs données (inscriptions, notes, factures, absences, liens parents…) ? Cette action est irréversible.`,
+      confirmer: `Supprimer ${n} élève(s)`,
+    });
+    if (!ok) return;
+    try {
+      for (const id of selection) await api.supprimerEleve(id);
+      toast.succes(`${n} élève(s) supprimé(s).`);
+      setSelection(new Set());
+      await recharger();
+    } catch (err) { setErreur(err.message); }
+  }
 
   return (
     <>
@@ -119,6 +162,19 @@ export default function Eleves() {
             </select>
           </div>
 
+          {peutEditer && selection.size > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-or-500/5 px-4 py-2.5 text-sm">
+              <span className="font-medium text-navy-900">{selection.size} élève(s) sélectionné(s)</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSelection(new Set())} className="text-xs text-navy-900/50 hover:text-navy-900">Désélectionner</button>
+                <button onClick={supprimerSelection}
+                  className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700">
+                  🗑️ Supprimer la sélection
+                </button>
+              </div>
+            </div>
+          )}
+
           {chargement ? (
             <div className="p-4"><SkeletonListe lignes={6} /></div>
           ) : filtres.length === 0 ? (
@@ -133,11 +189,19 @@ export default function Eleves() {
             <table className="w-full text-left text-sm">
               <thead className="bg-creme text-navy-900/50">
                 <tr>
+                  {peutEditer && (
+                    <th className="px-4 py-3">
+                      <input type="checkbox" checked={tousCoches} onChange={toggleTous}
+                        aria-label="Tout sélectionner"
+                        className="h-4 w-4 rounded border-navy-900/30 accent-navy-900" />
+                    </th>
+                  )}
                   <th className="px-6 py-3 font-medium">Matricule</th>
                   <th className="px-6 py-3 font-medium">Élève</th>
                   <th className="px-6 py-3 font-medium">Sexe</th>
                   <th className="px-6 py-3 font-medium">Classe</th>
                   <th className="px-6 py-3 font-medium">Statut</th>
+                  {peutEditer && <th className="px-6 py-3"></th>}
                 </tr>
               </thead>
               <tbody>
@@ -147,8 +211,15 @@ export default function Eleves() {
                     <tr
                       key={e.id}
                       onClick={() => navigate(`/eleves/${e.id}`)}
-                      className="cursor-pointer border-t border-navy-900/5 hover:bg-creme/60"
+                      className={`cursor-pointer border-t border-navy-900/5 hover:bg-creme/60 ${selection.has(e.id) ? "bg-or-500/5" : ""}`}
                     >
+                      {peutEditer && (
+                        <td className="px-4 py-4" onClick={(ev) => ev.stopPropagation()}>
+                          <input type="checkbox" checked={selection.has(e.id)} onChange={() => toggleSel(e.id)}
+                            aria-label={`Sélectionner ${e.prenom} ${e.nom}`}
+                            className="h-4 w-4 rounded border-navy-900/30 accent-navy-900" />
+                        </td>
+                      )}
                       <td className="px-6 py-4 font-mono text-xs text-navy-900/70">{e.matricule || "—"}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -177,6 +248,14 @@ export default function Eleves() {
                           <span className="text-xs text-navy-900/40">non inscrit</span>
                         )}
                       </td>
+                      {peutEditer && (
+                        <td className="px-6 py-4 text-right" onClick={(ev) => ev.stopPropagation()}>
+                          <button onClick={() => supprimerUn(e)} title="Supprimer l'élève"
+                            className="rounded-lg px-2 py-1 text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-600">
+                            🗑️
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -223,6 +302,8 @@ const CHAMPS_IMPORT = [
   ["lieu_naissance", "Lieu de naissance", [/lieu/i]],
   ["matricule", "Matricule", [/matric/i]],
   ["classe", "Classe", [/classe|class/i]],
+  ["parent_nom", "Parent / Tuteur (nom)", [/parent|tuteur|responsable|p[eè]re|m[eè]re/i]],
+  ["parent_tel", "Parent — téléphone", [/t[eé]l|phone|contact|num[eé]ro|gsm|mobile/i]],
 ];
 
 function deviner(entetes, patterns) {
@@ -304,7 +385,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
                 onChange={(e) => e.target.files?.[0] && lireFichier(e.target.files[0])}
                 className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
               <p className="mt-2 text-xs text-navy-900/40">
-                1ʳᵉ ligne = en-têtes. Colonnes reconnues : Prénom, Nom, Sexe, Date de naissance, Lieu, Matricule, Classe
+                1ʳᵉ ligne = en-têtes. Colonnes reconnues : Prénom, Nom, Sexe, Date de naissance, Lieu, Matricule, Classe, Parent
                 {champs.length > 0 ? ", + vos champs personnalisés" : ""}. Toutes les colonnes sont associables ci-dessous.
               </p>
             </div>
@@ -366,6 +447,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
           <div className="space-y-3">
             <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               ✅ {resultat.crees} élève(s) créé(s){resultat.inscrits ? ` · ${resultat.inscrits} inscrit(s)` : ""}
+              {resultat.tuteurs ? ` · ${resultat.tuteurs} parent(s) lié(s)` : ""}
               {resultat.ignores ? ` · ${resultat.ignores} ignoré(s) (prénom/nom manquant)` : ""}.
             </div>
             <div className="flex justify-end">
