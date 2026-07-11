@@ -511,7 +511,9 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
           <div className="zone-impression rounded-xl border border-navy-900/10 bg-white p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <Cachet size={48} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />
+                {ecole?.logo_url
+                  ? <img src={ecole.logo_url} alt="" className="h-12 w-12 object-contain" />
+                  : <Cachet size={48} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />}
                 <div>
                   <p className="font-display text-lg font-bold text-navy-900">{ecole?.nom}</p>
                   <p className="text-xs text-navy-900/50">Reçu / Facture {facture.numero}</p>
