@@ -94,9 +94,15 @@ export default function Connexion() {
             </div>
           )}
         </div>
-        <p className="mt-6 text-center font-mono text-[11px] text-creme/30">
-          Phase 0 · Fondations
-        </p>
+        <div className="mt-6 space-y-1 text-center text-[11px] text-creme/40">
+          <p>Développé par <span className="font-semibold text-creme/70">GesPro</span></p>
+          <p className="text-creme/30">
+            <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-500">gespro.sn@gmail.com</a>
+          </p>
+          <p className="text-creme/30">
+            Assistance : <a href="tel:+221773435928" className="hover:text-or-500">+221 77 343 59 28</a>
+          </p>
+        </div>
       </div>
     </div>
   );

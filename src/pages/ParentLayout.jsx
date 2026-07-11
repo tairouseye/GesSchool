@@ -68,8 +68,14 @@ export default function ParentLayout() {
           <Outlet />
         </Suspense>
       </main>
-      <footer className="pb-6 text-center font-mono text-[10px] text-navy-900/30">
-        GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}
+      <footer className="space-y-0.5 pb-6 text-center text-[10px] text-navy-900/40">
+        <p>Développé par <span className="font-semibold text-navy-900/60">GesPro</span></p>
+        <p className="text-navy-900/30">
+          <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-600">gespro.sn@gmail.com</a>
+          {" · Assistance : "}
+          <a href="tel:+221773435928" className="hover:text-or-600">+221 77 343 59 28</a>
+        </p>
+        <p className="font-mono text-navy-900/30">GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}</p>
       </footer>
 
       <Tour steps={TOUR_PARENT} ouvert={tour} onFermer={fermerTour} />

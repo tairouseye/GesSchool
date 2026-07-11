@@ -151,7 +151,17 @@ export default function Layout() {
           <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>
-          <p className="mt-3 text-center font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
+          <div className="mt-3 space-y-0.5 text-center">
+            <p className="text-[10px] text-creme/40">
+              Développé par <span className="font-semibold text-creme/60">GesPro</span>
+            </p>
+            <p className="text-[10px] leading-relaxed text-creme/30">
+              <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-500">gespro.sn@gmail.com</a>
+              <br />
+              Assistance : <a href="tel:+221773435928" className="hover:text-or-500">+221 77 343 59 28</a>
+            </p>
+            <p className="font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
+          </div>
         </div>
       </aside>
 
