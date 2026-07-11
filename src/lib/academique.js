@@ -269,6 +269,23 @@ export async function setSignataires(ecoleId, liste) {
   if (error) throw error;
 }
 
+// Champs personnalisés de la fiche élève (définis par l'école).
+// Chaque champ : { cle, libelle, type: 'texte'|'nombre'|'date'|'liste', options?: [] }
+export async function getChampsEleve(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur")
+    .eq("ecole_id", ecoleId).eq("cle", "champs_eleve").maybeSingle();
+  if (error) throw error;
+  return Array.isArray(data?.valeur) ? data.valeur : [];
+}
+
+export async function setChampsEleve(ecoleId, liste) {
+  const { error } = await supabase
+    .from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "champs_eleve", valeur: liste }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
 export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur }) {
   const { error } = await supabase
     .from("ecoles")

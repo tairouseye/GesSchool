@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
-import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires } from "@/lib/academique.js";
+import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 import { getMembres } from "@/lib/membres.js";
@@ -33,6 +33,7 @@ export default function Parametres() {
         <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
         <Signataires ecoleId={ecoleId} onErreur={setErreur} />
         <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />
+        <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />
         <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
         {moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
@@ -330,6 +331,67 @@ function AssetUpload({ label, valeur, occupe, onFichier, onRetirer }) {
         </div>
       </div>
     </div>
+  );
+}
+
+const TYPES_CHAMP = [["texte", "Texte"], ["nombre", "Nombre"], ["date", "Date"], ["liste", "Liste de choix"]];
+const slugChamp = (s) => ((s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 30) || "champ");
+
+function ChampsEleveConfig({ ecoleId, onErreur }) {
+  const [liste, setListe] = useState([]);
+  const [f, setF] = useState({ libelle: "", type: "texte", options: "" });
+  const [info, setInfo] = useState("");
+  useEffect(() => { getChampsEleve(ecoleId).then(setListe).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+
+  async function sauver(nouvelle) {
+    setInfo("");
+    try { await setChampsEleve(ecoleId, nouvelle); setListe(nouvelle); setInfo("Enregistré ✓"); }
+    catch (e) { onErreur?.(e.message); }
+  }
+  function ajouter() {
+    if (!f.libelle.trim()) return;
+    const champ = { cle: `${slugChamp(f.libelle)}_${Math.random().toString(36).slice(2, 6)}`, libelle: f.libelle.trim(), type: f.type };
+    if (f.type === "liste") champ.options = f.options.split(",").map((o) => o.trim()).filter(Boolean);
+    sauver([...liste, champ]);
+    setF({ libelle: "", type: "texte", options: "" });
+  }
+
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Champs élève personnalisés</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Ajoutez des informations propres à votre école (ex. groupe sanguin, personne à contacter…). Elles apparaissent sur la <b>fiche élève</b>.
+      </p>
+      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+
+      <div className="space-y-2">
+        {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun champ personnalisé.</p>}
+        {liste.map((c, i) => (
+          <div key={i} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-2">
+            <span className="text-sm">
+              <b className="text-navy-900">{c.libelle}</b>
+              <span className="ml-2 text-xs text-navy-900/40">· {TYPES_CHAMP.find((t) => t[0] === c.type)?.[1]}{c.type === "liste" && c.options?.length ? ` (${c.options.join(", ")})` : ""}</span>
+            </span>
+            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-500 hover:underline">retirer</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Champ label="Libellé du champ" value={f.libelle} onChange={(e) => setF((s) => ({ ...s, libelle: e.target.value }))} placeholder="Ex. Groupe sanguin" />
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
+          <select value={f.type} onChange={(e) => setF((s) => ({ ...s, type: e.target.value }))}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            {TYPES_CHAMP.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        {f.type === "liste" && (
+          <Champ label="Options (séparées par des virgules)" value={f.options} onChange={(e) => setF((s) => ({ ...s, options: e.target.value }))} placeholder="A+, A-, B+, O-…" />
+        )}
+      </div>
+      <div className="mt-3 flex justify-end"><Bouton onClick={ajouter} disabled={!f.libelle.trim()}>+ Ajouter</Bouton></div>
+    </Carte>
   );
 }
 

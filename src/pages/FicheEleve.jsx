@@ -5,7 +5,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
-import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
@@ -31,22 +31,25 @@ export default function FicheEleve() {
   const [modaleEdit, setModaleEdit] = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [codes, setCodes] = useState({}); // tuteur_id -> code parent
+  const [champsPerso, setChampsPerso] = useState([]);
 
   const recharger = useCallback(async () => {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [el, tut, insc, cls] = await Promise.all([
+      const [el, tut, insc, cls, champs] = await Promise.all([
         api.getEleve(id),
         api.getTuteursEleve(id),
         api.getInscriptionsEleve(id),
         getClasses(ecoleId, an?.id),
+        getChampsEleve(ecoleId),
       ]);
       setEleve(el);
       setTuteurs(tut);
       setInscriptions(insc);
       setClasses(cls);
+      setChampsPerso(champs);
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -133,6 +136,9 @@ export default function FicheEleve() {
             <Info label="Lieu" valeur={eleve.lieu_naissance || "—"} />
             <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
             <Info label="Adresse" valeur={eleve.adresse || "—"} />
+            {champsPerso.map((c) => (
+              <Info key={c.cle} label={c.libelle} valeur={eleve.champs_perso?.[c.cle] || "—"} />
+            ))}
           </dl>
           {peutEditer && (
             <Bouton
@@ -249,6 +255,7 @@ export default function FicheEleve() {
         ouvert={modaleEdit}
         onFermer={() => setModaleEdit(false)}
         eleve={eleve}
+        champs={champsPerso}
         onEnregistrer={(maj) => wrap(async () => { await api.majEleve(eleve.id, maj); setModaleEdit(false); })}
       />
 
@@ -282,16 +289,18 @@ function Info({ label, valeur, mono }) {
   );
 }
 
-function ModaleEditEleve({ ouvert, onFermer, eleve, onEnregistrer }) {
+function ModaleEditEleve({ ouvert, onFermer, eleve, champs = [], onEnregistrer }) {
   const [f, setF] = useState({});
   useEffect(() => {
     if (eleve) setF({
       prenom: eleve.prenom || "", nom: eleve.nom || "", sexe: eleve.sexe || "",
       date_naissance: eleve.date_naissance || "", lieu_naissance: eleve.lieu_naissance || "",
       nationalite: eleve.nationalite || "", adresse: eleve.adresse || "",
+      champs_perso: { ...(eleve.champs_perso || {}) },
     });
   }, [eleve, ouvert]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const majPerso = (cle, v) => setF((s) => ({ ...s, champs_perso: { ...s.champs_perso, [cle]: v } }));
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Modifier l'élève" large>
       <form
@@ -302,6 +311,7 @@ function ModaleEditEleve({ ouvert, onFermer, eleve, onEnregistrer }) {
             prenom: f.prenom.trim(), nom: f.nom.trim(), sexe: f.sexe || null,
             date_naissance: f.date_naissance || null, lieu_naissance: f.lieu_naissance || null,
             nationalite: f.nationalite || null, adresse: f.adresse || null,
+            champs_perso: f.champs_perso || {},
           });
         }}
       >
@@ -328,6 +338,26 @@ function ModaleEditEleve({ ouvert, onFermer, eleve, onEnregistrer }) {
           <Champ label="Nationalité" value={f.nationalite || ""} onChange={(e) => maj("nationalite", e.target.value)} />
           <Champ label="Adresse" value={f.adresse || ""} onChange={(e) => maj("adresse", e.target.value)} />
         </div>
+        {champs.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 border-t border-navy-900/10 pt-4 sm:grid-cols-2">
+            {champs.map((c) => (
+              c.type === "liste" ? (
+                <label key={c.cle} className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{c.libelle}</span>
+                  <select value={f.champs_perso?.[c.cle] || ""} onChange={(e) => majPerso(c.cle, e.target.value)}
+                    className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                    <option value="">—</option>
+                    {(c.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </label>
+              ) : (
+                <Champ key={c.cle} label={c.libelle}
+                  type={c.type === "nombre" ? "number" : c.type === "date" ? "date" : "text"}
+                  value={f.champs_perso?.[c.cle] || ""} onChange={(e) => majPerso(c.cle, e.target.value)} />
+              )
+            ))}
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton type="submit" disabled={!f.prenom?.trim() || !f.nom?.trim()}>Enregistrer</Bouton>
