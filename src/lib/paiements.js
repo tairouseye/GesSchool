@@ -41,6 +41,17 @@ export async function creerFrais(ecoleId, f) {
   return data;
 }
 
+export async function modifierFrais(id, f) {
+  const { data, error } = await supabase
+    .from("frais")
+    .update(f)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function supprimerFrais(id) {
   const { error } = await supabase.from("frais").delete().eq("id", id);
   if (error) throw error;

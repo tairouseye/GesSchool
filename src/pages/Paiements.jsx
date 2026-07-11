@@ -216,7 +216,17 @@ function cibleFrais(fr) {
 function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange, onErreur }) {
   const vide = { libelle: "", montant: "", recurrent: false, obligatoire: true, cible: "" };
   const [f, setF] = useState(vide);
+  const [editId, setEditId] = useState(null);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const cibleDe = (fr) => (fr.cycle_id ? `c:${fr.cycle_id}` : fr.niveau_id ? `n:${fr.niveau_id}` : "");
+  const editer = (fr) => {
+    setEditId(fr.id);
+    setF({
+      libelle: fr.libelle || "", montant: String(fr.montant ?? ""),
+      recurrent: !!fr.recurrent, obligatoire: !!fr.obligatoire, cible: cibleDe(fr),
+    });
+  };
+  const annuler = () => { setEditId(null); setF(vide); };
   return (
     <Carte className="p-6">
       <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Grille tarifaire</h3>
@@ -228,7 +238,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
       <div className="space-y-2">
         {frais.length === 0 && <p className="text-sm text-navy-900/40">Aucun frais défini.</p>}
         {frais.map((fr) => (
-          <div key={fr.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3">
+          <div key={fr.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${editId === fr.id ? "border-or-500 bg-or-500/5" : "border-navy-900/10"}`}>
             <div>
               <span className="font-medium text-navy-900">{fr.libelle}</span>
               {fr.recurrent && <span className="ml-2 text-xs text-or-500">mensuel</span>}
@@ -241,26 +251,38 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
             </div>
             <div className="flex items-center gap-4">
               <span className="font-mono text-sm">{fmt(fr.montant)} {devise}</span>
-              <button onClick={async () => { try { await api.supprimerFrais(fr.id); onChange(); } catch (e) { onErreur(e.message); } }}
+              <button onClick={() => editer(fr)} className="text-xs text-navy-700 hover:underline">modifier</button>
+              <button onClick={async () => { try { await api.supprimerFrais(fr.id); if (editId === fr.id) annuler(); onChange(); } catch (e) { onErreur(e.message); } }}
                 className="text-xs text-rose-500 hover:underline">supprimer</button>
             </div>
           </div>
         ))}
       </div>
+      <p className="mt-4 text-sm font-medium text-navy-900/70">
+        {editId ? "Modifier le frais" : "Ajouter un frais"}
+      </p>
       <form
-        className="mt-4 flex flex-wrap items-end gap-2"
+        className="mt-2 flex flex-wrap items-end gap-2"
         onSubmit={async (e) => {
           e.preventDefault();
           if (!f.libelle.trim() || !f.montant) return;
           const niveau_id = f.cible.startsWith("n:") ? f.cible.slice(2) : null;
           const cycle_id = f.cible.startsWith("c:") ? f.cible.slice(2) : null;
           try {
-            await api.creerFrais(ecoleId, {
-              libelle: f.libelle.trim(), montant: Number(f.montant),
-              recurrent: f.recurrent, obligatoire: f.obligatoire,
-              niveau_id, cycle_id, annee_id: annee?.id || null,
-            });
-            setF(vide);
+            if (editId) {
+              await api.modifierFrais(editId, {
+                libelle: f.libelle.trim(), montant: Number(f.montant),
+                recurrent: f.recurrent, obligatoire: f.obligatoire,
+                niveau_id, cycle_id,
+              });
+            } else {
+              await api.creerFrais(ecoleId, {
+                libelle: f.libelle.trim(), montant: Number(f.montant),
+                recurrent: f.recurrent, obligatoire: f.obligatoire,
+                niveau_id, cycle_id, annee_id: annee?.id || null,
+              });
+            }
+            setF(vide); setEditId(null);
             onChange();
           } catch (er) { onErreur(er.message); }
         }}
@@ -286,7 +308,8 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
         <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70">
           <input type="checkbox" checked={f.obligatoire} onChange={(e) => maj("obligatoire", e.target.checked)} /> Obligatoire
         </label>
-        <Bouton type="submit">+ Ajouter</Bouton>
+        <Bouton type="submit">{editId ? "Enregistrer" : "+ Ajouter"}</Bouton>
+        {editId && <Bouton type="button" variante="fantome" onClick={annuler}>Annuler</Bouton>}
       </form>
     </Carte>
   );
