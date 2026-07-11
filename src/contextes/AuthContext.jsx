@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase.js";
+import { appliquerAccent } from "@/lib/theme.js";
 
 // GesSchool — contexte d'authentification.
 // Expose : session, profil applicatif, rôles, école courante + actions.
@@ -74,6 +75,12 @@ export function AuthProvider({ children }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [chargerProfil]);
+
+  // Applique l'accent de l'école (login, changement d'école, sauvegarde).
+  // couleur_secondaire = accent doré, déjà saisi à l'onboarding et en Paramètres.
+  useEffect(() => {
+    appliquerAccent(ecole?.couleur_secondaire);
+  }, [ecole?.couleur_secondaire]);
 
   // --- Actions ---
   const connexion = (email, motDePasse) =>

@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accent « or » par défaut (personnalisable par école, cf. src/lib/theme.js).
+   Valeurs RGB brutes pour supporter les classes alpha (ex. bg-or-500/10). */
+:root {
+  --or-400: 217 184 74; /* #D9B84A */
+  --or-500: 201 162 39; /* #C9A227 */
+  --or-600: 166 132 20; /* dérivé foncé */
+  --or-700: 133 104 16; /* dérivé plus foncé */
+}
+
 /* GesSchool — base globale */
 @layer base {
   html,

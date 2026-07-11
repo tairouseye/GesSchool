@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
+import { appliquerAccent, COULEUR_DEFAUT } from "@/lib/theme.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 import { getMembres } from "@/lib/membres.js";
@@ -191,6 +192,8 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
     });
   }, [ecole]);
+  // Si l'aperçu live n'est pas enregistré, rétablir l'accent sauvegardé au départ.
+  useEffect(() => () => appliquerAccent(ecole?.couleur_secondaire), [ecole?.couleur_secondaire]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
   async function televerser(champ, file, prefixe) {
@@ -225,17 +228,34 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
         </label>
         <div className="flex items-end gap-4">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur 1</span>
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur principale</span>
             <input type="color" value={f.couleur_primaire} onChange={(e) => maj("couleur_primaire", e.target.value)}
               className="h-10 w-16 rounded-lg border border-navy-900/15" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur 2</span>
-            <input type="color" value={f.couleur_secondaire} onChange={(e) => maj("couleur_secondaire", e.target.value)}
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Accent</span>
+            <input type="color" value={f.couleur_secondaire}
+              onChange={(e) => { maj("couleur_secondaire", e.target.value); appliquerAccent(e.target.value); }}
               className="h-10 w-16 rounded-lg border border-navy-900/15" />
           </label>
         </div>
       </div>
+
+      {/* Aperçu live de l'accent + explication */}
+      <div className="mt-4 rounded-xl border border-navy-900/10 bg-creme/60 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-navy-900/70">Aperçu de l'accent :</span>
+          <button type="button" className="rounded-lg bg-or-500 px-4 py-1.5 text-sm font-semibold text-white">Bouton</button>
+          <span className="text-sm font-semibold text-or-600">Lien actif</span>
+          <span className="rounded-full bg-or-500/10 px-3 py-1 text-xs font-medium text-or-600">Badge</span>
+          <button type="button" onClick={() => { maj("couleur_secondaire", COULEUR_DEFAUT); appliquerAccent(COULEUR_DEFAUT); }}
+            className="ml-auto text-xs text-navy-900/50 underline">Rétablir l'accent d'origine</button>
+        </div>
+        <p className="mt-2 text-xs text-navy-900/50">
+          L'accent colore les boutons, liens et éléments actifs de toute l'application. Le navy reste fixe pour la lisibilité.
+        </p>
+      </div>
+
       <div className="mt-4 flex justify-end">
         <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
       </div>
