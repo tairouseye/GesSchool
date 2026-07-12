@@ -69,9 +69,23 @@ export default function RH() {
     ? <Bouton onClick={() => setModalePers(true)}>+ Personnel</Bouton>
     : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer la paie</Bouton>;
 
-  // Synthèse RH (accueil de l'espace)
+  // Tableau de bord RH (accueil de l'espace) — agrégé depuis les données chargées
+  const jour = new Date().toISOString().slice(0, 10);
+  const dans60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
   const masseMois = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  const payeMois = salaires.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  const restantMois = masseMois - payeMois;
   const aPayer = salaires.filter((s) => !s.paye).length;
+  const fichesAgenerer = Math.max(0, personnels.length - salaires.length);
+  const fonctions = Object.entries(
+    personnels.reduce((acc, p) => { const f = p.fonction || "—"; acc[f] = (acc[f] || 0) + 1; return acc; }, {})
+  ).sort((a, b) => b[1] - a[1]);
+  const maxFonction = Math.max(1, ...fonctions.map(([, v]) => v));
+  const echeances = personnels
+    .map((p) => ({ p, c: contrats[p.id] }))
+    .filter((x) => x.c?.fin && x.c.fin >= jour && x.c.fin <= dans60)
+    .map((x) => ({ nom: `${x.p.prenom} ${x.p.nom}`, fin: x.c.fin, type: x.c.type }))
+    .sort((a, b) => (a.fin || "").localeCompare(b.fin || ""));
 
   return (
     <>
@@ -79,11 +93,62 @@ export default function RH() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        {/* Synthèse RH */}
+        {/* À traiter */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SyntheseCarte label="Personnel" valeur={String(personnels.length)} />
-          <SyntheseCarte label={`Masse salariale (${libellePeriode(periode)})`} valeur={`${fmt(masseMois)} ${devise}`} ton="rouge" />
-          <SyntheseCarte label="Fiches à payer" valeur={String(aPayer)} ton={aPayer > 0 ? "or" : "vert"} />
+          <AlerteRH onClick={() => setOnglet("paie")} label="Salaires à payer" valeur={aPayer}
+            sous={`${fmt(restantMois)} ${devise} restants`} actif={aPayer > 0} ton="or" />
+          <AlerteRH onClick={() => setOnglet("paie")} label="Fiches à générer" valeur={fichesAgenerer}
+            sous={`paie ${libellePeriode(periode)}`} actif={fichesAgenerer > 0} ton="navy" />
+          <AlerteRH onClick={() => setOnglet("personnel")} label="Contrats à échéance" valeur={echeances.length}
+            sous="dans les 60 jours" actif={echeances.length > 0} ton="rouge" />
+        </div>
+
+        {/* Indicateurs */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <SyntheseCarte label="Personnel" valeur={String(personnels.length)} ton="or" />
+          <SyntheseCarte label={`Masse salariale (${libellePeriode(periode)})`} valeur={`${fmt(masseMois)} ${devise}`} />
+          <SyntheseCarte label="Payé ce mois" valeur={`${fmt(payeMois)} ${devise}`} ton="vert" />
+          <SyntheseCarte label="Restant à payer" valeur={`${fmt(restantMois)} ${devise}`} ton="rouge" />
+        </div>
+
+        {/* Répartition par fonction + contrats à échéance */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Carte className="p-6">
+            <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Répartition par fonction</h3>
+            {fonctions.length === 0 ? (
+              <p className="text-sm text-navy-900/40">Aucun personnel enregistré.</p>
+            ) : (
+              <ul className="space-y-3">
+                {fonctions.map(([f, v]) => (
+                  <li key={f} className="flex items-center gap-4">
+                    <span className="w-32 shrink-0 truncate text-sm font-medium text-navy-900">{f}</span>
+                    <div className="flex-1">
+                      <div className="h-2.5 overflow-hidden rounded-full bg-navy-900/10">
+                        <div className="h-full bg-navy-900/80" style={{ width: `${(v / maxFonction) * 100}%` }} />
+                      </div>
+                    </div>
+                    <span className="w-8 shrink-0 text-right font-mono text-sm text-navy-900/60">{v}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Carte>
+          <Carte className="p-6">
+            <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Contrats à échéance (60 j)</h3>
+            {echeances.length === 0 ? (
+              <p className="text-sm text-navy-900/40">Aucun contrat n'arrive à échéance 🎉</p>
+            ) : (
+              <ul className="divide-y divide-navy-900/5">
+                {echeances.map((e, i) => (
+                  <li key={i} className="flex items-center justify-between py-2 text-sm">
+                    <span className="font-medium text-navy-900">{e.nom}</span>
+                    <span className="text-navy-900/50">{e.type || "—"}</span>
+                    <span className="font-mono text-xs text-rose-600">{new Date(e.fin).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Carte>
         </div>
 
         <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
@@ -378,6 +443,24 @@ function SyntheseCarte({ label, valeur, ton }) {
       <p className="text-sm text-navy-900/50">{label}</p>
       <p className={`mt-2 font-display text-2xl font-bold ${tons[ton] || tons.navy}`}>{valeur}</p>
     </Carte>
+  );
+}
+
+function AlerteRH({ onClick, label, valeur, sous, actif, ton }) {
+  const cadre = {
+    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10",
+    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10",
+    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
+  };
+  const chiffre = actif
+    ? (ton === "rouge" ? "text-rose-600" : ton === "or" ? "text-or-600" : "text-navy-900")
+    : "text-navy-900/30";
+  return (
+    <button onClick={onClick} className={`block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`}>
+      <p className="text-sm font-medium text-navy-900/60">{label}</p>
+      <p className={`mt-1 font-display text-3xl font-bold ${chiffre}`}>{valeur ?? 0}</p>
+      {sous && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
+    </button>
   );
 }
 
