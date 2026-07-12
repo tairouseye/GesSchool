@@ -99,9 +99,20 @@ export async function ecolePaiementInfos(eleveId) {
   return data || {};
 }
 
-export async function declarerPaiement(factureId, montant, mode, reference) {
+// Téléverse une preuve de paiement (image) dans le bucket privé 'preuves'.
+// Renvoie le CHEMIN (consulté ensuite par la caisse via URL signée).
+export async function televerserPreuve(eleveId, file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const chemin = `${eleveId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("preuves").upload(chemin, file, { upsert: true });
+  if (error) throw error;
+  return chemin;
+}
+
+export async function declarerPaiement(factureId, montant, mode, reference, preuve) {
   const { error } = await supabase.rpc("declarer_paiement", {
     p_facture: factureId, p_montant: montant, p_mode: mode, p_reference: reference,
+    p_preuve: preuve || null,
   });
   if (error) throw error;
 }

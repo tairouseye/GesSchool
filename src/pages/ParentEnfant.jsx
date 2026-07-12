@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
-  ecolePaiementInfos, declarerPaiement, enfantDeclarations, justifierAbsenceParent,
+  ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport,
 } from "@/lib/parent.js";
@@ -494,7 +494,8 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
         onFermer={() => setPayer(null)}
         onDeclare={async (data) => {
           try {
-            await declarerPaiement(payer.id, data.montant, data.mode, data.reference);
+            const preuve = data.fichier ? await televerserPreuve(eleveId, data.fichier) : null;
+            await declarerPaiement(payer.id, data.montant, data.mode, data.reference, preuve);
             setPayer(null);
             await onChange();
           } catch (e) { onErreur(e.message); }
@@ -508,10 +509,11 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
   const [mode, setMode] = useState("wave");
   const [montant, setMontant] = useState("");
   const [reference, setReference] = useState("");
+  const [fichier, setFichier] = useState(null);
   const [envoi, setEnvoi] = useState(false);
 
   useEffect(() => {
-    if (facture) { setMontant(String(Math.round(facture.reste || 0))); setReference(""); setMode("wave"); }
+    if (facture) { setMontant(String(Math.round(facture.reste || 0))); setReference(""); setMode("wave"); setFichier(null); }
   }, [facture]);
 
   if (!facture) return null;
@@ -542,13 +544,21 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
           <Champ label="Réf. transaction" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ID Wave/OM…" />
         </div>
 
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-navy-900/40">(capture / photo — optionnel)</span></span>
+          <input type="file" accept="image/*,application/pdf"
+            onChange={(e) => setFichier(e.target.files?.[0] || null)}
+            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
+          {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
+        </label>
+
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton
             disabled={envoi || !montant}
-            onClick={async () => { setEnvoi(true); await onDeclare({ montant: Number(montant), mode, reference }); setEnvoi(false); }}
+            onClick={async () => { setEnvoi(true); await onDeclare({ montant: Number(montant), mode, reference, fichier }); setEnvoi(false); }}
           >
-            {envoi ? "…" : "Déclarer le paiement"}
+            {envoi ? "Envoi…" : "Déclarer le paiement"}
           </Bouton>
         </div>
       </div>

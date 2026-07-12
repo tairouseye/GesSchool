@@ -281,6 +281,14 @@ export async function getDeclarations(ecoleId, statut = "en_attente") {
   return data ?? [];
 }
 
+// URL signée (temporaire) pour consulter une preuve de paiement jointe.
+export async function urlPreuve(chemin) {
+  if (!chemin) return null;
+  const { data, error } = await supabase.storage.from("preuves").createSignedUrl(chemin, 120);
+  if (error) throw error;
+  return data?.signedUrl || null;
+}
+
 export async function validerDeclaration(id) {
   const { error } = await supabase.rpc("valider_declaration", { p_decl: id });
   if (error) throw error;

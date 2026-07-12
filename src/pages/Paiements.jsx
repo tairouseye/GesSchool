@@ -317,6 +317,10 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
 
 function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   const modeLabel = (m) => (api.MODES.find((x) => x[0] === m) || [])[1] || m;
+  const voirPreuve = async (chemin) => {
+    try { const u = await api.urlPreuve(chemin); if (u) window.open(u, "_blank", "noopener"); }
+    catch { /* ignore */ }
+  };
   if (declarations.length === 0) {
     return <EtatVide icone="📲" titre="Aucune déclaration">Aucun paiement mobile déclaré par les parents en attente.</EtatVide>;
   }
@@ -329,6 +333,7 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
             <th className="px-5 py-3 font-medium">Facture</th>
             <th className="px-5 py-3 font-medium">Mode</th>
             <th className="px-5 py-3 font-medium">Référence</th>
+            <th className="px-5 py-3 font-medium">Preuve</th>
             <th className="px-5 py-3 text-right font-medium">Montant</th>
             <th className="px-5 py-3"></th>
           </tr>
@@ -340,6 +345,11 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
               <td className="px-5 py-3 font-mono text-xs text-navy-900/70">{d.factures?.numero || "—"}</td>
               <td className="px-5 py-3">{modeLabel(d.mode)}</td>
               <td className="px-5 py-3 font-mono text-xs">{d.reference_tx || "—"}</td>
+              <td className="px-5 py-3 text-xs">
+                {d.preuve_chemin
+                  ? <button onClick={() => voirPreuve(d.preuve_chemin)} className="font-medium text-navy-700 hover:underline">📎 Voir</button>
+                  : <span className="text-navy-900/30">—</span>}
+              </td>
               <td className="px-5 py-3 text-right font-mono">{fmt(d.montant)} {devise}</td>
               <td className="px-5 py-3">
                 <div className="flex justify-end gap-3 text-xs">
