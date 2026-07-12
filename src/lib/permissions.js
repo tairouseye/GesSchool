@@ -59,7 +59,7 @@ const ACCES = {
 
   // --- Communication (partagée pédagogie + gestion) ---
   annonces: ["direction", "comptable"],
-  messagerie: ["direction", "comptable"],
+  messagerie: ["direction", "comptable", "secretaire"],
 
   // --- Espace RH — responsable : rh ---
   rh: ["rh"],
@@ -128,6 +128,14 @@ export function peutGererParents(roles) {
 // L'édition des élèves (CRUD / inscriptions) est réservée au côté Gestion.
 export function peutEditerEleves(roles) {
   return estRoleComplet(roles) || (roles || []).some((r) => ["comptable", "secretaire"].includes(r));
+}
+
+// « Voit tous les élèves de l'établissement » : promoteur, direction, surveillant
+// et la Gestion (comptable/secrétaire). L'enseignant « simple » est restreint
+// aux élèves de ses propres classes (confidentialité).
+export function voitTousEleves(roles) {
+  if (estRoleComplet(roles)) return true;
+  return (roles || []).some((r) => ["direction", "surveillant", "comptable", "secretaire"].includes(r));
 }
 
 // --- Matrice de délégation : quels rôles chaque rôle peut inviter/gérer ---

@@ -6,13 +6,15 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
-import { peutEditerEleves } from "@/lib/permissions.js";
+import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
+import { peutEditerEleves, voitTousEleves } from "@/lib/permissions.js";
 import Photo from "@/composants/Photo.jsx";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
-  const { ecoleId, ecole, roles } = useAuth();
+  const { ecoleId, ecole, roles, profil } = useAuth();
   const peutEditer = peutEditerEleves(roles);
+  const vueGlobale = voitTousEleves(roles);
   const navigate = useNavigate();
   const confirmer = useConfirm();
   const toast = useToast();
@@ -41,16 +43,25 @@ export default function Eleves() {
         getClasses(ecoleId, an?.id),
         getChampsEleve(ecoleId),
       ]);
-      setEleves(els);
+      // Enseignant « simple » : restreint aux élèves de ses propres classes.
+      let elevesVus = els, classesVues = cls;
+      if (!vueGlobale) {
+        const ens = await getMonEnseignant(ecoleId, profil?.id, profil?.email);
+        const mesCls = ens ? await getMesClasses(ecoleId, an?.id, ens.id) : [];
+        const ids = new Set(mesCls.map((c) => c.id));
+        elevesVus = els.filter((e) => { const i = insc[e.id]; return i && ids.has(i.classe_id); });
+        classesVues = mesCls;
+      }
+      setEleves(elevesVus);
       setInscriptions(insc);
-      setClasses(cls);
+      setClasses(classesVues);
       setChampsPerso(champs);
     } catch (e) {
       setErreur(e.message);
     } finally {
       setChargement(false);
     }
-  }, [ecoleId]);
+  }, [ecoleId, vueGlobale, profil]);
 
   useEffect(() => {
     recharger();
@@ -180,7 +191,11 @@ export default function Eleves() {
           ) : filtres.length === 0 ? (
             eleves.length === 0 ? (
               <EtatVide icone="🎓" titre="Aucun élève" className="m-4">
-                Créez le premier élève avec « + Nouvel élève », ou importez une liste depuis Excel.
+                {peutEditer
+                  ? "Créez le premier élève avec « + Nouvel élève », ou importez une liste depuis Excel."
+                  : vueGlobale
+                    ? "Aucun élève enregistré pour le moment."
+                    : "Aucun élève dans vos classes pour l'année en cours."}
               </EtatVide>
             ) : (
               <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun élève ne correspond à votre recherche.</EtatVide>
