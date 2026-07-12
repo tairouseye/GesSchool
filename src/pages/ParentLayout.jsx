@@ -72,8 +72,9 @@ export default function ParentLayout() {
         <p>Développé par <span className="font-semibold text-navy-900/60">GesPro</span></p>
         <p className="text-navy-900/30">
           <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-600">gespro.sn@gmail.com</a>
-          {" · Assistance : "}
-          <a href="tel:+221773435928" className="hover:text-or-600">+221 77 343 59 28</a>
+          {" · "}
+          <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
+            target="_blank" rel="noreferrer" className="hover:text-or-600">💬 Assistance WhatsApp</a>
         </p>
         <p className="font-mono text-navy-900/30">GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}</p>
       </footer>

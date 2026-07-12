@@ -158,7 +158,8 @@ export default function Layout() {
             <p className="text-[10px] leading-relaxed text-creme/30">
               <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-500">gespro.sn@gmail.com</a>
               <br />
-              Assistance : <a href="tel:+221773435928" className="hover:text-or-500">+221 77 343 59 28</a>
+              <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
+                target="_blank" rel="noreferrer" className="hover:text-or-500">💬 Assistance WhatsApp : +221 77 343 59 28</a>
             </p>
             <p className="font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
           </div>
