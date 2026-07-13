@@ -15,7 +15,7 @@ const ONGLETS = [
 ];
 
 export default function EmploiDuTemps() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, ecole } = useAuth();
   const [onglet, setOnglet] = useState("emplois");
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -56,7 +56,7 @@ export default function EmploiDuTemps() {
           ))}
         </div>
 
-        {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
+        {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} ecole={ecole} annee={annee} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
         {onglet === "grille" && <PanneauGrille ecoleId={ecoleId} grille={grille} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "volumes" && <PanneauVolumes ecoleId={ecoleId} niveaux={niveaux} matieres={matieres} volumes={volumes} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "salles" && <PanneauSalles ecoleId={ecoleId} salles={salles} onChange={rechargerBase} onErreur={setErreur} />}
@@ -72,12 +72,14 @@ export default function EmploiDuTemps() {
 /* ------------------------------------------------------------------ */
 /*  Onglet 1 — Emplois du temps (consultation / retouche manuelle)     */
 /* ------------------------------------------------------------------ */
-function PanneauEmplois({ ecoleId, classes, matieres, enseignants, salles }) {
+function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants, salles }) {
   const toast = useToast();
   const [classeId, setClasseId] = useState("");
   const [creneaux, setCreneaux] = useState([]);
   const [modale, setModale] = useState(null);
+  const [imprimer, setImprimer] = useState(false);
   const [erreur, setErreur] = useState("");
+  const classeLibelle = classes.find((c) => c.id === classeId)?.libelle || "";
 
   const recharger = useCallback(async () => {
     if (!classeId) { setCreneaux([]); return; }
@@ -91,14 +93,19 @@ function PanneauEmplois({ ecoleId, classes, matieres, enseignants, salles }) {
   return (
     <div className="space-y-5">
       <Alerte ton="erreur">{erreur}</Alerte>
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Classe</span>
-        <select value={classeId} onChange={(e) => setClasseId(e.target.value)}
-          className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-          <option value="">— Choisir —</option>
-          {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
-        </select>
-      </label>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Classe</span>
+          <select value={classeId} onChange={(e) => setClasseId(e.target.value)}
+            className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="">— Choisir —</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+          </select>
+        </label>
+        {classeId && creneaux.length > 0 && (
+          <Bouton variante="fantome" onClick={() => setImprimer(true)}>🖨️ Imprimer / PDF</Bouton>
+        )}
+      </div>
 
       {classeId && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -144,6 +151,86 @@ function PanneauEmplois({ ecoleId, classes, matieres, enseignants, salles }) {
           setModale(null);
         })}
       />
+
+      <Modale ouvert={imprimer} onFermer={() => setImprimer(false)} titre={`Emploi du temps — ${classeLibelle}`} large>
+        <EmploiImprimable ecole={ecole} annee={annee} classe={classeLibelle} creneaux={creneaux} />
+        <div className="no-print mt-5 flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={() => setImprimer(false)}>Fermer</Bouton>
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
+    </div>
+  );
+}
+
+// Grille hebdomadaire imprimable (créneaux × jours).
+function EmploiImprimable({ ecole, annee, classe, creneaux }) {
+  // Lignes = plages horaires distinctes (par heure de début), triées.
+  const bandes = [];
+  const vues = new Set();
+  for (const c of [...creneaux].sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)))) {
+    const k = hhmm(c.heure_debut);
+    if (vues.has(k)) continue;
+    vues.add(k);
+    bandes.push({ debut: c.heure_debut, fin: c.heure_fin });
+  }
+  const cellule = (jour, debut) => creneaux.find((c) => c.jour === jour && hhmm(c.heure_debut) === hhmm(debut));
+
+  return (
+    <div className="zone-impression bg-white p-6">
+      <div className="mb-4 flex items-center justify-between border-b border-navy-900/15 pb-3">
+        <div className="flex items-center gap-3">
+          {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-12 w-12 object-contain" />}
+          <div>
+            <p className="font-display text-lg font-bold text-navy-900">{ecole?.nom}</p>
+            <p className="text-xs text-navy-900/50">Emploi du temps{annee ? ` · ${annee.libelle}` : ""}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-base font-semibold text-navy-900">Classe {classe}</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr className="bg-navy-900 text-creme">
+              <th className="border border-navy-900/20 px-2 py-2 font-medium">Horaire</th>
+              {api.JOURS.map(([j, l]) => <th key={j} className="border border-navy-900/20 px-2 py-2 font-medium">{l}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {bandes.length === 0 && (
+              <tr><td colSpan={api.JOURS.length + 1} className="border border-navy-900/15 px-2 py-3 text-center text-navy-900/40">Aucun cours planifié.</td></tr>
+            )}
+            {bandes.map((b, i) => (
+              <tr key={i}>
+                <td className="border border-navy-900/15 px-2 py-2 font-mono text-[10px] text-navy-900/60 whitespace-nowrap">
+                  {hhmm(b.debut)}–{hhmm(b.fin)}
+                </td>
+                {api.JOURS.map(([j]) => {
+                  const c = cellule(j, b.debut);
+                  return (
+                    <td key={j} className="border border-navy-900/15 px-2 py-2 align-top">
+                      {c ? (
+                        <>
+                          <p className="font-semibold text-navy-900">{c.matieres?.libelle || "—"}</p>
+                          <p className="text-[10px] text-navy-900/55">
+                            {c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : ""}
+                            {c.salle ? ` · ${c.salle}` : ""}
+                          </p>
+                        </>
+                      ) : <span className="text-navy-900/20">—</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-4 text-right text-[10px] text-navy-900/40">{ecole?.nom} · {ecole?.sigle}</p>
     </div>
   );
 }
