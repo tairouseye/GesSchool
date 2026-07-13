@@ -10,7 +10,7 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 const ONGLETS = [
-  ["emplois", "Emplois du temps"], ["grille", "Grille horaire"],
+  ["emplois", "Par classe"], ["enseignant", "Par enseignant"], ["grille", "Grille horaire"],
   ["volumes", "Volumes"], ["salles", "Salles"], ["generer", "⚡ Générer"],
 ];
 
@@ -57,6 +57,7 @@ export default function EmploiDuTemps() {
         </div>
 
         {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} ecole={ecole} annee={annee} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
+        {onglet === "enseignant" && <PanneauEnseignant ecoleId={ecoleId} ecole={ecole} annee={annee} enseignants={enseignants} />}
         {onglet === "grille" && <PanneauGrille ecoleId={ecoleId} grille={grille} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "volumes" && <PanneauVolumes ecoleId={ecoleId} niveaux={niveaux} matieres={matieres} volumes={volumes} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "salles" && <PanneauSalles ecoleId={ecoleId} salles={salles} onChange={rechargerBase} onErreur={setErreur} />}
@@ -153,7 +154,7 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
       />
 
       <Modale ouvert={imprimer} onFermer={() => setImprimer(false)} titre={`Emploi du temps — ${classeLibelle}`} large>
-        <EmploiImprimable ecole={ecole} annee={annee} classe={classeLibelle} creneaux={creneaux} />
+        <EmploiImprimable ecole={ecole} annee={annee} titre={`Classe ${classeLibelle}`} creneaux={creneaux} />
         <div className="no-print mt-5 flex justify-end gap-2">
           <Bouton variante="fantome" onClick={() => setImprimer(false)}>Fermer</Bouton>
           <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
@@ -164,7 +165,8 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
 }
 
 // Grille hebdomadaire imprimable (créneaux × jours).
-function EmploiImprimable({ ecole, annee, classe, creneaux }) {
+// parEnseignant : la cellule montre la classe (au lieu de l'enseignant).
+function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false }) {
   // Lignes = plages horaires distinctes (par heure de début), triées.
   const bandes = [];
   const vues = new Set();
@@ -187,7 +189,7 @@ function EmploiImprimable({ ecole, annee, classe, creneaux }) {
           </div>
         </div>
         <div className="text-right">
-          <p className="font-display text-base font-semibold text-navy-900">Classe {classe}</p>
+          <p className="font-display text-base font-semibold text-navy-900">{titre}</p>
         </div>
       </div>
 
@@ -214,9 +216,13 @@ function EmploiImprimable({ ecole, annee, classe, creneaux }) {
                     <td key={j} className="border border-navy-900/15 px-2 py-2 align-top">
                       {c ? (
                         <>
-                          <p className="font-semibold text-navy-900">{c.matieres?.libelle || "—"}</p>
+                          <p className="font-semibold text-navy-900">
+                            {parEnseignant ? (c.classes?.libelle || "—") : (c.matieres?.libelle || "—")}
+                          </p>
                           <p className="text-[10px] text-navy-900/55">
-                            {c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : ""}
+                            {parEnseignant
+                              ? (c.matieres?.libelle || "")
+                              : (c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : "")}
                             {c.salle ? ` · ${c.salle}` : ""}
                           </p>
                         </>
@@ -274,6 +280,81 @@ function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer 
         </div>
       </form>
     </Modale>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Onglet — Par enseignant (consultation + impression)                */
+/* ------------------------------------------------------------------ */
+function PanneauEnseignant({ ecoleId, ecole, annee, enseignants }) {
+  const [ensId, setEnsId] = useState("");
+  const [creneaux, setCreneaux] = useState([]);
+  const [imprimer, setImprimer] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const ens = enseignants.find((e) => e.id === ensId);
+  const nom = ens ? `${ens.prenom} ${ens.nom}` : "";
+
+  useEffect(() => {
+    (async () => {
+      if (!ensId) { setCreneaux([]); return; }
+      try { setCreneaux(await api.getCreneauxEnseignant(ecoleId, ensId)); }
+      catch (e) { setErreur(e.message); }
+    })();
+  }, [ecoleId, ensId]);
+
+  return (
+    <div className="space-y-5">
+      <Alerte ton="erreur">{erreur}</Alerte>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Enseignant</span>
+          <select value={ensId} onChange={(e) => setEnsId(e.target.value)}
+            className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="">— Choisir —</option>
+            {enseignants.map((e) => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
+          </select>
+        </label>
+        {ensId && creneaux.length > 0 && (
+          <Bouton variante="fantome" onClick={() => setImprimer(true)}>🖨️ Imprimer / PDF</Bouton>
+        )}
+      </div>
+
+      {ensId && (
+        creneaux.length === 0 ? (
+          <Carte className="p-6 text-sm text-navy-900/40">Aucun cours affecté à cet enseignant.</Carte>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {api.JOURS.map(([j, label]) => {
+              const items = creneaux.filter((c) => c.jour === j).sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)));
+              return (
+                <Carte key={j} className="flex flex-col p-5">
+                  <h3 className="mb-3 font-display font-semibold text-navy-900">{label}</h3>
+                  {items.length === 0 ? <p className="text-sm text-navy-900/30">Libre</p> : (
+                    <ul className="space-y-2">
+                      {items.map((c) => (
+                        <li key={c.id} className="rounded-xl border border-navy-900/10 p-3">
+                          <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
+                          <p className="font-medium text-navy-900">{c.classes?.libelle || "—"}</p>
+                          <p className="text-xs text-navy-900/50">{c.matieres?.libelle || ""}{c.salle ? ` · ${c.salle}` : ""}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Carte>
+              );
+            })}
+          </div>
+        )
+      )}
+
+      <Modale ouvert={imprimer} onFermer={() => setImprimer(false)} titre={`Emploi du temps — ${nom}`} large>
+        <EmploiImprimable ecole={ecole} annee={annee} titre={nom} creneaux={creneaux} parEnseignant />
+        <div className="no-print mt-5 flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={() => setImprimer(false)}>Fermer</Bouton>
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
+    </div>
   );
 }
 

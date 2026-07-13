@@ -19,6 +19,19 @@ export async function getCreneaux(ecoleId, classeId) {
   return data ?? [];
 }
 
+// Emploi du temps d'un enseignant (toutes ses classes).
+export async function getCreneauxEnseignant(ecoleId, enseignantId) {
+  const { data, error } = await supabase
+    .from("emplois_du_temps")
+    .select("*, matieres(libelle), classes(libelle)")
+    .eq("ecole_id", ecoleId)
+    .eq("enseignant_id", enseignantId)
+    .order("jour")
+    .order("heure_debut");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function creerCreneau(ecoleId, c) {
   const { data, error } = await supabase
     .from("emplois_du_temps")
