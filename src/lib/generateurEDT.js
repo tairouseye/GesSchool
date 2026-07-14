@@ -22,8 +22,10 @@ const cle = (jour, debut) => `${jour}|${debut}`;
 //                        (créneaux des classes NON régénérées → occupation initiale)
 export function genererEDT({
   classes = [], grille = [], volumesParNiveau = {}, matiereLibelle = {},
-  affectationMap = {}, salles = [], emploisExistants = [],
+  affectationMap = {}, salles = [], emploisExistants = [], indisponibilites = [],
 }) {
+  // Indisponibilités : `${enseignantId}|${jour}|${heure_debut}`
+  const indispo = new Set(indisponibilites.map((i) => `${i.enseignant_id}|${cle(i.jour, i.heure_debut)}`));
   // Créneaux planifiables (hors pauses), triés.
   const slots = grille
     .filter((c) => !c.pause)
@@ -66,7 +68,10 @@ export function genererEDT({
         .filter((s) => {
           const k = cle(s.jour, s.heure_debut);
           if (classeBusy.has(k)) return false;
-          if (lecon.enseignant_id && profBusy.has(`${lecon.enseignant_id}|${k}`)) return false;
+          if (lecon.enseignant_id) {
+            if (profBusy.has(`${lecon.enseignant_id}|${k}`)) return false;
+            if (indispo.has(`${lecon.enseignant_id}|${k}`)) return false; // prof indisponible
+          }
           return true;
         })
         .sort((s1, s2) => {

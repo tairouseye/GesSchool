@@ -57,7 +57,7 @@ export default function EmploiDuTemps() {
         </div>
 
         {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} ecole={ecole} annee={annee} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
-        {onglet === "enseignant" && <PanneauEnseignant ecoleId={ecoleId} ecole={ecole} annee={annee} enseignants={enseignants} />}
+        {onglet === "enseignant" && <PanneauEnseignant ecoleId={ecoleId} ecole={ecole} annee={annee} enseignants={enseignants} grille={grille} />}
         {onglet === "charge" && <PanneauCharge ecoleId={ecoleId} enseignants={enseignants} grille={grille} classes={classes} volumes={volumes} />}
         {onglet === "grille" && <PanneauGrille ecoleId={ecoleId} grille={grille} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "volumes" && <PanneauVolumes ecoleId={ecoleId} niveaux={niveaux} matieres={matieres} volumes={volumes} onChange={rechargerBase} onErreur={setErreur} />}
@@ -287,9 +287,10 @@ function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer 
 /* ------------------------------------------------------------------ */
 /*  Onglet — Par enseignant (consultation + impression)                */
 /* ------------------------------------------------------------------ */
-function PanneauEnseignant({ ecoleId, ecole, annee, enseignants }) {
+function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
   const [ensId, setEnsId] = useState("");
   const [creneaux, setCreneaux] = useState([]);
+  const [indispos, setIndispos] = useState([]);
   const [imprimer, setImprimer] = useState(false);
   const [erreur, setErreur] = useState("");
   const ens = enseignants.find((e) => e.id === ensId);
@@ -297,11 +298,29 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants }) {
 
   useEffect(() => {
     (async () => {
-      if (!ensId) { setCreneaux([]); return; }
-      try { setCreneaux(await api.getCreneauxEnseignant(ecoleId, ensId)); }
-      catch (e) { setErreur(e.message); }
+      if (!ensId) { setCreneaux([]); setIndispos([]); return; }
+      try {
+        const [cr, ind] = await Promise.all([api.getCreneauxEnseignant(ecoleId, ensId), api.getIndispos(ecoleId, ensId)]);
+        setCreneaux(cr); setIndispos(ind);
+      } catch (e) { setErreur(e.message); }
     })();
   }, [ecoleId, ensId]);
+
+  // Créneaux planifiables par jour (pour la grille de disponibilité).
+  const slotsParJour = {};
+  for (const c of grille.filter((g) => !g.pause)) (slotsParJour[c.jour] ||= []).push({ debut: hhmm(c.heure_debut), fin: hhmm(c.heure_fin) });
+  for (const j of Object.keys(slotsParJour)) slotsParJour[j].sort((a, b) => a.debut.localeCompare(b.debut));
+  const bandes = [...new Set(grille.filter((g) => !g.pause).map((g) => hhmm(g.heure_debut)))].sort();
+
+  const indispoRec = (jour, hd) => indispos.find((x) => x.jour === jour && hhmm(x.heure_debut) === hd);
+  const toggleIndispo = async (jour, hd) => {
+    const rec = indispoRec(jour, hd);
+    try {
+      if (rec) await api.retirerIndispo(rec.id);
+      else await api.ajouterIndispo(ecoleId, ensId, jour, hd);
+      setIndispos(await api.getIndispos(ecoleId, ensId));
+    } catch (e) { setErreur(e.message); }
+  };
 
   return (
     <div className="space-y-5">
@@ -346,6 +365,50 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants }) {
             })}
           </div>
         )
+      )}
+
+      {ensId && (
+        <Carte className="p-6">
+          <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Disponibilités</h3>
+          <p className="mb-4 text-xs text-navy-900/50">
+            Cliquez un créneau pour le marquer <b className="text-rose-600">indisponible</b> (ex. le prof n'est pas là ce jour-là).
+            La génération automatique n'y placera aucun cours.
+          </p>
+          {bandes.length === 0 ? (
+            <p className="text-sm text-navy-900/40">Configurez d'abord la grille horaire.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="border-collapse text-center text-xs">
+                <thead>
+                  <tr>
+                    <th className="px-2 py-1"></th>
+                    {api.JOURS.map(([j, l]) => <th key={j} className="px-2 py-1 font-medium text-navy-900/60">{l.slice(0, 3)}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {bandes.map((hd) => (
+                    <tr key={hd}>
+                      <td className="px-2 py-1 font-mono text-[10px] text-navy-900/50 whitespace-nowrap">{hd}</td>
+                      {api.JOURS.map(([j]) => {
+                        const existe = (slotsParJour[j] || []).some((s) => s.debut === hd);
+                        if (!existe) return <td key={j} className="px-1 py-1"><span className="block h-7 w-14 rounded bg-navy-900/[.03]" /></td>;
+                        const off = !!indispoRec(j, hd);
+                        return (
+                          <td key={j} className="px-1 py-1">
+                            <button onClick={() => toggleIndispo(j, hd)}
+                              className={`h-7 w-14 rounded text-[10px] font-medium transition ${off ? "bg-rose-100 text-rose-600 hover:bg-rose-200" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"}`}>
+                              {off ? "Indispo" : "OK"}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Carte>
       )}
 
       <Modale ouvert={imprimer} onFermer={() => setImprimer(false)} titre={`Emploi du temps — ${nom}`} large>
@@ -592,13 +655,34 @@ function PanneauGrille({ ecoleId, grille, onChange, onErreur }) {
 function PanneauVolumes({ ecoleId, niveaux, matieres, volumes, onChange, onErreur }) {
   const toast = useToast();
   const [niveauId, setNiveauId] = useState(niveaux[0]?.id || "");
+  const [vals, setVals] = useState({}); // matiereId -> heures (contrôlé)
+
   useEffect(() => { if (!niveauId && niveaux[0]) setNiveauId(niveaux[0].id); }, [niveaux, niveauId]);
 
-  const volDe = (mid) => volumes.find((v) => v.niveau_id === niveauId && v.matiere_id === mid)?.heures ?? 0;
-  const total = matieres.reduce((s, m) => s + volDe(m.id), 0);
+  // Recharge les valeurs du niveau sélectionné (corrige l'affichage au changement de niveau).
+  useEffect(() => {
+    const m = {};
+    for (const mat of matieres) {
+      m[mat.id] = String(volumes.find((v) => v.niveau_id === niveauId && v.matiere_id === mat.id)?.heures ?? 0);
+    }
+    setVals(m);
+  }, [niveauId, volumes, matieres]);
 
-  const setVol = async (mid, val) => {
-    try { await api.sauverVolume(ecoleId, niveauId, mid, val); await onChange(); }
+  const heureEnregistree = (mid) => volumes.find((v) => v.niveau_id === niveauId && v.matiere_id === mid)?.heures ?? 0;
+  const total = matieres.reduce((s, m) => s + (Number(vals[m.id]) || 0), 0);
+
+  const enregistrer = async (mid) => {
+    const nv = Math.max(0, Number(vals[mid]) || 0);
+    if (nv === heureEnregistree(mid)) return;
+    try { await api.sauverVolume(ecoleId, niveauId, mid, nv); await onChange(); toast.succes("Volume mis à jour."); }
+    catch (e) { onErreur(e.message); }
+  };
+
+  const ajusterEtSauver = async (mid, delta) => {
+    const nv = Math.max(0, (Number(vals[mid]) || 0) + delta);
+    setVals((s) => ({ ...s, [mid]: String(nv) }));
+    if (nv === heureEnregistree(mid)) return;
+    try { await api.sauverVolume(ecoleId, niveauId, mid, nv); await onChange(); }
     catch (e) { onErreur(e.message); }
   };
 
@@ -608,6 +692,7 @@ function PanneauVolumes({ ecoleId, niveaux, matieres, volumes, onChange, onErreu
     <Carte className="max-w-2xl p-6">
       <p className="mb-4 text-sm text-navy-900/50">
         Nombre de séances par semaine pour chaque matière, à ce niveau. Ces volumes s'appliquent à toutes les classes du niveau.
+        Modifiez la valeur (ou +/−) — l'enregistrement est automatique.
       </p>
       <label className="mb-4 block">
         <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Niveau</span>
@@ -624,9 +709,16 @@ function PanneauVolumes({ ecoleId, niveaux, matieres, volumes, onChange, onErreu
           {matieres.map((m) => (
             <li key={m.id} className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-navy-900">{m.libelle}</span>
-              <input type="number" min="0" max="20" defaultValue={volDe(m.id)}
-                onBlur={(e) => { const v = Number(e.target.value) || 0; if (v !== volDe(m.id)) setVol(m.id, v); }}
-                className="w-20 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right text-sm outline-none focus:border-or-500" />
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => ajusterEtSauver(m.id, -1)}
+                  className="h-8 w-8 rounded-lg border border-navy-900/15 text-navy-900/60 hover:border-or-500">−</button>
+                <input type="number" min="0" max="30" value={vals[m.id] ?? ""}
+                  onChange={(e) => setVals((s) => ({ ...s, [m.id]: e.target.value }))}
+                  onBlur={() => enregistrer(m.id)}
+                  className="w-16 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right text-sm outline-none focus:border-or-500" />
+                <button type="button" onClick={() => ajusterEtSauver(m.id, 1)}
+                  className="h-8 w-8 rounded-lg border border-navy-900/15 text-navy-900/60 hover:border-or-500">+</button>
+              </div>
             </li>
           ))}
         </ul>
@@ -706,14 +798,15 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
     if (creneauxCours.length === 0) { setErreur("Configurez d'abord la grille horaire (onglet « Grille horaire »)."); return; }
     setOccupe(true);
     try {
-      const [affectationMap, emploisExistants] = await Promise.all([
+      const [affectationMap, emploisExistants, indisponibilites] = await Promise.all([
         api.getAffectationMap(ecoleId, annee?.id),
         api.getTousEmplois(ecoleId),
+        api.getToutesIndispos(ecoleId),
       ]);
       const volumesParNiveau = {};
       for (const v of volumes) (volumesParNiveau[v.niveau_id] ||= []).push({ matiere_id: v.matiere_id, heures: v.heures });
       const res = genererEDT({
-        classes: cibles, grille, volumesParNiveau, matiereLibelle, affectationMap, salles, emploisExistants,
+        classes: cibles, grille, volumesParNiveau, matiereLibelle, affectationMap, salles, emploisExistants, indisponibilites,
       });
       setResultat(res);
       setApercuClasse(cibles[0]?.id || "");
@@ -792,7 +885,7 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
             </h3>
             {resultat.nonPlaces.length > 0 && (
               <div className="mt-3 space-y-1 text-sm">
-                <p className="text-navy-900/60">Heures non placées (grille trop petite, prof déjà occupé ou salle indisponible) :</p>
+                <p className="text-navy-900/60">Heures non placées (grille trop petite, prof déjà occupé, prof indisponible ou salle indisponible) :</p>
                 <ul className="mt-1 max-h-40 overflow-auto rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
                   {resultat.nonPlaces.map((np, i) => (
                     <li key={i}>{np.classe} — {np.matiere}{np.sansProf ? " (aucun enseignant affecté)" : ""}</li>

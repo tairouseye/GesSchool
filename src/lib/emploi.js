@@ -131,6 +131,35 @@ export async function getAffectationMap(ecoleId, anneeId) {
   return map;
 }
 
+// --- Indisponibilités des enseignants ---
+export async function getIndispos(ecoleId, enseignantId) {
+  const { data, error } = await supabase
+    .from("indisponibilites_enseignants")
+    .select("*")
+    .eq("ecole_id", ecoleId)
+    .eq("enseignant_id", enseignantId);
+  if (error) throw error;
+  return data ?? [];
+}
+export async function ajouterIndispo(ecoleId, enseignantId, jour, heure_debut) {
+  const { error } = await supabase.from("indisponibilites_enseignants")
+    .insert({ ecole_id: ecoleId, enseignant_id: enseignantId, jour, heure_debut });
+  if (error) throw error;
+}
+export async function retirerIndispo(id) {
+  const { error } = await supabase.from("indisponibilites_enseignants").delete().eq("id", id);
+  if (error) throw error;
+}
+// Toutes les indisponibilités de l'école (pour la génération).
+export async function getToutesIndispos(ecoleId) {
+  const { data, error } = await supabase
+    .from("indisponibilites_enseignants")
+    .select("enseignant_id, jour, heure_debut")
+    .eq("ecole_id", ecoleId);
+  if (error) throw error;
+  return data ?? [];
+}
+
 // Tous les créneaux d'emploi du temps (pour respecter les conflits des
 // classes NON régénérées lors d'une génération partielle).
 export async function getTousEmplois(ecoleId) {
