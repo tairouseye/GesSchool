@@ -54,7 +54,7 @@ export default function MotDePasseOublie() {
           {etape === "email" ? (
             <form onSubmit={envoyerCode} className="space-y-4">
               <p className="text-sm text-navy-900/60">
-                Saisissez votre e‑mail : nous vous enverrons un <strong>code à 6 chiffres</strong>.
+                Saisissez votre e‑mail : nous vous enverrons un <strong>code de vérification</strong>.
               </p>
               <Champ label="E‑mail" type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)} placeholder="vous@ecole.sn" />
@@ -69,8 +69,8 @@ export default function MotDePasseOublie() {
                 Un code a été envoyé à <strong>{email}</strong>. Saisissez‑le puis choisissez votre nouveau mot de passe.
                 <br /><span className="text-navy-900/40">Pensez à vérifier vos spams.</span>
               </p>
-              <Champ label="Code à 6 chiffres" required value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              <Champ label="Code reçu par e‑mail" required value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 inputMode="numeric" placeholder="••••••" className="text-center font-mono text-lg tracking-[0.4em]" />
               <Champ label="Nouveau mot de passe" type="password" required minLength={6}
                 value={mdp} onChange={(e) => setMdp(e.target.value)} placeholder="••••••••" />
