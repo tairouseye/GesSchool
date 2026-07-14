@@ -10,8 +10,8 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 const ONGLETS = [
-  ["emplois", "Par classe"], ["enseignant", "Par enseignant"], ["grille", "Grille horaire"],
-  ["volumes", "Volumes"], ["salles", "Salles"], ["generer", "⚡ Générer"],
+  ["emplois", "Par classe"], ["enseignant", "Par enseignant"], ["charge", "Charge & qualité"],
+  ["grille", "Grille horaire"], ["volumes", "Volumes"], ["salles", "Salles"], ["generer", "⚡ Générer"],
 ];
 
 export default function EmploiDuTemps() {
@@ -58,6 +58,7 @@ export default function EmploiDuTemps() {
 
         {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} ecole={ecole} annee={annee} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
         {onglet === "enseignant" && <PanneauEnseignant ecoleId={ecoleId} ecole={ecole} annee={annee} enseignants={enseignants} />}
+        {onglet === "charge" && <PanneauCharge ecoleId={ecoleId} enseignants={enseignants} grille={grille} classes={classes} volumes={volumes} />}
         {onglet === "grille" && <PanneauGrille ecoleId={ecoleId} grille={grille} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "volumes" && <PanneauVolumes ecoleId={ecoleId} niveaux={niveaux} matieres={matieres} volumes={volumes} onChange={rechargerBase} onErreur={setErreur} />}
         {onglet === "salles" && <PanneauSalles ecoleId={ecoleId} salles={salles} onChange={rechargerBase} onErreur={setErreur} />}
@@ -355,6 +356,157 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants }) {
         </div>
       </Modale>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Onglet — Charge & qualité (analyse, sans écriture)                 */
+/* ------------------------------------------------------------------ */
+function PanneauCharge({ ecoleId, enseignants, grille, classes, volumes }) {
+  const [emplois, setEmplois] = useState([]);
+  const [erreur, setErreur] = useState("");
+  const [chargement, setChargement] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try { setEmplois(await api.getTousEmplois(ecoleId)); }
+      catch (e) { setErreur(e.message); }
+      finally { setChargement(false); }
+    })();
+  }, [ecoleId]);
+
+  // Créneaux planifiables par jour (pour repérer les trous), triés.
+  const slotsParJour = {};
+  for (const c of grille.filter((g) => !g.pause)) (slotsParJour[c.jour] ||= []).push(hhmm(c.heure_debut));
+  for (const j of Object.keys(slotsParJour)) slotsParJour[j].sort();
+
+  // Statistiques par enseignant.
+  const stats = enseignants.map((e) => {
+    const mine = emplois.filter((x) => x.enseignant_id === e.id);
+    const parJour = {}; const byDay = {};
+    let matin = 0, aprem = 0, trous = 0;
+    for (const c of mine) {
+      const hd = hhmm(c.heure_debut);
+      (byDay[c.jour] ||= new Set()).add(hd);
+      parJour[c.jour] = (parJour[c.jour] || 0) + 1;
+      if (hd < "12:00") matin += 1; else aprem += 1;
+    }
+    for (const [j, set] of Object.entries(byDay)) {
+      const slots = slotsParJour[j] || [];
+      const occ = slots.map((s, i) => (set.has(s) ? i : -1)).filter((i) => i >= 0);
+      if (occ.length) {
+        const min = Math.min(...occ), max = Math.max(...occ);
+        for (let i = min; i <= max; i++) if (!set.has(slots[i])) trous += 1;
+      }
+    }
+    return { e, total: mine.length, parJour, matin, aprem, trous };
+  }).sort((a, b) => b.total - a.total);
+
+  const actifs = stats.filter((s) => s.total > 0);
+  const totalH = actifs.reduce((s, x) => s + x.total, 0);
+  const totalTrous = actifs.reduce((s, x) => s + x.trous, 0);
+  const moyenne = actifs.length ? totalH / actifs.length : 0;
+
+  // Complétude par classe : heures placées vs volume attendu (par niveau).
+  const attenduNiveau = {};
+  for (const v of volumes) attenduNiveau[v.niveau_id] = (attenduNiveau[v.niveau_id] || 0) + (v.heures || 0);
+  const placeParClasse = {};
+  for (const c of emplois) placeParClasse[c.classe_id] = (placeParClasse[c.classe_id] || 0) + 1;
+  const classesStats = classes.map((c) => ({
+    c, place: placeParClasse[c.id] || 0, attendu: attenduNiveau[c.niveau_id] || 0,
+  }));
+
+  if (chargement) return <Carte className="p-6 text-sm text-navy-900/40">Analyse en cours…</Carte>;
+
+  return (
+    <div className="space-y-5">
+      <Alerte ton="erreur">{erreur}</Alerte>
+
+      {/* Synthèse */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Mini label="Heures placées" valeur={totalH} />
+        <Mini label="Enseignants en cours" valeur={actifs.length} />
+        <Mini label="Moyenne / prof" valeur={`${moyenne.toFixed(1)} h`} />
+        <Mini label="Heures creuses" valeur={totalTrous} ton={totalTrous > 0 ? "or" : "vert"} />
+      </div>
+
+      {/* Charge par enseignant */}
+      <Carte className="overflow-hidden">
+        <div className="border-b border-navy-900/10 px-5 py-3">
+          <h3 className="font-display text-lg font-semibold text-navy-900">Charge par enseignant</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-creme text-navy-900/50">
+              <tr>
+                <th className="px-5 py-2 font-medium">Enseignant</th>
+                <th className="px-5 py-2 text-center font-medium">h/sem</th>
+                <th className="px-5 py-2 text-center font-medium">Matin / A-m</th>
+                <th className="px-5 py-2 text-center font-medium">Trous</th>
+                {api.JOURS.map(([j, l]) => <th key={j} className="px-2 py-2 text-center font-medium" title={l}>{l.slice(0, 1)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {stats.map(({ e, total, parJour, matin, aprem, trous }) => (
+                <tr key={e.id} className="border-t border-navy-900/5">
+                  <td className="px-5 py-2 font-medium text-navy-900">{e.prenom} {e.nom}</td>
+                  <td className={`px-5 py-2 text-center font-mono font-semibold ${total > 25 ? "text-rose-600" : total === 0 ? "text-navy-900/30" : "text-navy-900"}`}>{total}</td>
+                  <td className="px-5 py-2 text-center font-mono text-xs text-navy-900/60">{matin} / {aprem}</td>
+                  <td className={`px-5 py-2 text-center font-mono ${trous > 0 ? "text-or-600" : "text-navy-900/30"}`}>{trous}</td>
+                  {api.JOURS.map(([j]) => (
+                    <td key={j} className="px-2 py-2 text-center font-mono text-xs text-navy-900/50">{parJour[j] || "·"}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
+          « Trous » = heures creuses entre deux cours d'une même journée. « Matin/A-m » : cours avant / après 12 h.
+          Une charge &gt; 25 h/sem est signalée en rouge.
+        </p>
+      </Carte>
+
+      {/* Complétude par classe */}
+      <Carte className="overflow-hidden">
+        <div className="border-b border-navy-900/10 px-5 py-3">
+          <h3 className="font-display text-lg font-semibold text-navy-900">Complétude par classe</h3>
+        </div>
+        <ul className="divide-y divide-navy-900/5">
+          {classesStats.map(({ c, place, attendu }) => {
+            const pct = attendu ? Math.min(100, Math.round((place / attendu) * 100)) : 0;
+            const complet = attendu > 0 && place >= attendu;
+            return (
+              <li key={c.id} className="flex items-center gap-4 px-5 py-2.5 text-sm">
+                <span className="w-28 shrink-0 truncate font-medium text-navy-900">{c.libelle}</span>
+                <div className="flex-1">
+                  <div className="h-2 overflow-hidden rounded-full bg-navy-900/10">
+                    <div className={`h-full ${complet ? "bg-emerald-500" : "bg-or-500"}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+                <span className="w-24 shrink-0 text-right font-mono text-xs text-navy-900/55">
+                  {place}/{attendu || "?"} {attendu ? `(${pct}%)` : ""}
+                </span>
+              </li>
+            );
+          })}
+          {classesStats.length === 0 && <li className="px-5 py-3 text-sm text-navy-900/40">Aucune classe.</li>}
+        </ul>
+        <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
+          Heures placées dans l'emploi du temps vs volume attendu (somme des volumes du niveau). « ? » = aucun volume défini pour ce niveau.
+        </p>
+      </Carte>
+    </div>
+  );
+}
+
+function Mini({ label, valeur, ton }) {
+  const tons = { or: "text-or-600", vert: "text-emerald-600" };
+  return (
+    <Carte className="p-4">
+      <p className="text-xs text-navy-900/50">{label}</p>
+      <p className={`mt-1 font-display text-2xl font-bold ${tons[ton] || "text-navy-900"}`}>{valeur}</p>
+    </Carte>
   );
 }
 
