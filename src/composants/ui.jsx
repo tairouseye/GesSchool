@@ -21,6 +21,34 @@ export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement =
   );
 }
 
+// --- Onglets scrollables (défilement horizontal sur mobile, accessibles) ---
+// items : [[cle, label], …]
+export function Onglets({ items, actif, onChange }) {
+  return (
+    <div className="overflow-x-auto pb-1">
+      <div className="inline-flex min-w-max gap-1 rounded-xl bg-navy-900/5 p-1" role="tablist">
+        {items.map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={actif === k} onClick={() => onChange(k)}
+            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${actif === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50 hover:text-navy-900/80"}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Bouton-icône : zone tactile confortable (~36 px) + libellé accessible ---
+export function IconeBouton({ children, className = "", ...props }) {
+  return (
+    <button type="button"
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-navy-900/40 transition hover:bg-navy-900/5 hover:text-navy-900 ${className}`}
+      {...props}>
+      {children}
+    </button>
+  );
+}
+
 // --- Tuile « À traiter » : cliquable (lien OU bouton), colorée si active ---
 // ton : rouge | or | navy. Rend un <Link> si `to`, sinon un <button onClick>.
 export function TuileAlerte({ to, onClick, label, valeur, sousTexte, actif = false, ton = "navy", chargement = false }) {
@@ -35,7 +63,10 @@ export function TuileAlerte({ to, onClick, label, valeur, sousTexte, actif = fal
   const cls = `block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`;
   const inner = (
     <>
-      <p className="text-sm font-medium text-navy-900/60">{label}</p>
+      <p className="text-sm font-medium text-navy-900/60">
+        {label}
+        {actif && !chargement && <span className="ml-1.5 align-middle text-xs" title="À traiter" aria-label="à traiter">⚠️</span>}
+      </p>
       {chargement ? (
         <div className="mt-2 h-8 w-16 animate-pulse rounded bg-navy-900/10" />
       ) : (

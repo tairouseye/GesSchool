@@ -9,7 +9,7 @@ import {
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import Cachet from "@/composants/Cachet.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe, Onglets } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -56,15 +56,9 @@ export default function ParentEnfant() {
       <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
       <Alerte ton="erreur">{erreur}</Alerte>
 
-      <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-        {[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"],
-          ...(cantine ? [["cantine", "🍽️ Cantine"]] : []), ...(transport ? [["transport", "🚌 Transport"]] : [])].map(([k, l]) => (
-          <button key={k} onClick={() => setOnglet(k)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
-            {l}
-          </button>
-        ))}
-      </div>
+      <Onglets actif={onglet} onChange={setOnglet}
+        items={[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"],
+          ...(cantine ? [["cantine", "🍽️ Cantine"]] : []), ...(transport ? [["transport", "🚌 Transport"]] : [])]} />
 
       {chargement ? (
         <SkeletonListe lignes={4} />

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
 import { getEleves } from "@/lib/eleves.js";
@@ -93,19 +93,8 @@ export default function Paiements() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         {/* Onglets */}
-        <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["factures", "Factures"], ["declarations", `Déclarations${declarations.length ? ` (${declarations.length})` : ""}`], ["frais", "Grille tarifaire"], ["mobile", "Paiement mobile"]].map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setOnglet(k)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <Onglets actif={onglet} onChange={setOnglet}
+          items={[["factures", "Factures"], ["declarations", `Déclarations${declarations.length ? ` (${declarations.length})` : ""}`], ["frais", "Grille tarifaire"], ["mobile", "Paiement mobile"]]} />
 
         {onglet === "factures" ? (
           <Carte className="overflow-hidden">

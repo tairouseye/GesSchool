@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
 import { getAnneeCourante } from "@/lib/academique.js";
@@ -76,12 +76,8 @@ export default function Cantine() {
           <Kpi label="Mensuel / Prépayé" valeur={`${actifs.filter((a) => a.formule === "mensuel").length} / ${actifs.filter((a) => a.formule === "prepaye").length}`} />
         </div>
 
-        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["abonnes", "Abonnés"], ["pointage", "Pointage du jour"], ["menu", "Menu"]].map(([k, l]) => (
-            <button key={k} onClick={() => setOnglet(k)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>{l}</button>
-          ))}
-        </div>
+        <Onglets actif={onglet} onChange={setOnglet}
+          items={[["abonnes", "Abonnés"], ["pointage", "Pointage du jour"], ["menu", "Menu"]]} />
 
         {onglet === "abonnes" && (
           <>

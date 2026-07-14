@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Onglets, IconeBouton } from "@/composants/ui.jsx";
 import * as api from "@/lib/emploi.js";
 import { genererEDT } from "@/lib/generateurEDT.js";
 import { getAnneeCourante, getClasses, getMatieres, getNiveaux } from "@/lib/academique.js";
@@ -47,14 +47,7 @@ export default function EmploiDuTemps() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <div className="inline-flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1">
-          {ONGLETS.map(([k, l]) => (
-            <button key={k} onClick={() => setOnglet(k)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <Onglets items={ONGLETS} actif={onglet} onChange={setOnglet} />
 
         {onglet === "emplois" && <PanneauEmplois ecoleId={ecoleId} ecole={ecole} annee={annee} classes={classes} matieres={matieres} enseignants={enseignants} salles={salles} />}
         {onglet === "enseignant" && <PanneauEnseignant ecoleId={ecoleId} ecole={ecole} annee={annee} enseignants={enseignants} grille={grille} />}
@@ -76,6 +69,7 @@ export default function EmploiDuTemps() {
 /* ------------------------------------------------------------------ */
 function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants, salles }) {
   const toast = useToast();
+  const confirmer = useConfirm();
   const [classeId, setClasseId] = useState("");
   const [creneaux, setCreneaux] = useState([]);
   const [modale, setModale] = useState(null);
@@ -134,7 +128,9 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
                               {c.salle ? ` · ${c.salle}` : ""}
                             </p>
                           </div>
-                          <button onClick={() => wrap(() => api.supprimerCreneau(c.id))} className="text-navy-900/30 hover:text-rose-500">✕</button>
+                          <IconeBouton aria-label="Supprimer le créneau" title="Supprimer"
+                            onClick={async () => { if (await confirmer("Supprimer ce créneau ?")) wrap(() => api.supprimerCreneau(c.id)); }}
+                            className="hover:text-rose-500">✕</IconeBouton>
                         </div>
                       </li>
                     ))}
@@ -573,6 +569,19 @@ function Mini({ label, valeur, ton }) {
   );
 }
 
+// Ligne de checklist (préparation de la génération).
+function EtapePrep({ ok, label, detail, optionnel }) {
+  const icone = ok ? "✓" : optionnel ? "○" : "⚠️";
+  const couleur = ok ? "text-emerald-600" : optionnel ? "text-navy-900/30" : "text-or-600";
+  return (
+    <li className="flex flex-wrap items-center gap-x-2">
+      <span className={`font-bold ${couleur}`} aria-hidden="true">{icone}</span>
+      <span className="font-medium text-navy-900">{label}</span>
+      <span className="text-xs text-navy-900/45">— {detail}</span>
+    </li>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Onglet 2 — Grille horaire (jour par jour)                          */
 /* ------------------------------------------------------------------ */
@@ -841,6 +850,22 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
   return (
     <div className="space-y-5">
       <Alerte ton="erreur">{erreur}</Alerte>
+
+      {/* Checklist de préparation */}
+      <Carte className="p-5">
+        <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Préparation</h3>
+        <ul className="space-y-2 text-sm">
+          <EtapePrep ok={creneauxCours.length > 0} label="Grille horaire définie"
+            detail={creneauxCours.length ? `${creneauxCours.length} créneaux de cours` : "à faire dans l'onglet « Grille horaire »"} />
+          <EtapePrep ok={volumes.length > 0} label="Volumes horaires saisis"
+            detail={volumes.length ? `${volumes.length} volume(s) par niveau` : "à faire dans l'onglet « Volumes »"} />
+          <EtapePrep ok={salles.length > 0} optionnel label="Salles configurées"
+            detail={salles.length ? `${salles.length} salle(s)` : "onglet « Salles » — optionnel (anti-conflit)"} />
+        </ul>
+        <p className="mt-3 text-xs text-navy-900/40">
+          Vérifiez aussi que les <b>affectations</b> prof↔classe↔matière sont saisies (Structure) : une matière sans enseignant affecté apparaîtra dans le rapport.
+        </p>
+      </Carte>
 
       <Carte className="p-6">
         <div className="flex items-center justify-between">
