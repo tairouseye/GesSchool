@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
@@ -95,20 +95,20 @@ export default function RH() {
 
         {/* À traiter */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <AlerteRH onClick={() => setOnglet("paie")} label="Salaires à payer" valeur={aPayer}
-            sous={`${fmt(restantMois)} ${devise} restants`} actif={aPayer > 0} ton="or" />
-          <AlerteRH onClick={() => setOnglet("paie")} label="Fiches à générer" valeur={fichesAgenerer}
-            sous={`paie ${libellePeriode(periode)}`} actif={fichesAgenerer > 0} ton="navy" />
-          <AlerteRH onClick={() => setOnglet("personnel")} label="Contrats à échéance" valeur={echeances.length}
-            sous="dans les 60 jours" actif={echeances.length > 0} ton="rouge" />
+          <TuileAlerte onClick={() => setOnglet("paie")} label="Salaires à payer" valeur={aPayer}
+            sousTexte={`${fmt(restantMois)} ${devise} restants`} actif={aPayer > 0} ton="or" />
+          <TuileAlerte onClick={() => setOnglet("paie")} label="Fiches à générer" valeur={fichesAgenerer}
+            sousTexte={`paie ${libellePeriode(periode)}`} actif={fichesAgenerer > 0} ton="navy" />
+          <TuileAlerte onClick={() => setOnglet("personnel")} label="Contrats à échéance" valeur={echeances.length}
+            sousTexte="dans les 60 jours" actif={echeances.length > 0} ton="rouge" />
         </div>
 
         {/* Indicateurs */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SyntheseCarte label="Personnel" valeur={String(personnels.length)} ton="or" />
-          <SyntheseCarte label={`Masse salariale (${libellePeriode(periode)})`} valeur={`${fmt(masseMois)} ${devise}`} />
-          <SyntheseCarte label="Payé ce mois" valeur={`${fmt(payeMois)} ${devise}`} ton="vert" />
-          <SyntheseCarte label="Restant à payer" valeur={`${fmt(restantMois)} ${devise}`} ton="rouge" />
+          <Kpi label="Personnel" valeur={String(personnels.length)} ton="or" />
+          <Kpi label={`Masse salariale (${libellePeriode(periode)})`} valeur={`${fmt(masseMois)} ${devise}`} />
+          <Kpi label="Payé ce mois" valeur={`${fmt(payeMois)} ${devise}`} ton="vert" />
+          <Kpi label="Restant à payer" valeur={`${fmt(restantMois)} ${devise}`} ton="rouge" />
         </div>
 
         {/* Répartition par fonction + contrats à échéance */}
@@ -436,33 +436,6 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
   );
 }
 
-function SyntheseCarte({ label, valeur, ton }) {
-  const tons = { navy: "text-navy-900", rouge: "text-rose-600", or: "text-or-600", vert: "text-emerald-700" };
-  return (
-    <Carte className="p-5">
-      <p className="text-sm text-navy-900/50">{label}</p>
-      <p className={`mt-2 font-display text-2xl font-bold ${tons[ton] || tons.navy}`}>{valeur}</p>
-    </Carte>
-  );
-}
-
-function AlerteRH({ onClick, label, valeur, sous, actif, ton }) {
-  const cadre = {
-    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10",
-    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10",
-    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
-  };
-  const chiffre = actif
-    ? (ton === "rouge" ? "text-rose-600" : ton === "or" ? "text-or-600" : "text-navy-900")
-    : "text-navy-900/30";
-  return (
-    <button onClick={onClick} className={`block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`}>
-      <p className="text-sm font-medium text-navy-900/60">{label}</p>
-      <p className={`mt-1 font-display text-3xl font-bold ${chiffre}`}>{valeur ?? 0}</p>
-      {sous && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
-    </button>
-  );
-}
 
 function LigneB({ l, v }) {
   return (

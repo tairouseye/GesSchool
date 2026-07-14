@@ -1,5 +1,53 @@
 // GesSchool — primitives UI partagées (identité navy/or).
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+
+// --- Indicateur clé (KPI) : valeur + libellé + sous-texte optionnel ---
+// ton : navy | or | vert | rouge ; tonValeur : classe couleur explicite (prioritaire).
+export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement = false }) {
+  const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-600", rouge: "text-rose-600" };
+  return (
+    <Carte className="p-5">
+      <p className="text-sm text-navy-900/50">{label}</p>
+      {chargement ? (
+        <div className="mt-2 h-9 animate-pulse rounded bg-navy-900/5" />
+      ) : (
+        <p className={`mt-2 font-display text-3xl font-bold ${tonValeur || tons[ton] || tons.navy}`}>
+          {valeur ?? "—"}{suffixe && <span className="ml-1 text-base font-normal text-navy-900/40">{suffixe}</span>}
+        </p>
+      )}
+      {sous && !chargement && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
+    </Carte>
+  );
+}
+
+// --- Tuile « À traiter » : cliquable (lien OU bouton), colorée si active ---
+// ton : rouge | or | navy. Rend un <Link> si `to`, sinon un <button onClick>.
+export function TuileAlerte({ to, onClick, label, valeur, sousTexte, actif = false, ton = "navy", chargement = false }) {
+  const cadre = {
+    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10",
+    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10",
+    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
+  };
+  const chiffre = actif
+    ? (ton === "rouge" ? "text-rose-600" : ton === "or" ? "text-or-600" : "text-navy-900")
+    : "text-navy-900/30";
+  const cls = `block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`;
+  const inner = (
+    <>
+      <p className="text-sm font-medium text-navy-900/60">{label}</p>
+      {chargement ? (
+        <div className="mt-2 h-8 w-16 animate-pulse rounded bg-navy-900/10" />
+      ) : (
+        <p className={`mt-1 font-display text-3xl font-bold ${chiffre}`}>{valeur ?? 0}</p>
+      )}
+      {sousTexte && <p className="mt-1 text-xs text-navy-900/45">{sousTexte}</p>}
+    </>
+  );
+  return to
+    ? <Link to={to} className={cls}>{inner}</Link>
+    : <button type="button" onClick={onClick} className={`${cls} w-full`}>{inner}</button>;
+}
 
 export function Bouton({ children, variante = "primaire", className = "", ...props }) {
   const variantes = {

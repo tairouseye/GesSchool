@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte } from "@/composants/ui.jsx";
+import { Carte, Alerte, Kpi, TuileAlerte } from "@/composants/ui.jsx";
 import { statsGestion } from "@/lib/dashboard.js";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { MODES } from "@/lib/paiements.js";
@@ -55,16 +55,16 @@ export default function TableauDeBord() {
 
         {/* À traiter */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <AlerteCard
+          <TuileAlerte
             to="/paiements" chargement={chargement}
             valeur={stats?.declEnAttente} label="Déclarations à valider"
             sousTexte="paiements mobiles déclarés" actif={stats?.declEnAttente > 0} ton="or" />
-          <AlerteCard
+          <TuileAlerte
             to="/recouvrement" chargement={chargement}
             valeur={stats?.nbEnRetard} label="Élèves en impayé"
             sousTexte={stats ? `${fmtMontant(stats.retardMontant)} ${devise} en retard` : ""}
             actif={stats?.nbEnRetard > 0} ton="rouge" />
-          <AlerteCard
+          <TuileAlerte
             to="/recouvrement" chargement={chargement}
             valeur={stats?.echeanceNb} label="Échéances sous 7 jours"
             sousTexte={stats ? `${fmtMontant(stats.echeanceMontant)} ${devise} attendus` : ""}
@@ -174,45 +174,6 @@ export default function TableauDeBord() {
         </Carte>
       </div>
     </>
-  );
-}
-
-function AlerteCard({ to, valeur, label, sousTexte, actif, ton, chargement }) {
-  const tons = {
-    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10",
-    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10",
-    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
-  };
-  const chiffre = actif
-    ? (ton === "rouge" ? "text-rose-600" : ton === "or" ? "text-or-600" : "text-navy-900")
-    : "text-navy-900/30";
-  return (
-    <Link to={to} className={`block rounded-2xl border p-5 shadow-sm transition hover:shadow-md ${tons[ton]}`}>
-      <p className="text-sm font-medium text-navy-900/60">{label}</p>
-      {chargement ? (
-        <div className="mt-2 h-8 w-16 animate-pulse rounded bg-navy-900/10" />
-      ) : (
-        <p className={`mt-1 font-display text-3xl font-bold ${chiffre}`}>{valeur ?? 0}</p>
-      )}
-      {sousTexte && <p className="mt-1 text-xs text-navy-900/45">{sousTexte}</p>}
-    </Link>
-  );
-}
-
-function Kpi({ label, valeur, suffixe, sous, ton, chargement }) {
-  const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-600", rouge: "text-rose-600" };
-  return (
-    <Carte className="p-5">
-      <p className="text-sm text-navy-900/50">{label}</p>
-      {chargement ? (
-        <div className="mt-2 h-9 animate-pulse rounded bg-navy-900/5" />
-      ) : (
-        <p className={`mt-2 font-display text-3xl font-bold ${tons[ton] || tons.navy}`}>
-          {valeur ?? "—"}{suffixe && <span className="ml-1 text-base font-normal text-navy-900/40">{suffixe}</span>}
-        </p>
-      )}
-      {sous && !chargement && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
-    </Carte>
   );
 }
 

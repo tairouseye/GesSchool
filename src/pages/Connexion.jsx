@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
+import { messageErreur } from "@/lib/erreurs.js";
 
 // Page Connexion / Inscription (onglets).
 export default function Connexion() {
@@ -110,9 +111,5 @@ export default function Connexion() {
 }
 
 function traduireErreur(msg = "") {
-  if (/invalid login credentials/i.test(msg)) return "E-mail ou mot de passe incorrect.";
-  if (/user already registered/i.test(msg)) return "Un compte existe déjà avec cet e-mail.";
-  if (/email not confirmed/i.test(msg)) return "E-mail non confirmé. Vérifiez votre boîte de réception.";
-  if (/password should be at least/i.test(msg)) return "Le mot de passe doit faire au moins 6 caractères.";
-  return msg || "Une erreur est survenue.";
+  return messageErreur(msg);
 }

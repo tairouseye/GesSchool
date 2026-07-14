@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte } from "@/composants/ui.jsx";
+import { Carte, Alerte, Kpi, TuileAlerte } from "@/composants/ui.jsx";
 import { statsPedagogie } from "@/lib/dashboard.js";
 import { getAbsencesRecentes, STATUTS_JUSTIF } from "@/lib/viescolaire.js";
 import { getAnneeCourante } from "@/lib/academique.js";
@@ -53,20 +53,12 @@ export default function AccueilPedagogie() {
 
         {/* À traiter */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link to="/assiduite"
-            className={`block rounded-2xl border p-5 shadow-sm transition hover:shadow-md ${stats?.absNonJustif > 0 ? "border-rose-300 bg-rose-50" : "border-navy-900/10"}`}>
-            <p className="text-sm font-medium text-navy-900/60">Absences non justifiées</p>
-            {chargement ? <div className="mt-2 h-8 w-16 animate-pulse rounded bg-navy-900/10" />
-              : <p className={`mt-1 font-display text-3xl font-bold ${stats?.absNonJustif > 0 ? "text-rose-600" : "text-navy-900/30"}`}>{stats?.absNonJustif ?? 0}</p>}
-            <p className="mt-1 text-xs text-navy-900/45">à relancer / justifier</p>
-          </Link>
-          <Link to="/assiduite"
-            className="block rounded-2xl border border-navy-900/10 p-5 shadow-sm transition hover:shadow-md">
-            <p className="text-sm font-medium text-navy-900/60">Absences cette semaine</p>
-            {chargement ? <div className="mt-2 h-8 w-16 animate-pulse rounded bg-navy-900/10" />
-              : <p className="mt-1 font-display text-3xl font-bold text-navy-900">{stats?.absSemaine ?? 0}</p>}
-            <p className="mt-1 text-xs text-navy-900/45">volume de la semaine</p>
-          </Link>
+          <TuileAlerte to="/assiduite" chargement={chargement}
+            valeur={stats?.absNonJustif} label="Absences non justifiées"
+            sousTexte="à relancer / justifier" actif={stats?.absNonJustif > 0} ton="rouge" />
+          <TuileAlerte to="/assiduite" chargement={chargement}
+            valeur={stats?.absSemaine} label="Absences cette semaine"
+            sousTexte="volume de la semaine" ton="navy" />
         </div>
 
         {/* Indicateurs */}
@@ -138,19 +130,3 @@ export default function AccueilPedagogie() {
   );
 }
 
-function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement }) {
-  const tons = { navy: "text-navy-900", or: "text-or-600" };
-  return (
-    <Carte className="p-5">
-      <p className="text-sm text-navy-900/50">{label}</p>
-      {chargement ? (
-        <div className="mt-2 h-9 animate-pulse rounded bg-navy-900/5" />
-      ) : (
-        <p className={`mt-2 font-display text-3xl font-bold ${tonValeur || tons[ton] || tons.navy}`}>
-          {valeur ?? "—"}{suffixe && <span className="ml-1 text-base font-normal text-navy-900/40">{suffixe}</span>}
-        </p>
-      )}
-      {sous && !chargement && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
-    </Carte>
-  );
-}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef } from "react";
 import { Modale, Bouton } from "@/composants/ui.jsx";
+import { messageErreur } from "@/lib/erreurs.js";
 
 // GesSchool — feedback global : toasts (succès/erreur) + confirmations stylées.
 // Usage :
@@ -20,7 +21,8 @@ export function Feedback({ children }) {
   }, []);
   const toast = useRef({
     succes: (m) => push("succes", m),
-    erreur: (m) => push("erreur", m),
+    // Les erreurs sont traduites en message convivial (accepte Error ou string).
+    erreur: (m) => push("erreur", messageErreur(m)),
     info: (m) => push("info", m),
   }).current;
 
