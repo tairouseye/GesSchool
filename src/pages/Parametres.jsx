@@ -306,28 +306,36 @@ function ModulesActifs({ ecole, onSave }) {
 }
 
 function Matricule({ ecole, onSave }) {
-  const [f, setF] = useState({ prefixe: "", separateur: "-", longueur: 4 });
+  const [f, setF] = useState({ prefixe: "", separateur: "-", longueur: 4, annee: "" });
   useEffect(() => {
     if (!ecole) return;
     setF({
       prefixe: ecole.matricule_prefixe ?? "",
       separateur: ecole.matricule_separateur ?? "-",
       longueur: ecole.matricule_longueur ?? 4,
+      annee: ecole.matricule_annee ? String(ecole.matricule_annee) : "",
     });
   }, [ecole]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const aa = String(new Date().getFullYear() % 100).padStart(2, "0");
+  const anEff = f.annee ? Number(f.annee) : new Date().getFullYear();
+  const aa = String(anEff % 100).padStart(2, "0");
   const seq = "1".padStart(Math.max(1, Number(f.longueur) || 4), "0");
   const apercu = (f.prefixe ? f.prefixe + (f.separateur || "-") : "") + aa + (f.separateur || "-") + seq;
   return (
     <Carte className="p-6">
       <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Matricule des élèves</h3>
-      <p className="mb-4 text-xs text-navy-900/40">Format : {"{PRÉFIXE}{SÉP}{AA}{SÉP}{SÉQUENCE}"}. La séquence repart à 1 chaque année.</p>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <p className="mb-4 text-xs text-navy-900/40">Format : {"{PRÉFIXE}{SÉP}{AA}{SÉP}{SÉQUENCE}"}. La séquence repart à 1 par année.</p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Champ label="Préfixe" value={f.prefixe} onChange={(e) => maj("prefixe", e.target.value.toUpperCase())} placeholder="GS" />
         <Champ label="Séparateur" value={f.separateur} onChange={(e) => maj("separateur", e.target.value.slice(0, 1))} placeholder="-" />
         <Champ label="Chiffres" type="number" min="1" max="8" value={f.longueur} onChange={(e) => maj("longueur", e.target.value.replace(/\D/g, ""))} />
+        <Champ label="Année" type="number" value={f.annee} placeholder="auto"
+          onChange={(e) => maj("annee", e.target.value.replace(/\D/g, "").slice(0, 4))} />
       </div>
+      <p className="mt-2 text-xs text-navy-900/40">
+        <b>Année</b> : fixez-la (ex. 2026) pour que toute une rentrée ait le même « {aa} », quelle que soit la date de saisie.
+        Laissez <b>vide</b> pour l'année civile automatique. Les matricules déjà attribués ne changent pas.
+      </p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
         <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>

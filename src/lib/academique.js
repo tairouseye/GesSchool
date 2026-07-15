@@ -302,13 +302,15 @@ export async function setChampsEleve(ecoleId, liste) {
   if (error) throw error;
 }
 
-export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur }) {
+export async function majConfigMatricule(ecoleId, { prefixe, separateur, longueur, annee }) {
+  const an = String(annee ?? "").replace(/\D/g, "");
   const { error } = await supabase
     .from("ecoles")
     .update({
       matricule_prefixe: prefixe || null,
       matricule_separateur: separateur || "-",
       matricule_longueur: Math.max(1, Number(longueur) || 4),
+      matricule_annee: an ? Number(an) : null, // vide = année civile automatique
     })
     .eq("id", ecoleId);
   if (error) throw error;
