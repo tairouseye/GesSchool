@@ -16,6 +16,7 @@ export const ESPACES = [
     promoteur: true,
     items: [
       { to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" },
+      { to: "/passage-annee", label: "Passage d'année", icone: "🗓️", cle: "_passage_annee" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
