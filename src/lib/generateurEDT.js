@@ -46,6 +46,7 @@ export function genererEDT({
 
   const creneaux = [];
   const nonPlaces = [];
+  const sansProfSet = new Set(); // "classe|||matière" placées mais sans enseignant affecté
 
   for (const cl of classes) {
     const vols = volumesParNiveau[cl.niveau_id] || [];
@@ -103,6 +104,7 @@ export function genererEDT({
         if (salleNom) salleBusy.add(`${salleNom}|${k}`);
         matiereJour[`${lecon.matiere_id}|${s.jour}`] = (matiereJour[`${lecon.matiere_id}|${s.jour}`] || 0) + 1;
         place = true;
+        if (!lecon.enseignant_id) sansProfSet.add(`${cl.libelle}|||${matiereLibelle[lecon.matiere_id] || "—"}`);
         break;
       }
       if (!place) {
@@ -110,10 +112,30 @@ export function genererEDT({
           classe_id: cl.id, classe: cl.libelle,
           matiere: matiereLibelle[lecon.matiere_id] || "—",
           sansProf: !lecon.enseignant_id,
+          raison: raisonEchec(lecon, slots, classeBusy, profBusy, indispo, salleBusy, salles),
         });
       }
     }
   }
 
-  return { creneaux, nonPlaces };
+  const sansProf = [...sansProfSet].map((s) => {
+    const [classe, matiere] = s.split("|||");
+    return { classe, matiere };
+  });
+  return { creneaux, nonPlaces, sansProf };
+}
+
+// Détermine la cause précise d'un échec de placement (pour le rapport).
+function raisonEchec(lecon, slots, classeBusy, profBusy, indispo, salleBusy, salles) {
+  const libresClasse = slots.filter((s) => !classeBusy.has(cle(s.jour, s.heure_debut)));
+  if (libresClasse.length === 0) return "emploi du temps de la classe déjà plein (grille trop petite)";
+
+  if (lecon.enseignant_id) {
+    const profLibre = libresClasse.filter((s) => !profBusy.has(`${lecon.enseignant_id}|${cle(s.jour, s.heure_debut)}`));
+    if (profLibre.length === 0) return "enseignant déjà occupé sur tous les créneaux libres de la classe";
+    const dispo = profLibre.filter((s) => !indispo.has(`${lecon.enseignant_id}|${cle(s.jour, s.heure_debut)}`));
+    if (dispo.length === 0) return "enseignant indisponible sur les créneaux restants";
+  }
+  if (salles.length) return "aucune salle libre sur les créneaux possibles";
+  return "créneau indisponible";
 }

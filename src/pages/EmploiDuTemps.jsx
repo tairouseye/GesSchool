@@ -910,11 +910,22 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
             </h3>
             {resultat.nonPlaces.length > 0 && (
               <div className="mt-3 space-y-1 text-sm">
-                <p className="text-navy-900/60">Heures non placées (grille trop petite, prof déjà occupé, prof indisponible ou salle indisponible) :</p>
-                <ul className="mt-1 max-h-40 overflow-auto rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+                <p className="text-navy-900/60">Heures non placées — chaque ligne indique <b>pourquoi</b> et donc quoi corriger :</p>
+                <ul className="mt-1 max-h-52 space-y-1 overflow-auto rounded-xl bg-rose-50 p-3 text-xs text-rose-800">
                   {resultat.nonPlaces.map((np, i) => (
-                    <li key={i}>{np.classe} — {np.matiere}{np.sansProf ? " (aucun enseignant affecté)" : ""}</li>
+                    <li key={i}>
+                      <span className="font-medium">{np.classe} — {np.matiere}</span>
+                      <span className="text-rose-700/80"> : {np.raison}</span>
+                    </li>
                   ))}
+                </ul>
+              </div>
+            )}
+            {resultat.sansProf?.length > 0 && (
+              <div className="mt-3 space-y-1 text-sm">
+                <p className="text-navy-900/60">⚠️ Matières placées <b>sans enseignant</b> (affectez un prof dans « Enseignants ») :</p>
+                <ul className="mt-1 max-h-32 space-y-1 overflow-auto rounded-xl bg-or-500/10 p-3 text-xs text-navy-900/70">
+                  {resultat.sansProf.map((sp, i) => <li key={i}>{sp.classe} — {sp.matiere}</li>)}
                 </ul>
               </div>
             )}
