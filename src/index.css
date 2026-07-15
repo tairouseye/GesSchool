@@ -38,7 +38,9 @@
 }
 
 /* Mobile : les tableaux larges deviennent défilables horizontalement
-   (évite que la mise en page « casse » sur téléphone). */
+   (évite que la mise en page « casse » sur téléphone). Une ombre au bord
+   droit signale qu'il reste du contenu à faire défiler ; elle disparaît
+   une fois arrivé au bout (technique des dégradés « local/scroll »). */
 @media (max-width: 768px) {
   main table {
     display: block;
@@ -46,6 +48,12 @@
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    background:
+      linear-gradient(90deg, #fff 30%, hsla(0, 0%, 100%, 0)) 0 0 / 24px 100% no-repeat,
+      linear-gradient(90deg, hsla(0, 0%, 100%, 0), #fff 70%) 100% 0 / 24px 100% no-repeat,
+      radial-gradient(farthest-side at 0 50%, rgba(11, 31, 58, 0.16), transparent) 0 0 / 11px 100% no-repeat,
+      radial-gradient(farthest-side at 100% 50%, rgba(11, 31, 58, 0.16), transparent) 100% 0 / 11px 100% no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 }
 
