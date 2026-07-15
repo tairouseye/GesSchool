@@ -21,19 +21,17 @@ export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement =
   );
 }
 
-// --- Onglets scrollables (défilement horizontal sur mobile, accessibles) ---
-// items : [[cle, label], …]
+// --- Onglets : passent à la ligne pour rester tous visibles (pas de scroll
+// latéral sur mobile). Accessibles (role/aria-selected). items : [[cle, label], …]
 export function Onglets({ items, actif, onChange }) {
   return (
-    <div className="overflow-x-auto pb-1">
-      <div className="inline-flex min-w-max gap-1 rounded-xl bg-navy-900/5 p-1" role="tablist">
-        {items.map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={actif === k} onClick={() => onChange(k)}
-            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${actif === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50 hover:text-navy-900/80"}`}>
-            {l}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1" role="tablist">
+      {items.map(([k, l]) => (
+        <button key={k} type="button" role="tab" aria-selected={actif === k} onClick={() => onChange(k)}
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${actif === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50 hover:text-navy-900/80"}`}>
+          {l}
+        </button>
+      ))}
     </div>
   );
 }
