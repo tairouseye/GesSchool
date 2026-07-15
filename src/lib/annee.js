@@ -25,6 +25,37 @@ export async function ouvrirAnnee(libelle, debut, fin, opts = {}) {
   return data; // id de la nouvelle année
 }
 
+// Aperçu de ce qui serait recopié depuis l'année source (compteurs).
+export async function resumeSource(ecoleId, sourceId) {
+  const vide = { classes: 0, affectations: 0, frais: 0, creneaux: 0, inscriptions: 0 };
+  if (!sourceId) return vide;
+  const nb = (q) => q.then(({ count }) => count ?? 0);
+  const [classes, affectations, frais, creneaux, inscriptions] = await Promise.all([
+    nb(supabase.from("classes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", sourceId)),
+    nb(supabase.from("affectations").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", sourceId)),
+    nb(supabase.from("frais").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", sourceId)),
+    nb(supabase.from("emplois_du_temps").select("id, classes!inner(annee_id)", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("classes.annee_id", sourceId)),
+    nb(supabase.from("inscriptions").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", sourceId)),
+  ]);
+  return { classes, affectations, frais, creneaux, inscriptions };
+}
+
+// Nombre d'inscriptions par année (pour savoir si une année est supprimable).
+export async function inscriptionsParAnnee(ecoleId, anneeIds) {
+  const out = {};
+  await Promise.all(anneeIds.map(async (id) => {
+    const { count } = await supabase.from("inscriptions").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", id);
+    out[id] = count ?? 0;
+  }));
+  return out;
+}
+
+// Supprime une année (RPC : garde inscriptions + rebascule la courante).
+export async function supprimerAnnee(anneeId) {
+  const { error } = await supabase.rpc("supprimer_annee_scolaire", { p_annee: anneeId });
+  if (error) throw error;
+}
+
 // Section « A » depuis « 6e A ».
 function section(libelle) {
   const m = /([A-Za-z0-9]+)\s*$/.exec((libelle || "").trim());
