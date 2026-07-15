@@ -5,6 +5,8 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/pilotage.js";
+import { getAnneeCourante, etatMiseEnRoute } from "@/lib/academique.js";
+import { Link } from "react-router-dom";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const taux = (paye, total) => (Number(total) > 0 ? Math.round((Number(paye) / Number(total)) * 100) : 0);
@@ -61,6 +63,8 @@ export default function Pilotage() {
       <div className="space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
+        <MiseEnRoute ecoleId={ecoleId} ecole={ecole} />
+
         {chargement ? (
           <SkeletonListe lignes={3} />
         ) : lignes.length === 0 ? (
@@ -114,6 +118,60 @@ export default function Pilotage() {
         )}
       </div>
     </>
+  );
+}
+
+function MiseEnRoute({ ecoleId, ecole }) {
+  const [etat, setEtat] = useState(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const an = await getAnneeCourante(ecoleId);
+        setEtat(await etatMiseEnRoute(ecoleId, an?.id));
+      } catch { setEtat(null); }
+    })();
+  }, [ecoleId]);
+  if (!etat) return null;
+
+  const etapes = [
+    { ok: etat.niveaux > 0 && etat.classes > 0, label: "Structure (niveaux & classes)", detail: `${etat.niveaux} niveau(x) · ${etat.classes} classe(s)`, to: "/structure" },
+    { ok: etat.matieres > 0, label: "Matières", detail: `${etat.matieres} matière(s)`, to: "/structure" },
+    { ok: etat.enseignants > 0, label: "Enseignants", detail: `${etat.enseignants} enseignant(s)`, to: "/enseignants" },
+    { ok: etat.affectations > 0, label: "Affectations profs", detail: `${etat.affectations} affectation(s)`, to: "/enseignants" },
+    { ok: etat.frais > 0, label: "Grille tarifaire", detail: `${etat.frais} frais`, to: "/paiements" },
+    { ok: etat.inscriptions > 0, label: "Élèves inscrits", detail: `${etat.inscriptions} inscrit(s)`, to: "/eleves" },
+  ];
+  const restants = etapes.filter((e) => !e.ok).length;
+
+  if (restants === 0) {
+    return (
+      <Carte className="flex items-center gap-3 border-l-4 border-l-emerald-400 p-4">
+        <span className="text-lg" aria-hidden>✅</span>
+        <p className="text-sm text-navy-900/70"><b className="text-navy-900">Mise en route terminée</b> — {ecole?.nom} est entièrement paramétrée.</p>
+      </Carte>
+    );
+  }
+
+  return (
+    <Carte className="border-l-4 border-l-or-500 p-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold text-navy-900">Mise en route — {ecole?.nom}</h3>
+        <span className="text-xs font-medium text-or-600">{restants} étape(s) restante(s)</span>
+      </div>
+      <p className="mt-1 text-sm text-navy-900/50">Complétez le paramétrage pour débloquer toutes les fonctions (bulletins, emplois du temps, facturation).</p>
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        {etapes.map((e, i) => (
+          <li key={i} className={`flex items-center gap-3 rounded-xl border p-3 ${e.ok ? "border-navy-900/10" : "border-or-500/40 bg-or-500/5"}`}>
+            <span className={e.ok ? "text-emerald-600" : "text-or-600"} aria-hidden>{e.ok ? "✓" : "⚠️"}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-navy-900">{e.label}</p>
+              <p className="text-xs text-navy-900/45">{e.detail}</p>
+            </div>
+            {!e.ok && <Link to={e.to} className="shrink-0 text-xs font-medium text-navy-700 hover:text-or-600">Configurer →</Link>}
+          </li>
+        ))}
+      </ul>
+    </Carte>
   );
 }
 

@@ -15,6 +15,22 @@ export async function getAnneeCourante(ecoleId) {
   return data;
 }
 
+// État du paramétrage initial de l'école (checklist de mise en route).
+// Renvoie le nombre d'éléments pour chaque brique de configuration.
+export async function etatMiseEnRoute(ecoleId, anneeId) {
+  const nb = (q) => q.then(({ count }) => count ?? 0);
+  const [niveaux, classes, matieres, enseignants, affectations, frais, inscriptions] = await Promise.all([
+    nb(supabase.from("niveaux").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("classes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", anneeId || "00000000-0000-0000-0000-000000000000")),
+    nb(supabase.from("matieres").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("enseignants").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("affectations").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", anneeId || "00000000-0000-0000-0000-000000000000")),
+    nb(supabase.from("frais").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("inscriptions").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", anneeId || "00000000-0000-0000-0000-000000000000")),
+  ]);
+  return { niveaux, classes, matieres, enseignants, affectations, frais, inscriptions };
+}
+
 // --- Cycles (créés à l'onboarding ; lecture seule ici) ---
 export async function getCycles(ecoleId) {
   const { data, error } = await supabase
