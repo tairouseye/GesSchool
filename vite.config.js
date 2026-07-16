@@ -44,12 +44,13 @@ export default defineConfig({
         background_color: "#0B1F3A",
         theme_color: "#0B1F3A",
         icons: [
-          { src: "icone.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
-          // TODO: ajouter pwa-192x192.png et pwa-512x512.png pour installabilité complète
+          { src: "gespro.png", sizes: "491x491", type: "image/png", purpose: "any" },
+          { src: "gespro.png", sizes: "491x491", type: "image/png", purpose: "maskable" },
+          { src: "icone.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         // Purge les anciens caches précachés à chaque mise à jour du SW +
         // prise de contrôle immédiate (évite les chunks périmés après déploiement).
         cleanupOutdatedCaches: true,
@@ -60,7 +61,7 @@ export default defineConfig({
         // Pas de navigateFallback absolu : routage géré par HashRouter
         // (compatible sous-chemin GitHub Pages).
       },
-      includeAssets: ["favicon.svg", "icone.svg", "push-sw.js"],
+      includeAssets: ["favicon.svg", "icone.svg", "gespro.png", "gespro-logo.png", "push-sw.js"],
       devOptions: { enabled: true },
     }),
   ],

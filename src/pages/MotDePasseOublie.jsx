@@ -47,7 +47,7 @@ export default function MotDePasseOublie() {
     <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-creme">
-          <Cachet size={64} className="text-or-500" />
+          <img src="/gespro.png" alt="GesPro" className="h-16 w-16 rounded-full bg-white p-1 shadow-lg" />
           <h1 className="mt-3 font-display text-xl font-bold">Mot de passe oublié</h1>
         </div>
         <div className="rounded-2xl bg-white p-7 shadow-xl">
