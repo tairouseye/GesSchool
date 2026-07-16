@@ -50,6 +50,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        // Purge les anciens caches précachés à chaque mise à jour du SW +
+        // prise de contrôle immédiate (évite les chunks périmés après déploiement).
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         // Handler de notifications push ajouté au service worker généré.
         importScripts: ["push-sw.js"],
         // Pas de navigateFallback absolu : routage géré par HashRouter
