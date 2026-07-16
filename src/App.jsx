@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-rout
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
 import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
 import { Feedback } from "@/composants/Feedback.jsx";
+import ErrorBoundary from "@/composants/ErrorBoundary.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import { espaceParDefaut } from "@/lib/espaces.js";
 import { estRoleComplet } from "@/lib/permissions.js";
@@ -84,6 +85,7 @@ export default function App() {
     <AuthProvider>
       <Feedback>
       <HashRouter>
+        <ErrorBoundary>
         <Suspense fallback={<ChargementPage />}>
         <Routes>
           {/* Public */}
@@ -173,6 +175,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </HashRouter>
       </Feedback>
     </AuthProvider>
