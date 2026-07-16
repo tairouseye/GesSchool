@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
