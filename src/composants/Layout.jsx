@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-do
 import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { LIBELLES_ROLES } from "@/lib/permissions.js";
+import { LIBELLES_ROLES, peutVoir } from "@/lib/permissions.js";
 import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, itemsEspace } from "@/lib/espaces.js";
 import { moduleActif } from "@/lib/modules.js";
 import Tour from "@/composants/Tour.jsx";
@@ -62,9 +62,10 @@ export default function Layout() {
   const changerEspace = (e) => {
     setEspaceId(e.id);
     setMenu(false);
-    // Va au 1er menu visible de l'espace (l'accueil peut être réservé à un autre rôle).
+    // Va au PREMIER menu de l'espace (en général l'Accueil). On ne saute un
+    // accueil « _xxx » que si l'utilisateur n'a pas le droit de l'ouvrir.
     const dispo = itemsEspace(e, roles).filter((it) => moduleActif(modulesActifs, it.cle));
-    const cible = dispo.find((it) => !it.cle.startsWith("_")) || dispo[0];
+    const cible = dispo.find((it) => !it.cle.startsWith("_") || peutVoir(roles, it.cle)) || dispo[0];
     navigate(cible?.to || e.accueil);
   };
 
