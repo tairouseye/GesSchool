@@ -97,7 +97,9 @@ export default function Classement() {
             <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
               <Cachet size={220} sigle={ecole?.sigle || "GS"} className="pointer-events-none absolute -right-10 -top-10 text-or-500/10" />
               <div className="flex items-center gap-4 border-b border-navy-900/10 pb-4">
-                <Cachet size={52} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />
+                {ecole?.logo_url
+                  ? <img src={ecole.logo_url} alt="" className="h-14 w-14 shrink-0 object-contain" />
+                  : <Cachet size={52} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />}
                 <div>
                   <p className="font-display text-xl font-bold text-navy-900">{ecole?.nom}</p>
                   <p className="text-xs text-navy-900/50">Tableau d'honneur · {classe?.libelle} · {periode?.libelle} · {annee?.libelle}</p>

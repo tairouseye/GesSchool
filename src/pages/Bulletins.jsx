@@ -249,9 +249,12 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
       <Cachet size={200} sigle={ecole?.sigle || "GS"} className="pointer-events-none absolute -right-8 -top-8 text-or-500/10" />
 
       <div className="flex items-start justify-between">
-        <div>
-          <p className="font-display text-xl font-bold text-navy-900">Bulletin scolaire</p>
-          <p className="text-sm text-navy-900/50">{ecole?.nom} — {periode?.libelle} · {annee?.libelle}</p>
+        <div className="flex items-center gap-3">
+          {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-14 w-14 shrink-0 object-contain" />}
+          <div>
+            <p className="font-display text-xl font-bold text-navy-900">Bulletin scolaire</p>
+            <p className="text-sm text-navy-900/50">{ecole?.nom} — {periode?.libelle} · {annee?.libelle}</p>
+          </div>
         </div>
         <div className="text-right">
           <p className="font-display text-lg font-semibold text-navy-900">{resultat.eleve.prenom} {resultat.eleve.nom}</p>
