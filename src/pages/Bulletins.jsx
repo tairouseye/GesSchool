@@ -4,6 +4,8 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
+import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 
 // Signataire du bulletin : le responsable pédagogique en priorité, sinon le
 // directeur / la directrice, sinon le premier signataire déclaré.
@@ -14,7 +16,8 @@ export function signatairePedagogique(liste) {
 
 // Phase 1 — Module 2 : bulletins (calcul + aperçu imprimable PDF).
 export default function Bulletins() {
-  const { ecoleId, ecole } = useAuth();
+  const { ecoleId, ecole, roles, profil, utilisateur } = useAuth();
+  const toutVoir = voitToutesClasses(roles);
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
   const [periodes, setPeriodes] = useState([]);
@@ -46,12 +49,15 @@ export default function Bulletins() {
       try {
         const an = await getAnneeCourante(ecoleId);
         setAnnee(an);
-        const [cls, per, mat, cfg] = await Promise.all([
-          getClasses(ecoleId, an?.id),
+        const [per, mat, cfg] = await Promise.all([
           api.getPeriodes(ecoleId, an?.id),
           getMatieres(ecoleId),
           api.getNotationConfig(ecoleId),
         ]);
+        // Un enseignant n'établit les bulletins que de SES classes.
+        const cls = toutVoir
+          ? await getClasses(ecoleId, an?.id)
+          : await getMesClasses(ecoleId, an?.id, (await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email))?.id);
         setClasses(cls);
         setPeriodes(per);
         setMatieres(mat);
@@ -62,7 +68,7 @@ export default function Bulletins() {
         setErreur(e.message);
       }
     })();
-  }, [ecoleId]);
+  }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
 
   async function calculer() {
     if (!classeId || !periodeId) return;

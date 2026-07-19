@@ -6,6 +6,8 @@ import * as api from "@/lib/viescolaire.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 
 const aujourdHui = () => new Date().toISOString().slice(0, 10);
 const TYPES_INCIDENT = [
@@ -15,7 +17,8 @@ const TYPES_INCIDENT = [
 ];
 
 export default function VieScolaire() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, roles, profil, utilisateur } = useAuth();
+  const toutVoir = voitToutesClasses(roles);
   const [onglet, setOnglet] = useState("appel");
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -26,10 +29,13 @@ export default function VieScolaire() {
       try {
         const an = await getAnneeCourante(ecoleId);
         setAnnee(an);
-        setClasses(await getClasses(ecoleId, an?.id));
+        // L'enseignant ne suit l'assiduité et les incidents que de ses classes.
+        setClasses(toutVoir
+          ? await getClasses(ecoleId, an?.id)
+          : await getMesClasses(ecoleId, an?.id, (await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email))?.id));
       } catch (e) { setErreur(e.message); }
     })();
-  }, [ecoleId]);
+  }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
 
   return (
     <>

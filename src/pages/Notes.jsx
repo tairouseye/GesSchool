@@ -4,12 +4,16 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
+import { getMonEnseignant, getMesClasses, getMesMatieresParClasse, matieresAutorisees } from "@/lib/appel.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 
 const TYPES = ["devoir", "composition", "examen", "interro", "tp", "oral", "projet"];
 
 // Phase 1 — Module 2 : saisie des notes.
 export default function Notes() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, roles, profil, utilisateur } = useAuth();
+  const toutVoir = voitToutesClasses(roles);
+  const [mesMatieres, setMesMatieres] = useState({});
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
   const [periodes, setPeriodes] = useState([]);
@@ -27,11 +31,20 @@ export default function Notes() {
       try {
         const an = await getAnneeCourante(ecoleId);
         setAnnee(an);
-        const [cls, per, mat] = await Promise.all([
-          getClasses(ecoleId, an?.id),
+        const [per, mat] = await Promise.all([
           api.getPeriodes(ecoleId, an?.id),
           getMatieres(ecoleId),
         ]);
+        // L'enseignant ne saisit des notes que dans SES classes, et pour les
+        // seules matières qu'il y enseigne.
+        let cls;
+        if (toutVoir) {
+          cls = await getClasses(ecoleId, an?.id);
+        } else {
+          const ens = await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
+          cls = await getMesClasses(ecoleId, an?.id, ens?.id);
+          setMesMatieres(await getMesMatieresParClasse(ecoleId, an?.id, ens?.id));
+        }
         setClasses(cls);
         setPeriodes(per);
         setMatieres(mat);
@@ -40,7 +53,16 @@ export default function Notes() {
         setErreur(e.message);
       }
     })();
-  }, [ecoleId]);
+  }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
+
+  // Matières proposées pour la classe choisie (restreintes pour un enseignant).
+  const matieresVisibles = matieresAutorisees(matieres, mesMatieres, classeId, toutVoir);
+
+  // Changer de classe peut rendre la matière choisie interdite → on la vide.
+  useEffect(() => {
+    if (matiereId && !matieresVisibles.some((m) => m.id === matiereId)) setMatiereId("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classeId, matieresVisibles.length]);
 
   const chargerEvals = useCallback(async () => {
     if (!classeId || !periodeId || !matiereId) {
@@ -72,14 +94,16 @@ export default function Notes() {
         <div className="flex flex-wrap gap-3">
           <Selecteur label="Classe" value={classeId} onChange={setClasseId} options={classes.map((c) => [c.id, c.libelle])} />
           <Selecteur label="Période" value={periodeId} onChange={setPeriodeId} options={periodes.map((p) => [p.id, p.libelle])} />
-          <Selecteur label="Matière" value={matiereId} onChange={setMatiereId} options={matieres.map((m) => [m.id, m.libelle])} />
+          <Selecteur label="Matière" value={matiereId} onChange={setMatiereId} options={matieresVisibles.map((m) => [m.id, m.libelle])} />
         </div>
 
         {!pret ? (
           <Carte className="p-8 text-sm text-navy-900/50">
             Choisissez une classe, une période et une matière.
-            {classes.length === 0 && " (Aucune classe — créez-en dans « Niveaux & classes ».)"}
-            {matieres.length === 0 && " (Aucune matière — ajoutez-en dans « Niveaux & classes ».)"}
+            {classes.length === 0 && (toutVoir
+              ? " (Aucune classe — créez-en dans « Niveaux & classes ».)"
+              : " (Aucune classe ne vous est affectée cette année — voyez avec la direction.)")}
+            {classes.length > 0 && matieres.length === 0 && " (Aucune matière — ajoutez-en dans « Niveaux & classes ».)"}
           </Carte>
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">

@@ -32,3 +32,27 @@ export async function getMesClasses(ecoleId, anneeId, ensId) {
   for (const a of aff.data ?? []) if (a.classes) map[a.classes.id] = a.classes;
   return Object.values(map).sort((x, y) => (x.libelle || "").localeCompare(y.libelle || ""));
 }
+
+// Matières que le prof enseigne, par classe : { classe_id: [matiere_id, …] }.
+// Une classe absente de la carte (cas du prof principal sans affectation de
+// matière) n'est pas restreinte — cf. matieresAutorisees ci-dessous.
+export async function getMesMatieresParClasse(ecoleId, anneeId, ensId) {
+  if (!ensId || !anneeId) return {};
+  const { data, error } = await supabase
+    .from("affectations")
+    .select("classe_id, matiere_id")
+    .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("enseignant_id", ensId);
+  if (error) throw error;
+  const map = {};
+  for (const a of data ?? []) (map[a.classe_id] ||= []).push(a.matiere_id);
+  return map;
+}
+
+// Matières proposables pour une classe donnée. Sans restriction (rôle qui voit
+// tout, ou prof principal sans matière affectée), on renvoie toutes les matières.
+export function matieresAutorisees(matieres, mapParClasse, classeId, sansRestriction) {
+  if (sansRestriction) return matieres;
+  const ids = mapParClasse?.[classeId];
+  if (!ids || ids.length === 0) return matieres;
+  return matieres.filter((m) => ids.includes(m.id));
+}
