@@ -2,9 +2,15 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
-import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/bulletins.js";
-import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
+
+// Signataire du bulletin : le responsable pédagogique en priorité, sinon le
+// directeur / la directrice, sinon le premier signataire déclaré.
+export function signatairePedagogique(liste) {
+  const f = (re) => liste.find((s) => re.test(`${s.fonction || ""}`));
+  return f(/p[ée]dagog/i) || f(/directeur|directrice|principal/i) || liste[0] || null;
+}
 
 // Phase 1 — Module 2 : bulletins (calcul + aperçu imprimable PDF).
 export default function Bulletins() {
@@ -22,6 +28,7 @@ export default function Bulletins() {
   const [publication, setPublication] = useState("");
   const [enPublication, setEnPublication] = useState(false);
   const [notation, setNotation] = useState(api.DEFAUT_NOTATION);
+  const [signataire, setSignataire] = useState(null);
 
   async function publier() {
     if (!resultats) return;
@@ -50,6 +57,7 @@ export default function Bulletins() {
         setMatieres(mat);
         setNotation(cfg);
         if (per[0]) setPeriodeId(per[0].id);
+        try { setSignataire(signatairePedagogique(await getSignataires(ecoleId))); } catch { /* facultatif */ }
       } catch (e) {
         setErreur(e.message);
       }
@@ -143,6 +151,7 @@ export default function Bulletins() {
         resultat={bulletinActif} notation={notation}
         ecole={ecole} classe={classe} periode={periode} annee={annee}
         ecoleId={ecoleId} classeId={classeId} periodeId={periodeId} effectif={resultats?.effectif}
+        signataire={signataire}
         onFermer={() => setBulletinActif(null)}
         onErreur={setErreur}
       />
@@ -155,7 +164,7 @@ const DECISIONS = [
   "Félicitations", "Encouragements", "Tableau d'honneur", "Avertissement (travail)", "Blâme (conduite)",
 ];
 
-function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, ecoleId, classeId, periodeId, effectif, onFermer, onErreur }) {
+function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, ecoleId, classeId, periodeId, effectif, signataire, onFermer, onErreur }) {
   const [appGen, setAppGen] = useState("");
   const [decision, setDecision] = useState("");
   const [appMat, setAppMat] = useState({});
@@ -217,7 +226,8 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
       </div>
 
       <BulletinImprimable ecole={ecole} classe={classe} periode={periode} annee={annee}
-        resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} notation={notation} />
+        resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} notation={notation}
+        signataire={signataire} />
       <div className="no-print mt-5 flex justify-end gap-2">
         <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
         <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
@@ -242,12 +252,10 @@ function Sel({ label, value, onChange, options }) {
 }
 
 // Document bulletin (réutilisé pour l'aperçu ET l'impression PDF).
-function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {}, notation = api.DEFAUT_NOTATION }) {
+function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {}, notation = api.DEFAUT_NOTATION, signataire = null }) {
   const totalCoef = resultat.lignes.reduce((s, l) => s + l.coef, 0);
   return (
     <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
-      <Cachet size={200} sigle={ecole?.sigle || "GS"} className="pointer-events-none absolute -right-8 -top-8 text-or-500/10" />
-
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-14 w-14 shrink-0 object-contain" />}
@@ -316,6 +324,20 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
           {notation.afficher_decision !== false && decision && <p className="text-navy-900/80"><b className="text-navy-900/50">Décision du conseil :</b> {decision}</p>}
         </div>
       )}
+
+      {/* Signature du responsable pédagogique (Paramètres → Signataires) */}
+      <div className="mt-8 flex items-start justify-between gap-6">
+        <p className="text-xs text-navy-900/40">
+          Fait à {ecole?.ville || "—"}, le {new Date().toLocaleDateString("fr-FR")}
+        </p>
+        <div className="w-56 text-center">
+          <p className="text-xs font-medium text-navy-900/60">{signataire?.fonction || "Le Responsable pédagogique"}</p>
+          {signataire?.signature_url
+            ? <img src={signataire.signature_url} alt="" className="mx-auto my-1 h-16 object-contain" />
+            : <div className="my-1 h-16" />}
+          <p className="border-t border-navy-900/20 pt-1 text-sm font-medium text-navy-900">{signataire?.nom || ""}</p>
+        </div>
+      </div>
 
       <div className="mt-6 flex items-end justify-between text-xs text-navy-900/40">
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>

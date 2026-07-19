@@ -8,7 +8,6 @@ import {
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
-import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe, Onglets } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -259,7 +258,6 @@ function BulletinParent({ b, lignes }) {
   const totalCoef = lignes.reduce((s, l) => s + Number(l.coefficient || 0), 0);
   return (
     <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
-      <Cachet size={200} sigle={b.sigle || "GS"} className="pointer-events-none absolute -right-8 -top-8 text-or-500/10" />
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           {b.logo && <img src={b.logo} alt="" className="h-14 w-14 shrink-0 object-contain" />}
