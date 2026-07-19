@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets } from 
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
+import { getComptes } from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
@@ -29,6 +30,9 @@ export default function RH() {
   const [erreur, setErreur] = useState("");
   const [modalePers, setModalePers] = useState(false);
   const [bulletin, setBulletin] = useState(null);
+  const [comptes, setComptes] = useState([]);
+  // Compte de trésorerie + mode utilisés pour régler les salaires de la période.
+  const [reglement, setReglement] = useState({ compte_id: "", mode: "" });
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -51,6 +55,16 @@ export default function RH() {
 
   useEffect(() => { recharger(); }, [recharger]);
   useEffect(() => { rechargerPaie(); }, [rechargerPaie]);
+
+  // Comptes de trésorerie : facultatif (un profil RH sans droit compta n'y a pas
+  // accès) — on ignore l'erreur et le sélecteur reste simplement masqué.
+  useEffect(() => {
+    let vivant = true;
+    getComptes(ecoleId)
+      .then((cs) => { if (!vivant) return; const a = cs.filter((c) => c.actif !== false); setComptes(a); setReglement((r) => (r.compte_id ? r : { ...r, compte_id: a[0]?.id || "" })); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [ecoleId]);
 
   const wrap = async (fn, apresPaie = false, msg) => {
     try {
@@ -161,8 +175,9 @@ export default function RH() {
         ) : (
           <PanneauPaie
             periode={periode} setPeriode={setPeriode} salaires={salaires} devise={devise}
+            comptes={comptes} reglement={reglement} setReglement={setReglement}
             onMaj={(id, v) => wrap(() => api.majSalaire(id, v), true)}
-            onPayer={(id, v) => wrap(() => api.marquerPaye(id, v), true)}
+            onPayer={(id) => wrap(() => api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode }), true)}
             onAnnuler={(id) => wrap(() => api.annulerPaiement(id), true)}
             onSuppr={(id) => wrap(() => api.supprimerSalaire(id), true)}
             onBulletin={(s) => setBulletin(s)}
@@ -223,7 +238,7 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
   );
 }
 
-function PanneauPaie({ periode, setPeriode, salaires, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
+function PanneauPaie({ periode, setPeriode, salaires, devise, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
   const totalNet = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
   const totalPaye = salaires.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
 
@@ -240,9 +255,36 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, onMaj, onPayer, on
           <span className="text-emerald-700">Payé : <b className="font-mono">{fmt(totalPaye)} {devise}</b></span>
         </div>
       </div>
-      <p className="text-xs text-navy-900/40">
-        💡 « Payer » crée automatiquement une dépense en comptabilité (catégorie Salaires) ; « annuler » la retire.
-      </p>
+      {comptes.length > 0 && (
+        <Carte className="flex flex-wrap items-end gap-3 p-4">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Payer depuis</span>
+            <select value={reglement.compte_id} onChange={(e) => setReglement((r) => ({ ...r, compte_id: e.target.value }))}
+              className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— Aucun compte —</option>
+              {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}{c.numero ? ` (${c.numero})` : ""}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Mode</span>
+            <select value={reglement.mode} onChange={(e) => setReglement((r) => ({ ...r, mode: e.target.value }))}
+              className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— Non précisé —</option>
+              {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <p className="flex-1 text-xs text-navy-900/40">
+            Chaque salaire réglé crée une dépense (catégorie <b>Salaires</b>) imputée sur ce compte de trésorerie ;
+            « annuler » la retire. Le solde du compte est mis à jour dans Comptabilité.
+          </p>
+        </Carte>
+      )}
+      {comptes.length === 0 && (
+        <p className="text-xs text-navy-900/40">
+          💡 « Payer » crée automatiquement une dépense en comptabilité (catégorie Salaires) ; « annuler » la retire.
+          Crée un compte de trésorerie dans <b>Comptabilité</b> pour rattacher les salaires à une caisse ou une banque.
+        </p>
+      )}
 
       {salaires.length === 0 ? (
         <Carte className="p-8 text-sm text-navy-900/50">
