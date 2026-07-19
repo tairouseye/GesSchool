@@ -8,6 +8,7 @@ import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, route
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
+import { compterDemandesEnAttente } from "@/lib/demandes.js";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage
 // (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
@@ -19,10 +20,18 @@ export default function Layout() {
   const [menu, setMenu] = useState(false);
   const [tour, setTour] = useState(false);
   const [aSigner, setASigner] = useState(0);
+  const [demandes, setDemandes] = useState(0);
   const sigle = ecole?.sigle || "GS";
 
-  // Alerte « documents à signer » (rafraîchie à chaque navigation).
-  useEffect(() => { compterASigner().then(setASigner).catch(() => {}); }, [location.pathname]);
+  // Compteurs d'attente affichés en pastille sur les menus concernés
+  // (rafraîchis à chaque navigation). Le staff n'avait aucun signal : une
+  // demande de document arrivait sans que personne ne le sache.
+  useEffect(() => {
+    compterASigner().then(setASigner).catch(() => {});
+    compterDemandesEnAttente(ecole?.id).then(setDemandes).catch(() => {});
+  }, [location.pathname, ecole?.id]);
+
+  const pastille = (cle) => (cle === "signatures" ? aSigner : cle === "demandes" ? demandes : 0);
 
   // Visite guidée au premier accès (une fois).
   useEffect(() => {
@@ -123,10 +132,20 @@ export default function Layout() {
                 }`
               }
             >
-              <span className="w-5 text-center">{item.icone}</span>
-              {item.label}
-              {item.cle === "signatures" && aSigner > 0 && (
-                <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">{aSigner}</span>
+              {({ isActive }) => (
+                <>
+                  <span className="w-5 text-center">{item.icone}</span>
+                  {item.label}
+                  {pastille(item.cle) > 0 && (
+                    // Sur l'onglet actif (fond doré), la pastille dorée serait
+                    // invisible : on inverse les couleurs.
+                    <span className={`ml-auto grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${
+                      isActive ? "bg-navy-900 text-or-500" : "bg-or-500 text-navy-900"
+                    }`}>
+                      {pastille(item.cle)}
+                    </span>
+                  )}
+                </>
               )}
             </NavLink>
           ))}

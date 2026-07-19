@@ -85,6 +85,28 @@ function RedirectionAccueil() {
   return <Navigate to={cible} replace />;
 }
 
+// Adresse inconnue. On l'annonce au lieu de rediriger en silence : une
+// redirection muette masque les liens cassés (et les fautes de frappe).
+function PageIntrouvable() {
+  const { estConnecte } = useAuth();
+  return (
+    <div className="grid min-h-screen place-items-center bg-navy-900 px-4 text-creme">
+      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+        <p className="font-display text-5xl font-bold text-or-500">404</p>
+        <h1 className="font-display text-xl font-bold">Page introuvable</h1>
+        <p className="text-sm text-creme/70">
+          Cette adresse n'existe pas ou n'existe plus. Le lien que vous avez suivi est
+          peut-être périmé.
+        </p>
+        <a href={estConnecte ? "#/" : "#/connexion"}
+          className="rounded-xl bg-or-500 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-or-400">
+          {estConnecte ? "Retour à l'accueil" : "Aller à la connexion"}
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // GesSchool — routeur applicatif (Phase 0).
 export default function App() {
   return (
@@ -178,7 +200,7 @@ export default function App() {
             <Route path="/rh" element={<Garde cle="rh"><RH /></Garde>} />
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<PageIntrouvable />} />
         </Routes>
         </Suspense>
         </ErrorBoundary>

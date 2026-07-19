@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
 import { getAnneeCourante } from "@/lib/academique.js";
@@ -10,6 +11,7 @@ const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) ||
 
 export default function Recouvrement() {
   const { ecoleId, ecole } = useAuth();
+  const toast = useToast();
   const devise = ecole?.devise || "XOF";
   const [annee, setAnnee] = useState(null);
   const [impayes, setImpayes] = useState([]);
@@ -57,7 +59,10 @@ export default function Recouvrement() {
       `${i.echeance ? ` (échéance ${i.echeance})` : ""}. Merci de régulariser. Cordialement.`;
     const lien = api.lienWhatsApp(c?.telephone, msg);
     if (lien) window.open(lien, "_blank");
-    else { navigator.clipboard?.writeText(msg); alert("Aucun téléphone enregistré — message copié dans le presse-papier."); }
+    else {
+      navigator.clipboard?.writeText(msg);
+      toast.info("Aucun téléphone enregistré — le message a été copié dans le presse-papier.");
+    }
   }
 
   // Relance push/in-app (notification au parent connecté)

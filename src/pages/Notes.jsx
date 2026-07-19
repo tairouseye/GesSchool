@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses, getMesMatieresParClasse, matieresAutorisees } from "@/lib/appel.js";
@@ -89,6 +89,7 @@ export default function Notes() {
       <EnTete titre="Saisie des notes" sousTitre={annee ? `Année ${annee.libelle}` : ""} />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
+        {!annee && <SansAnnee />}
 
         {/* Sélecteurs */}
         <div className="flex flex-wrap gap-3">

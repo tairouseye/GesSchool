@@ -17,6 +17,19 @@ export const STATUTS = {
   rejete: { label: "Rejeté", ton: "rouge" },
 };
 
+// Nombre de demandes non traitées (badge du menu). Silencieux en cas d'erreur :
+// un compteur ne doit jamais empêcher la navigation.
+export async function compterDemandesEnAttente(ecoleId) {
+  if (!ecoleId) return 0;
+  const { count, error } = await supabase
+    .from("demandes_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("ecole_id", ecoleId)
+    .in("statut", ["en_attente", "en_cours"]);
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function getDemandes(ecoleId) {
   const { data, error } = await supabase
     .from("demandes_documents")

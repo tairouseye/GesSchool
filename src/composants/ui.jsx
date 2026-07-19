@@ -107,6 +107,46 @@ export function Champ({ label, className = "", ...props }) {
   );
 }
 
+// Sans année scolaire courante, la plupart des pages n'ont rien à afficher.
+// Mieux vaut le dire que de laisser un écran vide inexplicable.
+export function SansAnnee() {
+  return (
+    <Carte className="p-8">
+      <p className="font-display text-base font-semibold text-navy-900">Aucune année scolaire ouverte</p>
+      <p className="mt-1 text-sm text-navy-900/60">
+        Cette page a besoin d'une année scolaire courante. Le promoteur peut en ouvrir une
+        depuis <b>Pilotage → Passage d'année</b>.
+      </p>
+    </Carte>
+  );
+}
+
+// Champ de recherche : même apparence partout, avec effacement rapide.
+export function Recherche({ valeur, onChange, placeholder = "Rechercher…", className = "" }) {
+  return (
+    <div className={`relative ${className}`}>
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-900/30">🔍</span>
+      <input
+        type="search" value={valeur} onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder} aria-label={placeholder}
+        className="w-full rounded-xl border border-navy-900/15 bg-white py-2.5 pl-9 pr-8 text-sm outline-none transition focus:border-or-500"
+      />
+      {valeur && (
+        <button type="button" onClick={() => onChange("")} aria-label="Effacer la recherche"
+          className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-navy-900/30 hover:bg-navy-900/5 hover:text-navy-900/60">✕</button>
+      )}
+    </div>
+  );
+}
+
+// Filtre texte simple et tolérant (accents et casse ignorés).
+export function filtreTexte(liste, q, champs) {
+  const t = (v) => String(v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const r = t(q).trim();
+  if (!r) return liste;
+  return liste.filter((it) => champs.some((f) => t(typeof f === "function" ? f(it) : it[f]).includes(r)));
+}
+
 export function Carte({ children, className = "" }) {
   return (
     <div className={`rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`}>{children}</div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
 import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
 import { EtatVide } from "@/composants/ui.jsx";
@@ -18,6 +18,13 @@ export default function Membres() {
   const [invitations, setInvitations] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
+  const [q, setQ] = useState("");
+
+  // Recherche sur le nom, l'e-mail et le libellé lisible des rôles.
+  const membresFiltres = filtreTexte(membres, q, [
+    "prenom", "nom", "email",
+    (m) => (m.roles || []).map((r) => LIBELLES_ROLES[r] || r).join(" "),
+  ]);
 
   const charger = useCallback(async () => {
     setErreur("");
@@ -83,15 +90,21 @@ export default function Membres() {
           )}
         </div>
 
+        {membres.length > 8 && (
+          <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un membre (nom, e-mail, rôle)…" className="max-w-sm" />
+        )}
+
         {membres.length === 0 ? (
           <EtatVide icone="👥" titre="Aucun membre"
             action={invitables.length > 0 ? <Bouton onClick={() => setModale(true)}>+ Inviter un membre</Bouton> : null}>
             Invitez les responsables et le personnel de votre établissement pour qu'ils accèdent à leur espace.
           </EtatVide>
+        ) : membresFiltres.length === 0 ? (
+          <Carte className="p-8 text-sm text-navy-900/50">Aucun membre ne correspond à « {q} ».</Carte>
         ) : (
         <Carte className="divide-y divide-navy-900/5">
           {(
-            membres.map((m) => {
+            membresFiltres.map((m) => {
               const estMoi = m.id === profil?.id;
               const rolesGerables = (m.roles || []).filter(gereRole);
               const peutGerer = !estMoi && (complet || rolesGerables.length > 0);

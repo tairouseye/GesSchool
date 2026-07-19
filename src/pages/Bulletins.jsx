@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
@@ -93,6 +93,7 @@ export default function Bulletins() {
       <EnTete titre="Bulletins" sousTitre={annee ? `Année ${annee.libelle}` : ""} />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
+        {!annee && <SansAnnee />}
 
         <div className="flex flex-wrap items-end gap-3">
           <Sel label="Classe" value={classeId} onChange={setClasseId} options={classes.map((c) => [c.id, c.libelle])} />

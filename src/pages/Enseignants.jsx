@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -19,6 +19,9 @@ export default function Enseignants() {
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null); // null | 'new' | enseignant
   const [codes, setCodes] = useState({}); // enseignant_id -> code d'accès
+  const [q, setQ] = useState("");
+
+  const ensFiltres = filtreTexte(enseignants, q, ["prenom", "nom", "specialite", "telephone", "email"]);
 
   async function genererCode(id) {
     try { const code = await api.genererCodeEnseignant(id); setCodes((s) => ({ ...s, [id]: code })); }
@@ -71,6 +74,10 @@ export default function Enseignants() {
           ))}
         </div>
 
+        {onglet === "enseignants" && enseignants.length > 8 && (
+          <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un enseignant…" className="max-w-sm" />
+        )}
+
         {onglet === "enseignants" ? (
           <Carte className="overflow-hidden">
             {enseignants.length === 0 ? (
@@ -90,7 +97,7 @@ export default function Enseignants() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enseignants.map((e) => (
+                  {ensFiltres.map((e) => (
                     <tr key={e.id} className="border-t border-navy-900/5">
                       <td className="px-6 py-3 font-medium text-navy-900">{e.prenom} {e.nom}</td>
                       <td className="px-6 py-3 text-navy-900/70">{e.specialite || "—"}</td>

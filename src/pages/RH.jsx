@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
@@ -200,10 +200,17 @@ export default function RH() {
 }
 
 function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
+  const [q, setQ] = useState("");
   if (personnels.length === 0) {
     return <Carte className="p-8 text-sm text-navy-900/50">Aucun personnel. Ajoute ton équipe avec « + Personnel ».</Carte>;
   }
+  const liste = filtreTexte(personnels, q, ["prenom", "nom", "fonction", "telephone", "email"]);
   return (
+    <div className="space-y-3">
+    <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un membre du personnel…" className="max-w-sm" />
+    {liste.length === 0 ? (
+      <Carte className="p-8 text-sm text-navy-900/50">Aucun résultat pour « {q} ».</Carte>
+    ) : (
     <Carte className="overflow-hidden">
       <table className="w-full text-left text-sm">
         <thead className="bg-creme text-navy-900/50">
@@ -217,7 +224,7 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
           </tr>
         </thead>
         <tbody>
-          {personnels.map((p) => {
+          {liste.map((p) => {
             const c = contrats[p.id];
             return (
               <tr key={p.id} className="border-t border-navy-900/5">
@@ -235,6 +242,8 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
         </tbody>
       </table>
     </Carte>
+    )}
+    </div>
   );
 }
 
