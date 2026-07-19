@@ -10,3 +10,6 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 dev-dist
+
+# fichiers temporaires d'extraction d'images
+docs/tt-raw*.bin
