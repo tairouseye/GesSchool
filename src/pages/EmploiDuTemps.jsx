@@ -695,7 +695,7 @@ function PanneauVolumes({ ecoleId, niveaux, matieres, volumes, onChange, onErreu
     catch (e) { onErreur(e.message); }
   };
 
-  if (niveaux.length === 0) return <Carte className="p-6 text-sm text-navy-900/50">Créez d'abord des niveaux dans « Structure ».</Carte>;
+  if (niveaux.length === 0) return <Carte className="p-6 text-sm text-navy-900/50">Créez d'abord des niveaux dans « Niveaux & classes ».</Carte>;
 
   return (
     <Carte className="max-w-2xl p-6">
@@ -712,7 +712,7 @@ function PanneauVolumes({ ecoleId, niveaux, matieres, volumes, onChange, onErreu
       </label>
 
       {matieres.length === 0 ? (
-        <p className="text-sm text-navy-900/40">Aucune matière. Ajoutez-en dans « Structure ».</p>
+        <p className="text-sm text-navy-900/40">Aucune matière. Ajoutez-en dans « Niveaux & classes ».</p>
       ) : (
         <ul className="divide-y divide-navy-900/5">
           {matieres.map((m) => (

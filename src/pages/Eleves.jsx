@@ -554,7 +554,7 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
           </select>
           {classes.length === 0 && (
             <span className="mt-1 block text-xs text-navy-900/40">
-              Aucune classe : créez-en dans « Structure » pour pouvoir inscrire.
+              Aucune classe : créez-en dans « Niveaux & classes » pour pouvoir inscrire.
             </span>
           )}
         </label>

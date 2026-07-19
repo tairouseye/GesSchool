@@ -33,7 +33,7 @@ export const ESPACES = [
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression" },
       { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
-      { to: "/structure", label: "Structure", icone: "🏫", cle: "structure" },
+      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins" },
       { to: "/classement", label: "Classement", icone: "🏆", cle: "classement" },

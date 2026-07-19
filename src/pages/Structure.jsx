@@ -82,6 +82,13 @@ export default function Structure() {
       <div className="space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
+        <p className="rounded-xl bg-creme/60 px-4 py-2.5 text-xs text-navy-900/50">
+          Organisation : <b className="text-navy-900/70">Cycle</b> (Préscolaire, Élémentaire…)
+          → <b className="text-navy-900/70">Niveau</b> (CP, CE1, 6ᵉ…)
+          → <b className="text-navy-900/70">Classe</b> (CP A, CP B…).
+          Les cycles sont fixés à la création de l'école ; les niveaux et les classes se gèrent ici.
+        </p>
+
         {/* Cycles → Niveaux → Classes */}
         <div className="space-y-5">
           {cycles.length === 0 && (
@@ -155,7 +162,36 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
         </span>
       </div>
 
+      {/* Ajout d'un niveau — en haut : c'est l'action la plus recherchée. */}
+      <form
+        className="mb-4 flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-navy-900/15 bg-creme/40 p-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!nouveauNiveau.trim()) return;
+          onAjoutNiveau(nouveauNiveau.trim(), niveaux.length + 1);
+          setNouveauNiveau("");
+        }}
+      >
+        <label className="block flex-1">
+          <span className="mb-1 block text-[11px] text-navy-900/50">
+            Ajouter un niveau à « {cycle.libelle} »
+          </span>
+          <input
+            value={nouveauNiveau}
+            onChange={(e) => setNouveauNiveau(e.target.value)}
+            placeholder="Tapez le nom du niveau (ex. CM2, 6e, Seconde…)"
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2 text-sm outline-none focus:border-or-500"
+          />
+        </label>
+        <Bouton type="submit" variante="or" disabled={!nouveauNiveau.trim()}>+ Ajouter</Bouton>
+      </form>
+
       <div className="space-y-3">
+        {niveaux.length === 0 && (
+          <p className="text-sm text-navy-900/40">
+            Aucun niveau dans ce cycle. Ajoutez-en un ci-dessus, puis générez ses classes.
+          </p>
+        )}
         {niveaux.map((niveau) => (
           <LigneNiveau
             key={niveau.id}
@@ -170,24 +206,6 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
         ))}
       </div>
 
-      {/* Ajout niveau */}
-      <form
-        className="mt-4 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!nouveauNiveau.trim()) return;
-          onAjoutNiveau(nouveauNiveau.trim(), niveaux.length + 1);
-          setNouveauNiveau("");
-        }}
-      >
-        <input
-          value={nouveauNiveau}
-          onChange={(e) => setNouveauNiveau(e.target.value)}
-          placeholder="Nouveau niveau (ex. 6e, CP, Seconde…)"
-          className="flex-1 rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
-        />
-        <Bouton type="submit" variante="fantome">+ Niveau</Bouton>
-      </form>
     </Carte>
   );
 }

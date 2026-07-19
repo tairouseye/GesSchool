@@ -78,8 +78,8 @@ export default function Notes() {
         {!pret ? (
           <Carte className="p-8 text-sm text-navy-900/50">
             Choisissez une classe, une période et une matière.
-            {classes.length === 0 && " (Aucune classe — créez-en dans Structure.)"}
-            {matieres.length === 0 && " (Aucune matière — ajoutez-en dans Structure.)"}
+            {classes.length === 0 && " (Aucune classe — créez-en dans « Niveaux & classes ».)"}
+            {matieres.length === 0 && " (Aucune matière — ajoutez-en dans « Niveaux & classes ».)"}
           </Carte>
         ) : (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">

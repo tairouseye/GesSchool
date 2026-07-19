@@ -279,7 +279,7 @@ function PanneauPromotion({ ecoleId, annees, courante, onErreur }) {
           </p>
           {ordreIncoherent && (
             <p className="mt-2 text-xs font-medium text-rose-600">
-              ⚠️ Des niveaux ont le même ordre : la promotion pourrait viser le mauvais niveau. Corrigez l'ordre dans « Structure ».
+              ⚠️ Des niveaux ont le même ordre : la promotion pourrait viser le mauvais niveau. Corrigez l'ordre dans « Niveaux & classes ».
             </p>
           )}
         </div>
