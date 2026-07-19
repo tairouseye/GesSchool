@@ -140,19 +140,39 @@ export default function Enseignants() {
 }
 
 function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, affectations, onChange, onErreur }) {
-  const [f, setF] = useState({ enseignant_id: "", classe_id: "", matiere_id: "", coefficient: "1" });
+  const toast = useToast();
+  const [f, setF] = useState({ enseignant_id: "", matiere_id: "", coefficient: "1" });
+  const [sel, setSel] = useState(() => new Set()); // classes cochées
+  const [envoi, setEnvoi] = useState(false);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const pretAjout = enseignants.length && classes.length && matieres.length && annee;
+
+  const basculer = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toutes = () => setSel((s) => (s.size === classes.length ? new Set() : new Set(classes.map((c) => c.id))));
+
+  // Une matière déjà affectée dans une classe (unicité classe × matière × année).
+  const dejaPrise = (classeId) => affectations.some((a) => a.classe_id === classeId && a.matiere_id === f.matiere_id);
 
   async function ajouter(e) {
     e.preventDefault();
     onErreur("");
+    if (!f.enseignant_id || !f.matiere_id) return onErreur("Choisissez l'enseignant et la matière.");
+    if (sel.size === 0) return onErreur("Cochez au moins une classe.");
+    setEnvoi(true);
+    let faites = 0, ignorees = 0;
     try {
-      if (!f.enseignant_id || !f.classe_id || !f.matiere_id) throw new Error("Choisissez enseignant, classe et matière.");
-      await api.creerAffectation(ecoleId, { ...f, annee_id: annee.id });
-      setF({ enseignant_id: "", classe_id: "", matiere_id: "", coefficient: "1" });
+      for (const classe_id of sel) {
+        try { await api.creerAffectation(ecoleId, { ...f, classe_id, annee_id: annee.id }); faites += 1; }
+        catch (er) {
+          if (/duplicate|unique|existe/i.test(er.message)) ignorees += 1; else throw er;
+        }
+      }
+      setF({ enseignant_id: "", matiere_id: "", coefficient: "1" });
+      setSel(new Set());
       onChange();
+      toast.succes(`${faites} affectation(s) créée(s)${ignorees ? ` · ${ignorees} déjà existante(s)` : ""}.`);
     } catch (er) { onErreur(er.message); }
+    finally { setEnvoi(false); }
   }
 
   // Regroupe par classe
@@ -171,15 +191,48 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
             Pré-requis : au moins un enseignant, une classe et une matière (et une année courante).
           </p>
         ) : (
-          <form onSubmit={ajouter} className="flex flex-wrap items-end gap-2">
-            <Sel label="Enseignant" value={f.enseignant_id} onChange={(v) => maj("enseignant_id", v)}
-              options={enseignants.map((e) => [e.id, `${e.prenom} ${e.nom}`])} />
-            <Sel label="Classe" value={f.classe_id} onChange={(v) => maj("classe_id", v)}
-              options={classes.map((c) => [c.id, c.libelle])} />
-            <Sel label="Matière" value={f.matiere_id} onChange={(v) => maj("matiere_id", v)}
-              options={matieres.map((m) => [m.id, m.libelle])} />
-            <div className="w-24"><Champ label="Coef." value={f.coefficient} onChange={(e) => maj("coefficient", e.target.value.replace(/[^0-9.]/g, ""))} /></div>
-            <Bouton type="submit">Affecter</Bouton>
+          <form onSubmit={ajouter} className="space-y-4">
+            <div className="flex flex-wrap items-end gap-2">
+              <Sel label="Enseignant" value={f.enseignant_id} onChange={(v) => maj("enseignant_id", v)}
+                options={enseignants.map((e) => [e.id, `${e.prenom} ${e.nom}`])} />
+              <Sel label="Matière" value={f.matiere_id} onChange={(v) => maj("matiere_id", v)}
+                options={matieres.map((m) => [m.id, m.libelle])} />
+              <div className="w-24"><Champ label="Coef." value={f.coefficient} onChange={(e) => maj("coefficient", e.target.value.replace(/[^0-9.]/g, ""))} /></div>
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-medium text-navy-900/50">
+                  Classes — cochez-en autant que nécessaire {sel.size > 0 && <b className="text-navy-900">({sel.size})</b>}
+                </span>
+                <button type="button" onClick={toutes} className="text-xs font-medium text-navy-700 hover:text-or-600">
+                  {sel.size === classes.length ? "Tout décocher" : "Tout cocher"}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {classes.map((c) => {
+                  const prise = f.matiere_id && dejaPrise(c.id);
+                  return (
+                    <label key={c.id}
+                      title={prise ? "Cette matière est déjà affectée dans cette classe" : ""}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                        sel.has(c.id) ? "border-or-500 bg-or-500/5" : "border-navy-900/10"
+                      } ${prise ? "opacity-50" : ""}`}>
+                      <input type="checkbox" checked={sel.has(c.id)} onChange={() => basculer(c.id)}
+                        className="h-4 w-4 rounded border-navy-900/30 accent-navy-900" />
+                      <span className="truncate">{c.libelle}</span>
+                      {prise && <span className="ml-auto text-[10px] text-navy-900/40">déjà</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Bouton type="submit" disabled={envoi || sel.size === 0}>
+                {envoi ? "Affectation…" : `Affecter à ${sel.size || ""} classe(s)`}
+              </Bouton>
+            </div>
           </form>
         )}
       </Carte>
