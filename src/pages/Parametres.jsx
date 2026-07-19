@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
 import { appliquerAccent, COULEUR_DEFAUT } from "@/lib/theme.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
-import { estRoleComplet } from "@/lib/permissions.js";
+import { estRoleComplet, peutVoirSection } from "@/lib/permissions.js";
 import { getMembres } from "@/lib/membres.js";
 import { getNotationConfig, setNotationConfig, DEFAUT_NOTATION } from "@/lib/bulletins.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -24,23 +24,32 @@ export default function Parametres() {
     catch (e) { setErreur(e.message); }
   };
 
+  // Chaque responsable ne voit que les sections de son domaine ; le promoteur
+  // les voit toutes (cf. SECTIONS_PARAMETRES dans permissions.js).
+  const voit = (s) => peutVoirSection(roles, s);
+
   return (
     <>
-      <EnTete titre="Paramètres" sousTitre="Configuration de l'établissement" />
+      <EnTete
+        titre="Paramètres"
+        sousTitre={estRoleComplet(roles) ? "Configuration de l'établissement" : "Les réglages de votre domaine"}
+      />
       <div className="max-w-2xl space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
         {info && <Alerte ton="succes">{info}</Alerte>}
 
-        <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
-        <Signataires ecoleId={ecoleId} onErreur={setErreur} />
-        <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />
-        <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />
-        <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />
-        {moduleActif(modulesActifs, "recouvrement") && (
+        {voit("etablissement") && (
+          <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
+        )}
+        {voit("signataires") && <Signataires ecoleId={ecoleId} onErreur={setErreur} />}
+        {voit("notation") && <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />}
+        {voit("champs_eleve") && <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />}
+        {voit("matricule") && <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />}
+        {voit("relances") && moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
         )}
         {/* Activation des modules « à la carte » : réservée au promoteur. */}
-        {estRoleComplet(roles) && (
+        {voit("modules") && (
           <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
         )}
       </div>

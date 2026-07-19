@@ -35,6 +35,7 @@ export const ESPACES = [
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression" },
       { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure" },
+      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins" },
       { to: "/classement", label: "Classement", icone: "🏆", cle: "classement" },
@@ -44,6 +45,7 @@ export const ESPACES = [
       { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
+      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
     ],
   },
   {

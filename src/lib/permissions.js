@@ -58,15 +58,19 @@ const ACCES = {
   transport: ["comptable", "secretaire"],
 
   // --- Communication (partagée pédagogie + gestion) ---
-  annonces: ["direction", "comptable"],
+  annonces: ["direction", "comptable", "secretaire"],
   messagerie: ["direction", "comptable", "secretaire"],
 
   // --- Espace RH — responsable : rh ---
   rh: ["rh"],
-  enseignants: ["rh"],
+  // Les affectations prof ↔ classe ↔ matière sont un acte PÉDAGOGIQUE (elles
+  // alimentent l'emploi du temps) autant qu'un acte RH : le responsable
+  // pédagogique doit pouvoir les saisir.
+  enseignants: ["rh", "direction"],
 
-  // --- Configuration — promoteur uniquement ---
-  parametres: [],
+  // --- Configuration — le promoteur voit tout ; chaque responsable n'accède
+  // qu'aux sections de son domaine (cf. SECTIONS_PARAMETRES). ---
+  parametres: ["direction", "comptable", "secretaire"],
 
   // --- Gestion des membres — managers pouvant déléguer ---
   membres: ["direction", "rh", "comptable"],
@@ -92,6 +96,26 @@ export const PAGES = [
   { cle: "comptabilite", path: "/comptabilite" },
   { cle: "rh", path: "/rh" },
 ];
+
+// Sections de la page Paramètres. Chacune appartient au domaine d'un
+// responsable, qui doit pouvoir la régler sans passer par le promoteur.
+// `[]` = promoteur uniquement (identité de l'école, commercial, matricule).
+const SECTIONS_PARAMETRES = {
+  etablissement: [],                          // nom, logo, couleurs, devise
+  modules: [],                                // offre commerciale
+  matricule: [],                              // format des matricules
+  signataires: ["direction"],                 // signent bulletins & documents
+  notation: ["direction"],                    // barème, mentions, bulletins
+  champs_eleve: ["comptable", "secretaire"],  // fiche élève = Gestion
+  relances: ["comptable"],                    // recouvrement
+};
+
+export function peutVoirSection(roles, section) {
+  if (estRoleComplet(roles)) return true;
+  const a = SECTIONS_PARAMETRES[section];
+  if (!a || a.length === 0) return false;
+  return (roles || []).some((r) => a.includes(r));
+}
 
 export function estRoleComplet(roles) {
   return (roles || []).some((r) => ROLES_COMPLETS.includes(r));
