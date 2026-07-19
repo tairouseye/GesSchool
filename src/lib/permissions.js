@@ -106,11 +106,10 @@ export function peutVoir(roles, cle) {
   return roles.some((r) => a.includes(r));
 }
 
-// Première page accessible (atterrissage / repli si accès refusé).
-export function premierePage(roles) {
-  const p = PAGES.find((x) => peutVoir(roles, x.cle));
-  return p ? p.path : "/";
-}
+// NB : le repli « première page accessible » vit désormais dans espaces.js
+// (premiereRoute), car il doit AUSSI tenir compte des modules actifs et du
+// statut promoteur — sinon on propose une page que la garde refuse, d'où une
+// boucle de redirection. Ne pas réintroduire de version partielle ici.
 
 // « Voit toutes les classes » (pas seulement les siennes) : promoteur + le
 // responsable pédagogique (direction). Utilisé par les pages pédago pour

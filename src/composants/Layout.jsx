@@ -3,9 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-do
 import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { LIBELLES_ROLES, peutVoir } from "@/lib/permissions.js";
-import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, itemsEspace } from "@/lib/espaces.js";
-import { moduleActif } from "@/lib/modules.js";
+import { LIBELLES_ROLES } from "@/lib/permissions.js";
+import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -34,11 +33,13 @@ export default function Layout() {
   }, []);
   const fermerTour = () => { setTour(false); localStorage.setItem("tour_staff_v1", "done"); };
 
-  // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un
-  // menu visible (rôle + module actif).
-  const accessibles = espacesAccessibles(roles, estPromoteur).filter(
-    (e) => itemsEspace(e, roles).some((it) => moduleActif(modulesActifs, it.cle))
-  );
+  // Menus d'un espace : uniquement les pages RÉELLEMENT ouvrables (rôle,
+  // module actif, statut promoteur) — même critère que la garde de route,
+  // pour ne jamais proposer un lien qui mènerait à un refus.
+  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs));
+
+  // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un menu.
+  const accessibles = espacesAccessibles(roles, estPromoteur).filter((e) => menusDe(e).length > 0);
   const [espaceId, setEspaceId] = useState(() => espaceParDefaut(roles, estPromoteur)?.id);
 
   // Synchronise l'espace courant avec la route (si la route appartient à un
@@ -53,20 +54,16 @@ export default function Layout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  const espaceCourant = espaceParId(espaceId) || espaceParDefaut(roles, estPromoteur);
-  const items = itemsEspace(espaceCourant, roles)
-    .filter((it) => moduleActif(modulesActifs, it.cle))
+  const espaceCourant = espaceParId(espaceId) || accessibles[0] || espaceParDefaut(roles, estPromoteur);
+  const items = menusDe(espaceCourant)
     // « À signer » ne s'affiche que s'il reste des documents en attente.
     .filter((it) => it.cle !== "signatures" || aSigner > 0);
 
   const changerEspace = (e) => {
     setEspaceId(e.id);
     setMenu(false);
-    // Va au PREMIER menu de l'espace (en général l'Accueil). On ne saute un
-    // accueil « _xxx » que si l'utilisateur n'a pas le droit de l'ouvrir.
-    const dispo = itemsEspace(e, roles).filter((it) => moduleActif(modulesActifs, it.cle));
-    const cible = dispo.find((it) => !it.cle.startsWith("_") || peutVoir(roles, it.cle)) || dispo[0];
-    navigate(cible?.to || e.accueil);
+    // Va au PREMIER menu ouvrable de l'espace (en général l'Accueil).
+    navigate(menusDe(e)[0]?.to || e.accueil);
   };
 
   return (

@@ -1,8 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { peutVoir, premierePage } from "@/lib/permissions.js";
+import { peutVoir } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
+import { premiereRoute } from "@/lib/espaces.js";
 
 // Garde de route :
 //  - non connecté          → /connexion
@@ -41,11 +42,43 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
 // Si l'utilisateur n'a pas accès à la page, on le renvoie vers sa première
 // page autorisée (jamais de cul-de-sac).
 export function Garde({ cle, children }) {
-  const { roles, modulesActifs } = useAuth();
+  const { roles, estPromoteur, modulesActifs } = useAuth();
+  const location = useLocation();
   if (!peutVoir(roles, cle) || !moduleActif(modulesActifs, cle)) {
-    return <Navigate to={premierePage(roles)} replace />;
+    const repli = premiereRoute(roles, estPromoteur, modulesActifs);
+    // Pas de repli, ou repli = la page qu'on vient de refuser → on affiche un
+    // écran explicite. Rediriger ici créerait une boucle infinie.
+    if (!repli || repli === location.pathname) return <EcranSansAcces />;
+    return <Navigate to={repli} replace />;
   }
   return children;
+}
+
+// Aucun accès : ni page autorisée, ni module actif. Cas typique d'un membre
+// invité dont le rôle n'a pas encore été attribué.
+export function EcranSansAcces() {
+  const { deconnexion, profil } = useAuth();
+  return (
+    <div className="grid min-h-full place-items-center bg-navy-900 px-4 text-creme">
+      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+        <Cachet size={72} className="text-or-500/60" />
+        <h1 className="font-display text-xl font-bold">Aucun accès pour l'instant</h1>
+        <p className="text-sm text-creme/70">
+          {profil ? `${profil.prenom}, votre` : "Votre"} compte est bien rattaché à l'établissement,
+          mais aucun rôle ne vous a encore été attribué. Demandez à la direction de vous en donner un
+          dans « Membres ».
+        </p>
+        <a href="https://wa.me/221773435928?text=Bonjour%2C%20mon%20compte%20GesSchool%20n%27a%20aucun%20acc%C3%A8s."
+          target="_blank" rel="noreferrer"
+          className="rounded-xl bg-or-500 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-or-400">
+          💬 Contacter l'assistance
+        </a>
+        <button onClick={deconnexion} className="text-xs text-creme/60 underline hover:text-creme">
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // Garde de la console SUPER-ADMIN (propriétaire SaaS).

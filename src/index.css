@@ -62,6 +62,30 @@
   main .p-8 {
     padding: 1rem;
   }
+
+  /* Tableaux : défilement horizontal au lieu de colonnes écrasées ou coupées.
+     `display: block` rend le tableau lui-même scrollable ; les cellules ne
+     passent plus à la ligne, sinon il n'y a rien à faire défiler. Le parent
+     (souvent une Carte en overflow-hidden) n'est jamais débordé.
+     Les documents imprimables (.zone-impression) gardent leur mise en page. */
+  main table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  main table th,
+  main table td {
+    white-space: nowrap;
+  }
+  main .zone-impression table {
+    display: table;
+    overflow-x: visible;
+  }
+  main .zone-impression th,
+  main .zone-impression td {
+    white-space: normal;
+  }
 }
 
 /* Impression : ne montrer que la zone du bulletin. */

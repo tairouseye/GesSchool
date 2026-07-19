@@ -3,6 +3,7 @@
 // (admin/direction/super_admin) et les promoteurs accèdent à tous les espaces.
 
 import { ROLES_COMPLETS, estRoleComplet, peutVoir } from "@/lib/permissions.js";
+import { moduleActif } from "@/lib/modules.js";
 
 // Chaque page (clé) appartient à un ou plusieurs espaces.
 // `roles` = rôles « métier » membres de l'espace (en plus des rôles complets).
@@ -58,6 +59,7 @@ export const ESPACES = [
       { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes" },
       { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements" },
       { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement" },
+      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine" },
       { to: "/transport", label: "Transport", icone: "🚌", cle: "transport" },
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
@@ -69,14 +71,13 @@ export const ESPACES = [
   },
   {
     id: "rh",
-    label: "RH, Paie & Compta",
+    label: "RH & Paie",
     icone: "🧑‍💼",
     accueil: "/rh",
-    roles: ["rh", "comptable"], // comptable y accède pour la Comptabilité
+    roles: ["rh"], // la Comptabilité a rejoint l'espace Gestion (côté comptable)
     items: [
       { to: "/rh", label: "Personnel & paie", icone: "🧑‍💼", cle: "rh", exact: true },
       { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
-      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
@@ -112,10 +113,31 @@ export function espacesDeRoute(path) {
   return ESPACES.filter((e) => e.items.some((it) => it.to === path));
 }
 
-// Items de menu d'un espace, filtrés par les permissions de l'utilisateur.
-export function itemsEspace(espace, roles) {
-  if (!espace) return [];
-  return espace.items.filter((it) => it.cle.startsWith("_") || peutVoir(roles, it.cle));
+// (itemsEspace a été retiré : il laissait passer les accueils « _xxx » sans
+//  vérifier le droit, donc le menu proposait des pages que la garde refusait.
+//  Utiliser routeOuvrable / premiereRoute ci-dessous.)
+
+// Une route est-elle RÉELLEMENT ouvrable ? On reproduit ici la garde exacte
+// posée sur la route (cf. App.jsx) : rôle + module actif, et statut promoteur
+// pour les pages de pilotage. Sans cela, on peut proposer une page que la
+// garde refusera — c'est ce qui provoquait une boucle de redirection.
+const ROUTES_PROMOTEUR = ["/pilotage", "/passage-annee"];
+
+export function routeOuvrable(item, roles, estPromoteur, modulesActifs) {
+  if (!moduleActif(modulesActifs, item.cle)) return false;
+  if (ROUTES_PROMOTEUR.includes(item.to)) return !!estPromoteur;
+  return peutVoir(roles, item.cle);
+}
+
+// Première page réellement accessible, tous espaces confondus.
+// Renvoie `null` si l'utilisateur n'a accès à RIEN : l'appelant doit alors
+// afficher un écran explicite plutôt que de rediriger indéfiniment.
+export function premiereRoute(roles, estPromoteur, modulesActifs) {
+  for (const e of espacesAccessibles(roles, estPromoteur)) {
+    const it = e.items.find((x) => routeOuvrable(x, roles, estPromoteur, modulesActifs));
+    if (it) return it.to;
+  }
+  return null;
 }
 
 export { ROLES_COMPLETS };

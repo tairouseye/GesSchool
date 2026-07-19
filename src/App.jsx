@@ -1,11 +1,11 @@
 import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper, EcranSansAcces } from "@/composants/RouteProtegee.jsx";
 import { Feedback } from "@/composants/Feedback.jsx";
 import ErrorBoundary from "@/composants/ErrorBoundary.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
-import { espaceParDefaut } from "@/lib/espaces.js";
+import { premiereRoute, routeOuvrable } from "@/lib/espaces.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 
 // Coques + 1er écran : chargés d'emblée (points d'entrée du routeur).
@@ -70,13 +70,19 @@ function Rejoindre() {
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
-  const { roles, estPromoteur } = useAuth();
-  // Un enseignant « pur » arrive directement sur l'appel de sa classe.
-  if (roles.includes("enseignant") && !estRoleComplet(roles) && !estPromoteur) {
+  const { roles, estPromoteur, modulesActifs } = useAuth();
+  // Un enseignant « pur » arrive directement sur l'appel de sa classe — mais
+  // seulement si la page lui est réellement ouverte (module Vie scolaire actif).
+  const appel = { to: "/appel", cle: "appel" };
+  if (roles.includes("enseignant") && !estRoleComplet(roles) && !estPromoteur
+      && routeOuvrable(appel, roles, estPromoteur, modulesActifs)) {
     return <Navigate to="/appel" replace />;
   }
-  const espace = espaceParDefaut(roles, estPromoteur);
-  return <Navigate to={espace?.accueil || "/gestion"} replace />;
+  // Sinon : première page RÉELLEMENT ouvrable. Si aucune, on l'annonce au lieu
+  // de renvoyer vers un accueil que la garde refusera (boucle infinie).
+  const cible = premiereRoute(roles, estPromoteur, modulesActifs);
+  if (!cible) return <EcranSansAcces />;
+  return <Navigate to={cible} replace />;
 }
 
 // GesSchool — routeur applicatif (Phase 0).
