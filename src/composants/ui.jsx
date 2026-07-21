@@ -235,6 +235,8 @@ export function Alerte({ ton = "erreur", children }) {
   const tons = {
     erreur: "border-rose-300 bg-rose-50 text-rose-700",
     succes: "border-emerald-300 bg-emerald-50 text-emerald-700",
+    // « or » = avertissement : à surveiller, mais rien n'est cassé.
+    or: "border-or-500/40 bg-or-500/10 text-or-600",
     info: "border-navy-900/15 bg-creme text-navy-900/70",
   };
   return (

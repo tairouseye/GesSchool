@@ -18,6 +18,7 @@ export const ESPACES = [
     items: [
       { to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" },
       { to: "/passage-annee", label: "Passage d'année", icone: "🗓️", cle: "_passage_annee" },
+      { to: "/abonnement", label: "Mon abonnement", icone: "🎫", cle: "_abonnement" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
     ],
@@ -123,7 +124,7 @@ export function espacesDeRoute(path) {
 // posée sur la route (cf. App.jsx) : rôle + module actif, et statut promoteur
 // pour les pages de pilotage. Sans cela, on peut proposer une page que la
 // garde refusera — c'est ce qui provoquait une boucle de redirection.
-const ROUTES_PROMOTEUR = ["/pilotage", "/passage-annee"];
+const ROUTES_PROMOTEUR = ["/pilotage", "/passage-annee", "/abonnement"];
 
 export function routeOuvrable(item, roles, estPromoteur, modulesActifs) {
   if (!moduleActif(modulesActifs, item.cle)) return false;

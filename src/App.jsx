@@ -40,6 +40,7 @@ const Comptabilite = lazy(() => import("@/pages/Comptabilite.jsx"));
 const RH = lazy(() => import("@/pages/RH.jsx"));
 const Pilotage = lazy(() => import("@/pages/Pilotage.jsx"));
 const PassageAnnee = lazy(() => import("@/pages/PassageAnnee.jsx"));
+const Abonnement = lazy(() => import("@/pages/Abonnement.jsx"));
 const AccueilPedagogie = lazy(() => import("@/pages/AccueilPedagogie.jsx"));
 const Fournitures = lazy(() => import("@/pages/Fournitures.jsx"));
 const Appel = lazy(() => import("@/pages/Appel.jsx"));
@@ -169,6 +170,7 @@ export default function App() {
             <Route path="/" element={<RedirectionAccueil />} />
             <Route path="/pilotage" element={<GardePromoteur><Pilotage /></GardePromoteur>} />
             <Route path="/passage-annee" element={<GardePromoteur><PassageAnnee /></GardePromoteur>} />
+            <Route path="/abonnement" element={<GardePromoteur><Abonnement /></GardePromoteur>} />
             <Route path="/pedagogie" element={<Garde cle="_pedagogie"><AccueilPedagogie /></Garde>} />
             <Route path="/gestion" element={<Garde cle="_gestion"><TableauDeBord /></Garde>} />
             <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
