@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
+import { HYPOTHESES_DEFAUT, calculerGrille, totalFixes, getHypotheses, setHypotheses, appliquerTarifs } from "@/lib/tarification.js";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
 import { useToast } from "@/composants/Feedback.jsx";
@@ -22,6 +23,7 @@ export default function SuperAdmin() {
   const [plans, setPlans] = useState([]);
   const [erreur, setErreur] = useState("");
   const [edit, setEdit] = useState(null);
+  const [onglet, setOnglet] = useState("ecoles");
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -70,6 +72,13 @@ export default function SuperAdmin() {
       <div className="mx-auto max-w-6xl space-y-6 p-6">
         <Alerte ton="erreur">{erreur}</Alerte>
 
+        <Onglets actif={onglet} onChange={setOnglet}
+          items={[["ecoles", "Écoles clientes"], ["tarification", "💰 Tarification"]]} />
+
+        {onglet === "tarification" ? (
+          <Tarification nbEcolesReel={ecoles.length} onErreur={setErreur} />
+        ) : (
+        <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           <Kpi label="Écoles clientes" valeur={String(ecoles.length)} />
           <Kpi label="Abonnements actifs" valeur={String(actives)} ton="vert" />
@@ -126,6 +135,8 @@ export default function SuperAdmin() {
             </tbody>
           </table>
         </Carte>
+        </div>
+        )}
       </div>
 
       <ModaleEcole
@@ -136,6 +147,171 @@ export default function SuperAdmin() {
     </div>
   );
 }
+
+// Simulateur de tarification : construit les offres à partir des coûts réels.
+// Aucun prix n'est deviné — tout découle des hypothèses saisies ici.
+function Tarification({ nbEcolesReel, onErreur }) {
+  const toast = useToast();
+  const [h, setH] = useState(HYPOTHESES_DEFAUT);
+  const [chargement, setChargement] = useState(true);
+  const [envoi, setEnvoi] = useState(false);
+
+  useEffect(() => {
+    getHypotheses().then(setH).catch((e) => onErreur(e.message)).finally(() => setChargement(false));
+  }, [onErreur]);
+
+  const grille = calculerGrille(h);
+  const F = totalFixes(h);
+  const majFixe = (k, v) => setH((s) => ({ ...s, fixes: { ...s.fixes, [k]: Number(v) || 0 } }));
+  const maj = (k, v) => setH((s) => ({ ...s, [k]: v }));
+  const majPalier = (i, k, v) =>
+    setH((s) => ({ ...s, paliers: s.paliers.map((p, j) => (j === i ? { ...p, [k]: Number(v) || 0 } : p)) }));
+
+  const enregistrer = async () => {
+    setEnvoi(true);
+    try { await setHypotheses(h); toast.succes("Hypothèses enregistrées."); }
+    catch (e) { toast.erreur(e.message); }
+    finally { setEnvoi(false); }
+  };
+  const appliquer = async () => {
+    setEnvoi(true);
+    try { await appliquerTarifs(grille); toast.succes("Tarifs appliqués aux plans d'abonnement."); }
+    catch (e) { toast.erreur(e.message); }
+    finally { setEnvoi(false); }
+  };
+
+  if (chargement) return <Carte className="p-8 text-sm text-navy-900/50">Chargement…</Carte>;
+
+  return (
+    <div className="space-y-5">
+      <Carte className="p-6">
+        <h3 className="font-display text-lg font-semibold text-navy-900">Pourquoi pas « par élève »</h3>
+        <p className="mt-1 text-sm text-navy-900/60">
+          Facturer au prorata de l'effectif revient à indexer le prix sur une variable qui ne
+          pilote pas tes coûts : une école de plus ne coûte presque rien en serveur. Ton coût
+          dominant est le <b>temps humain</b> (onboarding + support). Le palier d'effectif sert
+          d'approximation de cette charge — d'où un forfait, prévisible pour le client.
+        </p>
+        <p className="mt-2 font-mono text-xs text-navy-900/45">
+          Prix = ( Fixes / N + Variable + Onboarding / 12 ) ÷ (1 − marge)
+        </p>
+      </Carte>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Carte className="p-6">
+          <h3 className="mb-3 font-display text-base font-semibold text-navy-900">Coûts fixes mensuels</h3>
+          <div className="space-y-2">
+            {[["supabase", "Supabase (Pro, sauvegardes)"], ["domaine", "Domaine + DNS"],
+              ["email", "E-mail transactionnel"], ["outils", "Outils (IA, design, supervision)"]].map(([k, lib]) => (
+              <label key={k} className="flex items-center justify-between gap-3">
+                <span className="text-sm text-navy-900/70">{lib}</span>
+                <input type="number" value={h.fixes[k] ?? 0} onChange={(e) => majFixe(k, e.target.value)}
+                  className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+              </label>
+            ))}
+          </div>
+          <p className="mt-3 border-t border-navy-900/10 pt-2 text-right text-sm">
+            Total <b className="font-mono text-navy-900">{fmtX(F)} XOF</b> / mois
+          </p>
+        </Carte>
+
+        <Carte className="p-6">
+          <h3 className="mb-3 font-display text-base font-semibold text-navy-900">Pilotage</h3>
+          <div className="space-y-3">
+            <Curseur label="Marge visée" valeur={h.margeVisee} min={0} max={0.9} pas={0.05}
+              affichage={`${Math.round(h.margeVisee * 100)} %`} onChange={(v) => maj("margeVisee", v)} />
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm text-navy-900/70">Taux horaire (XOF/h)</span>
+              <input type="number" value={h.tauxHoraire} onChange={(e) => maj("tauxHoraire", Number(e.target.value) || 0)}
+                className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+            </label>
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm text-navy-900/70">
+                Écoles clientes visées
+                <span className="ml-1 text-xs text-navy-900/40">(actuel : {nbEcolesReel})</span>
+              </span>
+              <input type="number" min="1" value={h.nbEcoles} onChange={(e) => maj("nbEcoles", Number(e.target.value) || 1)}
+                className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+            </label>
+          </div>
+          <p className="mt-3 text-xs text-navy-900/45">
+            Plus tu as d'écoles, plus les frais fixes se diluent et plus le prix baisse.
+            À marge 0 %, le prix affiché est ton coût de revient exact.
+          </p>
+        </Carte>
+      </div>
+
+      <Carte className="overflow-hidden">
+        <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
+          Charge par palier &amp; prix obtenu
+        </div>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-creme text-navy-900/50">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Palier</th>
+              <th className="px-4 py-2.5 font-medium">Max élèves</th>
+              <th className="px-4 py-2.5 font-medium">Support (h/mois)</th>
+              <th className="px-4 py-2.5 font-medium">Onboarding (h)</th>
+              <th className="px-4 py-2.5 text-right font-medium">Coût de revient</th>
+              <th className="px-4 py-2.5 text-right font-medium">Prix / mois</th>
+              <th className="px-4 py-2.5 text-right font-medium">Prix / an</th>
+              <th className="px-4 py-2.5 text-right font-medium">Seuil</th>
+            </tr>
+          </thead>
+          <tbody>
+            {grille.map((l, i) => (
+              <tr key={l.code} className="border-t border-navy-900/5">
+                <td className="px-4 py-2.5 font-medium text-navy-900">{l.libelle}</td>
+                <td className="px-4 py-2.5">
+                  <input type="number" value={l.maxEleves} onChange={(e) => majPalier(i, "maxEleves", e.target.value)}
+                    className="w-20 rounded-lg border border-navy-900/15 px-2 py-1 text-right font-mono text-xs outline-none focus:border-or-500" />
+                </td>
+                <td className="px-4 py-2.5">
+                  <input type="number" step="0.5" value={l.supportHeures} onChange={(e) => majPalier(i, "supportHeures", e.target.value)}
+                    className="w-20 rounded-lg border border-navy-900/15 px-2 py-1 text-right font-mono text-xs outline-none focus:border-or-500" />
+                </td>
+                <td className="px-4 py-2.5">
+                  <input type="number" value={l.onboardingHeures} onChange={(e) => majPalier(i, "onboardingHeures", e.target.value)}
+                    className="w-20 rounded-lg border border-navy-900/15 px-2 py-1 text-right font-mono text-xs outline-none focus:border-or-500" />
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono text-navy-900/60">{fmtX(l.coutRevient)}</td>
+                <td className="px-4 py-2.5 text-right font-mono font-semibold text-navy-900">{fmtX(l.prixMensuel)}</td>
+                <td className="px-4 py-2.5 text-right font-mono font-semibold text-or-600">{fmtX(l.prixAnnuel)}</td>
+                <td className="px-4 py-2.5 text-right font-mono text-navy-900/50">
+                  {l.seuilEcoles ? `${l.seuilEcoles} écoles` : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/45">
+          <b>Seuil</b> = nombre d'écoles sur ce palier nécessaire pour couvrir tes frais fixes.
+          Les prix appliqués sont arrondis au millier de francs.
+        </p>
+      </Carte>
+
+      <div className="flex flex-wrap justify-end gap-2">
+        <Bouton variante="fantome" onClick={() => setH(HYPOTHESES_DEFAUT)}>Réinitialiser</Bouton>
+        <Bouton variante="fantome" onClick={enregistrer} disabled={envoi}>Enregistrer les hypothèses</Bouton>
+        <Bouton variante="or" onClick={appliquer} disabled={envoi}>Appliquer ces prix aux plans</Bouton>
+      </div>
+    </div>
+  );
+}
+
+function Curseur({ label, valeur, min, max, pas, affichage, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between text-sm text-navy-900/70">
+        {label} <b className="font-mono text-navy-900">{affichage}</b>
+      </span>
+      <input type="range" min={min} max={max} step={pas} value={valeur}
+        onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-or-500" />
+    </label>
+  );
+}
+
+const fmtX = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
 function Kpi({ label, valeur, ton }) {
   const tons = { navy: "text-navy-900", vert: "text-emerald-700" };
