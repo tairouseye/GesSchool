@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { supabase } from "@/lib/supabase.js";
 import { CYCLES, anneeParDefaut } from "@/lib/cycles.js";
+import { PAYS, deviseDuPays } from "@/lib/pays.js";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 
@@ -20,6 +21,7 @@ export default function Onboarding() {
   // Données du formulaire
   const [f, setF] = useState({
     nom: "", sigle: "", type_etablissement: "Privé",
+    pays: "Sénégal", ville: "",
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227",
     logoFile: null, cachetFile: null,
     cycles: [],
@@ -59,6 +61,7 @@ export default function Onboarding() {
         p_prenom: f.prenom, p_nom_admin: f.nom_admin,
         p_annee_libelle: f.annee_libelle, p_annee_debut: f.annee_debut, p_annee_fin: f.annee_fin,
         p_decoupage: f.decoupage,
+        p_pays: f.pays, p_ville: f.ville, p_devise: deviseDuPays(f.pays),
       });
       if (error) throw error;
 
@@ -72,7 +75,7 @@ export default function Onboarding() {
   }
 
   // Validations par étape
-  const etape1OK = f.nom.trim() && f.sigle.trim();
+  const etape1OK = f.nom.trim() && f.sigle.trim() && f.pays && f.ville.trim();
   const etape2OK = f.cycles.length > 0;
   const etape3OK = f.prenom.trim() && f.nom_admin.trim() && f.annee_libelle.trim();
 
@@ -110,6 +113,22 @@ export default function Onboarding() {
                   </select>
                 </label>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays *</span>
+                  <select value={f.pays} onChange={(e) => maj("pays", e.target.value)}
+                          className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                    {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </label>
+                <Champ label="Ville *" value={f.ville}
+                       onChange={(e) => maj("ville", e.target.value)} placeholder="Dakar" />
+              </div>
+              <p className="-mt-2 text-xs text-navy-900/40">
+                Pays et ville apparaissent sur les documents officiels (certificats, attestations, bulletins).
+                Devise appliquée : <b>{deviseDuPays(f.pays)}</b> — modifiable ensuite dans Paramètres.
+              </p>
 
               <div className="grid grid-cols-2 gap-4">
                 <FichierChamp label="Logo (optionnel)" onChange={(file) => maj("logoFile", file)} fichier={f.logoFile} />

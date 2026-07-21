@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
 import { appliquerAccent, COULEUR_DEFAUT } from "@/lib/theme.js";
+import { PAYS, deviseDuPays } from "@/lib/pays.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet, peutVoirSection } from "@/lib/permissions.js";
 import { getMembres } from "@/lib/membres.js";
@@ -11,7 +12,7 @@ import { getNotationConfig, setNotationConfig, DEFAUT_NOTATION } from "@/lib/bul
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 
-const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD"];
+const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD", "MRU"];
 
 export default function Parametres() {
   const { ecoleId, ecole, roles, modulesActifs, rafraichirProfil } = useAuth();
@@ -193,12 +194,18 @@ function ModaleRegle({ regle, onFermer, onValider }) {
 }
 
 function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
-  const [f, setF] = useState({ nom: "", sigle: "", devise: "XOF", couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null });
+  const [f, setF] = useState({
+    nom: "", sigle: "", devise: "XOF", pays: "Sénégal", ville: "", adresse: "",
+    telephone: "", email: "",
+    couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
+  });
   const [up, setUp] = useState("");
   useEffect(() => {
     if (!ecole) return;
     setF({
       nom: ecole.nom || "", sigle: ecole.sigle || "", devise: ecole.devise || "XOF",
+      pays: ecole.pays || "Sénégal", ville: ecole.ville || "", adresse: ecole.adresse || "",
+      telephone: ecole.telephone || "", email: ecole.email || "",
       couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
       couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
       logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
@@ -231,6 +238,18 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
         <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
+          <select value={f.pays}
+            onChange={(e) => { const p = e.target.value; setF((s) => ({ ...s, pays: p, devise: deviseDuPays(p) })); }}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+            {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </label>
+        <Champ label="Ville" value={f.ville} onChange={(e) => maj("ville", e.target.value)} placeholder="Dakar" />
+        <Champ label="Adresse" value={f.adresse} onChange={(e) => maj("adresse", e.target.value)} />
+        <Champ label="Téléphone" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+        <Champ label="E-mail" type="email" value={f.email} onChange={(e) => maj("email", e.target.value)} />
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Devise</span>
           <select value={f.devise} onChange={(e) => maj("devise", e.target.value)}
