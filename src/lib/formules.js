@@ -14,15 +14,15 @@ export const FORMULES = [
   {
     id: "essentiel",
     libelle: "Essentiel",
-    accroche: "Gérer élèves, notes et bulletins",
-    ajoute: ["scolarite", "evaluations"],
+    accroche: "Gérer élèves, notes, bulletins et encaisser",
+    ajoute: ["scolarite", "evaluations", "encaissement"],
     multiplicateur: 1.0,
   },
   {
     id: "confort",
     libelle: "Confort",
-    accroche: "Le quotidien + lien parents + caisse",
-    ajoute: ["vie_scolaire", "communication", "finances"],
+    accroche: "Le quotidien + lien parents + comptabilité",
+    ajoute: ["vie_scolaire", "communication", "comptabilite"],
     multiplicateur: 1.4,
   },
   {
