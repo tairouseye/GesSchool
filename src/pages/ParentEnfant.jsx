@@ -4,11 +4,11 @@ import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
-  enfantCantine, enfantMenuCantine, enfantTransport,
+  enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
-import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe, Onglets } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -17,7 +17,9 @@ const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 
 export default function ParentEnfant() {
   const { id } = useParams();
-  const [onglet, setOnglet] = useState("notes");
+  // null = accueil en tuiles ; sinon la section ouverte.
+  const [onglet, setOnglet] = useState(null);
+  const [enfant, setEnfant] = useState(null);
   const [notes, setNotes] = useState([]);
   const [factures, setFactures] = useState([]);
   const [absences, setAbsences] = useState([]);
@@ -36,32 +38,72 @@ export default function ParentEnfant() {
 
   const charger = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl, cah, bul, dem, can, men, tra] = await Promise.all([
+      const [n, f, a, e, four, inf, decl, cah, bul, dem, can, men, tra, enf] = await Promise.all([
         enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
         enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id), mesDemandes(),
-        enfantCantine(id), enfantMenuCantine(id), enfantTransport(id),
+        enfantCantine(id), enfantMenuCantine(id), enfantTransport(id), mesEnfants(),
       ]);
       setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
       setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul); setDemandes(dem);
       setCantine(can); setMenu(men); setTransport(tra);
+      setEnfant((enf || []).find((x) => x.eleve_id === id) || null);
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
   }, [id]);
 
   useEffect(() => { setChargement(true); charger(); }, [charger]);
 
+  // Badges calculés depuis les données déjà chargées (aucune requête en plus).
+  const impayes = factures.filter((f) => (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0) > 0).length;
+  const demandesEnCours = demandes.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
+  const badges = { paiements: impayes, documents: demandesEnCours };
+
+  // Sections disponibles (Cantine/Transport seulement si abonnement).
+  const tuiles = TUILES.filter((t) => (t.cle !== "cantine" || cantine) && (t.cle !== "transport" || transport));
+  const sectionActive = TUILES.find((t) => t.cle === onglet);
+
   return (
     <div className="space-y-5">
-      <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
+      {onglet === null ? (
+        <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
+      ) : (
+        <button onClick={() => setOnglet(null)} className="text-sm font-medium text-navy-700 hover:text-or-500">← Accueil</button>
+      )}
       <Alerte ton="erreur">{erreur}</Alerte>
-
-      <Onglets actif={onglet} onChange={setOnglet}
-        items={[["notes", "Notes"], ["bulletins", "Bulletins"], ["cahier", "Cahier de textes"], ["emploi", "Emploi du temps"], ["fournitures", "Fournitures"], ["paiements", "Paiements"], ["absences", "Absences"], ["documents", "Documents"],
-          ...(cantine ? [["cantine", "🍽️ Cantine"]] : []), ...(transport ? [["transport", "🚌 Transport"]] : [])]} />
 
       {chargement ? (
         <SkeletonListe lignes={4} />
-      ) : onglet === "notes" ? (
+      ) : onglet === null ? (
+        <>
+          {/* En-tête + grille de tuiles colorées (accueil de l'enfant) */}
+          <div className="rounded-3xl bg-gradient-to-br from-navy-900 to-navy-700 p-5 text-creme">
+            <p className="text-sm text-creme/60">Bonjour 👋</p>
+            <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
+            <p className="text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {tuiles.map((t) => (
+              <button
+                key={t.cle}
+                onClick={() => setOnglet(t.cle)}
+                className={`relative flex min-h-[104px] flex-col items-start justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-95 ${t.classe}`}
+              >
+                <span className="text-3xl leading-none">{t.emoji}</span>
+                <span className="text-sm font-semibold">{t.label}</span>
+                {badges[t.cle] > 0 && (
+                  <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow">
+                    {badges[t.cle]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <h2 className="font-display text-xl font-bold text-navy-900">{sectionActive?.emoji} {sectionActive?.label}</h2>
+          {onglet === "notes" ? (
         <Notes notes={notes} />
       ) : onglet === "bulletins" ? (
         <Bulletins bulletins={bulletins} onErreur={setErreur} />
@@ -82,9 +124,26 @@ export default function ParentEnfant() {
       ) : (
         <Absences absences={absences} onChange={charger} onErreur={setErreur} />
       )}
+        </>
+      )}
     </div>
   );
 }
+
+// Sections de l'enfant présentées en tuiles colorées (accueil parent).
+// Une couleur pastel par section, icône/texte foncé pour la lisibilité.
+const TUILES = [
+  { cle: "notes",       label: "Notes",          emoji: "📘", classe: "bg-violet-100 text-violet-800" },
+  { cle: "bulletins",   label: "Bulletins",      emoji: "🎓", classe: "bg-rose-100 text-rose-800" },
+  { cle: "cahier",      label: "Cahier de textes", emoji: "📓", classe: "bg-amber-100 text-amber-800" },
+  { cle: "emploi",      label: "Emploi du temps", emoji: "🗓️", classe: "bg-orange-100 text-orange-800" },
+  { cle: "paiements",   label: "Paiements",      emoji: "💳", classe: "bg-emerald-100 text-emerald-800" },
+  { cle: "absences",    label: "Absences",       emoji: "📋", classe: "bg-sky-100 text-sky-800" },
+  { cle: "fournitures", label: "Fournitures",    emoji: "🎒", classe: "bg-teal-100 text-teal-800" },
+  { cle: "documents",   label: "Documents",      emoji: "🧾", classe: "bg-indigo-100 text-indigo-800" },
+  { cle: "cantine",     label: "Cantine",        emoji: "🍽️", classe: "bg-lime-100 text-lime-800" },
+  { cle: "transport",   label: "Transport",      emoji: "🚌", classe: "bg-fuchsia-100 text-fuchsia-800" },
+];
 
 const JOURS_SEM = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const LIB_TRAJET = { aller_retour: "Aller-retour", aller: "Aller seul", retour: "Retour seul" };

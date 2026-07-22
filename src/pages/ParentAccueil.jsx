@@ -8,6 +8,14 @@ import { useToast } from "@/composants/Feedback.jsx";
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
+// Couleur d'avatar stable par enfant (dérivée de son id) — accord avec les tuiles.
+const AVATAR_COULEURS = ["bg-violet-500", "bg-rose-500", "bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-fuchsia-500", "bg-teal-500", "bg-indigo-500"];
+const avatarColor = (id) => {
+  let h = 0;
+  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return AVATAR_COULEURS[h % AVATAR_COULEURS.length];
+};
+
 export default function ParentAccueil() {
   const toast = useToast();
   const [enfants, setEnfants] = useState([]);
@@ -54,10 +62,10 @@ export default function ParentAccueil() {
             <Link
               key={e.eleve_id}
               to={`/parent/enfant/${e.eleve_id}`}
-              className="rounded-2xl border border-navy-900/10 bg-white p-5 shadow-sm transition hover:ring-2 hover:ring-or-500"
+              className="group rounded-3xl border border-navy-900/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-or-500"
             >
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-full bg-navy-900/10 font-display text-lg font-bold text-navy-900/60">
+                <span className={`grid h-12 w-12 place-items-center rounded-2xl font-display text-lg font-bold text-white ${avatarColor(e.eleve_id)}`}>
                   {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
                 </span>
                 <div>
@@ -65,7 +73,7 @@ export default function ParentAccueil() {
                   <p className="text-sm text-navy-900/50">{e.classe || "—"} · {e.ecole || ""}</p>
                 </div>
               </div>
-              <p className="mt-4 text-sm text-or-600">Voir le détail →</p>
+              <p className="mt-4 text-sm font-medium text-or-600">Ouvrir l'espace →</p>
             </Link>
           ))}
         </div>
