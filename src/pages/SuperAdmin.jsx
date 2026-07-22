@@ -156,6 +156,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
   const [h, setH] = useState(HYPOTHESES_DEFAUT);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
+  const [reduction, setReduction] = useState(0.5); // offre Fondateur : réduction testée
 
   useEffect(() => {
     getHypotheses().then(setH).catch((e) => onErreur(e.message)).finally(() => setChargement(false));
@@ -171,6 +172,23 @@ function Tarification({ nbEcolesReel, onErreur }) {
   const synthese = aAuj && aCible
     ? `Aujourd'hui à ${aAuj.N} école(s), il te faut au minimum ${fmtX(aAuj.plancherAnnuel)} XOF/an par école pour ne rien perdre ; à ${aCible.N} écoles, ${fmtX(aCible.plancherAnnuel)} XOF/an suffisent. L'écart, c'est ton salaire qui se dilue sur plus d'écoles.`
     : "";
+  // Offre Fondateur : Premium (tout) ≤400 réduit, confronté aux planchers.
+  const offreRef = offres.find((o) => o.code === "tout_p400");
+  const prixReduitAnnuel = (offreRef?.prixAnnuel || 0) * (1 - reduction);
+  // Plancher absolu = coût variable seul (indépendant de N) : en dessous, jamais
+  // rentable, quel que soit le nombre d'écoles.
+  const palier400 = (h.paliers || []).find((p) => p.code === "p400");
+  const coutVarAnnuel = palier400
+    ? 12 * ((Number(palier400.supportHeures) || 0) * (Number(h.tauxHoraire) || 0) + (Number(palier400.infra) || 0) + ((Number(palier400.onboardingHeures) || 0) * (Number(h.tauxHoraire) || 0)) / 12)
+    : 0;
+  const fondateur = {
+    prixReduitAnnuel,
+    okAuj: aAuj ? prixReduitAnnuel >= aAuj.plancherAnnuel : false,
+    okCible: aCible ? prixReduitAnnuel >= aCible.plancherAnnuel : false,
+    okJamais: prixReduitAnnuel >= coutVarAnnuel, // au moins au-dessus du variable
+    coutVarAnnuel,
+  };
+
   const majFixe = (k, v) => setH((s) => ({ ...s, fixes: { ...s.fixes, [k]: Number(v) || 0 } }));
   const maj = (k, v) => setH((s) => ({ ...s, [k]: v }));
   const majPalier = (i, k, v) =>
@@ -424,11 +442,64 @@ function Tarification({ nbEcolesReel, onErreur }) {
         </p>
       </Carte>
 
+      {/* 4) Offre Fondateur : Premium réduit pour les premiers clients */}
+      <Carte className="p-6">
+        <h3 className="mb-1 font-display text-base font-semibold text-navy-900">4️⃣ Offre Fondateur (premiers clients)</h3>
+        <p className="mb-4 text-xs text-navy-900/45">
+          Un prix Premium (≤ 400 élèves) réduit et bloqué à vie pour tes premiers clients.
+          On vérifie qu'il reste au-dessus de tes planchers.
+        </p>
+
+        <div className="mb-4 max-w-sm">
+          <Curseur label="Réduction offerte" valeur={reduction} min={0} max={0.9} pas={0.05}
+            affichage={`−${Math.round(reduction * 100)} %`} onChange={setReduction} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-navy-900/10 p-4">
+            <p className="text-xs text-navy-900/50">Premium ≤ 400 — prix normal</p>
+            <p className="font-mono text-lg font-semibold text-navy-900/70 line-through">{fmtX(offreRef?.prixAnnuel)} </p>
+            <p className="text-xs text-navy-900/50">Prix Fondateur / an</p>
+            <p className="font-mono text-2xl font-bold text-or-600">{fmtX(fondateur.prixReduitAnnuel)}</p>
+          </div>
+          <div className="space-y-2">
+            <Verdict ok={fondateur.okJamais}
+              texte={fondateur.okJamais ? "Couvre le coût variable par école" : "Sous le coût variable : perte à chaque école, quel que soit le nombre"} />
+            <Verdict ok={fondateur.okCible}
+              texte={fondateur.okCible
+                ? `Rentable une fois à ${aCible?.N} écoles (plancher ${fmtX(aCible?.plancherAnnuel)})`
+                : `Encore déficitaire même à ${aCible?.N} écoles (plancher ${fmtX(aCible?.plancherAnnuel)})`} />
+            <Verdict ok={fondateur.okAuj}
+              texte={fondateur.okAuj
+                ? `Déjà rentable dès aujourd'hui (${aAuj?.N} écoles)`
+                : `Déficitaire aujourd'hui (${aAuj?.N} écoles, plancher ${fmtX(aAuj?.plancherAnnuel)}) — investissement d'acquisition assumé`} />
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-navy-900/45">
+          {fondateur.okCible && !fondateur.okAuj
+            ? "👍 Bon compromis : tu investis au départ, l'offre devient rentable à l'échelle."
+            : !fondateur.okJamais
+              ? "🚫 Réduction trop forte : ce prix ne couvre jamais tes coûts, même à grande échelle."
+              : fondateur.okAuj
+                ? "✅ Prix prudent : rentable dès maintenant (peu d'effet 'cadeau')."
+                : ""}
+        </p>
+      </Carte>
+
       <div className="flex flex-wrap justify-end gap-2">
         <Bouton variante="fantome" onClick={() => setH(HYPOTHESES_DEFAUT)}>Réinitialiser</Bouton>
         <Bouton variante="fantome" onClick={enregistrer} disabled={envoi}>Enregistrer les hypothèses</Bouton>
         <Bouton variante="or" onClick={genererOffres} disabled={envoi}>Générer les offres</Bouton>
       </div>
+    </div>
+  );
+}
+
+function Verdict({ ok, texte }) {
+  return (
+    <div className={`flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${ok ? "bg-emerald-500/10 text-emerald-700" : "bg-rose-500/10 text-rose-700"}`}>
+      <span className="mt-0.5">{ok ? "✅" : "⚠️"}</span>
+      <span>{texte}</span>
     </div>
   );
 }
