@@ -8,10 +8,13 @@ import { FORMULES, modulesDeFormule } from "@/lib/formules.js";
 // rien en serveur — c'est le TEMPS HUMAIN (onboarding + support). Le palier
 // d'effectif sert d'approximation de cette charge de support.
 //
-//   Prix_mensuel = ( F/N + Cv + O/12 ) / (1 − marge)
-//   Seuil de rentabilité :  N_min = F / (Prix_mensuel − Cv − O/12)
+//   Prix_mensuel = ( Ftot/N + Cv + O/12 ) / (1 − marge)
+//   Seuil de rentabilité :  N_min = Ftot / (Prix_mensuel − Cv − O/12)
 //
-// F  = coûts fixes mensuels      N = nombre d'écoles clientes
+// Ftot = coûts fixes mensuels TOTAUX = infra + SALAIRE FONDATEUR
+//        (le salaire couvre la conception/maintenance — c'est ainsi que le
+//         « développement » est rémunéré ; il se dilue quand N augmente).
+// N  = nombre d'écoles clientes
 // Cv = coût variable mensuel/école        O = coût d'onboarding (amorti 12 mois)
 
 // ⚠️ HYPOTHÈSES TYPES — à remplacer par les chiffres réels.
@@ -22,9 +25,12 @@ export const HYPOTHESES_DEFAUT = {
     email: 6000,       // e-mail transactionnel
     outils: 20000,     // IA, design, supervision
   },
+  salaireFondateur: 300000, // revenu mensuel visé (rémunère dev + maintenance)
   tauxHoraire: 10000,  // XOF / heure — ton coût de référence
   margeVisee: 0.65,    // 65 % — finance l'évolution du produit
   nbEcoles: 10,        // nombre d'écoles clientes visé
+  nActuel: 5,          // écoles aujourd'hui
+  nCible: 100,         // objectif (Afrique de l'Ouest)
   paliers: [
     { code: "p150", libelle: "≤ 150",  maxEleves: 150, supportHeures: 0.5, infra: 500,  onboardingHeures: 4 },
     { code: "p400", libelle: "≤ 400",  maxEleves: 400, supportHeures: 1.5, infra: 1500, onboardingHeures: 8 },
@@ -35,14 +41,22 @@ export const HYPOTHESES_DEFAUT = {
   multiplicateurs: { essentiel: 1.0, confort: 1.4, tout: 1.8 },
 };
 
+// Frais fixes d'infrastructure seuls (hors salaire).
 export function totalFixes(h) {
   return Object.values(h?.fixes || {}).reduce((s, v) => s + (Number(v) || 0), 0);
 }
 
-// Détail du calcul pour un palier. Tous les montants sont mensuels, en XOF.
-export function calculerPalier(h, palier) {
-  const F = totalFixes(h);
-  const N = Math.max(1, Number(h.nbEcoles) || 1);
+// Frais fixes TOTAUX = infra + salaire fondateur. C'est ce qui doit être
+// couvert et qui se dilue quand le nombre d'écoles augmente.
+export function coutsFixesTotal(h) {
+  return totalFixes(h) + (Number(h?.salaireFondateur) || 0);
+}
+
+// Détail du calcul pour un palier, à un nombre d'écoles N (par défaut nbEcoles).
+// Tous les montants sont mensuels, en XOF.
+export function calculerPalier(h, palier, nOverride) {
+  const F = coutsFixesTotal(h);
+  const N = Math.max(1, Number(nOverride ?? h.nbEcoles) || 1);
   const taux = Number(h.tauxHoraire) || 0;
   const marge = Math.min(0.95, Math.max(0, Number(h.margeVisee) || 0));
 
@@ -73,6 +87,25 @@ export function calculerGrille(h) {
   return (h.paliers || []).map((p) => calculerPalier(h, p));
 }
 
+// Prix plancher (marge 0) et prix recommandé par école, en fonction du nombre
+// d'écoles. C'est LE tableau qui répond à « quel prix minimum ? » : le plancher
+// s'effondre quand N grandit (les frais fixes + salaire se diluent).
+export function simulerEchelle(h, palierCode, listeN = [5, 10, 20, 50, 100]) {
+  const palier = (h.paliers || []).find((p) => p.code === palierCode) || (h.paliers || [])[0];
+  if (!palier) return [];
+  const marge = Math.min(0.95, Math.max(0, Number(h.margeVisee) || 0));
+  return listeN.map((N) => {
+    const c = calculerPalier(h, palier, N);
+    return {
+      N,
+      eleves: N * (Number(palier.maxEleves) || 0),
+      coutParEcoleMois: c.coutRevient,
+      plancherAnnuel: c.coutRevient * 12,          // marge 0
+      prixRecommandeAnnuel: (c.coutRevient / (1 - marge)) * 12,
+    };
+  });
+}
+
 // Matrice complète FORMULE × PALIER : le vrai catalogue d'offres.
 //   prix(formule, palier) = prix_plancher(palier) × multiplicateur(formule)
 // Chaque cellule porte son code unique, son libellé et ses modules empilés,
@@ -85,6 +118,12 @@ export function calculerGrilleOffres(h) {
     const modules = modulesDeFormule(f.id);
     for (const p of h.paliers || []) {
       const base = calculerPalier(h, p);
+      // Le coût ne dépend pas de la formule (les modules ne coûtent quasi rien) :
+      // la marge par offre = prix (× multiplicateur) − coût de revient du palier.
+      const prixMensuel = base.prixMensuel * m;
+      const prixAnnuel = base.prixAnnuel * m;
+      const coutRevientAnnuel = base.coutRevient * 12;
+      const margeAnnuelle = prixAnnuel - coutRevientAnnuel;
       offres.push({
         code: `${f.id}_${p.code}`,
         libelle: `${f.libelle} · ${p.libelle} élèves`,
@@ -92,8 +131,10 @@ export function calculerGrilleOffres(h) {
         palier: p.code, palierLibelle: p.libelle,
         maxEleves: p.maxEleves,
         modules,
-        prixMensuel: base.prixMensuel * m,
-        prixAnnuel: base.prixAnnuel * m,
+        prixMensuel, prixAnnuel,
+        coutRevientAnnuel,
+        margeAnnuelle,
+        margePct: prixAnnuel > 0 ? margeAnnuelle / prixAnnuel : 0,
       });
     }
   }

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
-import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
+import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, simulerEchelle, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
 import { FORMULES } from "@/lib/formules.js";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
@@ -164,6 +164,13 @@ function Tarification({ nbEcolesReel, onErreur }) {
   const grille = calculerGrille(h);
   const offres = calculerGrilleOffres(h);
   const F = totalFixes(h);
+  const echelle = simulerEchelle(h, "p400", [Number(h.nActuel) || 5, 10, 20, 50, Number(h.nCible) || 100]
+    .filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b));
+  const aAuj = echelle.find((r) => r.N === (Number(h.nActuel) || 5));
+  const aCible = echelle.find((r) => r.N === (Number(h.nCible) || 100));
+  const synthese = aAuj && aCible
+    ? `Aujourd'hui à ${aAuj.N} école(s), il te faut au minimum ${fmtX(aAuj.plancherAnnuel)} XOF/an par école pour ne rien perdre ; à ${aCible.N} écoles, ${fmtX(aCible.plancherAnnuel)} XOF/an suffisent. L'écart, c'est ton salaire qui se dilue sur plus d'écoles.`
+    : "";
   const majFixe = (k, v) => setH((s) => ({ ...s, fixes: { ...s.fixes, [k]: Number(v) || 0 } }));
   const maj = (k, v) => setH((s) => ({ ...s, [k]: v }));
   const majPalier = (i, k, v) =>
@@ -215,8 +222,14 @@ function Tarification({ nbEcolesReel, onErreur }) {
               </label>
             ))}
           </div>
+          <label className="mt-3 flex items-center justify-between gap-3 border-t border-navy-900/10 pt-3">
+            <span className="text-sm font-medium text-navy-900/80">Salaire fondateur / mois
+              <span className="block text-[11px] font-normal text-navy-900/40">rémunère conception + maintenance</span></span>
+            <input type="number" value={h.salaireFondateur ?? 0} onChange={(e) => maj("salaireFondateur", Number(e.target.value) || 0)}
+              className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+          </label>
           <p className="mt-3 border-t border-navy-900/10 pt-2 text-right text-sm">
-            Total <b className="font-mono text-navy-900">{fmtX(F)} XOF</b> / mois
+            Fixes totaux <b className="font-mono text-navy-900">{fmtX(F + (Number(h.salaireFondateur) || 0))} XOF</b> / mois
           </p>
         </Carte>
 
@@ -230,21 +243,69 @@ function Tarification({ nbEcolesReel, onErreur }) {
               <input type="number" value={h.tauxHoraire} onChange={(e) => maj("tauxHoraire", Number(e.target.value) || 0)}
                 className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
             </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs text-navy-900/60">Écoles aujourd'hui <span className="text-navy-900/35">(réel : {nbEcolesReel})</span></span>
+                <input type="number" min="1" value={h.nActuel ?? 5} onChange={(e) => maj("nActuel", Number(e.target.value) || 1)}
+                  className="w-full rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs text-navy-900/60">Objectif d'écoles</span>
+                <input type="number" min="1" value={h.nCible ?? 100} onChange={(e) => maj("nCible", Number(e.target.value) || 1)}
+                  className="w-full rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+              </label>
+            </div>
             <label className="flex items-center justify-between gap-3">
-              <span className="text-sm text-navy-900/70">
-                Écoles clientes visées
-                <span className="ml-1 text-xs text-navy-900/40">(actuel : {nbEcolesReel})</span>
-              </span>
+              <span className="text-sm text-navy-900/70">Écoles pour le calcul des offres</span>
               <input type="number" min="1" value={h.nbEcoles} onChange={(e) => maj("nbEcoles", Number(e.target.value) || 1)}
                 className="w-32 rounded-lg border border-navy-900/15 px-3 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
             </label>
           </div>
           <p className="mt-3 text-xs text-navy-900/45">
-            Plus tu as d'écoles, plus les frais fixes se diluent et plus le prix baisse.
-            À marge 0 %, le prix affiché est ton coût de revient exact.
+            Ton salaire est un coût fixe : à 5 écoles il pèse lourd par école, à 100 il se dilue.
+            C'est pourquoi le prix plancher chute avec l'échelle (tableau ci-dessous).
           </p>
         </Carte>
       </div>
+
+      {/* Prix plancher selon l'échelle — répond à « quel prix minimum ? » */}
+      <Carte className="overflow-hidden">
+        <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
+          💡 Prix plancher par école selon ton échelle (palier ≤ 400 élèves)
+        </div>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-creme text-navy-900/50">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Écoles</th>
+              <th className="px-4 py-2.5 text-right font-medium">Élèves</th>
+              <th className="px-4 py-2.5 text-right font-medium">Coût/école /mois</th>
+              <th className="px-4 py-2.5 text-right font-medium">🔴 Plancher /an (marge 0)</th>
+              <th className="px-4 py-2.5 text-right font-medium">🟢 Recommandé /an</th>
+            </tr>
+          </thead>
+          <tbody>
+            {echelle.map((r) => {
+              const surligne = r.N === Number(h.nActuel) || r.N === Number(h.nCible);
+              return (
+                <tr key={r.N} className={`border-t border-navy-900/5 ${surligne ? "bg-or-500/10 font-medium" : ""}`}>
+                  <td className="px-4 py-2.5 text-navy-900">
+                    {r.N}
+                    {r.N === Number(h.nActuel) && <span className="ml-2 rounded bg-navy-900/10 px-1.5 py-0.5 text-[10px]">aujourd'hui</span>}
+                    {r.N === Number(h.nCible) && <span className="ml-2 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-700">objectif</span>}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-navy-900/60">{fmtX(r.eleves)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-navy-900/60">{fmtX(r.coutParEcoleMois)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-rose-600">{fmtX(r.plancherAnnuel)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-emerald-700">{fmtX(r.prixRecommandeAnnuel)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/55">
+          {synthese}
+        </p>
+      </Carte>
 
       <Carte className="overflow-hidden">
         <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
@@ -325,7 +386,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
       {/* 3) Catalogue d'offres = matrice formule × palier */}
       <Carte className="overflow-hidden">
         <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
-          3️⃣ Catalogue d'offres — prix annuel (formule × taille)
+          3️⃣ Catalogue d'offres — prix / an, avec coût &amp; marge (formule × taille)
         </div>
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
@@ -336,7 +397,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
           </thead>
           <tbody>
             {FORMULES.map((f) => (
-              <tr key={f.id} className="border-t border-navy-900/5">
+              <tr key={f.id} className="border-t border-navy-900/5 align-top">
                 <td className="px-4 py-2.5">
                   <span className="font-medium text-navy-900">{f.libelle}</span>
                   <span className="ml-1 text-xs text-navy-900/40">{modulesDeFormuleCount(f)} modules</span>
@@ -344,8 +405,12 @@ function Tarification({ nbEcolesReel, onErreur }) {
                 {h.paliers.map((p) => {
                   const o = offre(f.id, p.code);
                   return (
-                    <td key={p.code} className="px-4 py-2.5 text-right font-mono font-semibold text-or-600">
-                      {fmtX(o?.prixAnnuel)}
+                    <td key={p.code} className="px-4 py-2.5 text-right">
+                      <div className="font-mono font-semibold text-or-600">{fmtX(o?.prixAnnuel)}</div>
+                      <div className="font-mono text-[11px] text-navy-900/40">coût {fmtX(o?.coutRevientAnnuel)}</div>
+                      <div className={`font-mono text-[11px] font-medium ${o?.margeAnnuelle >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        marge {fmtX(o?.margeAnnuelle)} ({Math.round((o?.margePct || 0) * 100)}%)
+                      </div>
                     </td>
                   );
                 })}
@@ -354,8 +419,8 @@ function Tarification({ nbEcolesReel, onErreur }) {
           </tbody>
         </table>
         <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/45">
-          Prix arrondis au millier. « Générer les offres » crée/actualise ces {offres.length} lignes
-          dans le catalogue ; chaque offre porte ses modules (débloqués automatiquement à l'affectation).
+          Coût = frais fixes (dont ton salaire) dilués sur {h.nbEcoles} écoles + variable du palier.
+          « Générer les offres » crée/actualise ces {offres.length} lignes (modules débloqués à l'affectation).
         </p>
       </Carte>
 
