@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { FORMULES, modulesDeFormule } from "@/lib/formules.js";
 
 // GesSchool — modèle de tarification (réservé au super-admin).
 //
@@ -25,10 +26,13 @@ export const HYPOTHESES_DEFAUT = {
   margeVisee: 0.65,    // 65 % — finance l'évolution du produit
   nbEcoles: 10,        // nombre d'écoles clientes visé
   paliers: [
-    { code: "socle",    libelle: "Socle",    maxEleves: 150,  supportHeures: 0.5, infra: 500,  onboardingHeures: 4 },
-    { code: "standard", libelle: "Standard", maxEleves: 400,  supportHeures: 1.5, infra: 1500, onboardingHeures: 8 },
-    { code: "premium",  libelle: "Premium",  maxEleves: 800,  supportHeures: 3,   infra: 3000, onboardingHeures: 16 },
+    { code: "p150", libelle: "≤ 150",  maxEleves: 150, supportHeures: 0.5, infra: 500,  onboardingHeures: 4 },
+    { code: "p400", libelle: "≤ 400",  maxEleves: 400, supportHeures: 1.5, infra: 1500, onboardingHeures: 8 },
+    { code: "p800", libelle: "≤ 800",  maxEleves: 800, supportHeures: 3,   infra: 3000, onboardingHeures: 16 },
   ],
+  // Multiplicateur de VALEUR par formule (les modules ne coûtent quasi rien à
+  // la marge : monter en gamme se paie, mais ne coûte pas). Ajustable ici.
+  multiplicateurs: { essentiel: 1.0, confort: 1.4, tout: 1.8 },
 };
 
 export function totalFixes(h) {
@@ -69,6 +73,33 @@ export function calculerGrille(h) {
   return (h.paliers || []).map((p) => calculerPalier(h, p));
 }
 
+// Matrice complète FORMULE × PALIER : le vrai catalogue d'offres.
+//   prix(formule, palier) = prix_plancher(palier) × multiplicateur(formule)
+// Chaque cellule porte son code unique, son libellé et ses modules empilés,
+// prêts à peupler `plans_abonnement`.
+export function calculerGrilleOffres(h) {
+  const mult = h.multiplicateurs || {};
+  const offres = [];
+  for (const f of FORMULES) {
+    const m = Number(mult[f.id]) || 1;
+    const modules = modulesDeFormule(f.id);
+    for (const p of h.paliers || []) {
+      const base = calculerPalier(h, p);
+      offres.push({
+        code: `${f.id}_${p.code}`,
+        libelle: `${f.libelle} · ${p.libelle} élèves`,
+        formule: f.id, formuleLibelle: f.libelle,
+        palier: p.code, palierLibelle: p.libelle,
+        maxEleves: p.maxEleves,
+        modules,
+        prixMensuel: base.prixMensuel * m,
+        prixAnnuel: base.prixAnnuel * m,
+      });
+    }
+  }
+  return offres;
+}
+
 // --- Persistance (table config_saas, RLS super-admin) ---
 export async function getHypotheses() {
   const { data, error } = await supabase
@@ -83,14 +114,19 @@ export async function setHypotheses(valeur) {
   if (error) throw error;
 }
 
-// Applique les prix calculés aux plans d'abonnement (arrondis au millier).
-export async function appliquerTarifs(lignes) {
-  for (const l of lignes) {
-    const { error } = await supabase.rpc("admin_set_plan_tarif", {
-      p_code: l.code,
-      p_prix_mensuel: Math.round(l.prixMensuel / 1000) * 1000,
-      p_prix_annuel: Math.round(l.prixAnnuel / 1000) * 1000,
-      p_max_eleves: Number(l.maxEleves) || null,
+// Génère/actualise le catalogue d'offres (formule × palier) dans
+// `plans_abonnement`. Chaque offre porte ses MODULES (fonctions->modules), ce
+// qui débloque automatiquement les bons modules à l'affectation d'une école.
+// Prix arrondis au millier de francs.
+export async function appliquerOffres(offres) {
+  for (const o of offres) {
+    const { error } = await supabase.rpc("admin_upsert_plan", {
+      p_code: o.code,
+      p_libelle: o.libelle,
+      p_prix_mensuel: Math.round(o.prixMensuel / 1000) * 1000,
+      p_prix_annuel: Math.round(o.prixAnnuel / 1000) * 1000,
+      p_max_eleves: Number(o.maxEleves) || null,
+      p_modules: o.modules,
     });
     if (error) throw error;
   }

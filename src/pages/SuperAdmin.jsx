@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
-import { HYPOTHESES_DEFAUT, calculerGrille, totalFixes, getHypotheses, setHypotheses, appliquerTarifs } from "@/lib/tarification.js";
+import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
+import { FORMULES } from "@/lib/formules.js";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
 import { useToast } from "@/composants/Feedback.jsx";
@@ -161,11 +162,15 @@ function Tarification({ nbEcolesReel, onErreur }) {
   }, [onErreur]);
 
   const grille = calculerGrille(h);
+  const offres = calculerGrilleOffres(h);
   const F = totalFixes(h);
   const majFixe = (k, v) => setH((s) => ({ ...s, fixes: { ...s.fixes, [k]: Number(v) || 0 } }));
   const maj = (k, v) => setH((s) => ({ ...s, [k]: v }));
   const majPalier = (i, k, v) =>
     setH((s) => ({ ...s, paliers: s.paliers.map((p, j) => (j === i ? { ...p, [k]: Number(v) || 0 } : p)) }));
+  const majMult = (id, v) =>
+    setH((s) => ({ ...s, multiplicateurs: { ...s.multiplicateurs, [id]: Number(v) || 0 } }));
+  const offre = (f, p) => offres.find((o) => o.formule === f && o.palier === p);
 
   const enregistrer = async () => {
     setEnvoi(true);
@@ -173,9 +178,9 @@ function Tarification({ nbEcolesReel, onErreur }) {
     catch (e) { toast.erreur(e.message); }
     finally { setEnvoi(false); }
   };
-  const appliquer = async () => {
+  const genererOffres = async () => {
     setEnvoi(true);
-    try { await appliquerTarifs(grille); toast.succes("Tarifs appliqués aux plans d'abonnement."); }
+    try { await appliquerOffres(offres); toast.succes(`${offres.length} offres générées dans le catalogue.`); }
     catch (e) { toast.erreur(e.message); }
     finally { setEnvoi(false); }
   };
@@ -243,7 +248,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
 
       <Carte className="overflow-hidden">
         <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
-          Charge par palier &amp; prix obtenu
+          1️⃣ Prix plancher par palier (coût + marge)
         </div>
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
@@ -286,18 +291,88 @@ function Tarification({ nbEcolesReel, onErreur }) {
         </table>
         <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/45">
           <b>Seuil</b> = nombre d'écoles sur ce palier nécessaire pour couvrir tes frais fixes.
-          Les prix appliqués sont arrondis au millier de francs.
+        </p>
+      </Carte>
+
+      {/* 2) Multiplicateurs de valeur par formule */}
+      <Carte className="p-6">
+        <h3 className="mb-1 font-display text-base font-semibold text-navy-900">2️⃣ Premium par formule</h3>
+        <p className="mb-4 text-xs text-navy-900/45">
+          Les modules ne coûtent quasi rien à la marge : monter en gamme se paie sans coûter.
+          Ce multiplicateur applique le premium au prix plancher.
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {FORMULES.map((f) => (
+            <div key={f.id} className="rounded-xl border border-navy-900/10 p-3">
+              <p className="font-display text-sm font-semibold text-navy-900">{f.libelle}</p>
+              <p className="mb-2 text-[11px] text-navy-900/45">{f.accroche}</p>
+              <label className="flex items-center gap-2">
+                <span className="text-xs text-navy-900/50">×</span>
+                <input type="number" step="0.05" min="1" value={h.multiplicateurs?.[f.id] ?? 1}
+                  onChange={(e) => majMult(f.id, e.target.value)}
+                  className="w-20 rounded-lg border border-navy-900/15 px-2 py-1 text-right font-mono text-sm outline-none focus:border-or-500" />
+              </label>
+              <p className="mt-2 flex flex-wrap gap-1">
+                {f.ajoute.map((m) => (
+                  <span key={m} className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700">+{m}</span>
+                ))}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Carte>
+
+      {/* 3) Catalogue d'offres = matrice formule × palier */}
+      <Carte className="overflow-hidden">
+        <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
+          3️⃣ Catalogue d'offres — prix annuel (formule × taille)
+        </div>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-creme text-navy-900/50">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Formule \ Taille</th>
+              {h.paliers.map((p) => <th key={p.code} className="px-4 py-2.5 text-right font-medium">{p.libelle} élèves</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {FORMULES.map((f) => (
+              <tr key={f.id} className="border-t border-navy-900/5">
+                <td className="px-4 py-2.5">
+                  <span className="font-medium text-navy-900">{f.libelle}</span>
+                  <span className="ml-1 text-xs text-navy-900/40">{modulesDeFormuleCount(f)} modules</span>
+                </td>
+                {h.paliers.map((p) => {
+                  const o = offre(f.id, p.code);
+                  return (
+                    <td key={p.code} className="px-4 py-2.5 text-right font-mono font-semibold text-or-600">
+                      {fmtX(o?.prixAnnuel)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/45">
+          Prix arrondis au millier. « Générer les offres » crée/actualise ces {offres.length} lignes
+          dans le catalogue ; chaque offre porte ses modules (débloqués automatiquement à l'affectation).
         </p>
       </Carte>
 
       <div className="flex flex-wrap justify-end gap-2">
         <Bouton variante="fantome" onClick={() => setH(HYPOTHESES_DEFAUT)}>Réinitialiser</Bouton>
         <Bouton variante="fantome" onClick={enregistrer} disabled={envoi}>Enregistrer les hypothèses</Bouton>
-        <Bouton variante="or" onClick={appliquer} disabled={envoi}>Appliquer ces prix aux plans</Bouton>
+        <Bouton variante="or" onClick={genererOffres} disabled={envoi}>Générer les offres</Bouton>
       </div>
     </div>
   );
 }
+
+const modulesDeFormuleCount = (f) => {
+  let n = 0;
+  for (const x of FORMULES) { n += x.ajoute.length; if (x.id === f.id) break; }
+  return n;
+};
 
 function Curseur({ label, valeur, min, max, pas, affichage, onChange }) {
   return (

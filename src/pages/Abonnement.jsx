@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte, Kpi, SkeletonListe } from "@/composants/ui.jsx";
 import { MODULES } from "@/lib/modules.js";
+import { FORMULES, formuleDeModules, infoModule } from "@/lib/formules.js";
 import { monAbonnement, occupation, joursRestants, LIBELLES_STATUT } from "@/lib/abonnement.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
@@ -123,11 +124,58 @@ export default function Abonnement() {
               </div>
             </Carte>
 
+            <Upsell modules={modules} />
+
             <ContactGesPro />
           </>
         )}
       </div>
     </>
+  );
+}
+
+// Propose la formule supérieure : liste ce qui reste verrouillé et le regroupe
+// par formule qui le débloque. Rien à afficher si tout est déjà actif.
+function Upsell({ modules }) {
+  if (modules === null) return null; // déjà tout inclus
+  const actifs = new Set(modules);
+  const actuelle = formuleDeModules(modules);
+  // Formules au-dessus de la formule courante, avec leurs modules encore verrouillés.
+  const idxActuel = actuelle ? FORMULES.findIndex((f) => f.id === actuelle.id) : -1;
+  const superieures = FORMULES.slice(idxActuel + 1)
+    .map((f) => ({ f, nouveaux: f.ajoute.filter((m) => !actifs.has(m)) }))
+    .filter((x) => x.nouveaux.length > 0);
+  if (superieures.length === 0) return null;
+
+  return (
+    <Carte className="border-or-500/30 bg-or-500/5 p-6">
+      <h3 className="font-display text-lg font-semibold text-navy-900">Aller plus loin</h3>
+      <p className="mt-1 text-sm text-navy-900/60">
+        Votre formule actuelle{actuelle ? ` (${actuelle.libelle})` : ""} peut évoluer. Voici ce que
+        débloquerait chaque niveau supérieur :
+      </p>
+      <div className="mt-4 space-y-3">
+        {superieures.map(({ f, nouveaux }) => (
+          <div key={f.id} className="rounded-xl border border-or-500/30 bg-white/60 p-4">
+            <p className="font-display text-sm font-semibold text-navy-900">
+              {f.libelle} <span className="font-normal text-navy-900/50">— {f.accroche}</span>
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {nouveaux.map((id) => (
+                <span key={id} className="rounded-full bg-or-500/15 px-2.5 py-0.5 text-xs font-medium text-or-600">
+                  + {infoModule(id).label}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <a href="https://wa.me/221773435928?text=Bonjour%2C%20je%20souhaite%20faire%20%C3%A9voluer%20ma%20formule%20GesSchool."
+        target="_blank" rel="noreferrer"
+        className="mt-4 inline-block rounded-xl bg-or-500 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-or-400">
+        💬 Demander une évolution
+      </a>
+    </Carte>
   );
 }
 
