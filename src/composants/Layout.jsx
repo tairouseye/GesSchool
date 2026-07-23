@@ -10,14 +10,23 @@ import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 
-// GesSchool — shell applicatif responsive, organisé par ESPACES d'usage
-// (Pédagogie / Gestion / RH & Paie / Pilotage). Sélecteur d'espace pour
-// ceux qui ont accès à plusieurs ; sidebar fixe en desktop, tiroir en mobile.
+// Couleurs des tuiles (mobile) : une pastel par module, texte foncé lisible.
+const TUILES_COULEURS = [
+  "bg-violet-100 text-violet-800", "bg-amber-100 text-amber-800", "bg-emerald-100 text-emerald-800",
+  "bg-sky-100 text-sky-800", "bg-rose-100 text-rose-800", "bg-indigo-100 text-indigo-800",
+  "bg-teal-100 text-teal-800", "bg-orange-100 text-orange-800", "bg-lime-100 text-lime-800",
+  "bg-fuchsia-100 text-fuchsia-800",
+];
+
+// GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
+// Desktop : sidebar (menu latéral dense). Mobile : barre de navigation basse
+// (espaces) + sous-modules en tuiles colorées.
 export default function Layout() {
   const { ecole, profil, roles, deconnexion, estPromoteur, modulesActifs, estSuperAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [menu, setMenu] = useState(false);
+  const [menu, setMenu] = useState(false);      // (desktop, hérité — non utilisé en mobile)
+  const [tuiles, setTuiles] = useState(true);   // mobile : grille de tuiles de l'espace
   const [tour, setTour] = useState(false);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
@@ -71,19 +80,19 @@ export default function Layout() {
   const changerEspace = (e) => {
     setEspaceId(e.id);
     setMenu(false);
-    // Va au PREMIER menu ouvrable de l'espace (en général l'Accueil).
+    // Mobile : on atterrit sur la grille de tuiles de l'espace. Desktop :
+    // les tuiles sont masquées, on ouvre directement la 1re page.
+    setTuiles(true);
     navigate(menusDe(e)[0]?.to || e.accueil);
   };
 
+  // Ouvrir une page depuis une tuile (mobile) : referme la grille.
+  const ouvrirTuile = (to) => { setTuiles(false); navigate(to); };
+
   return (
     <div className="flex h-screen overflow-hidden bg-creme text-navy-900">
-      {menu && <div className="fixed inset-0 z-30 bg-navy-900/50 lg:hidden" onClick={() => setMenu(false)} />}
-
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col bg-navy-900 text-creme transition-transform duration-200 lg:static lg:translate-x-0 ${
-          menu ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
+      {/* Sidebar : desktop uniquement (sur mobile → barre basse + tuiles) */}
+      <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
           <Cachet size={40} sigle={sigle} className="text-or-500" />
           <div className="min-w-0">
@@ -184,16 +193,61 @@ export default function Layout() {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
-          <button onClick={() => setMenu(true)} className="text-2xl leading-none" aria-label="Menu">☰</button>
-          <span className="font-display font-bold">{espaceCourant?.label || "GesSchool"}</span>
-          <span className="ml-auto font-mono text-[10px] text-creme/40">v{__APP_VERSION__}</span>
+        {/* Barre du haut (mobile) : école + bouton grille (ouvre/ferme les tuiles) */}
+        <div className="flex items-center gap-2.5 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
+          <Cachet size={26} sigle={sigle} className="text-or-500" />
+          <span className="truncate font-display font-bold">{ecole?.nom || "GesSchool"}</span>
+          <button onClick={() => setTuiles((t) => !t)} aria-label="Menu des modules"
+            className={`ml-auto grid h-9 w-9 place-items-center rounded-xl text-lg ${tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/80"}`}>▦</button>
         </div>
-        <main className="flex-1 overflow-auto">
+
+        <main className="relative flex-1 overflow-auto pb-16 lg:pb-0">
           <Suspense fallback={<ChargementPage />}>
             <Outlet />
           </Suspense>
+
+          {/* Grille de tuiles (mobile) : sous-modules de l'espace courant */}
+          {tuiles && (
+            <div className="absolute inset-0 z-20 overflow-auto bg-creme p-4 lg:hidden">
+              <p className="mb-1 font-display text-lg font-bold text-navy-900">{espaceCourant?.icone} {espaceCourant?.label}</p>
+              <p className="mb-4 text-xs text-navy-900/50">Touchez un module pour l'ouvrir.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {items.map((item, i) => {
+                  const c = TUILES_COULEURS[i % TUILES_COULEURS.length];
+                  return (
+                    <button key={item.to} onClick={() => ouvrirTuile(item.to)}
+                      className={`relative flex min-h-[92px] flex-col items-start justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-95 ${c}`}>
+                      <span className="text-2xl leading-none">{item.icone}</span>
+                      <span className="text-sm font-semibold">{item.label}</span>
+                      {pastille(item.cle) > 0 && (
+                        <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow">
+                          {pastille(item.cle)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </main>
+
+        {/* Barre de navigation basse (mobile) : les espaces */}
+        {accessibles.length > 1 && (
+          <nav className="grid flex-none border-t border-white/10 bg-navy-900 text-creme lg:hidden"
+            style={{ gridTemplateColumns: `repeat(${accessibles.length}, minmax(0, 1fr))` }} role="tablist" aria-label="Espaces">
+            {accessibles.map((e) => {
+              const actif = e.id === espaceCourant?.id;
+              return (
+                <button key={e.id} onClick={() => changerEspace(e)} role="tab" aria-selected={actif}
+                  className={`flex flex-col items-center gap-1 py-2 ${actif ? "text-or-500" : "text-creme/60"}`}>
+                  <span className="text-xl leading-none">{e.icone}</span>
+                  <span className="text-[10px] font-semibold">{e.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
       </div>
 
       <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
