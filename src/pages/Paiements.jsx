@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
+import { getTransactions, LIBELLE_STATUT_TX } from "@/lib/paiementEnLigne.js";
 import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast } from "@/composants/Feedback.jsx";
@@ -94,7 +95,7 @@ export default function Paiements() {
 
         {/* Onglets */}
         <Onglets actif={onglet} onChange={setOnglet}
-          items={[["factures", "Factures"], ["declarations", `Déclarations${declarations.length ? ` (${declarations.length})` : ""}`], ["frais", "Grille tarifaire"], ["mobile", "Paiement mobile"]]} />
+          items={[["factures", "Factures"], ["declarations", `Déclarations${declarations.length ? ` (${declarations.length})` : ""}`], ["enligne", "Paiements en ligne"], ["frais", "Grille tarifaire"], ["mobile", "Paiement mobile"]]} />
 
         {onglet === "factures" ? (
           <Carte className="overflow-hidden">
@@ -146,6 +147,8 @@ export default function Paiements() {
             onValider={(id) => wrap(() => api.validerDeclaration(id), "Paiement validé.")}
             onRejeter={(id) => wrap(() => api.rejeterDeclaration(id), "Déclaration rejetée.")}
           />
+        ) : onglet === "enligne" ? (
+          <PanneauEnLigne ecoleId={ecoleId} devise={devise} onErreur={setErreur} />
         ) : onglet === "mobile" ? (
           <PanneauMobile
             infos={mobileInfos}
@@ -182,6 +185,52 @@ export default function Paiements() {
         onChange={recharger}
       />
     </>
+  );
+}
+
+// Suivi des transactions de paiement en ligne (réussies, échouées, en attente).
+function PanneauEnLigne({ ecoleId, devise, onErreur }) {
+  const [tx, setTx] = useState(null);
+  useEffect(() => { getTransactions(ecoleId).then(setTx).catch((e) => { onErreur?.(e.message); setTx([]); }); }, [ecoleId, onErreur]);
+
+  if (tx === null) return <Carte className="p-8 text-sm text-navy-900/50">Chargement…</Carte>;
+  if (tx.length === 0) {
+    return (
+      <Carte className="p-8 text-sm text-navy-900/50">
+        Aucune transaction en ligne. Active le paiement en ligne dans <b>Paramètres → Paiement en ligne</b>,
+        puis les règlements des parents (Wave, Orange Money, carte) apparaîtront ici automatiquement.
+      </Carte>
+    );
+  }
+  const dt = (d) => (d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
+  return (
+    <Carte className="overflow-hidden">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-creme text-navy-900/50">
+          <tr>
+            <th className="px-5 py-3 font-medium">Date</th>
+            <th className="px-5 py-3 font-medium">Élève</th>
+            <th className="px-5 py-3 font-medium">Prestataire</th>
+            <th className="px-5 py-3 text-right font-medium">Montant</th>
+            <th className="px-5 py-3 font-medium">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tx.map((t) => {
+            const st = LIBELLE_STATUT_TX[t.statut] || LIBELLE_STATUT_TX.initiee;
+            return (
+              <tr key={t.id} className="border-t border-navy-900/5">
+                <td className="px-5 py-3 font-mono text-xs text-navy-900/60">{dt(t.created_at)}</td>
+                <td className="px-5 py-3 font-medium text-navy-900">{t.eleves?.prenom} {t.eleves?.nom}</td>
+                <td className="px-5 py-3 text-navy-900/60 capitalize">{t.prestataire}</td>
+                <td className="px-5 py-3 text-right font-mono">{fmt(t.montant)} {devise}{t.frais ? <span className="ml-1 text-[10px] text-navy-900/40">+{fmt(t.frais)} frais</span> : null}</td>
+                <td className="px-5 py-3"><Pastille ton={st.ton}>{st.label}</Pastille></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Carte>
   );
 }
 

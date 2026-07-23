@@ -11,6 +11,7 @@ import { getMembres } from "@/lib/membres.js";
 import { getNotationConfig, setNotationConfig, DEFAUT_NOTATION } from "@/lib/bulletins.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
+import { pspEtat, setPspConfig, PRESTATAIRES } from "@/lib/paiementEnLigne.js";
 
 const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD", "MRU"];
 
@@ -49,6 +50,8 @@ export default function Parametres() {
         {voit("relances") && moduleActif(modulesActifs, "recouvrement") && (
           <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
         )}
+        {/* Paiement en ligne : secrets prestataire, réservé au promoteur. */}
+        {estRoleComplet(roles) && <PaiementEnLigne onErreur={setErreur} />}
         {/* Activation des modules « à la carte » : réservée au promoteur. */}
         {voit("modules") && (
           <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
@@ -610,6 +613,130 @@ function Signataires({ ecoleId, onErreur }) {
       </div>
       <div className="mt-3 flex justify-end">
         <Bouton onClick={ajouter} disabled={!f.fonction.trim()}>+ Ajouter</Bouton>
+      </div>
+    </Carte>
+  );
+}
+
+// Configuration du paiement en ligne (secrets prestataire). Promoteur uniquement.
+// Les clés ne sont jamais relues : on affiche seulement si elles sont saisies.
+function PaiementEnLigne({ onErreur }) {
+  const toast = useToast();
+  const [etat, setEtat] = useState(null);
+  const [f, setF] = useState({ prestataire: "cinetpay", mode: "test", commission_a_charge: "ecole", commission_taux: 0.035, api_key: "", site_id: "", secret_webhook: "" });
+  const [envoi, setEnvoi] = useState(false);
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paiement/webhook`;
+
+  const recharger = useCallback(async () => {
+    try {
+      const e = await pspEtat();
+      setEtat(e);
+      setF((s) => ({
+        ...s,
+        prestataire: e.prestataire || "cinetpay",
+        mode: e.mode || "test",
+        commission_a_charge: e.commission_a_charge || "ecole",
+        commission_taux: e.commission_taux ?? 0.035,
+      }));
+    } catch (e) { onErreur?.(e.message); }
+  }, [onErreur]);
+  useEffect(() => { recharger(); }, [recharger]);
+
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  async function sauver(activer) {
+    setEnvoi(true);
+    try {
+      await setPspConfig({ ...f, actif: activer });
+      // On ne renvoie pas les clés vides pour ne pas écraser celles en base.
+      setF((s) => ({ ...s, api_key: "", site_id: "", secret_webhook: "" }));
+      await recharger();
+      toast.succes(activer === false ? "Paiement en ligne désactivé." : "Configuration enregistrée.");
+    } catch (e) { toast.erreur(e.message); }
+    finally { setEnvoi(false); }
+  }
+
+  const champ = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+  const estPD = f.prestataire === "paydunya";
+
+  return (
+    <Carte className="p-6">
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold text-navy-900">Paiement en ligne</h3>
+        {etat?.actif
+          ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Activé · {etat.mode === "live" ? "production" : "test"}</span>
+          : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs text-navy-900/50">Inactif</span>}
+      </div>
+      <p className="mb-4 text-xs text-navy-900/45">
+        Permets aux parents de régler la scolarité par Wave / Orange Money / carte. L'argent va
+        <b> directement sur ton compte marchand</b> ; la facture se solde automatiquement. Commence en
+        <b> mode test</b> (bac à sable) avant d'activer la production.
+      </p>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Prestataire</span>
+          <select value={f.prestataire} onChange={(e) => maj("prestataire", e.target.value)} className={champ}>
+            {PRESTATAIRES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Environnement</span>
+          <select value={f.mode} onChange={(e) => maj("mode", e.target.value)} className={champ}>
+            <option value="test">Test (bac à sable)</option>
+            <option value="live">Production</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
+            {estPD ? "Private key (PayDunya)" : "API key (CinetPay)"}
+            {etat?.cles_saisies && <span className="ml-1 text-xs text-emerald-600">✓ enregistrée</span>}
+          </span>
+          <input type="password" value={f.api_key} onChange={(e) => maj("api_key", e.target.value)}
+            placeholder={etat?.cles_saisies ? "•••••• (laisser vide pour garder)" : ""} className={champ} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{estPD ? "Master key" : "Site ID"}</span>
+          <input type="password" value={f.site_id} onChange={(e) => maj("site_id", e.target.value)}
+            placeholder={etat?.cles_saisies ? "•••••• (laisser vide pour garder)" : ""} className={champ} />
+        </label>
+      </div>
+
+      <label className="mt-3 block">
+        <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
+          {estPD ? "Token PayDunya (ou master|private|token)" : "Secret (clé de vérification)"}
+          {etat?.secret_saisi && <span className="ml-1 text-xs text-emerald-600">✓ enregistré</span>}
+        </span>
+        <input type="password" value={f.secret_webhook} onChange={(e) => maj("secret_webhook", e.target.value)}
+          placeholder={etat?.secret_saisi ? "•••••• (laisser vide pour garder)" : ""} className={champ} />
+      </label>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Frais de transaction</span>
+          <select value={f.commission_a_charge} onChange={(e) => maj("commission_a_charge", e.target.value)} className={champ}>
+            <option value="ecole">À ma charge (l'école absorbe)</option>
+            <option value="parent">À la charge du parent (ajoutés)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Taux estimé des frais (%)</span>
+          <input type="number" step="0.1" value={Math.round((f.commission_taux || 0) * 1000) / 10}
+            onChange={(e) => maj("commission_taux", (Number(e.target.value) || 0) / 100)} className={champ} />
+        </label>
+      </div>
+
+      <div className="mt-4 rounded-xl bg-creme px-4 py-3">
+        <p className="text-xs font-medium text-navy-900/60">URL de notification (webhook) à coller chez le prestataire :</p>
+        <code className="mt-1 block break-all rounded bg-white px-2 py-1 text-[11px] text-navy-900/70">{webhookUrl}</code>
+      </div>
+
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {etat?.actif && <Bouton variante="fantome" onClick={() => sauver(false)} disabled={envoi}>Désactiver</Bouton>}
+        <Bouton variante="fantome" onClick={() => sauver(null)} disabled={envoi}>Enregistrer</Bouton>
+        <Bouton variante="or" onClick={() => sauver(true)} disabled={envoi}>Enregistrer &amp; activer</Bouton>
       </div>
     </Carte>
   );

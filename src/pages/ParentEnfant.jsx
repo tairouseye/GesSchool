@@ -8,6 +8,7 @@ import {
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
+import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -486,7 +487,21 @@ function Fournitures({ items }) {
 }
 
 function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur }) {
-  const [payer, setPayer] = useState(null); // facture à régler
+  const [payer, setPayer] = useState(null); // facture à régler (flux manuel)
+  const [enLigne, setEnLigne] = useState({ actif: false });
+  const [encours, setEncours] = useState(null); // id de facture en cours de redirection
+
+  useEffect(() => { pspEtatEleve(eleveId).then(setEnLigne).catch(() => {}); }, [eleveId]);
+
+  // Paiement automatique : on demande l'URL au prestataire puis on redirige.
+  async function payerEnLigne(f, reste) {
+    setEncours(f.id); onErreur("");
+    try {
+      const { payment_url } = await initierPaiement(f.id, reste);
+      window.location.href = payment_url;
+    } catch (e) { onErreur(e.message || "Paiement en ligne indisponible."); setEncours(null); }
+  }
+
   if (factures.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>;
   const totalReste = factures.reduce((s, f) => s + ((Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0)), 0);
   const aDesNumeros = MODES_MOBILE.some(([k]) => infos?.[k]);
@@ -514,9 +529,17 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
                   <td className="px-4 py-2 font-mono text-xs">{f.date_echeance || "—"}</td>
                   <td className={`px-4 py-2 text-right font-mono ${reste > 0 ? "text-rose-600" : "text-emerald-600"}`}>{fmt(reste)}</td>
                   <td className="px-4 py-2 text-right">
-                    {reste > 0 && aDesNumeros && (
-                      <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Payer</button>
-                    )}
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      {reste > 0 && enLigne.actif && (
+                        <button onClick={() => payerEnLigne(f, reste)} disabled={encours === f.id}
+                          className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-60">
+                          {encours === f.id ? "…" : "💳 En ligne"}
+                        </button>
+                      )}
+                      {reste > 0 && aDesNumeros && (
+                        <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Déclarer</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -525,8 +548,14 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
         </table>
       </Carte>
 
-      {!aDesNumeros && (
-        <p className="text-xs text-navy-900/40">Le paiement mobile n'est pas encore configuré par l'établissement.</p>
+      {enLigne.actif && (
+        <p className="text-xs text-navy-900/50">
+          💳 <b>Paiement en ligne</b> ({enLigne.prestataire === "paydunya" ? "PayDunya" : "CinetPay"}) : réglez par Wave, Orange Money ou carte — la facture se met à jour automatiquement.
+          {enLigne.commission_a_charge === "parent" && ` Des frais de ${Math.round((enLigne.commission_taux || 0) * 100)} % sont ajoutés.`}
+        </p>
+      )}
+      {!aDesNumeros && !enLigne.actif && (
+        <p className="text-xs text-navy-900/40">Le paiement n'est pas encore configuré par l'établissement.</p>
       )}
 
       {declarations.length > 0 && (
