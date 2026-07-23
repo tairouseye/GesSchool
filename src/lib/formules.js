@@ -10,29 +10,37 @@ import { MODULES } from "@/lib/modules.js";
 // Ordre = ordre de montée en gamme. `ajoute` = modules nouveaux à ce niveau.
 // `multiplicateur` = premium de valeur (les modules ne coûtent quasi rien à la
 // marge → c'est un levier de valeur, ajustable dans le simulateur).
+// Prix FIXES par formule (annuel, XOF) pour les écoles ≤ 800 élèves.
+// Au-delà de 800 : offre « Campus », sur devis.
 export const FORMULES = [
   {
     id: "essentiel",
-    libelle: "Essentiel",
+    libelle: "Basic",
     accroche: "Gérer élèves, notes, bulletins et encaisser",
     ajoute: ["scolarite", "evaluations", "encaissement"],
     multiplicateur: 1.0,
+    prixAnnuel: 250000,
   },
   {
     id: "confort",
-    libelle: "Confort",
+    libelle: "Classic",
     accroche: "Le quotidien + lien parents + comptabilité",
     ajoute: ["vie_scolaire", "communication", "comptabilite"],
     multiplicateur: 1.4,
+    prixAnnuel: 300000,
   },
   {
     id: "tout",
-    libelle: "Tout inclus",
+    libelle: "Premium",
     accroche: "L'établissement complet",
     ajoute: ["rh", "cantine", "transport", "pilotage"],
     multiplicateur: 1.8,
+    prixAnnuel: 400000,
   },
 ];
+
+// Palier d'effectif unique pour les prix fixes ; au-delà = Campus (devis).
+export const SEUIL_CAMPUS = 800;
 
 // Modules d'une formule = ses ajouts + ceux de toutes les formules précédentes.
 export function modulesDeFormule(formuleId) {

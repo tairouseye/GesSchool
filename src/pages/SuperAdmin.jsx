@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
-import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, simulerEchelle, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
+import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, offresCatalogue, simulerEchelle, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
 import { FORMULES } from "@/lib/formules.js";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
@@ -164,6 +164,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
 
   const grille = calculerGrille(h);
   const offres = calculerGrilleOffres(h);
+  const catalogue = offresCatalogue();
   const F = totalFixes(h);
   const echelle = simulerEchelle(h, "p400", [Number(h.nActuel) || 5, 10, 20, 50, Number(h.nCible) || 100]
     .filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b));
@@ -205,7 +206,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
   };
   const genererOffres = async () => {
     setEnvoi(true);
-    try { await appliquerOffres(offres); toast.succes(`${offres.length} offres générées dans le catalogue.`); }
+    try { await appliquerOffres(catalogue); toast.succes(`${catalogue.length} offres publiées dans le catalogue.`); }
     catch (e) { toast.erreur(e.message); }
     finally { setEnvoi(false); }
   };
@@ -401,44 +402,47 @@ function Tarification({ nbEcolesReel, onErreur }) {
         </div>
       </Carte>
 
-      {/* 3) Catalogue d'offres = matrice formule × palier */}
+      {/* 3) Catalogue commercial : prix FIXES par formule (≤ 800) + Campus */}
       <Carte className="overflow-hidden">
         <div className="border-b border-navy-900/10 px-5 py-3 text-sm font-medium text-navy-900/70">
-          3️⃣ Catalogue d'offres — prix / an, avec coût &amp; marge (formule × taille)
+          3️⃣ Catalogue commercial — prix fixes par formule (≤ 800 élèves)
         </div>
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
             <tr>
-              <th className="px-4 py-2.5 font-medium">Formule \ Taille</th>
-              {h.paliers.map((p) => <th key={p.code} className="px-4 py-2.5 text-right font-medium">{p.libelle} élèves</th>)}
+              <th className="px-4 py-2.5 font-medium">Offre</th>
+              <th className="px-4 py-2.5 font-medium">Modules</th>
+              <th className="px-4 py-2.5 text-right font-medium">Prix / an</th>
+              <th className="px-4 py-2.5 text-right font-medium">Marge à {aCible?.N} écoles</th>
             </tr>
           </thead>
           <tbody>
-            {FORMULES.map((f) => (
-              <tr key={f.id} className="border-t border-navy-900/5 align-top">
-                <td className="px-4 py-2.5">
-                  <span className="font-medium text-navy-900">{f.libelle}</span>
-                  <span className="ml-1 text-xs text-navy-900/40">{modulesDeFormuleCount(f)} modules</span>
-                </td>
-                {h.paliers.map((p) => {
-                  const o = offre(f.id, p.code);
-                  return (
-                    <td key={p.code} className="px-4 py-2.5 text-right">
-                      <div className="font-mono font-semibold text-or-600">{fmtX(o?.prixAnnuel)}</div>
-                      <div className="font-mono text-[11px] text-navy-900/40">coût {fmtX(o?.coutRevientAnnuel)}</div>
-                      <div className={`font-mono text-[11px] font-medium ${o?.margeAnnuelle >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        marge {fmtX(o?.margeAnnuelle)} ({Math.round((o?.margePct || 0) * 100)}%)
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {catalogue.map((o) => {
+              const cout = aCible?.plancherAnnuel || 0; // coût/école à l'objectif (indépendant de la formule)
+              const marge = o.devis ? null : o.prixAnnuel - cout;
+              return (
+                <tr key={o.code} className="border-t border-navy-900/5">
+                  <td className="px-4 py-2.5 font-medium text-navy-900">{o.libelle}</td>
+                  <td className="px-4 py-2.5 text-xs text-navy-900/50">{o.modules.length} modules</td>
+                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-or-600">
+                    {o.devis ? "sur devis" : `${fmtX(o.prixAnnuel)}`}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-xs">
+                    {marge === null ? "—" : (
+                      <span className={marge >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                        {marge >= 0 ? "+" : ""}{fmtX(marge)}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <p className="border-t border-navy-900/10 px-5 py-3 text-xs text-navy-900/45">
-          Coût = frais fixes (dont ton salaire) dilués sur {h.nbEcoles} écoles + variable du palier.
-          « Générer les offres » crée/actualise ces {offres.length} lignes (modules débloqués à l'affectation).
+          Prix fixes quelle que soit la taille jusqu'à 800 élèves ; au-delà, Campus sur devis.
+          Marge estimée à ton objectif de {aCible?.N} écoles (coût/école {fmtX(aCible?.plancherAnnuel)}).
+          « Publier les offres » crée ces {catalogue.length} lignes (modules débloqués à l'affectation).
         </p>
       </Carte>
 
@@ -489,7 +493,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
       <div className="flex flex-wrap justify-end gap-2">
         <Bouton variante="fantome" onClick={() => setH(HYPOTHESES_DEFAUT)}>Réinitialiser</Bouton>
         <Bouton variante="fantome" onClick={enregistrer} disabled={envoi}>Enregistrer les hypothèses</Bouton>
-        <Bouton variante="or" onClick={genererOffres} disabled={envoi}>Générer les offres</Bouton>
+        <Bouton variante="or" onClick={genererOffres} disabled={envoi}>Publier les offres</Bouton>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
-import { FORMULES, modulesDeFormule } from "@/lib/formules.js";
+import { FORMULES, modulesDeFormule, SEUIL_CAMPUS } from "@/lib/formules.js";
 
 // GesSchool — modèle de tarification (réservé au super-admin).
 //
@@ -138,6 +138,27 @@ export function calculerGrilleOffres(h) {
       });
     }
   }
+  return offres;
+}
+
+// Catalogue commercial RÉEL : prix FIXES par formule (≤ 800 élèves) + Campus
+// (> 800, sur devis). C'est ce qui est vendu ; la matrice formule × palier
+// ci-dessus reste un outil d'analyse de coût, pas le catalogue.
+export function offresCatalogue() {
+  const offres = FORMULES.map((f) => ({
+    code: f.id,
+    libelle: f.libelle,
+    formule: f.id,
+    maxEleves: SEUIL_CAMPUS,
+    modules: modulesDeFormule(f.id),
+    prixAnnuel: Number(f.prixAnnuel) || 0,
+    prixMensuel: (Number(f.prixAnnuel) || 0) / 12,
+  }));
+  offres.push({
+    code: "campus", libelle: "Campus (> 800 élèves)", formule: "tout",
+    maxEleves: null, modules: modulesDeFormule("tout"),
+    prixAnnuel: 0, prixMensuel: 0, devis: true,
+  });
   return offres;
 }
 
