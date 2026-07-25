@@ -1,0 +1,303 @@
+<style>
+  :root {
+    --navy: #0b1f3a; --navy-2: #13294b; --or: #c9a227; --or-deep: #9e7d18;
+    --cream: #f7f5ef; --paper: #fffdf8; --ink: #1c2534; --muted: #5c6678;
+    --line: #e7e2d4; --line-strong: #d7cfb8;
+    --gate: #7a5c00; --gate-bg: #fbf1cf;
+    --ok: #2f7d5b; --ok-bg: #e5f2ea;
+    --bg: var(--cream); --card: var(--paper); --tint: #fbf9f2;
+    --shadow: 0 1px 2px rgba(11,31,58,.06), 0 8px 24px rgba(11,31,58,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a1424; --card: #10203a; --tint: #0e1c33; --paper: #10203a;
+      --ink: #eef1f6; --muted: #9aa6ba; --line: #22354f; --line-strong: #2c405c;
+      --cream: #0a1424; --gate-bg: #2a2410; --gate: #e6c766; --ok: #6fd0a0; --ok-bg: #10291f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5ef; --card: #fffdf8; --tint: #fbf9f2; --paper:#fffdf8;
+    --ink: #1c2534; --muted: #5c6678; --line: #e7e2d4; --line-strong:#d7cfb8;
+    --gate-bg:#fbf1cf; --gate:#7a5c00; --ok:#2f7d5b; --ok-bg:#e5f2ea;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a1424; --card: #10203a; --tint: #0e1c33; --paper:#10203a;
+    --ink: #eef1f6; --muted: #9aa6ba; --line: #22354f; --line-strong:#2c405c;
+    --gate-bg:#2a2410; --gate:#e6c766; --ok:#6fd0a0; --ok-bg:#10291f;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .doc {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink); background: var(--bg);
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+    padding: clamp(20px, 5vw, 56px) clamp(16px, 5vw, 40px) 64px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .serif { font-family: Georgia, "Times New Roman", serif; }
+
+  /* Header */
+  .masthead { display: flex; align-items: center; gap: 18px; padding-bottom: 22px; border-bottom: 2px solid var(--navy); }
+  @media (prefers-color-scheme: dark) { .masthead { border-color: var(--or); } }
+  :root[data-theme="dark"] .masthead { border-color: var(--or); }
+  .badge {
+    flex: none; width: 58px; height: 58px; border-radius: 50%;
+    background: var(--navy); color: var(--or);
+    display: grid; place-items: center; font-family: Georgia, serif; font-weight: 700; font-size: 22px;
+    box-shadow: var(--shadow);
+  }
+  .masthead h1 { margin: 0; font-size: clamp(24px, 4.5vw, 34px); letter-spacing: -.01em; text-wrap: balance; }
+  .masthead .sub { color: var(--muted); font-size: 14.5px; margin-top: 2px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 700; color: var(--or-deep); }
+  @media (prefers-color-scheme: dark){ .eyebrow{ color: var(--or); } }
+  :root[data-theme="dark"] .eyebrow{ color: var(--or); }
+
+  /* Summary strip */
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 22px 0 6px; }
+  .fact { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+  .fact .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .fact .v { font-family: Georgia, serif; font-size: 18px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 560px){ .facts { grid-template-columns: repeat(2,1fr); } }
+
+  /* Sections */
+  section { margin-top: 34px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .sec-head h2 { margin: 0; font-size: 21px; letter-spacing: -.01em; }
+  .sec-head .n { font-family: Georgia, serif; font-size: 14px; color: var(--or-deep); font-weight: 700; }
+  @media (prefers-color-scheme: dark){ .sec-head .n{ color: var(--or);} }
+  :root[data-theme="dark"] .sec-head .n{ color: var(--or); }
+  .lead { color: var(--muted); font-size: 14.5px; margin: -2px 0 16px; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 18px 20px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 620px){ .grid2 { grid-template-columns: 1fr; } }
+
+  .block h3 { margin: 0 0 8px; font-size: 15px; }
+  .hint { color: var(--muted); font-size: 12.5px; }
+
+  ul.check { list-style: none; margin: 0; padding: 0; }
+  ul.check li { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  ul.check li:last-child { border-bottom: 0; }
+  ul.check li::before { content: "☐"; color: var(--or-deep); font-size: 16px; line-height: 1.3; }
+  @media (prefers-color-scheme: dark){ ul.check li::before{ color: var(--or);} }
+  :root[data-theme="dark"] ul.check li::before{ color: var(--or); }
+
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 460px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  thead th { background: var(--tint); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.fill { color: var(--muted); }
+  .filled { font-family: Georgia, serif; font-weight: 700; }
+  .known { display:inline-block; font-size: 11px; color: var(--ok); background: var(--ok-bg); border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin-top: 6px; }
+  .step { display: grid; grid-template-columns: 84px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .when { font-family: Georgia, serif; font-weight: 700; font-size: 14px; color: var(--navy); font-variant-numeric: tabular-nums; }
+  @media (prefers-color-scheme: dark){ .step .when{ color: var(--or);} }
+  :root[data-theme="dark"] .step .when{ color: var(--or); }
+  .step .what b { font-size: 15px; }
+  .step .what p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+  .gate { display:inline-block; margin-top: 7px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: var(--gate); background: var(--gate-bg); border-radius: 6px; padding: 3px 9px; }
+  .go { color: var(--ok); background: var(--ok-bg); }
+
+  .note { margin-top: 22px; background: var(--tint); border: 1px solid var(--line); border-left: 3px solid var(--or); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; color: var(--ink); }
+  .note b { color: var(--ink); }
+
+  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; text-align: center; }
+  footer a { color: var(--or-deep); text-decoration: none; }
+  @media (prefers-color-scheme: dark){ footer a{ color: var(--or);} }
+  :root[data-theme="dark"] footer a{ color: var(--or); }
+
+  @media print {
+    .doc { padding: 0; background: #fff; color: #000; }
+    .fact, .card, .tbl-wrap, .note { box-shadow: none; }
+    section { break-inside: avoid; }
+  }
+</style>
+
+<div class="doc">
+  <div class="wrap">
+
+    <header class="masthead">
+      <div class="badge">TT</div>
+      <div>
+        <div class="eyebrow">GesSchool · Mise en route</div>
+        <h1 class="serif">Onboarding — École Tut'Tank</h1>
+        <div class="sub">Fiche de collecte &amp; planning · préparé pour <b>Mme Kane</b>, Directrice · Dakar</div>
+      </div>
+    </header>
+
+    <div class="facts">
+      <div class="fact"><div class="k">Effectif</div><div class="v">125 élèves</div></div>
+      <div class="fact"><div class="k">Formule</div><div class="v">Premium</div></div>
+      <div class="fact"><div class="k">Tarif convenu</div><div class="v">375 000 <span style="font-size:12px;font-weight:400">XOF/an</span></div></div>
+      <div class="fact"><div class="k">Go-live visé</div><div class="v">07 août 2026</div></div>
+    </div>
+
+    <p class="lead" style="margin-top:18px">
+      Ce document sert à rassembler, en une fois, tout ce qu'il faut pour ouvrir votre espace GesSchool.
+      Plus les informations ci-dessous nous parviennent tôt et complètes, plus la mise en route est rapide.
+    </p>
+
+    <!-- SECTION 1 -->
+    <section>
+      <div class="sec-head"><span class="n">Partie 1</span><h2 class="serif">Fiche de collecte</h2></div>
+      <p class="lead">À remplir par l'école. Les éléments marqués <span class="known">déjà connu</span> sont en notre possession — merci de confirmer.</p>
+
+      <div class="grid2">
+        <div class="card block">
+          <h3>Établissement &amp; identité</h3>
+          <ul class="check">
+            <li>Nom exact &amp; sigle <span class="known">Tut'Tank · TT</span></li>
+            <li>Ville / adresse <span class="known">Dakar</span></li>
+            <li>Logo (fichier haute résolution) <span class="known">reçu</span></li>
+            <li>Couleurs de la charte <span class="known">reçues</span></li>
+            <li>Téléphone &amp; e-mail officiels de l'école</li>
+            <li>Année scolaire &amp; découpage (trimestre / semestre)</li>
+          </ul>
+        </div>
+
+        <div class="card block">
+          <h3>Signataires (documents officiels)</h3>
+          <ul class="check">
+            <li>Directrice <span class="known">Mme Kane</span></li>
+            <li>Responsable pédagogique (nom + signature scannée)</li>
+            <li>Comptable / caissier (si distinct)</li>
+          </ul>
+          <p class="hint" style="margin-top:10px">Une signature scannée (PNG fond transparent) apparaîtra sur les bulletins et attestations.</p>
+        </div>
+      </div>
+
+      <div class="card block" style="margin-top:14px">
+        <h3>Structure — niveaux &amp; classes</h3>
+        <p class="hint" style="margin-bottom:10px">Listez chaque classe telle qu'elle doit apparaître. Le <b>libellé de classe</b> doit être identique à celui du fichier élèves.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Cycle</th><th>Niveau</th><th>Classe(s)</th><th>Effectif</th></tr></thead>
+            <tbody>
+              <tr><td class="filled">Préscolaire</td><td>TPS → GS</td><td class="fill">à préciser</td><td class="fill">—</td></tr>
+              <tr><td class="filled">Élémentaire</td><td>CI → CM2</td><td class="fill">à préciser</td><td class="fill">—</td></tr>
+              <tr><td class="fill">…</td><td class="fill">…</td><td class="fill">…</td><td class="fill">…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div class="card block">
+          <h3>Matières &amp; enseignants</h3>
+          <ul class="check">
+            <li>Liste des matières enseignées</li>
+            <li>Liste des enseignants (nom, contact)</li>
+            <li>Qui enseigne quoi, dans quelle classe (affectations)</li>
+            <li>Professeur principal par classe (le cas échéant)</li>
+          </ul>
+        </div>
+        <div class="card block">
+          <h3>Grille des frais</h3>
+          <ul class="check">
+            <li>Frais d'inscription</li>
+            <li>Scolarité (montant &amp; par niveau si différent)</li>
+            <li>Nombre de tranches &amp; échéances</li>
+            <li>Cantine / transport (si concernés)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card block" style="margin-top:14px">
+        <h3>Fichier des 125 élèves</h3>
+        <p class="hint" style="margin-bottom:10px">À remplir dans le <b>modèle Excel fourni</b> (<span class="filled">modele-import-eleves.csv</span>). Colonnes attendues, dans cet ordre :</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Colonne</th><th>Obligatoire</th><th>Format / exemple</th></tr></thead>
+            <tbody>
+              <tr><td class="filled">prenom</td><td>Oui</td><td class="fill">Awa</td></tr>
+              <tr><td class="filled">nom</td><td>Oui</td><td class="fill">Diop</td></tr>
+              <tr><td class="filled">sexe</td><td>Recommandé</td><td class="fill">M ou F</td></tr>
+              <tr><td class="filled">date_naissance</td><td>Recommandé</td><td class="fill">AAAA-MM-JJ (2019-03-12)</td></tr>
+              <tr><td class="filled">lieu_naissance</td><td>Facultatif</td><td class="fill">Dakar</td></tr>
+              <tr><td class="filled">matricule</td><td>Facultatif</td><td class="fill">vide = généré automatiquement</td></tr>
+              <tr><td class="filled">classe</td><td>Oui</td><td class="fill">exactement comme dans Structure (ex. CE1)</td></tr>
+              <tr><td class="filled">parent_nom</td><td>Recommandé</td><td class="fill">Fatou Diop</td></tr>
+              <tr><td class="filled">parent_tel</td><td>Recommandé</td><td class="fill">+221 77 000 00 01</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card block" style="margin-top:14px">
+        <h3>Moyens de paiement (facultatif au lancement)</h3>
+        <ul class="check">
+          <li>Numéros Wave / Orange Money de l'école (paiement assisté)</li>
+          <li>Compte marchand CinetPay / PayDunya (paiement en ligne automatique — plus tard)</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SECTION 2 -->
+    <section>
+      <div class="sec-head"><span class="n">Partie 2</span><h2 class="serif">Planning de mise en route</h2></div>
+      <p class="lead">Chaque étape a un point de contrôle (<span class="gate" style="padding:1px 7px">jalon</span>) : on ne passe à la suivante qu'une fois l'étape validée. Cela garantit une ouverture sans mauvaise surprise.</p>
+
+      <div class="card">
+        <div class="timeline">
+          <div class="step">
+            <div class="when">Ven. 25/07</div>
+            <div class="what"><b>Lancement</b><p>Envoi de cette fiche + du modèle Excel. Désignation d'un référent unique côté école.</p></div>
+          </div>
+          <div class="step">
+            <div class="when">Mer. 30/07</div>
+            <div class="what"><b>Réception des données</b><p>Excel des 125 élèves rempli + réponses de la fiche (structure, frais, enseignants, signataires).</p>
+            <span class="gate">Jalon · données complètes</span></div>
+          </div>
+          <div class="step">
+            <div class="when">31/07 – 01/08</div>
+            <div class="what"><b>Création de l'école &amp; import</b><p>Ouverture de l'espace Tut'Tank, activation Premium, création de la structure, import des 125 élèves.</p>
+            <span class="gate">Jalon · 125/125 élèves rattachés</span></div>
+          </div>
+          <div class="step">
+            <div class="when">Lun. 04/08</div>
+            <div class="what"><b>Paramétrage</b><p>Matières &amp; affectations, grille tarifaire &amp; génération des factures, signataires, matricule, notation/bulletins.</p></div>
+          </div>
+          <div class="step">
+            <div class="when">Mar. 05/08</div>
+            <div class="what"><b>Recette</b><p>Production d'un bulletin test et d'une facture test — vérification du rendu (logo, ville, signataire).</p>
+            <span class="gate">Jalon · documents parfaits</span></div>
+          </div>
+          <div class="step">
+            <div class="when">Mer. 06/08</div>
+            <div class="what"><b>Formation</b><p>Séance avec Mme Kane et la secrétaire (≈ 1 h) + remise du manuel. Les 3 gestes clés : inscrire, saisir une note, encaisser.</p></div>
+          </div>
+          <div class="step">
+            <div class="when">Jeu. 07/08</div>
+            <div class="what"><b>Go-live</b><p>Ouverture aux équipes, puis distribution progressive des codes parents (quand il y a déjà du contenu à voir).</p>
+            <span class="gate go">Mise en service</span></div>
+          </div>
+          <div class="step">
+            <div class="when">14/08 · 04/09</div>
+            <div class="what"><b>Suivi rapproché</b><p>Point à J+7 puis J+30 avec le référent : usage réel, questions, ajustements.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <b>Le facteur décisif, c'est la qualité des données.</b> Un fichier Excel propre et complet au 30/07
+        permet de tenir le go-live du 07/08. Nous nous chargeons de tout le reste : création, import,
+        paramétrage, formation et support de la première semaine.
+      </div>
+    </section>
+
+    <footer>
+      Développé par <b>GesPro</b> · <a href="mailto:gespro.sn@gmail.com">gespro.sn@gmail.com</a>
+      · Assistance WhatsApp +221 77 343 59 28<br>
+      Document de mise en route — École Tut'Tank · 25 juillet 2026
+    </footer>
+
+  </div>
+</div>
