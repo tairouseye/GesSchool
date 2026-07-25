@@ -1,0 +1,135 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Onboarding Tut'Tank</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: A4; margin: 2cm 2cm; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: #1c2534; font-size: 11pt; line-height: 1.4; }
+  h1 { font-family: Georgia, serif; font-size: 22pt; color: #0b1f3a; margin: 0; }
+  h2 { font-family: Georgia, serif; font-size: 15pt; color: #0b1f3a; border-bottom: 2px solid #c9a227; padding-bottom: 4px; margin: 22pt 0 8pt; }
+  h3 { font-size: 11.5pt; color: #0b1f3a; margin: 12pt 0 4pt; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 2px; font-size: 8.5pt; font-weight: bold; color: #9e7d18; }
+  .sub { color: #5c6678; font-size: 10.5pt; }
+  .lead { color: #444; font-size: 10.5pt; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 6pt 0; }
+  th, td { border: 1px solid #d7cfb8; padding: 5pt 8pt; text-align: left; vertical-align: top; }
+  th { background: #f3efe2; text-transform: uppercase; font-size: 8.5pt; letter-spacing: .5px; color: #5c6678; }
+  .facts td { text-align: center; border: 1px solid #d7cfb8; }
+  .facts .k { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #5c6678; }
+  .facts .v { font-family: Georgia, serif; font-size: 13pt; font-weight: bold; color: #0b1f3a; }
+  .known { color: #2f7d5b; font-weight: bold; }
+  .gate { color: #7a5c00; font-weight: bold; }
+  .go { color: #2f7d5b; font-weight: bold; }
+  .badge { font-family: Georgia, serif; font-weight: bold; font-size: 18pt; color: #c9a227; background: #0b1f3a; padding: 8pt 12pt; }
+  ul { margin: 4pt 0; padding-left: 0; list-style: none; }
+  li { margin: 3pt 0; font-size: 10pt; }
+  .note { background: #fbf9f2; border-left: 3px solid #c9a227; padding: 10pt 12pt; font-size: 10pt; margin-top: 14pt; }
+  .foot { margin-top: 20pt; border-top: 1px solid #d7cfb8; padding-top: 8pt; color: #5c6678; font-size: 9pt; text-align: center; }
+  .when { font-family: Georgia, serif; font-weight: bold; color: #0b1f3a; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<table style="border:none; margin-bottom:6pt"><tr style="border:none">
+  <td style="border:none; width:60pt"><span class="badge">TT</span></td>
+  <td style="border:none">
+    <div class="eyebrow">GesSchool &middot; Mise en route</div>
+    <h1>Onboarding &mdash; &Eacute;cole Tut'Tank</h1>
+    <div class="sub">Fiche de collecte &amp; planning &middot; pr&eacute;par&eacute; pour <b>Mme Kane</b>, Directrice &middot; Dakar</div>
+  </td>
+</tr></table>
+
+<table class="facts"><tr>
+  <td><div class="k">Effectif</div><div class="v">125 &eacute;l&egrave;ves</div></td>
+  <td><div class="k">Formule</div><div class="v">Premium</div></td>
+  <td><div class="k">Tarif convenu</div><div class="v">375 000 XOF/an</div></td>
+  <td><div class="k">Go-live vis&eacute;</div><div class="v">07 ao&ucirc;t 2026</div></td>
+</tr></table>
+
+<p class="lead">Ce document sert &agrave; rassembler, en une fois, tout ce qu'il faut pour ouvrir votre espace GesSchool. Plus les informations ci-dessous nous parviennent t&ocirc;t et compl&egrave;tes, plus la mise en route est rapide.</p>
+
+<h2>Partie 1 &mdash; Fiche de collecte</h2>
+<p class="lead">&Agrave; remplir par l'&eacute;cole. Les &eacute;l&eacute;ments not&eacute;s <span class="known">(d&eacute;j&agrave; connu)</span> sont en notre possession &mdash; merci de confirmer.</p>
+
+<h3>&Eacute;tablissement &amp; identit&eacute;</h3>
+<ul>
+  <li>&#9744; Nom exact &amp; sigle <span class="known">(d&eacute;j&agrave; connu : Tut'Tank &middot; TT)</span></li>
+  <li>&#9744; Ville / adresse <span class="known">(d&eacute;j&agrave; connu : Dakar)</span></li>
+  <li>&#9744; Logo haute r&eacute;solution <span class="known">(re&ccedil;u)</span> &mdash; Couleurs de la charte <span class="known">(re&ccedil;ues)</span></li>
+  <li>&#9744; T&eacute;l&eacute;phone &amp; e-mail officiels de l'&eacute;cole</li>
+  <li>&#9744; Ann&eacute;e scolaire &amp; d&eacute;coupage (trimestre / semestre)</li>
+</ul>
+
+<h3>Signataires (documents officiels)</h3>
+<ul>
+  <li>&#9744; Directrice <span class="known">(d&eacute;j&agrave; connu : Mme Kane)</span></li>
+  <li>&#9744; Responsable p&eacute;dagogique (nom + signature scann&eacute;e)</li>
+  <li>&#9744; Comptable / caissier (si distinct)</li>
+</ul>
+
+<h3>Structure &mdash; niveaux &amp; classes</h3>
+<p class="lead">Le libell&eacute; de classe doit &ecirc;tre identique &agrave; celui du fichier &eacute;l&egrave;ves.</p>
+<table>
+  <tr><th>Cycle</th><th>Niveau</th><th>Classe(s)</th><th>Effectif</th></tr>
+  <tr><td>Pr&eacute;scolaire</td><td>TPS &rarr; GS</td><td>&agrave; pr&eacute;ciser</td><td>&nbsp;</td></tr>
+  <tr><td>&Eacute;l&eacute;mentaire</td><td>CI &rarr; CM2</td><td>&agrave; pr&eacute;ciser</td><td>&nbsp;</td></tr>
+  <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</table>
+
+<h3>Mati&egrave;res &amp; enseignants</h3>
+<ul>
+  <li>&#9744; Liste des mati&egrave;res enseign&eacute;es</li>
+  <li>&#9744; Liste des enseignants (nom, contact)</li>
+  <li>&#9744; Qui enseigne quoi, dans quelle classe (affectations)</li>
+  <li>&#9744; Professeur principal par classe (le cas &eacute;ch&eacute;ant)</li>
+</ul>
+
+<h3>Grille des frais</h3>
+<ul>
+  <li>&#9744; Frais d'inscription</li>
+  <li>&#9744; Scolarit&eacute; (montant &amp; par niveau si diff&eacute;rent)</li>
+  <li>&#9744; Nombre de tranches &amp; &eacute;ch&eacute;ances</li>
+  <li>&#9744; Cantine / transport (si concern&eacute;s)</li>
+</ul>
+
+<h3>Fichier des 125 &eacute;l&egrave;ves (mod&egrave;le Excel fourni)</h3>
+<table>
+  <tr><th>Colonne</th><th>Obligatoire</th><th>Format / exemple</th></tr>
+  <tr><td>prenom</td><td>Oui</td><td>Awa</td></tr>
+  <tr><td>nom</td><td>Oui</td><td>Diop</td></tr>
+  <tr><td>sexe</td><td>Recommand&eacute;</td><td>M ou F</td></tr>
+  <tr><td>date_naissance</td><td>Recommand&eacute;</td><td>AAAA-MM-JJ (2019-03-12)</td></tr>
+  <tr><td>lieu_naissance</td><td>Facultatif</td><td>Dakar</td></tr>
+  <tr><td>matricule</td><td>Facultatif</td><td>vide = g&eacute;n&eacute;r&eacute; automatiquement</td></tr>
+  <tr><td>classe</td><td>Oui</td><td>exactement comme dans Structure (ex. CE1)</td></tr>
+  <tr><td>parent_nom</td><td>Recommand&eacute;</td><td>Fatou Diop</td></tr>
+  <tr><td>parent_tel</td><td>Recommand&eacute;</td><td>+221 77 000 00 01</td></tr>
+</table>
+
+<h3>Moyens de paiement (facultatif au lancement)</h3>
+<ul>
+  <li>&#9744; Num&eacute;ros Wave / Orange Money de l'&eacute;cole (paiement assist&eacute;)</li>
+  <li>&#9744; Compte marchand CinetPay / PayDunya (paiement en ligne automatique &mdash; plus tard)</li>
+</ul>
+
+<h2>Partie 2 &mdash; Planning de mise en route</h2>
+<p class="lead">Chaque &eacute;tape a un point de contr&ocirc;le (jalon) : on ne passe &agrave; la suivante qu'une fois l'&eacute;tape valid&eacute;e.</p>
+<table>
+  <tr><th style="width:90pt">Date</th><th>&Eacute;tape</th></tr>
+  <tr><td class="when">Ven. 25/07</td><td><b>Lancement</b> &mdash; Envoi de cette fiche + du mod&egrave;le Excel. D&eacute;signation d'un r&eacute;f&eacute;rent unique c&ocirc;t&eacute; &eacute;cole.</td></tr>
+  <tr><td class="when">Mer. 30/07</td><td><b>R&eacute;ception des donn&eacute;es</b> &mdash; Excel des 125 &eacute;l&egrave;ves rempli + r&eacute;ponses de la fiche. <span class="gate">Jalon : donn&eacute;es compl&egrave;tes</span></td></tr>
+  <tr><td class="when">31/07 &ndash; 01/08</td><td><b>Cr&eacute;ation de l'&eacute;cole &amp; import</b> &mdash; Ouverture de l'espace, activation Premium, structure, import des 125 &eacute;l&egrave;ves. <span class="gate">Jalon : 125/125 &eacute;l&egrave;ves rattach&eacute;s</span></td></tr>
+  <tr><td class="when">Lun. 04/08</td><td><b>Param&eacute;trage</b> &mdash; Mati&egrave;res &amp; affectations, grille tarifaire &amp; factures, signataires, matricule, notation/bulletins.</td></tr>
+  <tr><td class="when">Mar. 05/08</td><td><b>Recette</b> &mdash; Bulletin test + facture test, v&eacute;rification du rendu (logo, ville, signataire). <span class="gate">Jalon : documents parfaits</span></td></tr>
+  <tr><td class="when">Mer. 06/08</td><td><b>Formation</b> &mdash; S&eacute;ance avec Mme Kane et la secr&eacute;taire (&asymp; 1 h) + manuel. Les 3 gestes cl&eacute;s : inscrire, saisir une note, encaisser.</td></tr>
+  <tr><td class="when">Jeu. 07/08</td><td><b>Go-live</b> &mdash; Ouverture aux &eacute;quipes, puis distribution progressive des codes parents. <span class="go">Mise en service</span></td></tr>
+  <tr><td class="when">14/08 &middot; 04/09</td><td><b>Suivi rapproch&eacute;</b> &mdash; Point &agrave; J+7 puis J+30 avec le r&eacute;f&eacute;rent.</td></tr>
+</table>
+
+<div class="note"><b>Le facteur d&eacute;cisif, c'est la qualit&eacute; des donn&eacute;es.</b> Un fichier Excel propre et complet au 30/07 permet de tenir le go-live du 07/08. Nous nous chargeons de tout le reste : cr&eacute;ation, import, param&eacute;trage, formation et support de la premi&egrave;re semaine.</div>
+
+<div class="foot">D&eacute;velopp&eacute; par <b>GesPro</b> &middot; gespro.sn@gmail.com &middot; Assistance WhatsApp +221 77 343 59 28<br>Document de mise en route &mdash; &Eacute;cole Tut'Tank &middot; 25 juillet 2026</div>
+
+</body>
+</html>
