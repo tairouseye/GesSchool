@@ -1,0 +1,169 @@
+<style>
+  :root{
+    --navy:#0b1f3a; --navy-tile:#12243f; --navy-line:#1e3557;
+    --or:#c9a227; --cream:#f7f5ef;
+    --bg:#eef0f4; --panel:#ffffff; --ink:#1b2433; --muted:#6b7688; --line:#e4e7ee;
+    --shadow:0 1px 2px rgba(16,28,54,.05), 0 10px 26px rgba(16,28,54,.08);
+    --shadow-sm:0 1px 2px rgba(16,28,54,.06), 0 4px 12px rgba(16,28,54,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.4); --shadow-sm:0 2px 10px rgba(0,0,0,.35);}
+  }
+  :root[data-theme="light"]{ --bg:#eef0f4; --panel:#fff; --ink:#1b2433; --muted:#6b7688; --line:#e4e7ee; }
+  :root[data-theme="dark"]{ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a; }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .page{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); padding:28px 16px 72px; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto}
+  .lead h1{font-size:clamp(22px,4vw,30px);margin:0 0 6px;letter-spacing:-.02em}
+  .lead p{color:var(--muted);margin:0;font-size:14.5px;max-width:60ch}
+  .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:700;color:var(--or)}
+
+  .styles{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;margin-top:28px}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 18px 22px;box-shadow:var(--shadow)}
+  .col h2{margin:0 0 2px;font-size:16px;letter-spacing:-.01em}
+  .col .feel{color:var(--muted);font-size:12.5px;margin:0 0 16px;min-height:32px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 9px;border-radius:999px;margin-bottom:10px}
+  .tag.now{background:rgba(200,60,60,.12);color:#c0392b}
+  .tag.reco{background:rgba(201,162,39,.16);color:#9e7d18}
+  @media (prefers-color-scheme:dark){.tag.reco{color:var(--or)}}
+  :root[data-theme="dark"] .tag.reco{color:var(--or)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+
+  /* base tile */
+  .t{position:relative;border-radius:16px;padding:14px;min-height:104px;display:flex;flex-direction:column;
+     justify-content:space-between;cursor:default;transition:transform .12s ease, box-shadow .12s ease}
+  .t:hover{transform:translateY(-2px)}
+  .t .lab{font-size:13.5px;font-weight:600;line-height:1.2}
+  .t .sub{font-size:11px;margin-top:2px}
+  .t .ic{width:26px;height:26px}
+  .t .ic svg{width:26px;height:26px;display:block}
+  .badge{position:absolute;top:10px;right:10px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+     font-size:11px;font-weight:800;display:grid;place-items:center}
+
+  /* ACTUEL — emoji + pastel */
+  .now .t{background:#ede9fe;color:#3b2f6b}
+  .now .t:nth-child(2){background:#fef3c7;color:#7a5b12}
+  .now .t:nth-child(3){background:#dcfce7;color:#1e5b3b}
+  .now .t:nth-child(4){background:#e0f2fe;color:#1e5170}
+  .now .t:nth-child(5){background:#ffe4e6;color:#9f1239}
+  .now .t:nth-child(6){background:#fef9c3;color:#78600e}
+  .now .t .emoji{font-size:26px;line-height:1}
+  .now .badge{background:#ef4444;color:#fff}
+
+  /* A — cartes claires épurées */
+  .A .t{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-sm);color:var(--ink)}
+  .A .t .ic{color:var(--navy)}
+  @media (prefers-color-scheme:dark){.A .t .ic{color:#9fb4d8}}
+  :root[data-theme="dark"] .A .t .ic{color:#9fb4d8}
+  .A .t .sub{color:var(--muted)}
+  .A .badge{background:var(--navy);color:var(--or)}
+  @media (prefers-color-scheme:dark){.A .badge{background:var(--or);color:var(--navy)}}
+  :root[data-theme="dark"] .A .badge{background:var(--or);color:#0b1f3a}
+
+  /* B — sombre élégant (navy + or) : engagé, identique en clair/sombre */
+  .B .t{background:var(--navy-tile);border:1px solid var(--navy-line);color:var(--cream);box-shadow:var(--shadow-sm)}
+  .B .t .ic{color:var(--or)}
+  .B .t .sub{color:rgba(247,245,239,.55)}
+  .B .badge{background:var(--or);color:#0b1f3a}
+
+  /* C — icône en pastille couleur douce */
+  .C .t{background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-sm);color:var(--ink)}
+  .C .t .chip{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;margin-bottom:6px}
+  .C .t .chip svg{width:22px;height:22px}
+  .C .t .sub{color:var(--muted)}
+  .C .badge{background:#ef4444;color:#fff}
+
+  .foot{margin-top:30px;color:var(--muted);font-size:12.5px;text-align:center}
+  @media(max-width:520px){.grid{gap:9px}.t{min-height:96px;padding:12px}}
+</style>
+
+<div class="page"><div class="wrap">
+  <div class="lead">
+    <div class="eyebrow">GesSchool · Espace parent</div>
+    <h1>Tuiles — comparatif de styles</h1>
+    <p>Le même écran, décliné en 4 traitements. « Actuel » = ce que tu trouves trop dessin animé.
+       Les 3 autres remplacent les emoji par de vraies icônes fines, avec des couleurs maîtrisées
+       et de la profondeur. Ouvre-le sur ton téléphone et dis-moi laquelle tu préfères.</p>
+  </div>
+
+  <div class="styles">
+    <div class="col">
+      <span class="tag now">Actuel</span>
+      <h2>Emoji + pastel</h2>
+      <p class="feel">Coloré, ludique — mais « dessin animé ».</p>
+      <div class="grid now" data-variant="now"></div>
+    </div>
+
+    <div class="col">
+      <span class="tag reco">Recommandé</span>
+      <h2>A · Cartes claires</h2>
+      <p class="feel">Blanc, icône fine bleu nuit, ombre douce. Sobre, « SaaS premium ».</p>
+      <div class="grid A" data-variant="A"></div>
+    </div>
+
+    <div class="col">
+      <h2 style="margin-top:2px">B · Sombre élégant</h2>
+      <p class="feel">Tuiles bleu nuit, icônes dorées. Ambiance « appli bancaire haut de gamme ».</p>
+      <div class="grid B" data-variant="B"></div>
+    </div>
+
+    <div class="col">
+      <h2 style="margin-top:2px">C · Pastille couleur</h2>
+      <p class="feel">Carte blanche + petite icône en pastille douce. Un peu de couleur, mais pro.</p>
+      <div class="grid C" data-variant="C"></div>
+    </div>
+  </div>
+
+  <p class="foot">Développé par GesPro · maquette de travail — non connectée à l'app</p>
+</div></div>
+
+<script>
+  const I = {
+    notes:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>',
+    bulletins:'<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/>',
+    emploi:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    cahier:'<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/>',
+    paiements:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+    cantine:'<path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-1.7 0-3 1.8-3 4s1.3 4 3 4v9"/>',
+  };
+  const EMO = {notes:'✎',bulletins:'🎓',emploi:'🗓️',cahier:'📓',paiements:'💳',cantine:'🍽️'};
+  const CHIP = {
+    notes:['#e9edf7','#33507a'], bulletins:['#f2ecd9','#8a6d1f'], emploi:['#e6f0ec','#2f6b52'],
+    cahier:['#eee9f3','#6b4a83'], paiements:['#fbe9e9','#b03a3a'], cantine:['#f3edd8','#7a600e'],
+  };
+  const TILES = [
+    {k:'notes',lab:'Notes',sub:'3 nouvelles',badge:3},
+    {k:'bulletins',lab:'Bulletins',sub:'disponibles'},
+    {k:'emploi',lab:'Emploi du temps',sub:'cette semaine'},
+    {k:'cahier',lab:'Cahier de textes',sub:'devoirs'},
+    {k:'paiements',lab:'Paiements',sub:'1 impayé',badge:1},
+    {k:'cantine',lab:'Cantine',sub:'menu'},
+  ];
+  const svg = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+
+  function tileHTML(t, v){
+    const badge = t.badge ? '<span class="badge">'+t.badge+'</span>' : '';
+    if(v==='now'){
+      return '<div class="t">'+badge+'<span class="emoji">'+EMO[t.k]+'</span>'+
+             '<div><div class="lab">'+t.lab+'</div></div></div>';
+    }
+    if(v==='C'){
+      const [bg,fg]=CHIP[t.k];
+      return '<div class="t">'+badge+
+        '<span class="chip" style="background:'+bg+';color:'+fg+'">'+svg(I[t.k])+'</span>'+
+        '<div><div class="lab">'+t.lab+'</div><div class="sub">'+t.sub+'</div></div></div>';
+    }
+    // A et B
+    return '<div class="t">'+badge+'<span class="ic">'+svg(I[t.k])+'</span>'+
+      '<div><div class="lab">'+t.lab+'</div><div class="sub">'+t.sub+'</div></div></div>';
+  }
+  document.querySelectorAll('.grid').forEach(g=>{
+    const v=g.dataset.variant;
+    g.innerHTML=TILES.map(t=>tileHTML(t,v)).join('');
+  });
+</script>

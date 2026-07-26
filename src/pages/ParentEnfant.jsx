@@ -88,12 +88,14 @@ export default function ParentEnfant() {
               <button
                 key={t.cle}
                 onClick={() => setOnglet(t.cle)}
-                className={`relative flex min-h-[104px] flex-col items-start justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-95 ${t.classe}`}
+                className="group relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]"
               >
-                <span className="text-3xl leading-none">{t.emoji}</span>
-                <span className="text-sm font-semibold">{t.label}</span>
+                <IconeSection cle={t.cle} className="h-7 w-7 text-or-500" />
+                <span className="text-sm font-semibold text-creme">{t.label}</span>
                 {badges[t.cle] > 0 && (
-                  <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow">
+                  <span className={`absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold shadow ${
+                    t.cle === "paiements" ? "bg-rose-500 text-white" : "bg-or-500 text-navy-900"
+                  }`}>
                     {badges[t.cle]}
                   </span>
                 )}
@@ -103,7 +105,10 @@ export default function ParentEnfant() {
         </>
       ) : (
         <>
-          <h2 className="font-display text-xl font-bold text-navy-900">{sectionActive?.emoji} {sectionActive?.label}</h2>
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold text-navy-900">
+            {sectionActive && <IconeSection cle={sectionActive.cle} className="h-6 w-6 text-or-600" />}
+            {sectionActive?.label}
+          </h2>
           {onglet === "notes" ? (
         <Notes notes={notes} />
       ) : onglet === "bulletins" ? (
@@ -134,17 +139,39 @@ export default function ParentEnfant() {
 // Sections de l'enfant présentées en tuiles colorées (accueil parent).
 // Une couleur pastel par section, icône/texte foncé pour la lisibilité.
 const TUILES = [
-  { cle: "notes",       label: "Notes",          emoji: "📘", classe: "bg-violet-100 text-violet-800" },
-  { cle: "bulletins",   label: "Bulletins",      emoji: "🎓", classe: "bg-rose-100 text-rose-800" },
-  { cle: "cahier",      label: "Cahier de textes", emoji: "📓", classe: "bg-amber-100 text-amber-800" },
-  { cle: "emploi",      label: "Emploi du temps", emoji: "🗓️", classe: "bg-orange-100 text-orange-800" },
-  { cle: "paiements",   label: "Paiements",      emoji: "💳", classe: "bg-emerald-100 text-emerald-800" },
-  { cle: "absences",    label: "Absences",       emoji: "📋", classe: "bg-sky-100 text-sky-800" },
-  { cle: "fournitures", label: "Fournitures",    emoji: "🎒", classe: "bg-teal-100 text-teal-800" },
-  { cle: "documents",   label: "Documents",      emoji: "🧾", classe: "bg-indigo-100 text-indigo-800" },
-  { cle: "cantine",     label: "Cantine",        emoji: "🍽️", classe: "bg-lime-100 text-lime-800" },
-  { cle: "transport",   label: "Transport",      emoji: "🚌", classe: "bg-fuchsia-100 text-fuchsia-800" },
+  { cle: "notes",       label: "Notes" },
+  { cle: "bulletins",   label: "Bulletins" },
+  { cle: "cahier",      label: "Cahier de textes" },
+  { cle: "emploi",      label: "Emploi du temps" },
+  { cle: "paiements",   label: "Paiements" },
+  { cle: "absences",    label: "Absences" },
+  { cle: "fournitures", label: "Fournitures" },
+  { cle: "documents",   label: "Documents" },
+  { cle: "cantine",     label: "Cantine" },
+  { cle: "transport",   label: "Transport" },
 ];
+
+// Icones fines (contour), dorees sur fond navy. Un trace par section.
+const ICONES = {
+  notes: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>',
+  bulletins: '<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 22l5-3 5 3-1.5-9.5"/>',
+  cahier: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/>',
+  emploi: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  paiements: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  absences: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>',
+  fournitures: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  documents: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  cantine: '<path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-1.7 0-3 1.8-3 4s1.3 4 3 4v9"/>',
+  transport: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M3 11h18M7 17v2M17 17v2"/><circle cx="7.5" cy="14" r="1"/><circle cx="16.5" cy="14" r="1"/>',
+};
+
+function IconeSection({ cle, className = "h-7 w-7" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+      strokeLinecap="round" strokeLinejoin="round" className={className}
+      dangerouslySetInnerHTML={{ __html: ICONES[cle] || "" }} />
+  );
+}
 
 const JOURS_SEM = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const LIB_TRAJET = { aller_retour: "Aller-retour", aller: "Aller seul", retour: "Retour seul" };
