@@ -9,14 +9,7 @@ import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
-
-// Couleurs des tuiles (mobile) : une pastel par module, texte foncé lisible.
-const TUILES_COULEURS = [
-  "bg-violet-100 text-violet-800", "bg-amber-100 text-amber-800", "bg-emerald-100 text-emerald-800",
-  "bg-sky-100 text-sky-800", "bg-rose-100 text-rose-800", "bg-indigo-100 text-indigo-800",
-  "bg-teal-100 text-teal-800", "bg-orange-100 text-orange-800", "bg-lime-100 text-lime-800",
-  "bg-fuchsia-100 text-fuchsia-800",
-];
+import { Icone } from "@/composants/Icones.jsx";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
 // Desktop : sidebar (menu latéral dense). Mobile : barre de navigation basse
@@ -244,21 +237,18 @@ export default function Layout() {
               <p className="mb-1 font-display text-lg font-bold text-navy-900">{espaceCourant?.icone} {espaceCourant?.label}</p>
               <p className="mb-4 text-xs text-navy-900/50">Touchez un module pour l'ouvrir.</p>
               <div className="grid grid-cols-2 gap-3">
-                {items.map((item, i) => {
-                  const c = TUILES_COULEURS[i % TUILES_COULEURS.length];
-                  return (
-                    <button key={item.to} onClick={() => ouvrirTuile(item.to)}
-                      className={`relative flex min-h-[92px] flex-col items-start justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-95 ${c}`}>
-                      <span className="text-2xl leading-none">{item.icone}</span>
-                      <span className="text-sm font-semibold">{item.label}</span>
-                      {pastille(item.cle) > 0 && (
-                        <span className="absolute right-2 top-2 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow">
-                          {pastille(item.cle)}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                {items.map((item) => (
+                  <button key={item.to} onClick={() => ouvrirTuile(item.to)}
+                    className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
+                    <Icone name={item.cle} className="h-7 w-7 text-or-500" />
+                    <span className="text-sm font-semibold text-creme">{item.label}</span>
+                    {pastille(item.cle) > 0 && (
+                      <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
+                        {pastille(item.cle)}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           )}
