@@ -10,6 +10,7 @@ import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
+import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
 // Desktop : sidebar (menu latéral dense). Mobile : barre de navigation basse
@@ -21,6 +22,8 @@ export default function Layout() {
   const [menu, setMenu] = useState(false);      // (desktop, hérité — non utilisé en mobile)
   const [tuiles, setTuiles] = useState(true);   // mobile : grille de tuiles de l'espace
   const [compte, setCompte] = useState(false);  // mobile : panneau compte / déconnexion
+  const [pushEtat, setPushEtat] = useState(null); // 'actif' | 'inactif' | 'refuse' | 'non_supporte'
+  const [pushMsg, setPushMsg] = useState("");
   const [tour, setTour] = useState(false);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
@@ -35,6 +38,18 @@ export default function Layout() {
   }, [location.pathname, ecole?.id]);
 
   const pastille = (cle) => (cle === "signatures" ? aSigner : cle === "demandes" ? demandes : 0);
+
+  // Notifications push (staff) : on lit l'état à l'ouverture du menu Compte.
+  useEffect(() => { if (compte) etatPush().then(setPushEtat).catch(() => setPushEtat("non_supporte")); }, [compte]);
+  const iOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const installee = typeof window !== "undefined" && (window.navigator.standalone || window.matchMedia?.("(display-mode: standalone)").matches);
+  const basculerPush = async () => {
+    setPushMsg("");
+    try {
+      if (pushEtat === "actif") { await desactiverPush(); setPushEtat("inactif"); }
+      else { await activerPush(); setPushEtat("actif"); setPushMsg("Notifications activées ✓"); }
+    } catch (e) { setPushMsg(e.message || "Action impossible."); }
+  };
 
   // Visite guidée au premier accès (une fois).
   useEffect(() => {
@@ -251,6 +266,26 @@ export default function Layout() {
               onClick={(e) => e.stopPropagation()}>
               <p className="font-display font-bold leading-tight">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
               <p className="text-xs text-navy-900/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
+              {/* Notifications push sur ce téléphone */}
+              <div className="mt-3 rounded-lg border border-navy-900/10 p-2.5">
+                {pushSupporte() ? (
+                  <button onClick={basculerPush}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm ${pushEtat === "actif" ? "text-emerald-700" : "text-navy-900/80"}`}>
+                    <span>🔔 Notifications {pushEtat === "actif" ? "activées" : "sur ce téléphone"}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pushEtat === "actif" ? "bg-emerald-500/15 text-emerald-700" : "bg-or-500/20 text-or-600"}`}>
+                      {pushEtat === "actif" ? "ON" : "Activer"}
+                    </span>
+                  </button>
+                ) : iOS && !installee ? (
+                  <p className="px-1 text-xs text-navy-900/60">
+                    📲 Pour recevoir les notifications sur iPhone : <b>Partager → Sur l'écran d'accueil</b>, puis rouvre l'app depuis l'icône.
+                  </p>
+                ) : (
+                  <p className="px-1 text-xs text-navy-900/45">Notifications non disponibles sur cet appareil.</p>
+                )}
+                {pushMsg && <p className="mt-1 px-1 text-[11px] text-navy-900/60">{pushMsg}</p>}
+              </div>
+
               <div className="mt-3 space-y-1.5">
                 {estSuperAdmin && (
                   <Link to="/super-admin" onClick={() => setCompte(false)}

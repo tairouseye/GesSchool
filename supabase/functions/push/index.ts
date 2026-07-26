@@ -7,6 +7,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC") ?? "";
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@gesschool.app";
+// Secret partagé avec le trigger `trg_notifications_push`. La fonction étant
+// publique (--no-verify-jwt), on rejette tout appel sans ce secret pour éviter
+// qu'un tiers ne spamme les appareils d'un destinataire. Si non défini, on
+// n'exige rien (compat avec un setup existant), mais le définir est recommandé.
+const HOOK_SECRET = Deno.env.get("PUSH_HOOK_SECRET") ?? "";
 
 const sb = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -15,6 +20,10 @@ const sb = createClient(
 
 Deno.serve(async (req) => {
   try {
+    // Contrôle du secret partagé (si configuré) : rejette les appels non signés.
+    if (HOOK_SECRET && req.headers.get("x-push-secret") !== HOOK_SECRET) {
+      return new Response("unauthorized", { status: 401 });
+    }
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
       return new Response("VAPID keys not configured", { status: 200 });
     }

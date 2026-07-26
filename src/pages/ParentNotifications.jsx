@@ -14,7 +14,25 @@ function PushToggle({ onErreur }) {
   const rafraichir = async () => { try { setEtat(await etatPush()); } catch { setEtat("non_supporte"); } };
   useEffect(() => { rafraichir(); }, []);
 
-  if (!pushSupporte() || etat === "non_supporte") return null;
+  const iOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const installee = typeof window !== "undefined" && (window.navigator.standalone || window.matchMedia?.("(display-mode: standalone)").matches);
+
+  // Non supporté : sur iPhone (Safari, non installée) c'est parce que la PWA
+  // doit être ajoutée à l'écran d'accueil — on l'explique au lieu de rien montrer.
+  if (!pushSupporte() || etat === "non_supporte") {
+    if (iOS && !installee) {
+      return (
+        <Carte className="p-4">
+          <p className="text-sm font-medium text-navy-900">📲 Activez les alertes sur votre iPhone</p>
+          <p className="mt-1 text-xs text-navy-900/60">
+            Touchez <b>Partager</b> (en bas de Safari), puis <b>« Sur l'écran d'accueil »</b>. Rouvrez ensuite
+            l'app depuis son icône : le bouton pour activer les notifications apparaîtra ici.
+          </p>
+        </Carte>
+      );
+    }
+    return null;
+  }
 
   const basculer = async () => {
     setOccupe(true);
