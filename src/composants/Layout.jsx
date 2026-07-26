@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
@@ -82,6 +82,49 @@ export default function Layout() {
 
   // Ouvrir une page depuis une tuile (mobile) : referme la grille.
   const ouvrirTuile = (to) => { setTuiles(false); navigate(to); };
+
+  // --- Swipe animé entre espaces (mobile) : carrousel des grilles de tuiles ---
+  const idxEspace = Math.max(0, accessibles.findIndex((e) => e.id === espaceCourant?.id));
+  const pisteRef = useRef(null);
+  const [larg, setLarg] = useState(0);          // largeur d'une page (px)
+  const [dragX, setDragX] = useState(0);        // décalage sous le doigt (px)
+  const [glisse, setGlisse] = useState(false);  // doigt posé → transition off
+  const drag = useRef({ x: 0, y: 0, dir: null });
+
+  useEffect(() => {
+    const el = pisteRef.current;
+    if (!el) return;
+    const mesurer = () => setLarg(el.clientWidth);
+    mesurer();
+    window.addEventListener("resize", mesurer);
+    return () => window.removeEventListener("resize", mesurer);
+  }, [tuiles, accessibles.length]);
+
+  const menusVisibles = (e) => menusDe(e).filter((it) => it.cle !== "signatures" || aSigner > 0);
+
+  const onTouchStart = (e) => { drag.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dir: null }; setGlisse(true); };
+  const onTouchMove = (e) => {
+    const t = e.touches[0];
+    const dx = t.clientX - drag.current.x, dy = t.clientY - drag.current.y;
+    if (!drag.current.dir) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      drag.current.dir = Math.abs(dx) > Math.abs(dy) ? "h" : "v"; // verrouille la direction
+    }
+    if (drag.current.dir === "h") {
+      // Résistance élastique aux extrémités.
+      const bord = (dx > 0 && idxEspace === 0) || (dx < 0 && idxEspace === accessibles.length - 1);
+      setDragX(bord ? dx * 0.3 : dx);
+    }
+  };
+  const onTouchEnd = () => {
+    setGlisse(false);
+    const seuil = Math.max(50, larg * 0.22);
+    let ni = idxEspace;
+    if (dragX < -seuil && idxEspace < accessibles.length - 1) ni = idxEspace + 1;
+    else if (dragX > seuil && idxEspace > 0) ni = idxEspace - 1;
+    setDragX(0);
+    if (ni !== idxEspace) changerEspace(accessibles[ni]);
+  };
 
   const initiales = `${(profil?.prenom?.[0] || "").toUpperCase()}${(profil?.nom?.[0] || "").toUpperCase()}` || "•";
 
@@ -231,25 +274,49 @@ export default function Layout() {
             <Outlet />
           </Suspense>
 
-          {/* Grille de tuiles (mobile) : sous-modules de l'espace courant */}
+          {/* Carrousel de tuiles (mobile) : swipe animé d'un espace à l'autre.
+              La piste contient une grille par espace ; elle suit le doigt puis
+              se cale sur l'espace voisin au relâchement. */}
           {tuiles && (
-            <div className="absolute inset-0 z-20 overflow-auto bg-creme p-4 lg:hidden">
-              <p className="mb-1 font-display text-lg font-bold text-navy-900">{espaceCourant?.icone} {espaceCourant?.label}</p>
-              <p className="mb-4 text-xs text-navy-900/50">Touchez un module pour l'ouvrir.</p>
-              <div className="grid grid-cols-2 gap-3">
-                {items.map((item) => (
-                  <button key={item.to} onClick={() => ouvrirTuile(item.to)}
-                    className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
-                    <Icone name={item.cle} className="h-7 w-7 text-or-500" />
-                    <span className="text-sm font-semibold text-creme">{item.label}</span>
-                    {pastille(item.cle) > 0 && (
-                      <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
-                        {pastille(item.cle)}
-                      </span>
-                    )}
-                  </button>
+            <div ref={pisteRef} className="absolute inset-0 z-20 overflow-hidden bg-creme lg:hidden"
+              onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+              <div className="flex h-full"
+                style={{
+                  width: larg ? accessibles.length * larg : "100%",
+                  transform: `translateX(${-(idxEspace * larg) + dragX}px)`,
+                  transition: glisse ? "none" : "transform .28s cubic-bezier(.22,.61,.36,1)",
+                }}>
+                {accessibles.map((e) => (
+                  <div key={e.id} className="h-full shrink-0 overflow-auto p-4" style={{ width: larg || "100%" }}>
+                    <p className="mb-1 font-display text-lg font-bold text-navy-900">{e.icone} {e.label}</p>
+                    <p className="mb-4 text-xs text-navy-900/50">
+                      {accessibles.length > 1 ? "Glissez ← → pour changer d'espace · touchez un module." : "Touchez un module pour l'ouvrir."}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {menusVisibles(e).map((item) => (
+                        <button key={item.to} onClick={() => ouvrirTuile(item.to)}
+                          className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition active:scale-[.98]">
+                          <Icone name={item.cle} className="h-7 w-7 text-or-500" />
+                          <span className="text-sm font-semibold text-creme">{item.label}</span>
+                          {pastille(item.cle) > 0 && (
+                            <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
+                              {pastille(item.cle)}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
+              {/* Points indicateurs d'espace */}
+              {accessibles.length > 1 && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+                  {accessibles.map((e, i) => (
+                    <span key={e.id} className={`h-1.5 rounded-full transition-all ${i === idxEspace ? "w-4 bg-or-500" : "w-1.5 bg-navy-900/20"}`} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
