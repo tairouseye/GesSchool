@@ -11,29 +11,33 @@
 --  les téléphones : rappels de paiement (cron `executer_relances` selon les
 --  paliers réglés par le gestionnaire), paiement reçu, nouvelle note, etc.
 --
---  Sécurité : la fonction `push` est publique (appelée par la base, pas par
---  un utilisateur). On envoie un en-tête secret `x-push-secret` que la
---  fonction vérifie (env PUSH_HOOK_SECRET). URL et secret sont lus depuis
---  des réglages de base (jamais en clair dans cette migration).
+--  Config Supabase-compatible (pas d'ALTER DATABASE, interdit ici) :
+--    - l'URL de la fonction est écrite en dur (elle n'est pas secrète) ;
+--    - le secret anti-abus est OPTIONNEL et lu depuis le coffre Vault
+--      (secret nommé « push_hook_secret »). S'il est absent, l'appel part
+--      sans secret et la fonction l'accepte (tant que PUSH_HOOK_SECRET n'est
+--      pas défini côté fonction). Définir les deux = durcissement recommandé.
 --
---  ⚠️ Prérequis (une fois, cf. bloc CONFIGURATION plus bas) :
---    - extension pg_net activée,
---    - réglages `app.push_url` et `app.push_secret` définis,
---    - fonction `push` déployée avec le secret PUSH_HOOK_SECRET = app.push_secret.
+--  ⚠️ Prérequis : extension pg_net activée (Dashboard → Database → Extensions).
 -- =====================================================================
 
 create extension if not exists pg_net;
 
 create or replace function public.trg_notifications_push()
-returns trigger language plpgsql security definer set search_path = public, extensions as $$
+returns trigger language plpgsql security definer
+set search_path = public, extensions, vault as $$
 declare
-  v_url    text := current_setting('app.push_url', true);
-  v_secret text := current_setting('app.push_secret', true);
+  -- URL de la fonction edge `push` du projet (non secrète).
+  v_url    text := 'https://vgozbticbhieddhcnnoa.supabase.co/functions/v1/push';
+  v_secret text;
 begin
-  -- Non configuré → on ne fait rien (la cloche in-app fonctionne quand même).
-  if v_url is null or v_url = '' then
-    return new;
-  end if;
+  -- Secret partagé (optionnel) depuis Vault ; absent → chaîne vide.
+  begin
+    select decrypted_secret into v_secret
+      from vault.decrypted_secrets where name = 'push_hook_secret' limit 1;
+  exception when others then
+    v_secret := null;
+  end;
 
   perform net.http_post(
     url     := v_url,
@@ -60,29 +64,17 @@ create trigger trg_notifications_push
 notify pgrst, 'reload schema';
 
 -- =====================================================================
---  CONFIGURATION (à exécuter UNE FOIS, en remplaçant <…>)
---
---    -- 1) Réglages de base (URL de la fonction + secret partagé aléatoire)
---    alter database postgres
---      set app.push_url = 'https://<REF-PROJET>.supabase.co/functions/v1/push';
---    alter database postgres
---      set app.push_secret = '<UN_SECRET_ALEATOIRE_LONG>';
---    -- (recharger la connexion pour que current_setting voie les valeurs)
---
---    -- 2) Déployer la fonction et lui donner le MÊME secret + les clés VAPID
---    --    supabase functions deploy push --no-verify-jwt
---    --    supabase secrets set PUSH_HOOK_SECRET='<LE_MEME_SECRET>' \
---    --      VAPID_PUBLIC='...' VAPID_PRIVATE='...' VAPID_SUBJECT='mailto:contact@tuttank.sn'
---
---    -- 3) (rappels auto) s'assurer que pg_cron est actif et le job planifié
---    --    (migration 019 : cron.schedule 'relances-impayes-quotidien').
+--  DURCISSEMENT (optionnel, recommandé) — dans l'éditeur SQL :
+--    select vault.create_secret('GS_push_9f3aK7Qx2M8vLpZ1', 'push_hook_secret');
+--  puis définir le MÊME secret côté fonction :
+--    (Dashboard → Edge Functions → push → Secrets) PUSH_HOOK_SECRET = GS_push_9f3aK7Qx2M8vLpZ1
+--  Sans ce durcissement, le push fonctionne quand même (fonction sans secret).
 -- =====================================================================
 
 -- =====================================================================
 --  ANNULATION
 --    drop trigger if exists trg_notifications_push on public.notifications;
 --    drop function if exists public.trg_notifications_push();
---    -- (pg_net peut rester ; app.push_url/secret peuvent être laissés)
 --    notify pgrst, 'reload schema';
 --  Sans risque : on retire seulement l'appel d'envoi ; les notifications
 --  in-app (cloche) et toute la chaîne de création restent intactes.
