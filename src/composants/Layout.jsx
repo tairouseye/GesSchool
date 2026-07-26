@@ -27,6 +27,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);      // (desktop, hérité — non utilisé en mobile)
   const [tuiles, setTuiles] = useState(true);   // mobile : grille de tuiles de l'espace
+  const [compte, setCompte] = useState(false);  // mobile : panneau compte / déconnexion
   const [tour, setTour] = useState(false);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
@@ -89,8 +90,12 @@ export default function Layout() {
   // Ouvrir une page depuis une tuile (mobile) : referme la grille.
   const ouvrirTuile = (to) => { setTuiles(false); navigate(to); };
 
+  const initiales = `${(profil?.prenom?.[0] || "").toUpperCase()}${(profil?.nom?.[0] || "").toUpperCase()}` || "•";
+
   return (
-    <div className="flex h-screen overflow-hidden bg-creme text-navy-900">
+    // h-[100dvh] : hauteur RÉELLEMENT visible sur iOS Safari (la barre d'adresse
+    // rétrécit la fenêtre) — évite que la barre du bas passe sous le navigateur.
+    <div className="flex h-[100dvh] overflow-hidden bg-creme text-navy-900">
       {/* Sidebar : desktop uniquement (sur mobile → barre basse + tuiles) */}
       <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
@@ -193,15 +198,42 @@ export default function Layout() {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Barre du haut (mobile) : école + bouton grille (ouvre/ferme les tuiles) */}
+        {/* Barre du haut (mobile) : école + compte + bouton grille */}
         <div className="flex items-center gap-2.5 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
           <Cachet size={26} sigle={sigle} className="text-or-500" />
           <span className="truncate font-display font-bold">{ecole?.nom || "GesSchool"}</span>
+          <button onClick={() => setCompte(true)} aria-label="Mon compte"
+            className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-navy-800 text-xs font-bold text-or-500">{initiales}</button>
           <button onClick={() => setTuiles((t) => !t)} aria-label="Menu des modules"
-            className={`ml-auto grid h-9 w-9 place-items-center rounded-xl text-lg ${tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/80"}`}>▦</button>
+            className={`grid h-9 w-9 place-items-center rounded-xl text-lg ${tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/80"}`}>▦</button>
         </div>
 
-        <main className="relative flex-1 overflow-auto pb-16 lg:pb-0">
+        {/* Panneau Compte (mobile) : profil, super-admin, aide, déconnexion */}
+        {compte && (
+          <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setCompte(false)}>
+            <div className="absolute right-3 top-14 w-64 rounded-2xl border border-navy-900/10 bg-white p-4 text-navy-900 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}>
+              <p className="font-display font-bold leading-tight">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
+              <p className="text-xs text-navy-900/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
+              <div className="mt-3 space-y-1.5">
+                {estSuperAdmin && (
+                  <Link to="/super-admin" onClick={() => setCompte(false)}
+                    className="block rounded-lg bg-or-500/15 px-3 py-2 text-center text-sm font-medium text-or-600">🛠️ Console super-admin</Link>
+                )}
+                <button onClick={() => { setCompte(false); setTour(true); }}
+                  className="w-full rounded-lg border border-navy-900/15 px-3 py-2 text-sm text-navy-900/80">❓ Visite guidée</button>
+                <button onClick={deconnexion}
+                  className="w-full rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-creme">Déconnexion</button>
+              </div>
+              <div className="mt-3 border-t border-navy-900/10 pt-2 text-center text-[10px] text-navy-900/40">
+                Développé par <b className="text-navy-900/60">GesPro</b><br />
+                <span className="font-mono">v{__APP_VERSION__}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="relative flex-1 overflow-auto">
           <Suspense fallback={<ChargementPage />}>
             <Outlet />
           </Suspense>
@@ -235,7 +267,8 @@ export default function Layout() {
         {/* Barre de navigation basse (mobile) : les espaces */}
         {accessibles.length > 1 && (
           <nav className="grid flex-none border-t border-white/10 bg-navy-900 text-creme lg:hidden"
-            style={{ gridTemplateColumns: `repeat(${accessibles.length}, minmax(0, 1fr))` }} role="tablist" aria-label="Espaces">
+            style={{ gridTemplateColumns: `repeat(${accessibles.length}, minmax(0, 1fr))`, paddingBottom: "env(safe-area-inset-bottom)" }}
+            role="tablist" aria-label="Espaces">
             {accessibles.map((e) => {
               const actif = e.id === espaceCourant?.id;
               return (
