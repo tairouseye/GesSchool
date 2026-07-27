@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 
 // Clé publique VAPID (publique — la clé privée est un secret de la fonction edge).
-const VAPID_PUBLIC = "BJHkQ5Zf9rNfxVVO-bSV57UKVJZvjyKfXYobfB_AJuUs4coNN9vCxh91oz5nRSLIIdtQwfG4dlAmuIXtbRZuUOo";
+const VAPID_PUBLIC = "BDsQfKCy9lTIlZzpZ3wZJz85Du7wGmk6qtjz8zEWPhKw_M1Z_3fy0EKBDYGYKKfnCwpfIQ4O-k2DxGo1A-tf4Ew";
 
 function toUint8(base64) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
