@@ -40,8 +40,9 @@ export default function Layout() {
 
   const pastille = (cle) => (cle === "signatures" ? aSigner : cle === "demandes" ? demandes : 0);
 
-  // Notifications push (staff) : on lit l'état à l'ouverture du menu Compte.
-  useEffect(() => { if (compte) etatPush().then(setPushEtat).catch(() => setPushEtat("non_supporte")); }, [compte]);
+  // Notifications push (staff) : état chargé au montage (pour la sidebar
+  // desktop) et rafraîchi à l'ouverture du menu Compte (mobile).
+  useEffect(() => { etatPush().then(setPushEtat).catch(() => setPushEtat("non_supporte")); }, [compte]);
   const iOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
   const installee = typeof window !== "undefined" && (window.navigator.standalone || window.matchMedia?.("(display-mode: standalone)").matches);
   const basculerPush = async () => {
@@ -226,6 +227,17 @@ export default function Layout() {
             <button data-tour="aide" onClick={() => setTour(true)} title="Visite guidée" aria-label="Aide et visite guidée"
               className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
           </div>
+          {/* Activation des notifications sur cet appareil (desktop) */}
+          {pushSupporte() && (
+            <button onClick={basculerPush}
+              className="mt-3 flex w-full items-center justify-between rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
+              <span>🔔 Notifications</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pushEtat === "actif" ? "bg-emerald-500/20 text-emerald-300" : "bg-or-500/20 text-or-500"}`}>
+                {pushEtat === "actif" ? "ON" : "Activer"}
+              </span>
+            </button>
+          )}
+          {pushMsg && <p className="mt-1 text-center text-[10px] text-creme/50">{pushMsg}</p>}
           {estSuperAdmin && (
             <Link to="/super-admin" className="mt-3 block rounded-lg bg-or-500/20 px-3 py-1.5 text-center text-xs font-medium text-or-500 hover:bg-or-500/30">
               🛠️ Console super-admin
