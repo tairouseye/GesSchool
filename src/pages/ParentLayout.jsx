@@ -65,7 +65,8 @@ export default function ParentLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl space-y-4 p-6">
-        <InvitePush />
+        {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
+        <div className="empty:hidden lg:hidden"><InvitePush /></div>
         <Suspense fallback={<ChargementPage />}>
           <Outlet />
         </Suspense>

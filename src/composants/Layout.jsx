@@ -318,7 +318,8 @@ export default function Layout() {
         )}
 
         <main className="relative flex-1 overflow-auto">
-          <div className="px-4 pt-4 empty:hidden sm:px-8"><InvitePush /></div>
+          {/* Bannière d'invitation : mobile uniquement (desktop = interrupteur sidebar). */}
+          <div className="px-4 pt-4 empty:hidden sm:px-8 lg:hidden"><InvitePush /></div>
           <Suspense fallback={<ChargementPage />}>
             <Outlet />
           </Suspense>
