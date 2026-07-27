@@ -14,6 +14,15 @@ export function pushSupporte() {
   return typeof navigator !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
 
+// Contexte de l'appareil pour guider l'utilisateur (surtout iPhone, où le push
+// web n'existe qu'en PWA installée). Factorise la détection utilisée par l'UI.
+export function infoAppareil() {
+  const iOS = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const installee = typeof window !== "undefined" &&
+    (window.navigator.standalone || window.matchMedia?.("(display-mode: standalone)").matches);
+  return { supporte: pushSupporte(), iOS, installee: !!installee };
+}
+
 export async function etatPush() {
   if (!pushSupporte()) return "non_supporte";
   if (Notification.permission === "denied") return "refuse";

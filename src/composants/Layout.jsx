@@ -11,6 +11,7 @@ import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
+import InvitePush from "@/composants/InvitePush.jsx";
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
 // Desktop : sidebar (menu latéral dense). Mobile : barre de navigation basse
@@ -305,6 +306,7 @@ export default function Layout() {
         )}
 
         <main className="relative flex-1 overflow-auto">
+          <div className="px-4 pt-4 empty:hidden sm:px-8"><InvitePush /></div>
           <Suspense fallback={<ChargementPage />}>
             <Outlet />
           </Suspense>

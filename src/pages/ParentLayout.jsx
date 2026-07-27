@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
+import InvitePush from "@/composants/InvitePush.jsx";
 import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_PARENT } from "@/lib/tours.js";
@@ -63,7 +64,8 @@ export default function ParentLayout() {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl p-6">
+      <main className="mx-auto max-w-4xl space-y-4 p-6">
+        <InvitePush />
         <Suspense fallback={<ChargementPage />}>
           <Outlet />
         </Suspense>
