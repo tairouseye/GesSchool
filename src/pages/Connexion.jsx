@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { messageErreur } from "@/lib/erreurs.js";
 
 // Page Connexion / Inscription (onglets).
@@ -43,7 +44,7 @@ export default function Connexion() {
     <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-creme">
-          <img src="/gespro.png" alt="GesPro" className="h-20 w-20 rounded-full bg-white p-1 shadow-lg" />
+          <Logo size={80} fond className="rounded-full shadow-lg" />
           <h1 className="mt-3 font-display text-2xl font-bold">
             Ges<span className="text-or-500">School</span>
           </h1>

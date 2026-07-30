@@ -13,7 +13,7 @@ import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 import { pspEtat, setPspConfig, PRESTATAIRES } from "@/lib/paiementEnLigne.js";
 
-const DEVISES = ["XOF", "XAF", "EUR", "USD", "GNF", "MAD", "MRU"];
+const DEVISES = ["XOF", "XAF", "CDF", "USD", "EUR", "GNF", "MAD", "MRU"];
 
 export default function Parametres() {
   const { ecoleId, ecole, roles, modulesActifs, rafraichirProfil } = useAuth();

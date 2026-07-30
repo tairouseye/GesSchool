@@ -11,6 +11,7 @@ export const PAYS_UEMOA = [
 // Pays hors UEMOA rencontrés dans la région (devise différente).
 export const PAYS_AUTRES = [
   "Cameroun", "Congo", "Gabon", "Tchad",       // zone CEMAC → XAF
+  "République démocratique du Congo",           // CDF (souvent facturé en USD)
   "Guinée",                                     // GNF
   "Mauritanie", "Maroc", "France",
 ];
@@ -21,6 +22,7 @@ export const PAYS = [...PAYS_UEMOA, ...PAYS_AUTRES];
 // l'établissement garde la main dans Paramètres.
 const DEVISE_PAR_PAYS = {
   Cameroun: "XAF", Congo: "XAF", Gabon: "XAF", Tchad: "XAF",
+  "République démocratique du Congo": "CDF",
   "Guinée": "GNF", Mauritanie: "MRU", Maroc: "MAD", France: "EUR",
 };
 
