@@ -99,6 +99,18 @@ export async function supprimerClasse(id) {
   if (error) throw error;
 }
 
+// Met à jour une classe (ex. désigner son professeur principal).
+export async function majClasse(id, champs) {
+  const { data, error } = await supabase
+    .from("classes")
+    .update(champs)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // Crée plusieurs classes d'un coup (génération en lot).
 export async function creerClassesEnLot(ecoleId, niveauId, anneeId, libelles, effectifMax, serieId = null) {
   const lignes = libelles.map((libelle) => ({
