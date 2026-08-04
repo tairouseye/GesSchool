@@ -2,12 +2,12 @@
 // Une école avec modules_actifs = null a TOUS les modules (compat ascendante).
 
 export const MODULES = [
-  { id: "scolarite", label: "Scolarité", desc: "Élèves, inscriptions, structure, documents", cles: ["eleves", "structure", "certificats", "demandes"] },
+  { id: "scolarite", label: "Scolarité", desc: "Élèves, inscriptions, structure, enseignants & affectations, documents", cles: ["eleves", "structure", "enseignants", "certificats", "demandes"] },
   { id: "evaluations", label: "Évaluations", desc: "Notes, bulletins, classement", cles: ["notes", "bulletins", "classement"] },
   { id: "vie_scolaire", label: "Vie scolaire", desc: "Appel, cahier de textes, absences, emploi du temps, fournitures", cles: ["appel", "cahier", "progression", "vie_scolaire", "assiduite", "emploi", "fournitures"] },
   { id: "encaissement", label: "Encaissements & relances", desc: "Paiements, reçus, recouvrement des impayés", cles: ["paiements", "recouvrement"] },
   { id: "comptabilite", label: "Comptabilité", desc: "Trésorerie, dépenses, recettes, résultat", cles: ["comptabilite"] },
-  { id: "rh", label: "RH & paie", desc: "Personnel, contrats, paie, enseignants", cles: ["rh", "enseignants"] },
+  { id: "rh", label: "RH & paie", desc: "Personnel, contrats, paie", cles: ["rh"] },
   { id: "communication", label: "Communication", desc: "Annonces & messagerie", cles: ["annonces", "messagerie"] },
   { id: "cantine", label: "Cantine", desc: "Abonnements, repas, menu de la semaine", cles: ["cantine"] },
   { id: "transport", label: "Transport scolaire", desc: "Circuits, abonnements, embarquement", cles: ["transport"] },
