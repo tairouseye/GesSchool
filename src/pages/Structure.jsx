@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/academique.js";
+import { getEnseignants } from "@/lib/enseignants.js";
 
 // Phase 0.5 — Structure académique : cycles → niveaux → classes + matières.
 export default function Structure() {
@@ -14,6 +15,7 @@ export default function Structure() {
   const [cycles, setCycles] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [enseignants, setEnseignants] = useState([]);
   const [matieres, setMatieres] = useState([]);
   const [series, setSeries] = useState([]);
   const [coefficients, setCoefficients] = useState([]);
@@ -24,7 +26,7 @@ export default function Structure() {
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [an, cy, ni, ma, se, co, cf] = await Promise.all([
+      const [an, cy, ni, ma, se, co, cf, en] = await Promise.all([
         api.getAnneeCourante(ecoleId),
         api.getCycles(ecoleId),
         api.getNiveaux(ecoleId),
@@ -32,6 +34,7 @@ export default function Structure() {
         api.getSeries(ecoleId),
         api.getCoefficients(ecoleId),
         api.getConfigEcole(ecoleId),
+        getEnseignants(ecoleId),
       ]);
       setAnnee(an);
       setCycles(cy);
@@ -40,6 +43,7 @@ export default function Structure() {
       setSeries(se);
       setCoefficients(co);
       setConfig(cf);
+      setEnseignants(en);
       setClasses(await api.getClasses(ecoleId, an?.id));
     } catch (e) {
       setErreur(e.message);
@@ -102,6 +106,7 @@ export default function Structure() {
               cycle={cycle}
               niveaux={niveaux.filter((n) => n.cycle_id === cycle.id)}
               classes={classes}
+              enseignants={enseignants}
               series={series}
               annee={annee}
               onAjoutNiveau={(libelle, ordre) =>
@@ -112,6 +117,10 @@ export default function Structure() {
                 wrap(() => api.creerClassesEnLot(ecoleId, niveauId, annee.id, libelles, eff, serieId))
               }
               onSupprClasse={async (id) => { if (await confirmer("Supprimer cette classe ?")) wrap(() => api.supprimerClasse(id), "Classe supprimée."); }}
+              onProfPrincipal={(classeId, ensId) =>
+                wrap(() => api.majClasse(classeId, { prof_principal_id: ensId || null }),
+                  ensId ? "Professeur principal défini." : "Professeur principal retiré.")
+              }
             />
           ))}
         </div>
@@ -151,7 +160,7 @@ export default function Structure() {
   );
 }
 
-function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse }) {
+function CarteCycle({ cycle, niveaux, classes, enseignants, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse, onProfPrincipal }) {
   const [nouveauNiveau, setNouveauNiveau] = useState("");
   return (
     <Carte className="p-6">
@@ -197,11 +206,13 @@ function CarteCycle({ cycle, niveaux, classes, series, annee, onAjoutNiveau, onS
             key={niveau.id}
             niveau={niveau}
             classes={classes.filter((c) => c.niveau_id === niveau.id)}
+            enseignants={enseignants}
             series={cycle.type === "lycee" ? series : []}
             annee={annee}
             onSuppr={() => onSupprNiveau(niveau.id)}
             onGenerer={(libelles, eff, serieId) => onGenererClasses(niveau.id, libelles, eff, serieId)}
             onSupprClasse={onSupprClasse}
+            onProfPrincipal={onProfPrincipal}
           />
         ))}
       </div>
@@ -225,7 +236,7 @@ function construireLibelles(base, nombre, style) {
   return out;
 }
 
-function LigneNiveau({ niveau, classes, series, annee, onSuppr, onGenerer, onSupprClasse }) {
+function LigneNiveau({ niveau, classes, enseignants, series, annee, onSuppr, onGenerer, onSupprClasse, onProfPrincipal }) {
   const [base, setBase] = useState(niveau.libelle);
   const [nombre, setNombre] = useState(1);
   const [style, setStyle] = useState("lettres"); // lettres | chiffres | aucun
@@ -259,12 +270,25 @@ function LigneNiveau({ niveau, classes, series, annee, onSuppr, onGenerer, onSup
         {classes.map((c) => (
           <span
             key={c.id}
-            className="group inline-flex items-center gap-1 rounded-lg bg-navy-900/5 px-2.5 py-1 text-xs text-navy-900"
+            className="group inline-flex items-center gap-1.5 rounded-lg bg-navy-900/5 px-2.5 py-1 text-xs text-navy-900"
           >
             {c.libelle}
             {c.serie_id && (
               <span className="rounded bg-or-500/20 px-1 font-mono text-[10px] text-or-600">{serieCode(c.serie_id)}</span>
             )}
+            {/* Professeur principal — signataire du bulletin et cloisonnement enseignant. */}
+            <select
+              value={c.prof_principal_id || ""}
+              onChange={(e) => onProfPrincipal(c.id, e.target.value)}
+              title="Professeur principal de la classe"
+              disabled={enseignants.length === 0}
+              className="max-w-[9rem] cursor-pointer rounded border border-navy-900/10 bg-white px-1 py-0.5 text-[10px] text-navy-900/70 outline-none focus:border-or-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">{enseignants.length === 0 ? "PP — (aucun enseignant)" : "PP —"}</option>
+              {enseignants.map((en) => (
+                <option key={en.id} value={en.id}>{en.prenom} {en.nom}</option>
+              ))}
+            </select>
             <button
               onClick={() => onSupprClasse(c.id)}
               className="text-navy-900/30 hover:text-rose-500"
