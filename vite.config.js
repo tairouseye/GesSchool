@@ -36,7 +36,7 @@ export default defineConfig({
       manifest: {
         name: "GesSchool — Gestion scolaire",
         short_name: "GesSchool",
-        description: "SaaS de gestion scolaire multi-écoles",
+        description: "L'école connectée, la gestion simplifiée",
         lang: "fr",
         start_url: ".",
         scope: "./",

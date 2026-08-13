@@ -48,7 +48,7 @@ export default function Connexion() {
           <h1 className="mt-3 font-display text-2xl font-bold">
             Ges<span className="text-or-500">School</span>
           </h1>
-          <p className="text-sm text-creme/60">Gestion scolaire multi-écoles</p>
+          <p className="text-sm text-creme/60">L'école connectée, la gestion simplifiée</p>
         </div>
 
         <div className="rounded-2xl bg-white p-7 shadow-xl">
