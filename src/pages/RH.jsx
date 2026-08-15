@@ -7,6 +7,9 @@ import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
+import { getSignataires } from "@/lib/academique.js";
+import { creerDocument } from "@/lib/documents.js";
+import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const moisCourant = () => new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -31,15 +34,17 @@ export default function RH() {
   const [modalePers, setModalePers] = useState(false);
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
+  const [signataires, setSignataires] = useState([]);
   // Compte de trésorerie + mode utilisés pour régler les salaires de la période.
   const [reglement, setReglement] = useState({ compte_id: "", mode: "" });
 
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [pers, con] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId)]);
+      const [pers, con, sig] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId)]);
       setPersonnels(pers);
       setContrats(con);
+      setSignataires(sig);
     } catch (e) {
       setErreur(e.message);
     }
@@ -165,9 +170,14 @@ export default function RH() {
           </Carte>
         </div>
 
-        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"]]} actif={onglet} onChange={setOnglet} />
+        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
 
-        {onglet === "personnel" ? (
+        {onglet === "documents" ? (
+          <PanneauDocumentsRH
+            personnels={personnels} contrats={contrats} signataires={signataires} ecole={ecole} ecoleId={ecoleId}
+            onEnvoye={() => { toast.succes("Document envoyé au signataire pour validation."); }}
+          />
+        ) : onglet === "personnel" ? (
           <PanneauPersonnel
             personnels={personnels} contrats={contrats} devise={devise}
             onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id), false, "Personnel supprimé."); }}
@@ -489,5 +499,111 @@ function LigneB({ l, v }) {
       <td className="py-2 text-navy-900/70">{l}</td>
       <td className="py-2 text-right font-mono text-navy-900">{v}</td>
     </tr>
+  );
+}
+
+// --- Documents RH (attestation de travail, certificat de fin de contrat) ---
+const MODELES_RH = [
+  { id: "travail", titre: "Attestation de travail",
+    corps: (c) => `atteste que ${c.nomComplet} est employé(e) au sein de notre établissement en qualité de ${c.fonction}${c.depuis ? `, depuis le ${c.depuis}` : ""}${c.typeContrat ? ` (contrat ${c.typeContrat})` : ""}. La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.` },
+  { id: "fin_contrat", titre: "Certificat de fin de contrat",
+    corps: (c) => `certifie que ${c.nomComplet} a été employé(e) au sein de notre établissement en qualité de ${c.fonction}${c.debut ? `, du ${c.debut}` : ""} au ${c.fin}. Nous lui délivrons le présent certificat, libre de tout engagement, pour servir et valoir ce que de droit.` },
+];
+
+function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId, onEnvoye }) {
+  const dateLisible = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
+  const [persId, setPersId] = useState("");
+  const [modeleId, setModeleId] = useState("travail");
+  const [ville, setVille] = useState(ecole?.ville || "");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [reference, setReference] = useState("");
+  const [sigIdx, setSigIdx] = useState(0);
+  const [erreur, setErreur] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+
+  const p = personnels.find((x) => x.id === persId);
+  const c = contrats[persId];
+  const modele = MODELES_RH.find((m) => m.id === modeleId);
+  const sig = signataires[sigIdx];
+  const ctx = p && {
+    nomComplet: `${p.prenom} ${p.nom}`,
+    fonction: p.fonction || "—",
+    depuis: p.date_embauche ? dateLisible(p.date_embauche) : (c?.debut ? dateLisible(c.debut) : ""),
+    typeContrat: c?.type || "",
+    debut: c?.debut ? dateLisible(c.debut) : (p.date_embauche ? dateLisible(p.date_embauche) : ""),
+    fin: c?.fin ? dateLisible(c.fin) : "ce jour",
+  };
+
+  async function envoyer() {
+    setErreur("");
+    if (!p) return setErreur("Choisissez un membre du personnel.");
+    if (!sig) return setErreur("Aucun signataire. Ajoutez-en dans Paramètres → Signataires.");
+    if (!sig.profil_id) return setErreur(`« ${sig.fonction} » n'a pas de compte lié : impossible de lui envoyer pour validation.`);
+    setEnvoi(true);
+    try {
+      await creerDocument(ecoleId, {
+        type: modeleId, titre: modele.titre, corps: modele.corps(ctx),
+        ville, date_doc: date, reference,
+        famille: "rh", cible_type: "personnel", cible_id: p.id, cible_libelle: `${p.nom} ${p.prenom}`,
+        signataire_fonction: sig.fonction, signataire_nom: sig.nom, signataire_profil: sig.profil_id, signature_url: sig.signature_url,
+      });
+      setPersId(""); setReference("");
+      onEnvoye?.();
+    } catch (e) { setErreur(e.message); }
+    finally { setEnvoi(false); }
+  }
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Carte className="p-5">
+        <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Générer un document RH</h3>
+        <Alerte ton="erreur">{erreur}</Alerte>
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Membre du personnel</span>
+            <select value={persId} onChange={(e) => setPersId(e.target.value)}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— Choisir —</option>
+              {personnels.map((x) => <option key={x.id} value={x.id}>{x.nom} {x.prenom}{x.fonction ? ` — ${x.fonction}` : ""}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type de document</span>
+            <select value={modeleId} onChange={(e) => setModeleId(e.target.value)}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              {MODELES_RH.map((m) => <option key={m.id} value={m.id}>{m.titre}</option>)}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <Champ label="Ville" value={ville} onChange={(e) => setVille(e.target.value)} />
+            <Champ label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <Champ label="Référence (optionnel)" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° du document" />
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Signataire</span>
+            <select value={sigIdx} onChange={(e) => setSigIdx(Number(e.target.value))}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              {signataires.length === 0 && <option value={0}>Aucun signataire configuré</option>}
+              {signataires.map((s, i) => <option key={i} value={i}>{s.fonction} — {s.nom}</option>)}
+            </select>
+          </label>
+          <Bouton onClick={envoyer} disabled={envoi || !p}>{envoi ? "…" : "Envoyer pour validation"}</Bouton>
+        </div>
+      </Carte>
+
+      <Carte className="p-5">
+        <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Aperçu</h3>
+        {ctx ? (
+          <div className="max-h-[70vh] overflow-auto rounded-xl border border-navy-900/10">
+            <DocumentOfficiel ecole={ecole} titre={modele.titre} corps={modele.corps(ctx)}
+              signataire={sig?.nom} signatureUrl={sig?.signature_url} ville={ville} date={date} reference={reference} signature={false} />
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed border-navy-900/10 px-4 py-10 text-center text-sm text-navy-900/40">
+            Choisissez un membre du personnel pour prévisualiser le document.
+          </p>
+        )}
+      </Carte>
+    </div>
   );
 }

@@ -11,6 +11,10 @@ export async function creerDocument(ecoleId, d) {
   const { error } = await supabase.from("documents").insert({
     ecole_id: ecoleId,
     eleve_id: d.eleve_id || null,
+    famille: d.famille || null,
+    cible_type: d.cible_type || (d.eleve_id ? "eleve" : null),
+    cible_id: d.cible_id || d.eleve_id || null,
+    cible_libelle: d.cible_libelle || null,
     type: d.type,
     titre: d.titre,
     corps: d.corps || null,
