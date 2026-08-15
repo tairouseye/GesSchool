@@ -63,12 +63,24 @@ const STATUT = {
   valide: { label: "Validé", cls: "bg-emerald-100 text-emerald-700" },
   en_attente: { label: "En attente", cls: "bg-amber-100 text-amber-700" },
   rejete: { label: "Rejeté", cls: "bg-rose-100 text-rose-700" },
+  archive: { label: "Archivé", cls: "bg-navy-900/10 text-navy-900/60" },
+  genere: { label: "Généré", cls: "bg-navy-900/10 text-navy-900/60" },
 };
+
+// Famille d'un document enregistré (colonne `famille`, sinon déduite du type).
+const TYPE_FAMILLE = {
+  facture: "finances", recu: "finances", bulletin: "pedagogie", classement: "pedagogie",
+  paie: "rh", salaire: "rh", scolarite: "scolarite", inscription: "scolarite", frequentation: "scolarite",
+};
+const familleDe = (d) => d.famille || TYPE_FAMILLE[d.type] || "scolarite";
+const FAMILLE_LABEL = { scolarite: "Scolarité", pedagogie: "Pédagogie", finances: "Finances", rh: "RH & Paie" };
 
 export default function Documentation() {
   const { ecoleId, ecole } = useAuth();
+  const devise = ecole?.devise || "XOF";
   const [docs, setDocs] = useState([]);
   const [q, setQ] = useState("");
+  const [fam, setFam] = useState("");
   const [apercu, setApercu] = useState(null);
   const [chargement, setChargement] = useState(true);
 
@@ -77,8 +89,9 @@ export default function Documentation() {
   }, [ecoleId]);
 
   const filtres = docs.filter((d) => {
+    if (fam && familleDe(d) !== fam) return false;
     if (!q) return true;
-    const t = `${d.titre || ""} ${d.type || ""} ${d.reference || ""} ${d.eleves?.prenom || ""} ${d.eleves?.nom || ""}`.toLowerCase();
+    const t = `${d.titre || ""} ${d.type || ""} ${d.reference || ""} ${d.cible_libelle || ""} ${d.eleves?.prenom || ""} ${d.eleves?.nom || ""}`.toLowerCase();
     return t.includes(q.toLowerCase());
   });
 
@@ -133,8 +146,21 @@ export default function Documentation() {
               Documents enregistrés
               {docs.length > 0 && <span className="ml-2 text-sm font-normal text-navy-900/40">({docs.length})</span>}
             </h3>
-            <div className="w-full sm:w-64">
-              <Champ label="" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher (élève, type, référence)…" />
+            <div className="flex w-full items-end gap-2 sm:w-auto">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Famille</span>
+                <select
+                  value={fam}
+                  onChange={(e) => setFam(e.target.value)}
+                  className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500"
+                >
+                  <option value="">Toutes</option>
+                  {Object.entries(FAMILLE_LABEL).map(([id, lib]) => <option key={id} value={id}>{lib}</option>)}
+                </select>
+              </label>
+              <div className="flex-1 sm:w-56">
+                <Champ label="" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher…" />
+              </div>
             </div>
           </div>
 
@@ -153,9 +179,12 @@ export default function Documentation() {
                   <div className="min-w-0">
                     <p className="truncate font-medium text-navy-900">{d.titre || d.type}</p>
                     <p className="text-xs text-navy-900/50">
-                      {d.eleves ? `${d.eleves.prenom} ${d.eleves.nom}` : "—"}
+                      <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">{FAMILLE_LABEL[familleDe(d)]}</span>
+                      {" · "}
+                      {d.eleves ? `${d.eleves.prenom} ${d.eleves.nom}` : (d.cible_libelle || "—")}
                       {d.reference ? ` · ${d.reference}` : ""}
-                      {d.date_doc ? ` · ${d.date_doc}` : ""}
+                      {d.montant != null ? ` · ${Number(d.montant).toLocaleString("fr-FR")} ${devise}` : ""}
+                      {` · ${(d.date_doc || d.created_at || "").toString().slice(0, 10)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -180,17 +209,52 @@ export default function Documentation() {
         {apercu && (
           <>
             <div className="max-h-[70vh] overflow-auto rounded-xl border border-navy-900/10">
-              <DocumentOfficiel
-                ecole={ecole}
-                titre={apercu.titre}
-                corps={apercu.corps}
-                signataire={apercu.signataire_nom}
-                signatureUrl={apercu.signature_url}
-                ville={apercu.ville}
-                date={apercu.date_doc}
-                reference={apercu.reference}
-                signature={apercu.statut === "valide"}
-              />
+              {apercu.corps ? (
+                <DocumentOfficiel
+                  ecole={ecole}
+                  titre={apercu.titre}
+                  corps={apercu.corps}
+                  signataire={apercu.signataire_nom}
+                  signatureUrl={apercu.signature_url}
+                  ville={apercu.ville}
+                  date={apercu.date_doc}
+                  reference={apercu.reference}
+                  signature={apercu.statut === "valide"}
+                />
+              ) : (
+                <div className="p-5">
+                  <p className="font-display text-lg font-semibold text-navy-900">{apercu.titre}</p>
+                  <p className="mb-3 text-xs text-navy-900/50">
+                    {(apercu.eleves ? `${apercu.eleves.prenom} ${apercu.eleves.nom}` : (apercu.cible_libelle || ""))}
+                    {apercu.reference ? ` · ${apercu.reference}` : ""}
+                    {` · ${(apercu.date_doc || apercu.created_at || "").toString().slice(0, 10)}`}
+                  </p>
+                  {apercu.donnees?.lignes?.length > 0 && (
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-navy-900/5">
+                        {apercu.donnees.lignes.map((l, i) => (
+                          <tr key={i}>
+                            <td className="py-1.5 text-navy-900">{l.libelle}{l.quantite > 1 ? ` × ${l.quantite}` : ""}</td>
+                            <td className="py-1.5 text-right font-mono text-navy-900">{Number(l.montant).toLocaleString("fr-FR")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                  <div className="mt-3 flex items-center justify-between border-t border-navy-900/10 pt-3">
+                    <span className="text-sm text-navy-900/60">
+                      {apercu.donnees?.mode ? `Mode : ${apercu.donnees.mode}` : (apercu.donnees?.echeance ? `Échéance : ${apercu.donnees.echeance}` : "")}
+                    </span>
+                    <span className="font-display text-lg font-bold text-navy-900">
+                      {Number(apercu.montant ?? apercu.donnees?.montant ?? apercu.donnees?.montant_total ?? 0).toLocaleString("fr-FR")} {devise}
+                    </span>
+                  </div>
+                  <p className="mt-4 text-xs text-navy-900/40">
+                    Instantané archivé. Pour le document détaillé imprimable, ouvrez-le depuis la page{" "}
+                    <Link to="/paiements" className="text-navy-700 hover:text-or-500">Paiements</Link>.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="mt-3 text-right">
               <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>

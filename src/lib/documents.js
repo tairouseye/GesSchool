@@ -26,6 +26,31 @@ export async function creerDocument(ecoleId, d) {
   if (error) throw error;
 }
 
+// Archive un document dans le registre GED (Phase 2). BEST-EFFORT : ne bloque
+// jamais l'action principale (facture, paiement…) — toute erreur est avalée
+// (ex. migration 067 pas encore appliquée). À appeler SANS await.
+export async function archiverDocument(ecoleId, d) {
+  try {
+    await supabase.from("documents").insert({
+      ecole_id: ecoleId,
+      type: d.type,
+      titre: d.titre,
+      famille: d.famille || null,
+      eleve_id: d.eleve_id || null,
+      cible_type: d.cible_type || null,
+      cible_id: d.cible_id || null,
+      cible_libelle: d.cible_libelle || null,
+      reference: d.reference || null,
+      montant: d.montant ?? null,
+      annee_id: d.annee_id || null,
+      periode_id: d.periode_id || null,
+      donnees: d.donnees || null,
+      statut: "archive",
+      cree_par: await monId(),
+    });
+  } catch { /* best-effort : ne jamais bloquer l'action principale */ }
+}
+
 // Liste des documents de l'école (côté Gestion).
 export async function getDocuments(ecoleId) {
   const { data, error } = await supabase

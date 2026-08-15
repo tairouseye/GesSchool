@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { archiverDocument } from "@/lib/documents.js";
 
 // GesSchool — couche « finances » : frais, factures, encaissements.
 // Le statut de facture + montant_paye sont recalculés par un trigger en base.
@@ -116,6 +117,17 @@ export async function creerFacture(ecoleId, { eleve_id, annee_id, date_echeance,
   }));
   const { error: e2 } = await supabase.from("facture_lignes").insert(lignesInsert);
   if (e2) throw e2;
+
+  // Archivage GED (best-effort, non bloquant).
+  archiverDocument(ecoleId, {
+    type: "facture", famille: "finances", titre: `Facture ${numero}`,
+    reference: numero, montant: montant_total,
+    eleve_id, cible_type: "eleve", cible_id: eleve_id, annee_id: annee_id || null,
+    donnees: {
+      numero, montant_total, echeance: date_echeance || null,
+      lignes: lignes.map((l) => ({ libelle: l.libelle, quantite: Number(l.quantite), montant: Number(l.quantite) * Number(l.prix_unitaire) })),
+    },
+  });
   return facture;
 }
 
@@ -140,6 +152,17 @@ export async function encaisser(ecoleId, factureId, p, encaissePar) {
     .select()
     .single();
   if (error) throw error;
+
+  // Archivage GED du reçu (best-effort). On récupère l'élève + n° de facture.
+  supabase.from("factures").select("eleve_id, numero").eq("id", factureId).single()
+    .then(({ data: f }) => archiverDocument(ecoleId, {
+      type: "recu", famille: "finances", titre: "Reçu de paiement",
+      reference: data.reference || null, montant: data.montant,
+      eleve_id: f?.eleve_id || null, cible_type: "eleve", cible_id: f?.eleve_id || null,
+      cible_libelle: f?.numero ? `Facture ${f.numero}` : null,
+      donnees: { montant: data.montant, mode: data.mode, date: data.date_paiement, facture: f?.numero || null },
+    }))
+    .then(undefined, () => {});
   return data;
 }
 
