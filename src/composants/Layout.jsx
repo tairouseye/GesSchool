@@ -13,6 +13,21 @@ import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
 
+// Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
+function LogoEcole({ logoUrl, sigle, size }) {
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt=""
+        className="shrink-0 rounded-lg bg-white object-contain"
+        style={{ width: size, height: size, padding: 2 }}
+      />
+    );
+  }
+  return <Cachet size={size} sigle={sigle} className="text-or-500" />;
+}
+
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
 // Desktop : sidebar (menu latéral dense). Mobile : barre de navigation basse
 // (espaces) + sous-modules en tuiles colorées.
@@ -152,7 +167,7 @@ export default function Layout() {
       {/* Sidebar : desktop uniquement (sur mobile → barre basse + tuiles) */}
       <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
-          <Cachet size={40} sigle={sigle} className="text-or-500" />
+          <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={40} />
           <div className="min-w-0">
             <p className="truncate font-display text-base font-bold leading-none">{ecole?.nom || "GesSchool"}</p>
             <p className="text-xs text-creme/60">{sigle}</p>
@@ -264,7 +279,7 @@ export default function Layout() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Barre du haut (mobile) : école + compte + bouton grille */}
         <div className="flex items-center gap-2.5 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
-          <Cachet size={26} sigle={sigle} className="text-or-500" />
+          <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={26} />
           <span className="truncate font-display font-bold">{ecole?.nom || "GesSchool"}</span>
           <button onClick={() => setCompte(true)} aria-label="Mon compte"
             className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-navy-800 text-xs font-bold text-or-500">{initiales}</button>
