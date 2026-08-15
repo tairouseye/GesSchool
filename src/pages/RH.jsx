@@ -508,6 +508,8 @@ const MODELES_RH = [
     corps: (c) => `atteste que ${c.nomComplet} est employé(e) au sein de notre établissement en qualité de ${c.fonction}${c.depuis ? `, depuis le ${c.depuis}` : ""}${c.typeContrat ? ` (contrat ${c.typeContrat})` : ""}. La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.` },
   { id: "fin_contrat", titre: "Certificat de fin de contrat",
     corps: (c) => `certifie que ${c.nomComplet} a été employé(e) au sein de notre établissement en qualité de ${c.fonction}${c.debut ? `, du ${c.debut}` : ""} au ${c.fin}. Nous lui délivrons le présent certificat, libre de tout engagement, pour servir et valoir ce que de droit.` },
+  { id: "mission", titre: "Ordre de mission",
+    corps: (c) => `donne ordre à ${c.nomComplet}, ${c.fonction}, d'effectuer une mission${c.destination ? ` à ${c.destination}` : ""}${c.du ? `, du ${c.du}` : ""}${c.au ? ` au ${c.au}` : ""}, ayant pour objet : ${c.objet || "…"}. Les autorités compétentes sont priées de lui faciliter l'accomplissement de cette mission.` },
 ];
 
 function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId, onEnvoye }) {
@@ -517,6 +519,10 @@ function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId,
   const [ville, setVille] = useState(ecole?.ville || "");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [reference, setReference] = useState("");
+  const [objet, setObjet] = useState("");         // ordre de mission
+  const [destination, setDestination] = useState("");
+  const [du, setDu] = useState("");
+  const [au, setAu] = useState("");
   const [sigIdx, setSigIdx] = useState(0);
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
@@ -532,6 +538,9 @@ function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId,
     typeContrat: c?.type || "",
     debut: c?.debut ? dateLisible(c.debut) : (p.date_embauche ? dateLisible(p.date_embauche) : ""),
     fin: c?.fin ? dateLisible(c.fin) : "ce jour",
+    objet, destination,
+    du: du ? dateLisible(du) : "",
+    au: au ? dateLisible(au) : "",
   };
 
   async function envoyer() {
@@ -579,6 +588,16 @@ function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId,
             <Champ label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <Champ label="Référence (optionnel)" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° du document" />
+          {modeleId === "mission" && (
+            <>
+              <Champ label="Objet de la mission" value={objet} onChange={(e) => setObjet(e.target.value)} placeholder="Ex. formation, réunion académique…" />
+              <Champ label="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex. Thiès" />
+              <div className="grid grid-cols-2 gap-3">
+                <Champ label="Du" type="date" value={du} onChange={(e) => setDu(e.target.value)} />
+                <Champ label="Au" type="date" value={au} onChange={(e) => setAu(e.target.value)} />
+              </div>
+            </>
+          )}
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Signataire</span>
             <select value={sigIdx} onChange={(e) => setSigIdx(Number(e.target.value))}

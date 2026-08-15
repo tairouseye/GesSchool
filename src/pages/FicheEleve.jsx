@@ -14,7 +14,7 @@ import Photo from "@/composants/Photo.jsx";
 export default function FicheEleve() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { ecoleId, roles } = useAuth();
+  const { ecoleId, ecole, roles } = useAuth();
   const peutEditer = peutEditerEleves(roles);
   const gereParents = peutGererParents(roles); // responsable pédagogique : codes parents
   const peutMessage = peutVoir(roles, "messagerie");
@@ -30,6 +30,7 @@ export default function FicheEleve() {
   const [modaleTuteur, setModaleTuteur] = useState(false);
   const [modaleInscr, setModaleInscr] = useState(false);
   const [modaleEdit, setModaleEdit] = useState(false);
+  const [carteOuverte, setCarteOuverte] = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [codes, setCodes] = useState({}); // tuteur_id -> code parent
   const [champsPerso, setChampsPerso] = useState([]);
@@ -82,7 +83,12 @@ export default function FicheEleve() {
       <EnTete
         titre={`${eleve.prenom} ${eleve.nom}`}
         sousTitre={eleve.matricule}
-        action={<Bouton variante="fantome" onClick={() => navigate("/eleves")}>← Liste</Bouton>}
+        action={
+          <div className="flex gap-2">
+            <Bouton variante="fantome" onClick={() => setCarteOuverte(true)}>🪪 Carte scolaire</Bouton>
+            <Bouton variante="fantome" onClick={() => navigate("/eleves")}>← Liste</Bouton>
+          </div>
+        }
       />
       <div className="grid grid-cols-1 gap-6 p-8 lg:grid-cols-3">
         <Alerte ton="erreur">{erreur}</Alerte>
@@ -292,6 +298,41 @@ export default function FicheEleve() {
           wrap(async () => { await api.inscrire(ecoleId, id, classeId, annee.id, "inscrit", redoublant); setModaleInscr(false); })
         }
       />
+
+      {/* Carte scolaire (badge imprimable) */}
+      <Modale ouvert={carteOuverte} onFermer={() => setCarteOuverte(false)} titre="Carte scolaire">
+        <div className="zone-impression">
+          <div className="mx-auto w-[340px] overflow-hidden rounded-2xl border-2 border-navy-900">
+            <div className="flex items-center gap-2 bg-navy-900 px-3 py-2 text-creme">
+              {ecole?.logo_url
+                ? <img src={ecole.logo_url} alt="" className="h-9 w-9 shrink-0 rounded bg-white object-contain" />
+                : <div className="grid h-9 w-9 place-items-center rounded bg-white/10 text-xs font-bold">{ecole?.sigle || "GS"}</div>}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold leading-tight">{ecole?.nom}</p>
+                <p className="text-[10px] uppercase tracking-wide text-creme/70">Carte scolaire · {annee?.libelle || ""}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 p-3">
+              {eleve.photo_url
+                ? <img src={eleve.photo_url} alt="" className="h-24 w-20 shrink-0 rounded-lg border border-navy-900/15 object-cover" />
+                : <div className="grid h-24 w-20 shrink-0 place-items-center rounded-lg border border-dashed border-navy-900/20 text-3xl text-navy-900/20">👤</div>}
+              <div className="min-w-0 text-xs text-navy-900/70">
+                <p className="text-sm font-bold text-navy-900">{eleve.nom} {eleve.prenom}</p>
+                <p className="mt-1"><span className="text-navy-900/40">Matricule :</span> {eleve.matricule || "—"}</p>
+                <p><span className="text-navy-900/40">Classe :</span> {inscriptions.find((i) => i.annee_id === annee?.id)?.classes?.libelle || "—"}</p>
+                <p><span className="text-navy-900/40">Sexe :</span> {eleve.sexe === "F" ? "Féminin" : eleve.sexe === "M" ? "Masculin" : "—"}</p>
+                <p><span className="text-navy-900/40">Né(e) le :</span> {eleve.date_naissance ? new Date(eleve.date_naissance).toLocaleDateString("fr-FR") : "—"}</p>
+              </div>
+            </div>
+            <div className="border-t border-navy-900/10 px-3 py-1.5 text-center text-[10px] text-navy-900/40">
+              {[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+        </div>
+        <div className="no-print mt-4 flex justify-end">
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
     </>
   );
 }
