@@ -28,6 +28,7 @@ export default function Bulletins() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(false);
   const [bulletinActif, setBulletinActif] = useState(null);
+  const [pvOuvert, setPvOuvert] = useState(false);
   const [publication, setPublication] = useState("");
   const [enPublication, setEnPublication] = useState(false);
   const [notation, setNotation] = useState(api.DEFAUT_NOTATION);
@@ -113,9 +114,12 @@ export default function Bulletins() {
                 {resultats.evaluations.length} évaluation(s)
               </span>
               {resultats.eleves.length > 0 && (
-                <Bouton variante="or" onClick={publier} disabled={enPublication}>
-                  {enPublication ? "Publication…" : "📤 Publier aux parents"}
-                </Bouton>
+                <div className="flex flex-wrap gap-2">
+                  <Bouton onClick={() => setPvOuvert(true)}>🧾 PV du conseil</Bouton>
+                  <Bouton variante="or" onClick={publier} disabled={enPublication}>
+                    {enPublication ? "Publication…" : "📤 Publier aux parents"}
+                  </Bouton>
+                </div>
               )}
             </div>
             {resultats.eleves.length === 0 ? (
@@ -162,7 +166,70 @@ export default function Bulletins() {
         onFermer={() => setBulletinActif(null)}
         onErreur={setErreur}
       />
+
+      <ModalePV
+        ouvert={pvOuvert} onFermer={() => setPvOuvert(false)}
+        ecole={ecole} classe={classe} periode={periode} annee={annee}
+        resultats={resultats} signataire={signataire}
+      />
     </>
+  );
+}
+
+// Procès-verbal du conseil de classe : tableau imprimable des résultats.
+function ModalePV({ ouvert, onFermer, ecole, classe, periode, annee, resultats, signataire }) {
+  if (!resultats) return null;
+  const eleves = [...(resultats.eleves || [])].sort((a, b) => (a.rang || 999) - (b.rang || 999));
+  const moys = eleves.map((r) => Number(r.moyenne)).filter((n) => !isNaN(n));
+  const moyClasse = moys.length ? (moys.reduce((s, n) => s + n, 0) / moys.length).toFixed(2) : "—";
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="PV du conseil de classe" large>
+      <div className="zone-impression text-navy-900">
+        <div className="mb-4 flex items-center gap-3 border-b border-navy-900/15 pb-3">
+          {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-12 w-12 object-contain" />}
+          <div>
+            <p className="font-display text-lg font-bold">{ecole?.nom}</p>
+            <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+          </div>
+        </div>
+        <h1 className="text-center font-display text-xl font-bold uppercase tracking-wide">Procès-verbal du conseil de classe</h1>
+        <p className="mt-1 text-center text-sm text-navy-900/60">
+          Classe {classe?.libelle} · {periode?.libelle} · Année {annee?.libelle} · {resultats.effectif} élève(s) · Moyenne de classe&nbsp;: <b>{moyClasse}</b>
+        </p>
+        <table className="mt-4 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-y border-navy-900/25 text-navy-900/60">
+              <th className="px-2 py-2 text-left">Rang</th>
+              <th className="px-2 py-2 text-left">Élève</th>
+              <th className="px-2 py-2 text-right">Moyenne</th>
+              <th className="px-2 py-2 text-left">Mention</th>
+              <th className="px-2 py-2 text-left">Décision / Observations</th>
+            </tr>
+          </thead>
+          <tbody>
+            {eleves.map((r, i) => (
+              <tr key={r.eleve.id} className="border-b border-navy-900/10">
+                <td className="px-2 py-2">{r.rang ?? i + 1}</td>
+                <td className="px-2 py-2 font-medium">{r.eleve.nom} {r.eleve.prenom}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.moyenne != null ? Number(r.moyenne).toFixed(2) : "—"}</td>
+                <td className="px-2 py-2">{r.mention || ""}</td>
+                <td className="px-2 py-2"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-12 flex justify-between text-sm">
+          <div>Le professeur principal<br /><span className="text-navy-900/30">_____________________</span></div>
+          <div className="text-right">
+            {signataire?.fonction || "La Direction"}{signataire?.nom ? ` — ${signataire.nom}` : ""}<br /><br />
+            <span className="text-navy-900/30">_____________________</span>
+          </div>
+        </div>
+      </div>
+      <div className="no-print mt-5 flex justify-end">
+        <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+      </div>
+    </Modale>
   );
 }
 

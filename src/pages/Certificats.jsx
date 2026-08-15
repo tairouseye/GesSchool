@@ -31,6 +31,8 @@ const MODELES = [
     corps: (c) => `atteste que l'élève ${c.nomComplet}, matricule ${c.matricule}, ${c.inscrit} en classe de ${c.classe} au titre de l'année scolaire ${c.annee}, a obtenu une moyenne générale de ${c.moyenne}${c.mention !== "—" ? ` (mention ${c.mention})` : ""}${c.rang ? `, se classant ${c.rang}` : ""}.${c.decision ? ` Décision du conseil de classe : ${c.decision}.` : ""} La présente attestation lui est délivrée pour servir et valoir ce que de droit.` },
   { id: "paiement", titre: "Attestation de paiement",
     corps: (c) => `atteste que, pour l'élève ${c.nomComplet}${c.classe !== "—" ? ` (classe de ${c.classe})` : ""}, au titre de l'année scolaire ${c.annee}, un montant total de ${c.paye} ${c.devise} a été réglé à notre établissement${c.solde > 0 ? `, laissant un solde restant dû de ${c.soldeFmt} ${c.devise}` : `, soldant l'intégralité des frais dus`}. La présente attestation est délivrée pour servir et valoir ce que de droit.` },
+  { id: "convocation", titre: "Convocation",
+    corps: (c) => `convoque le responsable légal de l'élève ${c.nomComplet}${c.classe !== "—" ? ` (classe de ${c.classe})` : ""} à se présenter dans nos locaux le ${c.rdvDate || "…"}${c.rdvHeure ? ` à ${c.rdvHeure}` : ""}, au sujet suivant : ${c.motif || "…"}. Nous comptons sur votre présence.` },
 ];
 
 export default function Certificats() {
@@ -47,6 +49,9 @@ export default function Certificats() {
   const [ville, setVille] = useState("");
   const [date, setDate] = useState(auj());
   const [reference, setReference] = useState("");
+  const [motif, setMotif] = useState("");        // convocation : objet
+  const [rdvDate, setRdvDate] = useState("");     // convocation : date du rendez-vous
+  const [rdvHeure, setRdvHeure] = useState("");   // convocation : heure
   const [sigIdx, setSigIdx] = useState(0);
   const [apercu, setApercu] = useState(null);
   const [extra, setExtra] = useState({ resultat: null, paiement: null }); // résultats + paiement de l'élève sélectionné
@@ -110,6 +115,9 @@ export default function Certificats() {
     paye: fmt(extra.paiement?.paye ?? 0),
     solde: extra.paiement?.solde ?? 0,
     soldeFmt: fmt(extra.paiement?.solde ?? 0),
+    motif,
+    rdvDate: rdvDate ? dateLisible(rdvDate) : "",
+    rdvHeure,
   };
 
   async function envoyer() {
@@ -169,6 +177,15 @@ export default function Certificats() {
             <Champ label="Fait à" value={ville} onChange={(e) => setVille(e.target.value)} placeholder="Dakar" />
             <Champ label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             <Champ label="Référence (optionnel)" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° 014/2026" />
+            {modeleId === "convocation" && (
+              <>
+                <Champ label="Objet / motif" value={motif} onChange={(e) => setMotif(e.target.value)} placeholder="Ex. comportement, retards, réunion…" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Champ label="Date du rendez-vous" type="date" value={rdvDate} onChange={(e) => setRdvDate(e.target.value)} />
+                  <Champ label="Heure" type="time" value={rdvHeure} onChange={(e) => setRdvHeure(e.target.value)} />
+                </div>
+              </>
+            )}
           </div>
           <div className="mt-4 flex justify-end">
             <Bouton onClick={envoyer} disabled={envoi || !eleve || !sig}>
