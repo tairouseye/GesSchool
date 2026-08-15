@@ -249,7 +249,7 @@ export default function Eleves() {
                               </span>
                             }
                           />
-                          <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span>
+                          <span className="font-medium text-navy-900">{e.nom} {e.prenom}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-navy-900/60">{e.sexe || "—"}</td>

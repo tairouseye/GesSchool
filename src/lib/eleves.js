@@ -107,7 +107,8 @@ export async function getEleves(ecoleId) {
     .from("eleves")
     .select("*")
     .eq("ecole_id", ecoleId)
-    .order("nom");
+    .order("nom")
+    .order("prenom");
   if (error) throw error;
   return data ?? [];
 }
