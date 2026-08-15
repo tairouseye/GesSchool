@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { archiverDocument } from "@/lib/documents.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -151,6 +152,22 @@ export async function marquerPaye(id, { date_paiement, mode, compte_id } = {}) {
     p_compte: compte_id || null,
   });
   if (error) throw error;
+
+  // Archivage GED de la fiche de paie (best-effort). On récupère le salaire payé.
+  supabase.from("salaires")
+    .select("ecole_id, montant_net, periode, personnel_id, personnels(prenom, nom)")
+    .eq("id", id).single()
+    .then(({ data: s }) => {
+      if (!s) return;
+      return archiverDocument(s.ecole_id, {
+        type: "paie", famille: "rh", titre: "Fiche de paie",
+        cible_type: "personnel", cible_id: s.personnel_id,
+        cible_libelle: `${s.personnels?.nom || ""} ${s.personnels?.prenom || ""}`.trim(),
+        montant: s.montant_net, reference: s.periode || null,
+        donnees: { net: s.montant_net, periode: s.periode, mode: mode || null, date: date_paiement || null },
+      });
+    })
+    .then(undefined, () => {});
 }
 
 // Annule le paiement ET supprime la dépense comptable liée.

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { archiverDocument } from "@/lib/documents.js";
 
 // GesSchool — couche « notes & bulletins » : évaluations, notes, calculs.
 
@@ -148,6 +149,14 @@ export async function publierBulletins(ecoleId, classeId, periodeId, resultats) 
       const { error: e2 } = await supabase.from("bulletin_lignes").insert(lignes);
       if (e2) throw e2;
     }
+    // Archivage GED (best-effort, non bloquant).
+    archiverDocument(ecoleId, {
+      type: "bulletin", famille: "pedagogie", titre: "Bulletin de notes",
+      eleve_id: r.eleve.id, cible_type: "eleve", cible_id: r.eleve.id,
+      cible_libelle: `${r.eleve?.nom || ""} ${r.eleve?.prenom || ""}`.trim(),
+      periode_id: periodeId,
+      donnees: { moyenne: r.moyenne, rang: r.rang, effectif: resultats.effectif, mention: r.mention },
+    });
     n++;
   }
   return n;
@@ -184,6 +193,14 @@ export async function publierUnBulletin(ecoleId, classeId, periodeId, r, extra =
     const { error: e2 } = await supabase.from("bulletin_lignes").insert(lignes);
     if (e2) throw e2;
   }
+  // Archivage GED (best-effort, non bloquant).
+  archiverDocument(ecoleId, {
+    type: "bulletin", famille: "pedagogie", titre: "Bulletin de notes",
+    eleve_id: r.eleve.id, cible_type: "eleve", cible_id: r.eleve.id,
+    cible_libelle: `${r.eleve?.nom || ""} ${r.eleve?.prenom || ""}`.trim(),
+    periode_id: periodeId,
+    donnees: { moyenne: r.moyenne, rang: r.rang, effectif: extra.effectif ?? null, mention: r.mention, decision: extra.decision || null },
+  });
   return b.id;
 }
 
