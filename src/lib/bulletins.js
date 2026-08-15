@@ -120,6 +120,19 @@ async function getCoefsMatiere(ecoleId, classeId, anneeId) {
   return map;
 }
 
+// Dernier bulletin (période la plus avancée) d'un élève sur une année.
+// Sert à l'attestation de résultats.
+export async function getDernierBulletin(eleveId, anneeId) {
+  const { data, error } = await supabase
+    .from("bulletins")
+    .select("moyenne_generale, mention, decision, rang, effectif, periodes(libelle, ordre, annee_id)")
+    .eq("eleve_id", eleveId);
+  if (error) throw error;
+  const list = (data ?? []).filter((b) => !anneeId || b.periodes?.annee_id === anneeId);
+  list.sort((a, b) => (b.periodes?.ordre || 0) - (a.periodes?.ordre || 0));
+  return list[0] || null;
+}
+
 // Publie (persiste) les bulletins calculés → visibles par les parents.
 export async function publierBulletins(ecoleId, classeId, periodeId, resultats) {
   let n = 0;

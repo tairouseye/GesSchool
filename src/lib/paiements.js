@@ -131,6 +131,17 @@ export async function creerFacture(ecoleId, { eleve_id, annee_id, date_echeance,
   return facture;
 }
 
+// Résumé de paiement d'un élève sur une année (pour l'attestation de paiement).
+export async function getResumePaiementEleve(ecoleId, eleveId, anneeId) {
+  let q = supabase.from("factures").select("montant_total, montant_paye").eq("ecole_id", ecoleId).eq("eleve_id", eleveId);
+  if (anneeId) q = q.eq("annee_id", anneeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const total = (data ?? []).reduce((s, f) => s + Number(f.montant_total || 0), 0);
+  const paye = (data ?? []).reduce((s, f) => s + Number(f.montant_paye || 0), 0);
+  return { total, paye, solde: total - paye, nb: (data ?? []).length };
+}
+
 export async function supprimerFacture(id) {
   const { error } = await supabase.from("factures").delete().eq("id", id);
   if (error) throw error;

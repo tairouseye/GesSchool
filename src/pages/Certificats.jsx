@@ -6,6 +6,8 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
 import { getAnneeCourante, getSignataires } from "@/lib/academique.js";
+import { getDernierBulletin } from "@/lib/bulletins.js";
+import { getResumePaiementEleve } from "@/lib/paiements.js";
 import * as api from "@/lib/documents.js";
 
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -23,6 +25,12 @@ const MODELES = [
     corps: (c) => `atteste que l'élève ${c.nomComplet}, ${c.nee} le ${c.dateNaiss}${c.lieuNaiss ? ` à ${c.lieuNaiss}` : ""}, a été ${c.inscrit} en classe de ${c.classe} pour l'année scolaire ${c.annee}.` },
   { id: "frequentation", titre: "Attestation de fréquentation",
     corps: (c) => `atteste que l'élève ${c.nomComplet}, matricule ${c.matricule}, fréquente régulièrement notre établissement en classe de ${c.classe} durant l'année scolaire ${c.annee}.` },
+  { id: "radiation", titre: "Certificat de radiation",
+    corps: (c) => `certifie que l'élève ${c.nomComplet}, ${c.nee} le ${c.dateNaiss}${c.lieuNaiss ? ` à ${c.lieuNaiss}` : ""}, matricule ${c.matricule}, précédemment ${c.inscrit} en classe de ${c.classe}, a été ${c.radie} des effectifs de notre établissement au titre de l'année scolaire ${c.annee}. Le présent certificat lui est délivré pour servir et valoir ce que de droit, notamment en vue d'un transfert.` },
+  { id: "resultats", titre: "Attestation de résultats",
+    corps: (c) => `atteste que l'élève ${c.nomComplet}, matricule ${c.matricule}, ${c.inscrit} en classe de ${c.classe} au titre de l'année scolaire ${c.annee}, a obtenu une moyenne générale de ${c.moyenne}${c.mention !== "—" ? ` (mention ${c.mention})` : ""}${c.rang ? `, se classant ${c.rang}` : ""}.${c.decision ? ` Décision du conseil de classe : ${c.decision}.` : ""} La présente attestation lui est délivrée pour servir et valoir ce que de droit.` },
+  { id: "paiement", titre: "Attestation de paiement",
+    corps: (c) => `atteste que, pour l'élève ${c.nomComplet}${c.classe !== "—" ? ` (classe de ${c.classe})` : ""}, au titre de l'année scolaire ${c.annee}, un montant total de ${c.paye} ${c.devise} a été réglé à notre établissement${c.solde > 0 ? `, laissant un solde restant dû de ${c.soldeFmt} ${c.devise}` : `, soldant l'intégralité des frais dus`}. La présente attestation est délivrée pour servir et valoir ce que de droit.` },
 ];
 
 export default function Certificats() {
@@ -41,6 +49,7 @@ export default function Certificats() {
   const [reference, setReference] = useState("");
   const [sigIdx, setSigIdx] = useState(0);
   const [apercu, setApercu] = useState(null);
+  const [extra, setExtra] = useState({ resultat: null, paiement: null }); // résultats + paiement de l'élève sélectionné
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
 
@@ -66,19 +75,41 @@ export default function Certificats() {
 
   useEffect(() => { if (ecole?.ville && !ville) setVille(ecole.ville); }, [ecole]); // eslint-disable-line
 
+  // Résultats + paiement de l'élève (pour les attestations de résultats / paiement).
+  useEffect(() => {
+    if (!eleveId || !annee) { setExtra({ resultat: null, paiement: null }); return; }
+    let vivant = true;
+    Promise.all([
+      getDernierBulletin(eleveId, annee.id).catch(() => null),
+      getResumePaiementEleve(ecoleId, eleveId, annee.id).catch(() => null),
+    ]).then(([resultat, paiement]) => { if (vivant) setExtra({ resultat, paiement }); });
+    return () => { vivant = false; };
+  }, [eleveId, annee, ecoleId]);
+
   const eleve = eleves.find((e) => e.id === eleveId);
   const modele = MODELES.find((m) => m.id === modeleId);
   const sig = signataires[sigIdx];
 
+  const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString("fr-FR"));
+  const rangLisible = (r, eff) => (r ? `${r}${r === 1 ? "er" : "e"}${eff ? ` sur ${eff}` : ""}` : "");
   const ctx = eleve && {
     nomComplet: `${eleve.prenom} ${eleve.nom}`,
     nee: eleve.sexe === "F" ? "née" : "né",
     inscrit: eleve.sexe === "F" ? "inscrite" : "inscrit",
+    radie: eleve.sexe === "F" ? "radiée" : "radié",
     dateNaiss: eleve.date_naissance ? dateLisible(eleve.date_naissance) : "—",
     lieuNaiss: eleve.lieu_naissance,
     matricule: eleve.matricule || "—",
     classe: inscriptions[eleve.id]?.classes?.libelle || "—",
     annee: annee?.libelle || "—",
+    devise: ecole?.devise || "XOF",
+    moyenne: extra.resultat?.moyenne_generale != null ? fmt(extra.resultat.moyenne_generale) : "—",
+    mention: extra.resultat?.mention || "—",
+    rang: rangLisible(extra.resultat?.rang, extra.resultat?.effectif),
+    decision: extra.resultat?.decision || "",
+    paye: fmt(extra.paiement?.paye ?? 0),
+    solde: extra.paiement?.solde ?? 0,
+    soldeFmt: fmt(extra.paiement?.solde ?? 0),
   };
 
   async function envoyer() {
