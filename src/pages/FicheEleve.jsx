@@ -5,6 +5,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
+import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -193,9 +194,24 @@ export default function FicheEleve() {
                         </button>
                       )}
                       {codes[t.tuteurs.id] ? (
-                        <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
-                          {codes[t.tuteurs.id]}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
+                            {codes[t.tuteurs.id]}
+                          </span>
+                          {t.tuteurs.telephone && (
+                            <a
+                              href={lienWhatsApp(
+                                t.tuteurs.telephone,
+                                `Bonjour, voici votre accès à l'espace parent GesSchool pour suivre ${`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim()} (notes, absences, paiements).\n\n1) Ouvrez ${window.location.origin}\n2) Créez votre compte\n3) Entrez le code : ${codes[t.tuteurs.id]}`,
+                              )}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                            >
+                              💬 Envoyer par WhatsApp
+                            </a>
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={async () => {
