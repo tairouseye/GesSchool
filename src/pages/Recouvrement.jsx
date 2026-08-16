@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Carte, Alerte, EtatVide, SkeletonListe, Bouton, Modale } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
@@ -23,6 +23,7 @@ export default function Recouvrement() {
   const [info, setInfo] = useState("");
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(null); // eleve_id en cours de relance push
+  const [etatOuvert, setEtatOuvert] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -81,7 +82,8 @@ export default function Recouvrement() {
 
   return (
     <>
-      <EnTete titre="Recouvrement & relances" sousTitre={annee ? `Année ${annee.libelle}` : ""} />
+      <EnTete titre="Recouvrement & relances" sousTitre={annee ? `Année ${annee.libelle}` : ""}
+        action={<Bouton variante="fantome" onClick={() => setEtatOuvert(true)} disabled={impayes.length === 0}>🖨️ État des impayés</Bouton>} />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
         {info && <Alerte ton="succes">{info}</Alerte>}
@@ -228,6 +230,61 @@ export default function Recouvrement() {
           </Carte>
         )}
       </div>
+
+      {/* État des impayés (imprimable) */}
+      <Modale ouvert={etatOuvert} onFermer={() => setEtatOuvert(false)} titre="État des impayés" large>
+        <div className="zone-impression text-navy-900">
+          <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+            {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+            <div className="flex-1">
+              <p className="font-display text-base font-bold">{ecole?.nom}</p>
+              <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+            </div>
+            <p className="text-right text-xs text-navy-900/60">
+              {annee?.libelle ? `Année ${annee.libelle}` : ""}<br />Édité le {new Date().toLocaleDateString("fr-FR")}
+            </p>
+          </div>
+          <h1 className="mb-1 text-center font-display text-lg font-bold uppercase tracking-wide">État des impayés</h1>
+          <p className="mb-3 text-center text-xs text-navy-900/50">{filtre === "retard" ? "Échéances en retard uniquement" : "Tous les soldes dus"}</p>
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-y border-navy-900/25 text-navy-900/60">
+                <th className="px-2 py-1.5 text-left">N°</th>
+                <th className="px-2 py-1.5 text-left">Élève</th>
+                <th className="px-2 py-1.5 text-left">Échéance</th>
+                <th className="px-2 py-1.5 text-center">Retard</th>
+                <th className="px-2 py-1.5 text-right">Montant dû</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liste.map((i, k) => (
+                <tr key={i.eleve_id} className="border-b border-navy-900/10">
+                  <td className="px-2 py-1.5">{k + 1}</td>
+                  <td className="px-2 py-1.5 font-medium">{i.eleve?.nom} {i.eleve?.prenom}</td>
+                  <td className="px-2 py-1.5">{i.echeance ? new Date(i.echeance).toLocaleDateString("fr-FR") : "—"}</td>
+                  <td className="px-2 py-1.5 text-center">{i.enRetard ? "Oui" : "—"}</td>
+                  <td className="px-2 py-1.5 text-right font-mono">{fmt(i.reste)} {devise}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-navy-900/30 font-bold">
+                <td className="px-2 py-2" colSpan={4}>Total dû ({liste.length} élève{liste.length > 1 ? "s" : ""})</td>
+                <td className="px-2 py-2 text-right font-mono">{fmt(liste.reduce((s, i) => s + i.reste, 0))} {devise}</td>
+              </tr>
+              {filtre !== "retard" && (
+                <tr className="text-rose-600">
+                  <td className="px-2 py-1" colSpan={4}>dont en retard</td>
+                  <td className="px-2 py-1 text-right font-mono">{fmt(totalRetard)} {devise}</td>
+                </tr>
+              )}
+            </tfoot>
+          </table>
+        </div>
+        <div className="no-print mt-4 flex justify-end">
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
     </>
   );
 }

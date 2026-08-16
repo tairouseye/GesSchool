@@ -27,6 +27,7 @@ export default function Eleves() {
   const [recherche, setRecherche] = useState("");
   const [filtreClasse, setFiltreClasse] = useState("");
   const [filtreStatut, setFiltreStatut] = useState("");
+  const [presenceOuverte, setPresenceOuverte] = useState(false);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
@@ -171,6 +172,9 @@ export default function Eleves() {
               <option value="abandon">Abandon</option>
               <option value="non_inscrit">Non inscrit</option>
             </select>
+            <Bouton variante="fantome" onClick={() => setPresenceOuverte(true)} disabled={filtres.length === 0}>
+              🖨️ Feuille de présence
+            </Bouton>
           </div>
 
           {peutEditer && selection.size > 0 && (
@@ -303,6 +307,49 @@ export default function Eleves() {
         champs={champsPerso}
         onFini={() => { setModaleImport(false); recharger(); }}
       />
+
+      {/* Feuille de présence (registre d'appel imprimable) */}
+      <Modale ouvert={presenceOuverte} onFermer={() => setPresenceOuverte(false)} titre="Feuille de présence" large>
+        <div className="zone-impression text-navy-900">
+          <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+            {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+            <div className="flex-1">
+              <p className="font-display text-base font-bold">{ecole?.nom}</p>
+              <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+            </div>
+            <p className="text-right text-xs text-navy-900/60">
+              Classe : <b>{classes.find((c) => c.id === filtreClasse)?.libelle || "Toutes les classes"}</b><br />
+              {annee?.libelle ? `Année ${annee.libelle}` : ""} · Mois : ______________
+            </p>
+          </div>
+          <h1 className="mb-2 text-center font-display text-lg font-bold uppercase tracking-wide">Feuille de présence</h1>
+          <table className="w-full border-collapse text-[10px]">
+            <thead>
+              <tr className="text-navy-900/50">
+                <th className="border border-navy-900/25 px-1 py-1">N°</th>
+                <th className="border border-navy-900/25 px-2 py-1 text-left">Nom et prénom</th>
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <th key={i} className="w-5 border border-navy-900/25 px-0 py-1 font-normal">{i + 1}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtres.map((e, i) => (
+                <tr key={e.id}>
+                  <td className="border border-navy-900/20 px-1 py-1.5 text-center">{i + 1}</td>
+                  <td className="border border-navy-900/20 px-2 py-1.5 font-medium">{e.nom} {e.prenom}</td>
+                  {Array.from({ length: 16 }).map((_, j) => <td key={j} className="border border-navy-900/20"></td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-[10px] text-navy-900/40">{filtres.length} élève(s) · Cochez les présences par jour dans les colonnes numérotées.</p>
+          <div className="mt-8 text-right text-sm">L'enseignant(e) / Le surveillant<br /><span className="text-navy-900/30">_____________________</span></div>
+        </div>
+        <div className="no-print mt-4 flex justify-end">
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
     </>
   );
 }

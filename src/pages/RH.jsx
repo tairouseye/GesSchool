@@ -184,7 +184,7 @@ export default function RH() {
           />
         ) : (
           <PanneauPaie
-            periode={periode} setPeriode={setPeriode} salaires={salaires} devise={devise}
+            periode={periode} setPeriode={setPeriode} salaires={salaires} devise={devise} ecole={ecole}
             comptes={comptes} reglement={reglement} setReglement={setReglement}
             onMaj={(id, v) => wrap(() => api.majSalaire(id, v), true)}
             onPayer={(id) => wrap(() => api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode }), true)}
@@ -257,9 +257,10 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
   );
 }
 
-function PanneauPaie({ periode, setPeriode, salaires, devise, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
+function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
   const totalNet = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
   const totalPaye = salaires.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  const [etatOuvert, setEtatOuvert] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -269,11 +270,59 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, comptes, reglement
           <input type="month" value={periode} onChange={(e) => setPeriode(e.target.value)}
             className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
         </label>
-        <div className="flex gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="text-navy-900/50">Masse salariale : <b className="font-mono text-navy-900">{fmt(totalNet)} {devise}</b></span>
           <span className="text-emerald-700">Payé : <b className="font-mono">{fmt(totalPaye)} {devise}</b></span>
+          <Bouton variante="fantome" onClick={() => setEtatOuvert(true)} disabled={salaires.length === 0}>🖨️ État</Bouton>
         </div>
       </div>
+
+      <Modale ouvert={etatOuvert} onFermer={() => setEtatOuvert(false)} titre="État de la masse salariale" large>
+        <div className="zone-impression text-navy-900">
+          <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+            {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+            <div className="flex-1">
+              <p className="font-display text-base font-bold">{ecole?.nom}</p>
+              <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+            </div>
+            <p className="text-right text-xs text-navy-900/60">Période : {libellePeriode(periode)}<br />Édité le {new Date().toLocaleDateString("fr-FR")}</p>
+          </div>
+          <h1 className="mb-3 text-center font-display text-lg font-bold uppercase tracking-wide">État de la masse salariale</h1>
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-y border-navy-900/25 text-navy-900/60">
+                <th className="px-2 py-1.5 text-left">N°</th>
+                <th className="px-2 py-1.5 text-left">Nom et prénom</th>
+                <th className="px-2 py-1.5 text-left">Fonction</th>
+                <th className="px-2 py-1.5 text-center">Payé</th>
+                <th className="px-2 py-1.5 text-right">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salaires.map((s, k) => (
+                <tr key={s.id} className="border-b border-navy-900/10">
+                  <td className="px-2 py-1.5">{k + 1}</td>
+                  <td className="px-2 py-1.5 font-medium">{s.personnels?.nom} {s.personnels?.prenom}</td>
+                  <td className="px-2 py-1.5">{s.personnels?.fonction || "—"}</td>
+                  <td className="px-2 py-1.5 text-center">{s.paye ? "Oui" : "—"}</td>
+                  <td className="px-2 py-1.5 text-right font-mono">{fmt(s.montant_net)} {devise}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-navy-900/30 font-bold">
+                <td className="px-2 py-2" colSpan={4}>Masse salariale ({salaires.length} personne{salaires.length > 1 ? "s" : ""})</td>
+                <td className="px-2 py-2 text-right font-mono">{fmt(totalNet)} {devise}</td>
+              </tr>
+              <tr className="text-emerald-700"><td className="px-2 py-1" colSpan={4}>dont payé</td><td className="px-2 py-1 text-right font-mono">{fmt(totalPaye)} {devise}</td></tr>
+              <tr className="text-rose-600"><td className="px-2 py-1" colSpan={4}>restant à payer</td><td className="px-2 py-1 text-right font-mono">{fmt(totalNet - totalPaye)} {devise}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="no-print mt-4 flex justify-end">
+          <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+        </div>
+      </Modale>
       {comptes.length > 0 && (
         <Carte className="flex flex-wrap items-end gap-3 p-4">
           <label className="block">
