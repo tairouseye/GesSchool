@@ -23,6 +23,7 @@ const ParentAccueil = lazy(() => import("@/pages/ParentAccueil.jsx"));
 const ParentEnfant = lazy(() => import("@/pages/ParentEnfant.jsx"));
 const ParentNotifications = lazy(() => import("@/pages/ParentNotifications.jsx"));
 const ParentMessagerie = lazy(() => import("@/pages/ParentMessagerie.jsx"));
+const ParentCompte = lazy(() => import("@/pages/ParentCompte.jsx"));
 const Messagerie = lazy(() => import("@/pages/Messagerie.jsx"));
 const TableauDeBord = lazy(() => import("@/pages/TableauDeBord.jsx"));
 const Structure = lazy(() => import("@/pages/Structure.jsx"));
@@ -54,6 +55,7 @@ const Parametres = lazy(() => import("@/pages/Parametres.jsx"));
 const Certificats = lazy(() => import("@/pages/Certificats.jsx"));
 const Demandes = lazy(() => import("@/pages/Demandes.jsx"));
 const Membres = lazy(() => import("@/pages/Membres.jsx"));
+const CodesParents = lazy(() => import("@/pages/CodesParents.jsx"));
 const SuperAdmin = lazy(() => import("@/pages/SuperAdmin.jsx"));
 const Cantine = lazy(() => import("@/pages/Cantine.jsx"));
 const Transport = lazy(() => import("@/pages/Transport.jsx"));
@@ -159,6 +161,7 @@ export default function App() {
             <Route path="enfant/:id" element={<ParentEnfant />} />
             <Route path="notifications" element={<ParentNotifications />} />
             <Route path="messages" element={<ParentMessagerie />} />
+            <Route path="compte" element={<ParentCompte />} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}
@@ -188,6 +191,7 @@ export default function App() {
             <Route path="/classement" element={<Garde cle="classement"><Classement /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
+            <Route path="/codes-parents" element={<Garde cle="codes_parents"><CodesParents /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />
             <Route path="/bulletins" element={<Garde cle="bulletins"><Bulletins /></Garde>} />
             <Route path="/paiements" element={<Garde cle="paiements"><Paiements /></Garde>} />

@@ -104,6 +104,7 @@ export default function Connexion() {
             <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
               target="_blank" rel="noreferrer" className="hover:text-or-500">💬 Assistance WhatsApp : +221 77 343 59 28</a>
           </p>
+          <p className="font-mono text-creme/30">GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}</p>
         </div>
       </div>
     </div>

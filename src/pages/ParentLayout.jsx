@@ -58,6 +58,7 @@ export default function ParentLayout() {
           </Link>
           <button data-tour="aide-parent" onClick={() => setTour(true)} title="Visite guidée"
             className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
+          <Link to="/parent/compte" title="Mon compte" className="text-xl leading-none hover:opacity-80">⚙️</Link>
           <span className="hidden text-creme/70 sm:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
           <button onClick={deconnexion} className="rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion

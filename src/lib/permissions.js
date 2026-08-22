@@ -47,6 +47,10 @@ const ACCES = {
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
 
+  // Codes d'accès parents (génération/envoi en masse) — mêmes rôles que la RPC
+  // `generer_code_tuteur` : responsable pédagogique + côté Gestion.
+  codes_parents: ["direction", "comptable", "secretaire"],
+
   // --- Espace Gestion — responsable : comptable ; opérationnel : secretaire ---
   _gestion: ["comptable", "secretaire"], // accueil Gestion
   certificats: ["comptable", "secretaire"],

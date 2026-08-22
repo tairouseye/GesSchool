@@ -189,3 +189,34 @@ export async function genererCodeTuteur(tuteurId) {
   if (error) throw error;
   return data;
 }
+
+// Côté admin : tous les tuteurs de l'école avec leur code d'accès actuel et
+// les élèves rattachés — pour générer/envoyer les codes parents EN MASSE.
+// Un tuteur peut avoir plusieurs enfants (fratrie) → une seule ligne par tuteur.
+export async function getTuteursCodes(ecoleId) {
+  const { data, error } = await supabase
+    .from("eleve_tuteurs")
+    .select("lien_parente, tuteurs(id, prenom, nom, telephone, code_acces, profil_id), eleves(prenom, nom)")
+    .eq("ecole_id", ecoleId);
+  if (error) throw error;
+  const map = new Map();
+  for (const lt of data ?? []) {
+    const t = lt.tuteurs;
+    if (!t) continue;
+    if (!map.has(t.id)) {
+      map.set(t.id, {
+        id: t.id,
+        prenom: t.prenom || "",
+        nom: t.nom || "",
+        telephone: t.telephone || null,
+        code: t.code_acces || null,
+        connecte: !!t.profil_id, // le parent a déjà lié son compte
+        enfants: [],
+      });
+    }
+    if (lt.eleves) map.get(t.id).enfants.push(`${lt.eleves.prenom || ""} ${lt.eleves.nom || ""}`.trim());
+  }
+  return [...map.values()].sort(
+    (a, b) => a.nom.localeCompare(b.nom, "fr") || a.prenom.localeCompare(b.prenom, "fr"),
+  );
+}

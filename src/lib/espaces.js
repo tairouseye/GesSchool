@@ -34,6 +34,7 @@ export const ESPACES = [
     items: [
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
       { to: "/eleves", label: "Élèves & inscriptions", icone: "👤", cle: "eleves" },
+      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
       { to: "/certificats", label: "Documents", icone: "🧾", cle: "certificats" },
       { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes" },
       { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements" },
@@ -60,6 +61,7 @@ export const ESPACES = [
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression" },
       { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
+      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure" },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },
