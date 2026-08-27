@@ -1,5 +1,5 @@
 // GesSchool — primitives UI partagées (identité navy/or).
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 // --- Indicateur clé (KPI) : valeur + libellé + sous-texte optionnel ---
@@ -103,6 +103,45 @@ export function Champ({ label, className = "", ...props }) {
         className={`w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
         {...props}
       />
+    </label>
+  );
+}
+
+// Champ mot de passe avec bouton « œil » pour révéler/masquer la saisie.
+// NB : ne révèle QUE ce que l'on tape ; un mot de passe enregistré est haché
+// et ne peut jamais être réaffiché.
+export function ChampMotDePasse({ label, className = "", type, ...props }) {
+  const [voir, setVoir] = useState(false);
+  return (
+    <label className="block">
+      {label && <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{label}</span>}
+      <div className="relative">
+        <input
+          type={voir ? "text" : "password"}
+          className={`w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 pr-11 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVoir((v) => !v)}
+          aria-label={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          title={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-navy-900/40 transition hover:bg-navy-900/5 hover:text-navy-900/70"
+        >
+          {voir ? (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3l18 18" />
+              <path d="M10.6 10.6a3 3 0 004.2 4.2" />
+              <path d="M9.9 5.1A9.5 9.5 0 0112 5c6.5 0 10 7 10 7a17.2 17.2 0 01-3.3 4.1M6.6 6.6A17.3 17.3 0 002 12s3.5 7 10 7a9.6 9.6 0 004.1-.9" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
+      </div>
     </label>
   );
 }

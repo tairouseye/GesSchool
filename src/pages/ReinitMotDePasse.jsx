@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
 
 // Définition d'un nouveau mot de passe après clic sur le lien e-mail.
 // Supabase ouvre une session "recovery" via detectSessionInUrl.
@@ -39,12 +39,12 @@ export default function ReinitMotDePasse() {
         </div>
         <div className="rounded-2xl bg-white p-7 shadow-xl">
           <form onSubmit={soumettre} className="space-y-4">
-            <Champ
-              label="Nouveau mot de passe" type="password" required minLength={6}
+            <ChampMotDePasse
+              label="Nouveau mot de passe" required minLength={6}
               value={mdp} onChange={(e) => setMdp(e.target.value)} placeholder="••••••••"
             />
-            <Champ
-              label="Confirmer" type="password" required minLength={6}
+            <ChampMotDePasse
+              label="Confirmer" required minLength={6}
               value={confirme} onChange={(e) => setConfirme(e.target.value)} placeholder="••••••••"
             />
             <Alerte ton="erreur">{erreur}</Alerte>

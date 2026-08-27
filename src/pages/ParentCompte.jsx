@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import { Carte, Champ, Bouton, Alerte } from "@/composants/ui.jsx";
+import { Carte, ChampMotDePasse, Bouton, Alerte } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 
 // Espace parent — « Mon compte » : changer son mot de passe.
@@ -54,9 +54,8 @@ export default function ParentCompte() {
         <p className="mt-1 text-sm text-navy-900/50">Au moins 8 caractères. Choisissez-en un que vous retiendrez.</p>
         <form onSubmit={soumettre} className="mt-4 max-w-sm space-y-4">
           <div>
-            <Champ
+            <ChampMotDePasse
               label="Nouveau mot de passe"
-              type="password"
               autoComplete="new-password"
               value={mdp}
               onChange={(e) => setMdp(e.target.value)}
@@ -65,9 +64,8 @@ export default function ParentCompte() {
             {trop_court && <p className="mt-1 text-xs text-rose-500">8 caractères minimum.</p>}
           </div>
           <div>
-            <Champ
+            <ChampMotDePasse
               label="Confirmer le mot de passe"
-              type="password"
               autoComplete="new-password"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}

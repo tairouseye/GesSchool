@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
+import { ECOLES_REFERENCES } from "@/lib/references.js";
 import Logo from "@/composants/Logo.jsx";
 import { messageErreur } from "@/lib/erreurs.js";
 
@@ -72,8 +73,8 @@ export default function Connexion() {
               value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="vous@ecole.sn"
             />
-            <Champ
-              label="Mot de passe" type="password" required minLength={6}
+            <ChampMotDePasse
+              label="Mot de passe" required minLength={6}
               autoComplete={mode === "connexion" ? "current-password" : "new-password"}
               value={mdp} onChange={(e) => setMdp(e.target.value)}
               placeholder="••••••••"
@@ -95,6 +96,23 @@ export default function Connexion() {
             </div>
           )}
         </div>
+
+        {ECOLES_REFERENCES.length > 0 && (
+          <div className="mt-8">
+            <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-creme/40">
+              Ils nous font confiance
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {ECOLES_REFERENCES.map((e) => (
+                <div key={e.nom} className="flex items-center gap-2 rounded-xl bg-white/95 px-3.5 py-2 shadow-sm ring-1 ring-white/10">
+                  <img src={e.logo} alt={e.nom} className="h-9 w-9 shrink-0 object-contain" />
+                  <span className="text-sm font-semibold text-navy-900">{e.nom}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 space-y-1 text-center text-[11px] text-creme/40">
           <p>Développé par <span className="font-semibold text-creme/70">GesPro</span></p>
           <p className="text-creme/30">

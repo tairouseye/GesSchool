@@ -68,10 +68,18 @@ export default function ParentAccueil() {
                 <span className={`grid h-12 w-12 place-items-center rounded-2xl font-display text-lg font-bold text-white ${avatarColor(e.eleve_id)}`}>
                   {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
                 </span>
-                <div>
+                <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-navy-900">{e.prenom} {e.nom}</p>
-                  <p className="text-sm text-navy-900/50">{e.classe || "—"} · {e.ecole || ""}</p>
+                  <p className="truncate text-sm text-navy-900/50">{e.classe || "—"} · {e.ecole || ""}</p>
                 </div>
+                {e.logo && (
+                  <img
+                    src={e.logo}
+                    alt={e.ecole || "École"}
+                    title={e.ecole || ""}
+                    className="ml-auto h-10 w-10 shrink-0 rounded-lg bg-white object-contain ring-1 ring-navy-900/10"
+                  />
+                )}
               </div>
               <p className="mt-4 text-sm font-medium text-or-600">Ouvrir l'espace →</p>
             </Link>

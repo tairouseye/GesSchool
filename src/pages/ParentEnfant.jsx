@@ -78,10 +78,16 @@ export default function ParentEnfant() {
       ) : onglet === null ? (
         <>
           {/* En-tête + grille de tuiles colorées (accueil de l'enfant) */}
-          <div className="rounded-3xl bg-gradient-to-br from-navy-900 to-navy-700 p-5 text-creme">
-            <p className="text-sm text-creme/60">Bonjour 👋</p>
-            <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
-            <p className="text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
+          <div className="flex items-start justify-between gap-3 rounded-3xl bg-gradient-to-br from-navy-900 to-navy-700 p-5 text-creme">
+            <div className="min-w-0">
+              <p className="text-sm text-creme/60">Bonjour 👋</p>
+              <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
+              <p className="truncate text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
+            </div>
+            {enfant?.logo && (
+              <img src={enfant.logo} alt={enfant.ecole || "École"} title={enfant.ecole || ""}
+                className="h-14 w-14 shrink-0 rounded-xl bg-white object-contain p-1" />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
