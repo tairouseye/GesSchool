@@ -59,13 +59,8 @@ export async function supprimerFrais(id) {
 }
 
 // --- Factures ---
-async function genererNumero(ecoleId) {
-  const { count } = await supabase
-    .from("factures")
-    .select("id", { count: "exact", head: true })
-    .eq("ecole_id", ecoleId);
-  return `F-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, "0")}`;
-}
+// Le numéro de facture est posé ATOMIQUEMENT par le trigger `set_numero_facture`
+// (compteur par école/année). On n'en génère plus côté client (cf. migration 071).
 
 export async function getFactures(ecoleId, anneeId) {
   let q = supabase
@@ -89,13 +84,11 @@ export async function getFacture(id) {
 }
 
 export async function creerFacture(ecoleId, { eleve_id, annee_id, date_echeance, lignes }) {
-  const numero = await genererNumero(ecoleId);
   const montant_total = lignes.reduce((s, l) => s + Number(l.quantite) * Number(l.prix_unitaire), 0);
   const { data: facture, error } = await supabase
     .from("factures")
     .insert({
       ecole_id: ecoleId,
-      numero,
       eleve_id,
       annee_id: annee_id || null,
       date_echeance: date_echeance || null,
@@ -105,6 +98,7 @@ export async function creerFacture(ecoleId, { eleve_id, annee_id, date_echeance,
     .select()
     .single();
   if (error) throw error;
+  const numero = facture.numero; // posé par le trigger BEFORE INSERT (atomique)
 
   const lignesInsert = lignes.map((l) => ({
     ecole_id: ecoleId,
