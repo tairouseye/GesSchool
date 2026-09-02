@@ -18,7 +18,7 @@ export async function getStats(ecoleId, anneeId) {
       ? supabase.from("factures").select("montant_total, montant_paye").eq("ecole_id", ecoleId).eq("annee_id", anneeId)
       : Promise.resolve({ data: [] }),
     supabase.from("paiements").select("montant, date_paiement").eq("ecole_id", ecoleId).gte("date_paiement", debutStr),
-    supabase.from("notes").select("valeur, absent, evaluations(bareme)").eq("ecole_id", ecoleId),
+    supabase.rpc("moyenne_notes_ecole", { p_ecole: ecoleId, p_annee: anneeId }),
   ]);
 
   // Effectif (inscriptions de l'année courante)
@@ -46,15 +46,11 @@ export async function getStats(ecoleId, anneeId) {
   }
   const encaisseMois = serie[serie.length - 1].montant;
 
-  // Moyenne des notes de l'établissement (note ramenée sur /20) — déjà récupérées ci-dessus
-  let somme = 0, n = 0;
-  for (const note of notesRes.data ?? []) {
-    if (note.absent || note.valeur == null) continue;
-    const bareme = Number(note.evaluations?.bareme) || 20;
-    somme += (Number(note.valeur) / bareme) * 20;
-    n++;
-  }
-  const moyenne = n > 0 ? somme / n : null;
+  // Moyenne des notes de l'établissement (calculée côté Postgres, cf. RPC
+  // moyenne_notes_ecole) → seulement 1 ligne renvoyée au lieu de toutes les notes.
+  const moyRow = (notesRes.data ?? [])[0] || {};
+  const moyenne = moyRow.moyenne != null ? Number(moyRow.moyenne) : null;
+  const nbNotes = moyRow.moyenne != null ? Number(moyRow.n) : 0;
 
   return {
     effectif,
@@ -64,7 +60,7 @@ export async function getStats(ecoleId, anneeId) {
     encaisseMois,
     serie,
     moyenne,
-    nbNotes: n,
+    nbNotes,
   };
 }
 
@@ -170,58 +166,50 @@ export async function statsPedagogie(ecoleId, anneeId) {
   const lundi = new Date(now); lundi.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   const debutSemaine = lundi.toISOString().slice(0, 10);
 
-  // Inscriptions de l'année → effectif, sexe, redoublants, répartition par niveau
-  let effectif = 0, filles = 0, garcons = 0, redoublants = 0;
-  const parNiveau = {};
-  if (anneeId) {
-    const { data } = await supabase
-      .from("inscriptions")
-      .select("redoublant, eleves(sexe), classes(niveau_id, niveaux(libelle, ordre))")
-      .eq("ecole_id", ecoleId)
-      .eq("annee_id", anneeId);
-    for (const i of data ?? []) {
-      effectif += 1;
-      const s = (i.eleves?.sexe || "").toUpperCase();
-      if (s === "F") filles += 1; else if (s === "M") garcons += 1;
-      if (i.redoublant) redoublants += 1;
-      const nid = i.classes?.niveau_id;
-      if (nid) {
-        const nv = (parNiveau[nid] ||= { libelle: i.classes?.niveaux?.libelle || "—", ordre: i.classes?.niveaux?.ordre ?? 99, effectif: 0 });
-        nv.effectif += 1;
-      }
-    }
-  }
-
-  // Notes → moyenne générale + moyenne par niveau (sur /20)
-  const { data: notes } = await supabase
-    .from("notes")
-    .select("valeur, absent, evaluations(bareme, classes(niveau_id))")
-    .eq("ecole_id", ecoleId);
-  let somme = 0, n = 0;
-  const moyNiveau = {};
-  for (const note of notes ?? []) {
-    if (note.absent || note.valeur == null) continue;
-    const bareme = Number(note.evaluations?.bareme) || 20;
-    const v20 = (Number(note.valeur) / bareme) * 20;
-    somme += v20; n += 1;
-    const nid = note.evaluations?.classes?.niveau_id;
-    if (nid) { const g = (moyNiveau[nid] ||= { somme: 0, n: 0 }); g.somme += v20; g.n += 1; }
-  }
-  const moyenne = n > 0 ? somme / n : null;
-
-  const niveaux = Object.entries(parNiveau)
-    .map(([id, nv]) => ({ ...nv, moyenne: moyNiveau[id]?.n ? moyNiveau[id].somme / moyNiveau[id].n : null }))
-    .sort((a, b) => a.ordre - b.ordre);
-
-  // Absentéisme : non justifiées (à traiter) + volume de la semaine
-  const [{ count: nonJustif }, { count: absSemaine }] = await Promise.all([
+  // Tout en parallèle : inscriptions, moyennes (agrégées côté Postgres), absences.
+  const [inscRes, moyEcoleRes, moyNivRes, njRes, asRes] = await Promise.all([
+    anneeId
+      ? supabase.from("inscriptions")
+          .select("redoublant, eleves(sexe), classes(niveau_id, niveaux(libelle, ordre))")
+          .eq("ecole_id", ecoleId).eq("annee_id", anneeId)
+      : Promise.resolve({ data: [] }),
+    supabase.rpc("moyenne_notes_ecole", { p_ecole: ecoleId, p_annee: anneeId }),
+    supabase.rpc("moyenne_notes_par_niveau", { p_ecole: ecoleId, p_annee: anneeId }),
     supabase.from("absences").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("statut", "non_justifie"),
     supabase.from("absences").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).gte("date_abs", debutSemaine),
   ]);
 
+  // Inscriptions → effectif, sexe, redoublants, répartition par niveau
+  let effectif = 0, filles = 0, garcons = 0, redoublants = 0;
+  const parNiveau = {};
+  for (const i of inscRes.data ?? []) {
+    effectif += 1;
+    const s = (i.eleves?.sexe || "").toUpperCase();
+    if (s === "F") filles += 1; else if (s === "M") garcons += 1;
+    if (i.redoublant) redoublants += 1;
+    const nid = i.classes?.niveau_id;
+    if (nid) {
+      const nv = (parNiveau[nid] ||= { libelle: i.classes?.niveaux?.libelle || "—", ordre: i.classes?.niveaux?.ordre ?? 99, effectif: 0 });
+      nv.effectif += 1;
+    }
+  }
+
+  // Moyennes calculées côté Postgres (générale + par niveau, /20)
+  const gRow = (moyEcoleRes.data ?? [])[0] || {};
+  const moyenne = gRow.moyenne != null ? Number(gRow.moyenne) : null;
+  const nbNotes = gRow.moyenne != null ? Number(gRow.n) : 0;
+  const moyParNiveau = {};
+  for (const row of moyNivRes.data ?? []) {
+    if (row.niveau_id != null && row.moyenne != null) moyParNiveau[row.niveau_id] = Number(row.moyenne);
+  }
+
+  const niveaux = Object.entries(parNiveau)
+    .map(([id, nv]) => ({ ...nv, moyenne: moyParNiveau[id] ?? null }))
+    .sort((a, b) => a.ordre - b.ordre);
+
   return {
     effectif, filles, garcons, redoublants,
-    niveaux, moyenne, nbNotes: n,
-    absNonJustif: nonJustif ?? 0, absSemaine: absSemaine ?? 0,
+    niveaux, moyenne, nbNotes,
+    absNonJustif: njRes.count ?? 0, absSemaine: asRes.count ?? 0,
   };
 }
