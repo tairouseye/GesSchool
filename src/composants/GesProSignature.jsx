@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { GESPRO, lienWhatsAppGesPro } from "@/lib/gespro.js";
 
 // Signature « concepteur » unifiée (remplace les pieds de page copiés).
@@ -28,7 +29,7 @@ export default function GesProSignature({
 
   return (
     <div className={`space-y-1 text-center text-[11px] ${moyen} ${className}`}>
-      <p>Développé par <span className={`font-semibold ${fort}`}>{GESPRO.nom}</span></p>
+      <p>Développé par <Link to="/a-propos" className={`font-semibold underline-offset-2 hover:underline ${fort}`}>{GESPRO.nom}</Link></p>
       {avecSlogan && GESPRO.slogan && <p className={`italic ${faible}`}>{GESPRO.slogan}</p>}
       {avecContacts && (
         <p className={faible}>

@@ -6,6 +6,7 @@ import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { GESPRO } from "@/lib/gespro.js";
 
 // Signataire du bulletin : le responsable pédagogique en priorité, sinon le
 // directeur / la directrice, sinon le premier signataire déclaré.
@@ -417,6 +418,9 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
         <span>{ecole?.nom} · {ecole?.sigle}</span>
       </div>
+      {GESPRO.afficherBranding && (
+        <p className="mt-2 text-center text-[9px] text-navy-900/30">Solution développée par {GESPRO.nom}</p>
+      )}
     </div>
   );
 }

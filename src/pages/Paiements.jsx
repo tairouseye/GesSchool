@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/paiements.js";
+import { GESPRO } from "@/lib/gespro.js";
 import { getTransactions, LIBELLE_STATUT_TX } from "@/lib/paiementEnLigne.js";
 import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
@@ -599,6 +600,11 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                 </div>
               </div>
             </div>
+            {GESPRO.afficherBranding && (
+              <p className="mt-6 border-t border-navy-900/10 pt-3 text-center text-[10px] text-navy-900/35">
+                Solution développée par {GESPRO.nom} · {GESPRO.contacts.site.replace(/^https?:\/\//, "")}
+              </p>
+            )}
           </div>
 
           {/* Statut + encaissements (non imprimé) */}

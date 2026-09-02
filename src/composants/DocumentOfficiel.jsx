@@ -1,4 +1,5 @@
 import Cachet from "@/composants/Cachet.jsx";
+import { GESPRO } from "@/lib/gespro.js";
 
 const dateLisible = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "";
@@ -35,7 +36,9 @@ export default function DocumentOfficiel({ ecole, titre, corps, signataire, sign
       </p>
 
       <div className="mt-12 flex items-end justify-between">
-        <span className="text-xs text-navy-900/40">Document généré via GesSchool</span>
+        <span className="text-[10px] text-navy-900/40">
+          Document généré via GesSchool{GESPRO.afficherBranding ? ` — une solution ${GESPRO.nom}` : ""}
+        </span>
         <div className="text-center">
           <p className="text-sm text-navy-900/70">Fait à {ville || "…"}, le {dateLisible(date)}</p>
           <p className="mt-1 text-sm font-medium text-navy-900">{signataire}</p>

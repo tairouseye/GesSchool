@@ -16,6 +16,7 @@ import Connexion from "@/pages/Connexion.jsx";
 // Pages : chargées à la demande (un chunk par page). L'app reste légère et
 // les modules non ouverts ne pèsent pas sur le chargement initial.
 const MotDePasseOublie = lazy(() => import("@/pages/MotDePasseOublie.jsx"));
+const APropos = lazy(() => import("@/pages/APropos.jsx"));
 const ReinitMotDePasse = lazy(() => import("@/pages/ReinitMotDePasse.jsx"));
 const Onboarding = lazy(() => import("@/pages/Onboarding.jsx"));
 const Bienvenue = lazy(() => import("@/pages/Bienvenue.jsx"));
@@ -126,6 +127,7 @@ export default function App() {
           <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
           <Route path="/reinitialiser" element={<ReinitMotDePasse />} />
           <Route path="/rejoindre" element={<Rejoindre />} />
+          <Route path="/a-propos" element={<APropos />} />
 
           {/* Connecté sans profil → choix (école ou parent) */}
           <Route
