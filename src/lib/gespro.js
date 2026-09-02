@@ -8,6 +8,8 @@
 export const GESPRO = {
   nom: "GesPro",
   slogan: "Des logiciels intelligents pour transformer votre gestion.",
+  // Mention « signature » affichée sous le nom du produit (accueil, splash).
+  signature: "une solution GesPro Digitals",
   annee: new Date().getFullYear(),
   // Affichage du branding développeur — passer à false pour une version « blanche ».
   afficherBranding: true,

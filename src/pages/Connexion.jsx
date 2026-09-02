@@ -4,6 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
 import { ECOLES_REFERENCES } from "@/lib/references.js";
 import GesProSignature from "@/composants/GesProSignature.jsx";
+import { GESPRO } from "@/lib/gespro.js";
 import Logo from "@/composants/Logo.jsx";
 import { messageErreur } from "@/lib/erreurs.js";
 
@@ -51,6 +52,7 @@ export default function Connexion() {
             Ges<span className="text-or-500">School</span>
           </h1>
           <p className="text-sm text-creme/60">L'école connectée, la gestion simplifiée</p>
+          <p className="mt-1.5 text-xs font-medium text-creme/45">{GESPRO.signature}</p>
         </div>
 
         <div className="rounded-2xl bg-white p-7 shadow-xl">
@@ -114,7 +116,7 @@ export default function Connexion() {
           </div>
         )}
 
-        <GesProSignature ton="sombre" avecContacts className="mt-6" />
+        <GesProSignature ton="sombre" avecContacts avecSlogan={false} className="mt-6" />
       </div>
     </div>
   );
