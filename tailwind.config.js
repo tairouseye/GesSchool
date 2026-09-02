@@ -14,6 +14,12 @@ export default {
           700: "rgb(var(--or-700) / <alpha-value>)",
         },
         creme: "#F7F5EF",
+        // Couleurs SÉMANTIQUES du design system (états : succès/alerte/danger/info).
+        // Distinctes de l'accent « or » (qui reste l'accent de marque).
+        success: { 50: "#ECFDF3", 500: "#12805C", 600: "#0F6B4E" },
+        warning: { 50: "#FFF8EB", 500: "#B25E09", 600: "#8F4B07" },
+        danger: { 50: "#FEF3F2", 500: "#D92D20", 600: "#B42318" },
+        info: { 50: "#EFF6FF", 500: "#1D6FD6", 600: "#175CB8" },
       },
       fontFamily: {
         display: ["'Space Grotesk'", "system-ui", "sans-serif"],

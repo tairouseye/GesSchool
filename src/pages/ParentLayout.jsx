@@ -6,6 +6,7 @@ import { ChargementPage } from "@/composants/ui.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
 import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
+import GesProSignature from "@/composants/GesProSignature.jsx";
 import { TOUR_PARENT } from "@/lib/tours.js";
 
 // Espace parent — coque légère (pas de sidebar de gestion).
@@ -72,15 +73,8 @@ export default function ParentLayout() {
           <Outlet />
         </Suspense>
       </main>
-      <footer className="space-y-0.5 pb-6 text-center text-[10px] text-navy-900/40">
-        <p>Développé par <span className="font-semibold text-navy-900/60">GesPro</span></p>
-        <p className="text-navy-900/30">
-          <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-600">gespro.sn@gmail.com</a>
-          {" · "}
-          <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
-            target="_blank" rel="noreferrer" className="hover:text-or-600">💬 Assistance WhatsApp</a>
-        </p>
-        <p className="font-mono text-navy-900/30">GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}</p>
+      <footer className="pb-6">
+        <GesProSignature ton="clair" avecContacts />
       </footer>
 
       <Tour steps={TOUR_PARENT} ouvert={tour} onFermer={fermerTour} />

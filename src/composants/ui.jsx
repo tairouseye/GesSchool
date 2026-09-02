@@ -192,6 +192,25 @@ export function Carte({ children, className = "" }) {
   );
 }
 
+// Badge / pastille d'état — primitive réutilisable du design system.
+// `ton` : neutre | navy | or | success | warning | danger | info.
+export function Badge({ children, ton = "neutre", className = "" }) {
+  const tons = {
+    neutre: "bg-navy-900/5 text-navy-900/70 ring-navy-900/10",
+    navy: "bg-navy-900/10 text-navy-900 ring-navy-900/15",
+    or: "bg-or-500/15 text-or-600 ring-or-500/25",
+    success: "bg-success-50 text-success-600 ring-success-500/25",
+    warning: "bg-warning-50 text-warning-600 ring-warning-500/25",
+    danger: "bg-danger-50 text-danger-600 ring-danger-500/25",
+    info: "bg-info-50 text-info-600 ring-info-500/25",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${tons[ton] || tons.neutre} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
 export function Modale({ ouvert, onFermer, titre, children, large = false }) {
   const ref = useRef(null);
   // Fermeture au clavier (Échap) + focus sur la boîte à l'ouverture.

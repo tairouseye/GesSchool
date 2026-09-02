@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
 import { ECOLES_REFERENCES } from "@/lib/references.js";
+import GesProSignature from "@/composants/GesProSignature.jsx";
 import Logo from "@/composants/Logo.jsx";
 import { messageErreur } from "@/lib/erreurs.js";
 
@@ -113,17 +114,7 @@ export default function Connexion() {
           </div>
         )}
 
-        <div className="mt-6 space-y-1 text-center text-[11px] text-creme/40">
-          <p>Développé par <span className="font-semibold text-creme/70">GesPro</span></p>
-          <p className="text-creme/30">
-            <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-500">gespro.sn@gmail.com</a>
-          </p>
-          <p className="text-creme/30">
-            <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
-              target="_blank" rel="noreferrer" className="hover:text-or-500">💬 Assistance WhatsApp : +221 77 343 59 28</a>
-          </p>
-          <p className="font-mono text-creme/30">GesSchool v{__APP_VERSION__} · {__BUILD_DATE__}</p>
-        </div>
+        <GesProSignature ton="sombre" avecContacts className="mt-6" />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
+import GesProSignature from "@/composants/GesProSignature.jsx";
 
 // Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
 function LogoEcole({ logoUrl, sigle, size }) {
@@ -261,18 +262,7 @@ export default function Layout() {
           <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>
-          <div className="mt-3 space-y-0.5 text-center">
-            <p className="text-[10px] text-creme/40">
-              Développé par <span className="font-semibold text-creme/60">GesPro</span>
-            </p>
-            <p className="text-[10px] leading-relaxed text-creme/30">
-              <a href="mailto:gespro.sn@gmail.com" className="hover:text-or-500">gespro.sn@gmail.com</a>
-              <br />
-              <a href="https://wa.me/221773435928?text=Bonjour%2C%20j%27ai%20besoin%20d%27assistance%20sur%20GesSchool."
-                target="_blank" rel="noreferrer" className="hover:text-or-500">💬 Assistance WhatsApp : +221 77 343 59 28</a>
-            </p>
-            <p className="font-mono text-[10px] text-creme/30">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
-          </div>
+          <GesProSignature ton="sombre" avecContacts className="mt-3" />
         </div>
       </aside>
 
@@ -324,9 +314,8 @@ export default function Layout() {
                 <button onClick={deconnexion}
                   className="w-full rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-creme">Déconnexion</button>
               </div>
-              <div className="mt-3 border-t border-navy-900/10 pt-2 text-center text-[10px] text-navy-900/40">
-                Développé par <b className="text-navy-900/60">GesPro</b><br />
-                <span className="font-mono">v{__APP_VERSION__}</span>
+              <div className="mt-3 border-t border-navy-900/10 pt-2">
+                <GesProSignature ton="clair" avecSlogan={false} avecContacts={false} />
               </div>
             </div>
           </div>
