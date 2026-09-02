@@ -135,11 +135,15 @@ export async function getDernierBulletin(eleveId, anneeId) {
 
 // Publie (persiste) les bulletins calculés → visibles par les parents.
 export async function publierBulletins(ecoleId, classeId, periodeId, resultats) {
-  let n = 0;
-  for (const r of resultats.eleves) {
-    const { data: b, error } = await supabase
-      .from("bulletins")
-      .upsert({
+  const eleves = resultats.eleves || [];
+  if (!eleves.length) return 0;
+  const genere_le = new Date().toISOString();
+
+  // 1) Upsert de TOUS les bulletins en un seul appel (au lieu d'un par élève).
+  const { data: bulletins, error } = await supabase
+    .from("bulletins")
+    .upsert(
+      eleves.map((r) => ({
         ecole_id: ecoleId,
         eleve_id: r.eleve.id,
         classe_id: classeId,
@@ -148,21 +152,36 @@ export async function publierBulletins(ecoleId, classeId, periodeId, resultats) 
         rang: r.rang,
         effectif: resultats.effectif,
         mention: r.mention,
-        genere_le: new Date().toISOString(),
-      }, { onConflict: "eleve_id,periode_id" })
-      .select("id")
-      .single();
-    if (error) throw error;
+        genere_le,
+      })),
+      { onConflict: "eleve_id,periode_id" }
+    )
+    .select("id, eleve_id");
+  if (error) throw error;
 
-    await supabase.from("bulletin_lignes").delete().eq("bulletin_id", b.id);
-    const lignes = r.lignes.map((l) => ({
-      ecole_id: ecoleId, bulletin_id: b.id, matiere_id: l.matiere_id, moyenne: l.moyenne, coefficient: l.coef,
-    }));
-    if (lignes.length) {
-      const { error: e2 } = await supabase.from("bulletin_lignes").insert(lignes);
-      if (e2) throw e2;
+  const idParEleve = Object.fromEntries((bulletins ?? []).map((b) => [b.eleve_id, b.id]));
+  const bulletinIds = Object.values(idParEleve);
+
+  // 2) Remplace toutes les lignes en masse (un delete + un insert groupés).
+  if (bulletinIds.length) {
+    const { error: eDel } = await supabase.from("bulletin_lignes").delete().in("bulletin_id", bulletinIds);
+    if (eDel) throw eDel;
+  }
+  const lignes = [];
+  for (const r of eleves) {
+    const bid = idParEleve[r.eleve.id];
+    if (!bid) continue;
+    for (const l of r.lignes) {
+      lignes.push({ ecole_id: ecoleId, bulletin_id: bid, matiere_id: l.matiere_id, moyenne: l.moyenne, coefficient: l.coef });
     }
-    // Archivage GED (best-effort, non bloquant).
+  }
+  if (lignes.length) {
+    const { error: eIns } = await supabase.from("bulletin_lignes").insert(lignes);
+    if (eIns) throw eIns;
+  }
+
+  // 3) Archivage GED (best-effort, non bloquant).
+  for (const r of eleves) {
     archiverDocument(ecoleId, {
       type: "bulletin", famille: "pedagogie", titre: "Bulletin de notes",
       eleve_id: r.eleve.id, cible_type: "eleve", cible_id: r.eleve.id,
@@ -170,9 +189,8 @@ export async function publierBulletins(ecoleId, classeId, periodeId, resultats) 
       periode_id: periodeId,
       donnees: { moyenne: r.moyenne, rang: r.rang, effectif: resultats.effectif, mention: r.mention },
     });
-    n++;
   }
-  return n;
+  return eleves.length;
 }
 
 // Publie UN bulletin avec ses appréciations (par matière + générale + décision).
@@ -272,19 +290,25 @@ export async function calculerBulletins(ecoleId, classeId, anneeId, periodeId, m
     if (error) throw error;
     notes = data ?? [];
   }
-  const evalById = Object.fromEntries(evals.map((e) => [e.id, e]));
   const matiereById = Object.fromEntries((matieres ?? []).map((m) => [m.id, m]));
 
-  // Matières évaluées dans cette classe/période
-  const matieresEvaluees = [...new Set(evals.map((e) => e.matiere_id))];
+  // Index O(1) : note par (évaluation, élève) + évaluations groupées par matière.
+  // (Évite un scan linéaire du tableau `notes` pour chaque cellule du bulletin.)
+  const noteByKey = new Map(notes.map((n) => [`${n.evaluation_id}:${n.eleve_id}`, n]));
+  const evalsByMatiere = new Map();
+  for (const e of evals) {
+    const arr = evalsByMatiere.get(e.matiere_id);
+    if (arr) arr.push(e); else evalsByMatiere.set(e.matiere_id, [e]);
+  }
+  const matieresEvaluees = [...evalsByMatiere.keys()];
 
   const resultats = eleves.map((eleve) => {
     const lignes = [];
     for (const mId of matieresEvaluees) {
-      const evalsM = evals.filter((e) => e.matiere_id === mId);
+      const evalsM = evalsByMatiere.get(mId) || [];
       let sommeNotes = 0, sommeCoefs = 0;
       for (const ev of evalsM) {
-        const note = notes.find((n) => n.evaluation_id === ev.id && n.eleve_id === eleve.id);
+        const note = noteByKey.get(`${ev.id}:${eleve.id}`);
         if (!note || note.absent || note.valeur == null) continue;
         const bareme = Number(ev.bareme) || 20;
         const note20 = (Number(note.valeur) / bareme) * 20;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
@@ -9,6 +9,7 @@ import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.j
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { peutEditerEleves, voitTousEleves } from "@/lib/permissions.js";
 import Photo from "@/composants/Photo.jsx";
+import { urlsSignees } from "@/lib/stockage.js";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
@@ -53,6 +54,8 @@ export default function Eleves() {
         elevesVus = els.filter((e) => { const i = insc[e.id]; return i && ids.has(i.classe_id); });
         classesVues = mesCls;
       }
+      // Préchargement des photos en UN seul appel (supprime le N+1 d'URLs signées).
+      await urlsSignees("eleves", elevesVus.map((e) => e.photo_url).filter(Boolean)).catch(() => {});
       setEleves(elevesVus);
       setInscriptions(insc);
       setClasses(classesVues);
@@ -68,7 +71,7 @@ export default function Eleves() {
     recharger();
   }, [recharger]);
 
-  const filtres = eleves.filter((e) => {
+  const filtres = useMemo(() => eleves.filter((e) => {
     const q = recherche.toLowerCase();
     const insc = inscriptions[e.id];
     const okRecherche =
@@ -80,7 +83,7 @@ export default function Eleves() {
       !filtreStatut ||
       (filtreStatut === "non_inscrit" ? !insc : insc?.statut === filtreStatut);
     return okRecherche && okClasse && okStatut;
-  });
+  }), [eleves, inscriptions, recherche, filtreClasse, filtreStatut]);
 
   const idsFiltres = filtres.map((e) => e.id);
   const tousCoches = idsFiltres.length > 0 && idsFiltres.every((id) => selection.has(id));

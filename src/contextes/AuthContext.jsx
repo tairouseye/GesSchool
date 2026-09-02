@@ -25,35 +25,22 @@ export function AuthProvider({ children }) {
       setEcolesPossedees([]);
       return;
     }
-    const { data: p } = await supabase
-      .from("profils")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+    // Profil, rôles et écoles possédées sont indépendants → EN PARALLÈLE
+    // (au lieu de 3 allers-retours en série, rejoués à chaque événement d'auth).
+    const [{ data: p }, { data: r }, { data: prop }] = await Promise.all([
+      supabase.from("profils").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("profil_roles").select("role").eq("profil_id", userId),
+      supabase.from("proprietaires").select("ecole_id, ecoles(nom, sigle)").eq("profil_id", userId),
+    ]);
     setProfil(p ?? null);
-
-    const { data: r } = await supabase
-      .from("profil_roles")
-      .select("role")
-      .eq("profil_id", userId);
     setRoles((r ?? []).map((x) => x.role));
-
-    // Écoles possédées (promoteur multi-écoles)
-    const { data: prop } = await supabase
-      .from("proprietaires")
-      .select("ecole_id, ecoles(nom, sigle)")
-      .eq("profil_id", userId);
     setEcolesPossedees(
       (prop ?? []).map((x) => ({ ecole_id: x.ecole_id, nom: x.ecoles?.nom, sigle: x.ecoles?.sigle }))
     );
 
-    // École de rattachement (pour l'en-tête / la navigation)
+    // École de rattachement (dépend de profil.ecole_id) → 2ᵉ vague.
     if (p?.ecole_id) {
-      const { data: e } = await supabase
-        .from("ecoles")
-        .select("*")
-        .eq("id", p.ecole_id)
-        .maybeSingle();
+      const { data: e } = await supabase.from("ecoles").select("*").eq("id", p.ecole_id).maybeSingle();
       setEcole(e ?? null);
     } else {
       setEcole(null);
