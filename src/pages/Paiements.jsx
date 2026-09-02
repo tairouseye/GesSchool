@@ -653,6 +653,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
 function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux, cycles, inscrits, devise, onTermine, onErreur }) {
   const [niveauId, setNiveauId] = useState("");
   const [echeance, setEcheance] = useState("");
+  const [mois, setMois] = useState(() => new Date().toISOString().slice(0, 7)); // "AAAA-MM" pour les frais mensuels
   const [choisis, setChoisis] = useState({}); // frais_id -> bool
   const [enCours, setEnCours] = useState(false);
   const [resultat, setResultat] = useState(null);
@@ -685,7 +686,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
     onErreur("");
     try {
       const ids = elevesNiveau.map((e) => e.eleve_id);
-      const r = await api.genererFacturesEnLot(ecoleId, annee?.id, ids, fraisChoisis, echeance);
+      const r = await api.genererFacturesEnLot(ecoleId, annee?.id, ids, fraisChoisis, echeance, mois);
       setResultat(r);
     } catch (e) {
       onErreur(e.message);
@@ -699,11 +700,12 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Générer les factures en lot" large>
       <div className="space-y-4">
         <p className="text-sm text-navy-900/50">
-          Crée une facture par élève d'un niveau à partir des frais sélectionnés.
-          Les frais déjà facturés à un élève cette année sont automatiquement ignorés (pas de doublon).
+          Crée une facture par élève d'un niveau à partir des frais sélectionnés. Les frais
+          <span className="text-or-500"> mensuels</span> sont facturés pour le <b>mois choisi</b> ;
+          les frais déjà facturés (le même mois, pour un frais mensuel) sont ignorés — pas de doublon.
         </p>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Niveau *</span>
             <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)}
@@ -712,6 +714,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
               {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
             </select>
           </label>
+          <Champ label="Mois facturé" type="month" value={mois} onChange={(e) => setMois(e.target.value)} />
           <Champ label="Échéance" type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
         </div>
 

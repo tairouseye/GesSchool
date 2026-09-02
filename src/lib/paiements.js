@@ -199,40 +199,53 @@ export async function getInscritsAvecNiveau(ecoleId, anneeId) {
     }));
 }
 
-// frais_id déjà facturés cette année, indexés par élève (évite les doublons).
-async function getFraisDejaFactures(ecoleId, anneeId) {
+// Libellés déjà facturés cette année, indexés par élève (évite les doublons).
+// On dédoublonne par LIBELLÉ : un frais mensuel porte le mois dans son libellé,
+// donc on peut le facturer chaque mois sans doublon dans un même mois.
+async function getLibellesDejaFactures(ecoleId, anneeId) {
   const { data, error } = await supabase
     .from("facture_lignes")
-    .select("frais_id, factures!inner(eleve_id, annee_id)")
+    .select("libelle, factures!inner(eleve_id, annee_id)")
     .eq("ecole_id", ecoleId)
     .eq("factures.annee_id", anneeId);
   if (error) throw error;
   const map = {};
   for (const d of data ?? []) {
     const eid = d.factures?.eleve_id;
-    if (!eid || !d.frais_id) continue;
-    (map[eid] ||= new Set()).add(d.frais_id);
+    if (!eid || !d.libelle) continue;
+    (map[eid] ||= new Set()).add(d.libelle);
   }
   return map;
 }
 
+const MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+// "2026-10" -> "Octobre 2026" (null si format invalide).
+export function libelleMois(mois) {
+  const m = /^(\d{4})-(\d{2})$/.exec(mois || "");
+  if (!m) return null;
+  const nom = MOIS_FR[Number(m[2]) - 1];
+  return nom ? `${nom[0].toUpperCase()}${nom.slice(1)} ${m[1]}` : null;
+}
+
 // Génère une facture par élève à partir d'une liste de frais.
-// Saute les frais déjà facturés à l'élève cette année.
+// - Frais MENSUEL (recurrent) : facturé POUR LE MOIS choisi ; son libellé porte
+//   le mois (« Scolarité — Octobre 2026 ») → facturable chaque mois, une seule
+//   fois par mois.
+// - Frais PONCTUEL : facturé une seule fois par an.
 // Retourne { crees, ignores }.
-export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList, echeance) {
-  const deja = await getFraisDejaFactures(ecoleId, anneeId);
+export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList, echeance, mois) {
+  const moisLbl = libelleMois(mois);
+  const deja = await getLibellesDejaFactures(ecoleId, anneeId);
   let crees = 0;
   let ignores = 0;
   for (const eleveId of eleveIds) {
     const dejaEleve = deja[eleveId] || new Set();
-    const lignes = fraisList
-      .filter((fr) => !dejaEleve.has(fr.id))
-      .map((fr) => ({
-        frais_id: fr.id,
-        libelle: fr.libelle,
-        quantite: 1,
-        prix_unitaire: Number(fr.montant),
-      }));
+    const lignes = [];
+    for (const fr of fraisList) {
+      const libelle = fr.recurrent && moisLbl ? `${fr.libelle} — ${moisLbl}` : fr.libelle;
+      if (dejaEleve.has(libelle)) continue;
+      lignes.push({ frais_id: fr.id, libelle, quantite: 1, prix_unitaire: Number(fr.montant) });
+    }
     if (lignes.length === 0) {
       ignores++;
       continue;
