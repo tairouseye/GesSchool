@@ -134,22 +134,21 @@ export async function supprimerDepense(id) {
 }
 
 // --- Soldes par compte : solde_initial + recettes - dépenses ---
+// Les totaux entrées/sorties sont agrégés côté Postgres (RPC soldes_comptes)
+// → on ne charge plus toutes les recettes/dépenses dans le navigateur.
 export async function getSoldes(ecoleId) {
-  const [comptes, rec, dep] = await Promise.all([
+  const [comptes, agg] = await Promise.all([
     getComptes(ecoleId),
-    supabase.from("recettes").select("compte_id, montant").eq("ecole_id", ecoleId),
-    supabase.from("depenses").select("compte_id, montant").eq("ecole_id", ecoleId),
+    supabase.rpc("soldes_comptes", { p_ecole: ecoleId }),
   ]);
-  const entrees = {};
-  const sorties = {};
-  for (const r of rec.data ?? []) entrees[r.compte_id] = (entrees[r.compte_id] || 0) + Number(r.montant || 0);
-  for (const d of dep.data ?? []) sorties[d.compte_id] = (sorties[d.compte_id] || 0) + Number(d.montant || 0);
-  return comptes.map((c) => ({
-    ...c,
-    entrees: entrees[c.id] || 0,
-    sorties: sorties[c.id] || 0,
-    solde: Number(c.solde_initial || 0) + (entrees[c.id] || 0) - (sorties[c.id] || 0),
-  }));
+  const parCompte = {};
+  for (const row of agg.data ?? []) parCompte[row.compte_id] = row;
+  return comptes.map((c) => {
+    const a = parCompte[c.id] || {};
+    const entrees = Number(a.entrees) || 0;
+    const sorties = Number(a.sorties) || 0;
+    return { ...c, entrees, sorties, solde: Number(c.solde_initial || 0) + entrees - sorties };
+  });
 }
 
 // Scolarité encaissée sur une période (depuis les paiements parents).
