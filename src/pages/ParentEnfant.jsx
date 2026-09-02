@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
@@ -38,22 +38,60 @@ export default function ParentEnfant() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
-  const charger = useCallback(async () => {
+  const loadedRef = useRef(new Set());      // sections déjà chargées (dédup)
+  const [charge, setCharge] = useState({}); // idem, pour piloter le rendu
+
+  // Chargement INITIAL minimal : en-tête (enfant), badges (factures, demandes)
+  // et visibilité des tuiles Cantine/Transport. Le reste est chargé à l'ouverture
+  // de chaque section (lazy-load) → page enfant bien plus légère sur mobile
+  // (5 requêtes au lieu de 14, dont beaucoup pour des onglets jamais ouverts).
+  const chargerInitial = useCallback(async () => {
     try {
-      const [n, f, a, e, four, inf, decl, cah, bul, dem, can, men, tra, enf] = await Promise.all([
-        enfantNotes(id), enfantFactures(id), enfantAbsences(id), enfantEmploi(id),
-        enfantFournitures(id), ecolePaiementInfos(id), enfantDeclarations(id), enfantCahier(id), enfantBulletins(id), mesDemandes(),
-        enfantCantine(id), enfantMenuCantine(id), enfantTransport(id), mesEnfants(),
+      const [enf, f, dem, can, tra] = await Promise.all([
+        mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id),
       ]);
-      setNotes(n); setFactures(f); setAbsences(a); setEmploi(e);
-      setFournitures(four); setInfos(inf); setDeclarations(decl); setCahier(cah); setBulletins(bul); setDemandes(dem);
-      setCantine(can); setMenu(men); setTransport(tra);
       setEnfant((enf || []).find((x) => x.eleve_id === id) || null);
+      setFactures(f); setDemandes(dem); setCantine(can); setTransport(tra);
     } catch (e) { setErreur(e.message); }
-    finally { setChargement(false); }
   }, [id]);
 
-  useEffect(() => { setChargement(true); charger(); }, [charger]);
+  // Charge les données d'UNE section, une seule fois (sauf `force`).
+  const chargerSection = useCallback(async (cle, force = false) => {
+    if (!cle || (loadedRef.current.has(cle) && !force)) return;
+    try {
+      if (cle === "notes") setNotes(await enfantNotes(id));
+      else if (cle === "bulletins") setBulletins(await enfantBulletins(id));
+      else if (cle === "cahier") setCahier(await enfantCahier(id));
+      else if (cle === "emploi") setEmploi(await enfantEmploi(id));
+      else if (cle === "fournitures") setFournitures(await enfantFournitures(id));
+      else if (cle === "absences") setAbsences(await enfantAbsences(id));
+      else if (cle === "cantine") setMenu(await enfantMenuCantine(id));
+      else if (cle === "paiements") {
+        const [i, d] = await Promise.all([ecolePaiementInfos(id), enfantDeclarations(id)]);
+        setInfos(i); setDeclarations(d);
+      }
+      // "documents" (demandes déjà chargées) et "transport" (déjà chargé) : rien de plus.
+      loadedRef.current.add(cle);
+      setCharge((c) => ({ ...c, [cle]: true }));
+    } catch (e) { setErreur(e.message); }
+  }, [id]);
+
+  // Montée / changement d'enfant : (ré)initialise et charge l'essentiel.
+  useEffect(() => {
+    setChargement(true);
+    loadedRef.current = new Set();
+    setCharge({});
+    chargerInitial().finally(() => setChargement(false));
+  }, [chargerInitial]);
+
+  // Ouverture d'une section → charge ses données à la demande.
+  useEffect(() => { if (onglet) chargerSection(onglet); }, [onglet, chargerSection]);
+
+  // Rafraîchit après une action (paiement déclaré, absence justifiée, demande…).
+  const rafraichir = async () => {
+    await chargerInitial();
+    if (onglet) await chargerSection(onglet, true);
+  };
 
   // Badges calculés depuis les données déjà chargées (aucune requête en plus).
   const impayes = factures.filter((f) => (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0) > 0).length;
@@ -116,7 +154,9 @@ export default function ParentEnfant() {
             {sectionActive && <Icone name={sectionActive.cle} className="h-6 w-6 text-or-600" />}
             {sectionActive?.label}
           </h2>
-          {onglet === "notes" ? (
+          {!charge[onglet] ? (
+        <SkeletonListe lignes={4} />
+      ) : onglet === "notes" ? (
         <Notes notes={notes} />
       ) : onglet === "bulletins" ? (
         <Bulletins bulletins={bulletins} onErreur={setErreur} />
@@ -127,15 +167,15 @@ export default function ParentEnfant() {
       ) : onglet === "fournitures" ? (
         <Fournitures items={fournitures} />
       ) : onglet === "paiements" ? (
-        <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={charger} onErreur={setErreur} />
+        <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} onErreur={setErreur} />
       ) : onglet === "documents" ? (
-        <Documents eleveId={id} demandes={demandes} onChange={charger} onErreur={setErreur} />
+        <Documents eleveId={id} demandes={demandes} onChange={rafraichir} onErreur={setErreur} />
       ) : onglet === "cantine" ? (
         <CantineParent cantine={cantine} menu={menu} />
       ) : onglet === "transport" ? (
         <TransportParent transport={transport} />
       ) : (
-        <Absences absences={absences} onChange={charger} onErreur={setErreur} />
+        <Absences absences={absences} onChange={rafraichir} onErreur={setErreur} />
       )}
         </>
       )}

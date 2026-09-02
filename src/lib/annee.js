@@ -115,20 +115,19 @@ export async function proposerPromotions(ecoleId, sourceId, cibleId) {
   return props;
 }
 
-// Applique les réinscriptions (upsert : ne crée pas de doublon si relancé).
+// Applique les réinscriptions en UN SEUL upsert groupé (atomique, idempotent).
+// Avant : un upsert par élève en série (N allers-retours) → lent à l'échelle.
 export async function appliquerPromotions(ecoleId, cibleId, promotions) {
-  let reinscrits = 0;
-  for (const p of promotions) {
-    if (!p.inclure || !p.cible_classe_id) continue;
-    const { error } = await supabase.from("inscriptions").upsert(
-      {
-        ecole_id: ecoleId, eleve_id: p.eleve_id, classe_id: p.cible_classe_id,
-        annee_id: cibleId, statut: "reinscrit", redoublant: !!p.redoublant,
-      },
-      { onConflict: "eleve_id,annee_id" }
-    );
-    if (error) throw error;
-    reinscrits += 1;
-  }
-  return { reinscrits };
+  const rows = (promotions || [])
+    .filter((p) => p.inclure && p.cible_classe_id)
+    .map((p) => ({
+      ecole_id: ecoleId, eleve_id: p.eleve_id, classe_id: p.cible_classe_id,
+      annee_id: cibleId, statut: "reinscrit", redoublant: !!p.redoublant,
+    }));
+  if (rows.length === 0) return { reinscrits: 0 };
+  const { error } = await supabase
+    .from("inscriptions")
+    .upsert(rows, { onConflict: "eleve_id,annee_id" });
+  if (error) throw error;
+  return { reinscrits: rows.length };
 }
