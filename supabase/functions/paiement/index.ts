@@ -278,7 +278,7 @@ async function handleWebhook(req: Request) {
     await admin.from("transactions_paiement").update({ statut: "initiee" }).eq("id", tx.id);
     return json({ ok: false });
   }
-  await admin.from("transactions_paiement").update({ paiement_id: pай.id }).eq("id", tx.id);
+  await admin.from("transactions_paiement").update({ paiement_id: pai.id }).eq("id", tx.id);
 
   // Notifie les parents (déclenche le push existant).
   const { data: lien } = await admin.from("eleve_tuteurs")
