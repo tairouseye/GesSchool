@@ -95,7 +95,7 @@ function RedirectionAccueil() {
 function PageIntrouvable() {
   const { estConnecte } = useAuth();
   return (
-    <div className="grid min-h-screen place-items-center bg-navy-900 px-4 text-creme">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <p className="font-display text-5xl font-bold text-or-500">404</p>
         <h1 className="font-display text-xl font-bold">Page introuvable</h1>

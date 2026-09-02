@@ -59,7 +59,7 @@ export function Garde({ cle, children }) {
 export function EcranSansAcces() {
   const { deconnexion, profil } = useAuth();
   return (
-    <div className="grid min-h-full place-items-center bg-navy-900 px-4 text-creme">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <Cachet size={72} className="text-or-500/60" />
         <h1 className="font-display text-xl font-bold">Aucun accès pour l'instant</h1>
@@ -111,7 +111,7 @@ export function RouteParent({ children }) {
 function EcranSuspendu() {
   const { deconnexion } = useAuth();
   return (
-    <div className="grid min-h-full place-items-center bg-navy-900 px-4 text-creme">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <Cachet size={72} className="text-or-500/60" />
         <h1 className="font-display text-xl font-bold">Compte suspendu</h1>
@@ -128,7 +128,7 @@ function EcranSuspendu() {
 
 function Ecran({ chargement, message }) {
   return (
-    <div className="grid min-h-full place-items-center bg-navy-900 text-creme">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 text-creme">
       <div className="flex flex-col items-center gap-4">
         <Cachet size={88} className={`text-or-500 ${chargement ? "animate-pulse" : ""}`} />
         <p className="text-sm text-creme/70">{chargement ? "Chargement…" : message}</p>

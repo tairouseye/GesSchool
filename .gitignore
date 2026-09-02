@@ -13,3 +13,8 @@ dev-dist
 
 # fichiers temporaires d'extraction d'images
 docs/tt-raw*.bin
+
+# Fichiers de travail lourds (captures, vidéos) — pas dans le dépôt
+docs/*.mp4
+docs/*.docx
+docs/*.mov

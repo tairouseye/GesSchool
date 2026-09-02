@@ -31,7 +31,7 @@ export default function ParentLayout() {
   }, []);
   const fermerTour = () => { setTour(false); localStorage.setItem("tour_parent_v1", "done"); };
   return (
-    <div className="min-h-full bg-creme">
+    <div className="min-h-dscreen bg-creme">
       <header className="flex items-center justify-between border-b border-navy-900/10 bg-navy-900 px-6 py-4 text-creme">
         <Link to="/parent" className="flex items-center gap-3">
           <Cachet size={36} className="text-or-500" />

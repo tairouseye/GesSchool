@@ -57,7 +57,7 @@ export default function Bienvenue() {
   const libelleEspace = mode === "membre" ? "Espace personnel" : mode === "enseignant" ? "Espace enseignant" : "Espace parent";
 
   return (
-    <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-lg">
         <div className="mb-6 flex flex-col items-center text-creme">
           <Cachet size={64} className="text-or-500" />

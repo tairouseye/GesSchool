@@ -37,6 +37,17 @@
   }
 }
 
+@layer utilities {
+  /* Hauteur = zone RÉELLEMENT visible du téléphone (barre d'adresse comprise),
+     avec repli `vh` pour les navigateurs anciens. Corrige le centrage vertical
+     des écrans d'accueil sur mobile (sinon le contenu paraît décentré / poussé
+     sous la barre du navigateur). */
+  .min-h-dscreen {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
 /* Mobile : les tableaux larges deviennent défilables horizontalement
    (évite que la mise en page « casse » sur téléphone). Une ombre au bord
    droit signale qu'il reste du contenu à faire défiler ; elle disparaît

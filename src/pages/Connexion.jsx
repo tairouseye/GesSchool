@@ -42,7 +42,7 @@ export default function Connexion() {
   }
 
   return (
-    <div className="grid min-h-full place-items-center bg-navy-900 px-4 py-10">
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-creme">
           <Logo size={80} fond className="rounded-full shadow-lg" />
