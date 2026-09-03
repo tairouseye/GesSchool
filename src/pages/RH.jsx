@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte, Table } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
@@ -221,37 +221,18 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
     {liste.length === 0 ? (
       <Carte className="p-8 text-sm text-navy-900/50">Aucun résultat pour « {q} ».</Carte>
     ) : (
-    <Carte className="overflow-hidden">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50">
-          <tr>
-            <th className="px-6 py-3 font-medium">Nom</th>
-            <th className="px-6 py-3 font-medium">Fonction</th>
-            <th className="px-6 py-3 font-medium">Contact</th>
-            <th className="px-6 py-3 font-medium">Contrat</th>
-            <th className="px-6 py-3 text-right font-medium">Salaire base</th>
-            <th className="px-6 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {liste.map((p) => {
-            const c = contrats[p.id];
-            return (
-              <tr key={p.id} className="border-t border-navy-900/5">
-                <td className="px-6 py-3 font-medium text-navy-900">{p.prenom} {p.nom}</td>
-                <td className="px-6 py-3 text-navy-900/70">{p.fonction || "—"}</td>
-                <td className="px-6 py-3 text-navy-900/60">{p.telephone || p.email || "—"}</td>
-                <td className="px-6 py-3 text-navy-900/60">{c?.type || "—"}</td>
-                <td className="px-6 py-3 text-right font-mono">{c ? `${fmt(c.salaire_base)} ${devise}` : "—"}</td>
-                <td className="px-6 py-3 text-right">
-                  <button onClick={() => onSuppr(p.id)} className="text-xs text-rose-500 hover:underline">suppr.</button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </Carte>
+      <Table
+        keyField="id"
+        rows={liste}
+        columns={[
+          { key: "nom", label: "Nom", render: (p) => <span className="font-medium text-navy-900">{p.prenom} {p.nom}</span> },
+          { key: "fonction", label: "Fonction", hideMobile: true, render: (p) => <span className="text-navy-900/70">{p.fonction || "—"}</span> },
+          { key: "contact", label: "Contact", hideMobile: true, render: (p) => <span className="text-navy-900/60">{p.telephone || p.email || "—"}</span> },
+          { key: "contrat", label: "Contrat", hideMobile: true, render: (p) => <span className="text-navy-900/60">{contrats[p.id]?.type || "—"}</span> },
+          { key: "salaire", label: "Salaire base", align: "right", render: (p) => (contrats[p.id] ? `${fmt(contrats[p.id].salaire_base)} ${devise}` : "—") },
+          { key: "actions", label: "", align: "right", render: (p) => <button onClick={() => onSuppr(p.id)} className="text-xs text-danger-500 hover:underline">suppr.</button> },
+        ]}
+      />
     )}
     </div>
   );
