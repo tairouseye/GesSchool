@@ -225,7 +225,7 @@ export function Table({ columns, rows, keyField = "id", onRowClick, className = 
         <thead>
           <tr className="border-b border-navy-900/10 bg-creme/60 text-xs uppercase tracking-wide text-navy-900/50">
             {columns.map((c) => (
-              <th key={c.key} className={`px-4 py-3 font-medium ${al(c.align)} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.className || ""}`}>
+              <th key={c.key} scope="col" className={`px-4 py-3 font-medium ${al(c.align)} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.className || ""}`}>
                 {c.label}
               </th>
             ))}

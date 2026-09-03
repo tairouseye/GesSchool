@@ -48,6 +48,28 @@
   }
 }
 
+/* Accessibilité — focus CLAVIER visible et cohérent partout (anneau accent).
+   N'apparaît qu'à la navigation au clavier (:focus-visible), pas au clic souris. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid rgb(var(--or-500));
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+}
+
+/* Respecte le réglage système « réduire les animations ». */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Mobile : les tableaux larges deviennent défilables horizontalement
    (évite que la mise en page « casse » sur téléphone). Une ombre au bord
    droit signale qu'il reste du contenu à faire défiler ; elle disparaît
