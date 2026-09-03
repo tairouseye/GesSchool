@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
@@ -233,49 +233,31 @@ function Mouvements({ type, items, devise, onSuppr }) {
     return <EtatVide icone="💰" titre={`Aucune ${type}`}>Rien sur la période sélectionnée.</EtatVide>;
   }
   return (
-    <Carte className="overflow-hidden">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50">
-          <tr>
-            <th className="px-6 py-3 font-medium">Date</th>
-            <th className="px-6 py-3 font-medium">Libellé</th>
-            <th className="px-6 py-3 font-medium">Catégorie</th>
-            <th className="px-6 py-3 font-medium">{tiersLabel}</th>
-            <th className="px-6 py-3 font-medium">Compte</th>
-            <th className="px-6 py-3 text-right font-medium">Montant</th>
-            <th className="px-6 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it) => (
-            <tr key={it.id} className="border-t border-navy-900/5">
-              <td className="px-6 py-3 font-mono text-xs">{it[champDate]}</td>
-              <td className="px-6 py-3 font-medium text-navy-900">{it.libelle}</td>
-              <td className="px-6 py-3 text-navy-900/60">{it.categorie || "—"}</td>
-              <td className="px-6 py-3 text-navy-900/60">{it[champTiers] || "—"}</td>
-              <td className="px-6 py-3 text-navy-900/60">{it.comptes?.libelle || "—"}</td>
-              <td className={`px-6 py-3 text-right font-mono ${type === "recette" ? "text-emerald-700" : "text-rose-600"}`}>
-                {type === "recette" ? "+" : "−"}{fmt(it.montant)} {devise}
-              </td>
-              <td className="px-6 py-3 text-right">
-                <div className="flex items-center justify-end gap-3">
-                  {it.justificatif_url && (
-                    <button
-                      onClick={async () => {
-                        const u = await urlSignee("justificatifs", it.justificatif_url);
-                        if (u) window.open(u, "_blank", "noreferrer");
-                      }}
-                      className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif"
-                    >📎 reçu</button>
-                  )}
-                  <button onClick={() => onSuppr(it.id)} className="text-xs text-rose-500 hover:underline">suppr.</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Carte>
+    <Table
+      keyField="id"
+      rows={items}
+      columns={[
+        { key: "date", label: "Date", render: (it) => <span className="font-mono text-xs">{it[champDate]}</span> },
+        { key: "libelle", label: "Libellé", render: (it) => <span className="font-medium text-navy-900">{it.libelle}</span> },
+        { key: "categorie", label: "Catégorie", hideMobile: true, render: (it) => <span className="text-navy-900/60">{it.categorie || "—"}</span> },
+        { key: "tiers", label: tiersLabel, hideMobile: true, render: (it) => <span className="text-navy-900/60">{it[champTiers] || "—"}</span> },
+        { key: "compte", label: "Compte", hideMobile: true, render: (it) => <span className="text-navy-900/60">{it.comptes?.libelle || "—"}</span> },
+        { key: "montant", label: "Montant", align: "right", render: (it) => (
+          <span className={type === "recette" ? "text-success-600" : "text-danger-600"}>
+            {type === "recette" ? "+" : "−"}{fmt(it.montant)} {devise}
+          </span>
+        ) },
+        { key: "actions", label: "", align: "right", render: (it) => (
+          <div className="flex items-center justify-end gap-3">
+            {it.justificatif_url && (
+              <button onClick={async () => { const u = await urlSignee("justificatifs", it.justificatif_url); if (u) window.open(u, "_blank", "noreferrer"); }}
+                className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 reçu</button>
+            )}
+            <button onClick={() => onSuppr(it.id)} className="text-xs text-danger-500 hover:underline">suppr.</button>
+          </div>
+        ) },
+      ]}
+    />
   );
 }
 

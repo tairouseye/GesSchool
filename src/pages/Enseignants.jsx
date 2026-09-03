@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte, Table, Badge } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -79,48 +79,33 @@ export default function Enseignants() {
         )}
 
         {onglet === "enseignants" ? (
-          <Carte className="overflow-hidden">
-            {enseignants.length === 0 ? (
-              <EtatVide icone="🧑‍🏫" titre="Aucun enseignant"
-                action={<Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>}>
-                Ajoutez vos enseignants, puis reliez leur compte avec un code d'accès.
-              </EtatVide>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Enseignant</th>
-                    <th className="px-6 py-3 font-medium">Spécialité</th>
-                    <th className="px-6 py-3 font-medium">Contact</th>
-                    <th className="px-6 py-3 font-medium">Compte</th>
-                    <th className="px-6 py-3 text-right font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ensFiltres.map((e) => (
-                    <tr key={e.id} className="border-t border-navy-900/5">
-                      <td className="px-6 py-3 font-medium text-navy-900">{e.prenom} {e.nom}</td>
-                      <td className="px-6 py-3 text-navy-900/70">{e.specialite || "—"}</td>
-                      <td className="px-6 py-3 text-navy-900/60">{e.telephone || e.email || "—"}</td>
-                      <td className="px-6 py-3">
-                        {e.profil_id ? (
-                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">✓ compte lié</span>
-                        ) : codes[e.id] ? (
-                          <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codes[e.id]}</span>
-                        ) : (
-                          <button onClick={() => genererCode(e.id)} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                        <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-rose-500 hover:underline">supprimer</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Carte>
+          enseignants.length === 0 ? (
+            <EtatVide icone="🧑‍🏫" titre="Aucun enseignant"
+              action={<Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>}>
+              Ajoutez vos enseignants, puis reliez leur compte avec un code d'accès.
+            </EtatVide>
+          ) : (
+            <Table
+              keyField="id"
+              rows={ensFiltres}
+              columns={[
+                { key: "nom", label: "Enseignant", render: (e) => <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span> },
+                { key: "specialite", label: "Spécialité", hideMobile: true, render: (e) => <span className="text-navy-900/70">{e.specialite || "—"}</span> },
+                { key: "contact", label: "Contact", hideMobile: true, render: (e) => <span className="text-navy-900/60">{e.telephone || e.email || "—"}</span> },
+                { key: "compte", label: "Compte", render: (e) => e.profil_id
+                  ? <Badge ton="success">✓ compte lié</Badge>
+                  : codes[e.id]
+                    ? <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codes[e.id]}</span>
+                    : <button onClick={() => genererCode(e.id)} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button> },
+                { key: "actions", label: "", align: "right", render: (e) => (
+                  <>
+                    <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
+                    <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-danger-500 hover:underline">supprimer</button>
+                  </>
+                ) },
+              ]}
+            />
+          )
         ) : (
           <PanneauAffectations
             ecoleId={ecoleId} annee={annee}
