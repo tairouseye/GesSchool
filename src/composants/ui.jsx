@@ -211,6 +211,46 @@ export function Badge({ children, ton = "neutre", className = "" }) {
   );
 }
 
+// Tableau réutilisable, cohérent et responsive (design system).
+// `columns` : [{ key, label, align?, render?, hideMobile?, className?, tdClassName? }]
+//   - align "right" applique automatiquement mono + tabular-nums (chiffres alignés) ;
+//   - render(row, i) permet des cellules riches (badges, actions…) ;
+//   - hideMobile masque la colonne sous `sm`.
+// Le composant fournit son propre « chrome » (carte + défilement horizontal mobile).
+export function Table({ columns, rows, keyField = "id", onRowClick, className = "" }) {
+  const al = (a) => (a === "right" ? "text-right" : a === "center" ? "text-center" : "text-left");
+  return (
+    <div className={`overflow-x-auto rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`}>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-navy-900/10 bg-creme/60 text-xs uppercase tracking-wide text-navy-900/50">
+            {columns.map((c) => (
+              <th key={c.key} className={`px-4 py-3 font-medium ${al(c.align)} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.className || ""}`}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr
+              key={row[keyField] ?? i}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={`border-b border-navy-900/5 align-top last:border-0 ${onRowClick ? "cursor-pointer hover:bg-creme/50" : "hover:bg-creme/40"}`}
+            >
+              {columns.map((c) => (
+                <td key={c.key} className={`px-4 py-3 ${al(c.align)} ${c.align === "right" ? "font-mono tabular-nums" : ""} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.tdClassName || ""}`}>
+                  {c.render ? c.render(row, i) : row[c.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function Modale({ ouvert, onFermer, titre, children, large = false }) {
   const ref = useRef(null);
   // Fermeture au clavier (Échap) + focus sur la boîte à l'ouverture.

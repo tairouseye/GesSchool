@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte, EtatVide, SkeletonListe, Bouton, Modale } from "@/composants/ui.jsx";
+import { Carte, Alerte, EtatVide, SkeletonListe, Bouton, Modale, Table, Badge } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
@@ -126,108 +126,67 @@ export default function Recouvrement() {
               ))}
             </div>
 
-            <Carte className="overflow-hidden">
-              {chargement ? (
-                <div className="p-4"><SkeletonListe lignes={5} /></div>
-              ) : liste.length === 0 ? (
-                <EtatVide icone={filtre === "retard" ? "🎉" : "✅"} titre={filtre === "retard" ? "Aucun impayé en retard" : "Aucun impayé"} className="m-4">
-                  {filtre === "retard" ? "Toutes les échéances passées sont réglées." : "Aucune scolarité impayée pour ce filtre."}
-                </EtatVide>
-              ) : (
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-creme text-navy-900/50">
-                    <tr>
-                      <th className="px-6 py-3 font-medium">Élève</th>
-                      <th className="px-6 py-3 font-medium">Échéance</th>
-                      <th className="px-6 py-3 text-right font-medium">Reste dû</th>
-                      <th className="px-6 py-3 font-medium">Contact</th>
-                      <th className="px-6 py-3 text-right font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {liste.map((i) => {
-                      const c = contacts[i.eleve_id];
-                      return (
-                        <tr key={i.eleve_id} className="border-t border-navy-900/5 hover:bg-creme/60">
-                          <td className="px-6 py-3">
-                            <div className="font-medium text-navy-900">{i.eleve?.prenom} {i.eleve?.nom}</div>
-                            <div className="font-mono text-[11px] text-navy-900/40">{i.eleve?.matricule}</div>
-                          </td>
-                          <td className="px-6 py-3">
-                            {i.echeance ? (
-                              <span className={i.enRetard ? "text-rose-600" : "text-navy-900/60"}>
-                                {i.echeance}{i.enRetard && <span className="ml-1 text-xs">(+{i.joursRetard} j)</span>}
-                              </span>
-                            ) : "—"}
-                          </td>
-                          <td className="px-6 py-3 text-right font-mono font-semibold">{fmt(i.reste)} {devise}</td>
-                          <td className="px-6 py-3 text-navy-900/60">
-                            {c ? <>{c.prenom} {c.nom}<div className="font-mono text-xs text-navy-900/40">{c.telephone || "—"}</div></> : "—"}
-                          </td>
-                          <td className="px-6 py-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => relancerPush(i)}
-                                disabled={enCours === i.eleve_id}
-                                className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800 disabled:opacity-50"
-                              >
-                                {enCours === i.eleve_id ? "…" : "Relancer (push)"}
-                              </button>
-                              <button
-                                onClick={() => relancerWhatsApp(i)}
-                                className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600"
-                              >
-                                WhatsApp
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </Carte>
+            {chargement ? (
+              <SkeletonListe lignes={5} />
+            ) : liste.length === 0 ? (
+              <EtatVide icone={filtre === "retard" ? "🎉" : "✅"} titre={filtre === "retard" ? "Aucun impayé en retard" : "Aucun impayé"}>
+                {filtre === "retard" ? "Toutes les échéances passées sont réglées." : "Aucune scolarité impayée pour ce filtre."}
+              </EtatVide>
+            ) : (
+              <Table
+                keyField="eleve_id"
+                rows={liste}
+                columns={[
+                  { key: "eleve", label: "Élève", render: (i) => (
+                    <><div className="font-medium text-navy-900">{i.eleve?.prenom} {i.eleve?.nom}</div>
+                    <div className="font-mono text-[11px] text-navy-900/40">{i.eleve?.matricule}</div></>
+                  ) },
+                  { key: "echeance", label: "Échéance", render: (i) => i.echeance ? (
+                    <span className={i.enRetard ? "text-danger-600" : "text-navy-900/60"}>
+                      {i.echeance}{i.enRetard && <span className="ml-1 text-xs">(+{i.joursRetard} j)</span>}
+                    </span>
+                  ) : "—" },
+                  { key: "reste", label: "Reste dû", align: "right", tdClassName: "font-semibold", render: (i) => `${fmt(i.reste)} ${devise}` },
+                  { key: "contact", label: "Contact", hideMobile: true, render: (i) => {
+                    const c = contacts[i.eleve_id];
+                    return c ? (<span className="text-navy-900/60">{c.prenom} {c.nom}<div className="font-mono text-xs text-navy-900/40">{c.telephone || "—"}</div></span>) : "—";
+                  } },
+                  { key: "actions", label: "", align: "right", render: (i) => (
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => relancerPush(i)} disabled={enCours === i.eleve_id}
+                        className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800 disabled:opacity-50">
+                        {enCours === i.eleve_id ? "…" : "Relancer (push)"}
+                      </button>
+                      <button onClick={() => relancerWhatsApp(i)}
+                        className="rounded-lg bg-success-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-success-600">
+                        WhatsApp
+                      </button>
+                    </div>
+                  ) },
+                ]}
+              />
+            )}
             <p className="text-xs text-navy-900/40">
               « Relancer (push) » envoie une notification + push au parent connecté.
               « WhatsApp » ouvre un message pré-rempli (ou le copie si aucun numéro).
             </p>
           </>
         ) : (
-          <Carte className="overflow-hidden">
-            {relances.length === 0 ? (
-              <p className="p-8 text-sm text-navy-900/40">Aucune relance envoyée pour l'instant.</p>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Date</th>
-                    <th className="px-6 py-3 font-medium">Élève</th>
-                    <th className="px-6 py-3 font-medium">Canal</th>
-                    <th className="px-6 py-3 text-right font-medium">Montant dû</th>
-                    <th className="px-6 py-3 font-medium">Message</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relances.map((r) => (
-                    <tr key={r.id} className="border-t border-navy-900/5 align-top">
-                      <td className="px-6 py-3 font-mono text-xs text-navy-900/60">
-                        {new Date(r.envoye_le).toLocaleDateString("fr-FR")}
-                      </td>
-                      <td className="px-6 py-3">{r.eleves ? `${r.eleves.prenom} ${r.eleves.nom}` : "—"}</td>
-                      <td className="px-6 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.canal === "auto" ? "bg-navy-900/10 text-navy-900/70" : "bg-or-500/15 text-or-600"}`}>
-                          {r.canal}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right font-mono">{fmt(r.montant_du)} {devise}</td>
-                      <td className="px-6 py-3 max-w-md text-navy-900/60">{r.message}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Carte>
+          relances.length === 0 ? (
+            <EtatVide icone="🔔" titre="Aucune relance">Aucune relance envoyée pour l'instant.</EtatVide>
+          ) : (
+            <Table
+              keyField="id"
+              rows={relances}
+              columns={[
+                { key: "date", label: "Date", render: (r) => <span className="font-mono text-xs text-navy-900/60">{new Date(r.envoye_le).toLocaleDateString("fr-FR")}</span> },
+                { key: "eleve", label: "Élève", render: (r) => (r.eleves ? `${r.eleves.prenom} ${r.eleves.nom}` : "—") },
+                { key: "canal", label: "Canal", render: (r) => <Badge ton={r.canal === "auto" ? "neutre" : "or"}>{r.canal}</Badge> },
+                { key: "montant", label: "Montant dû", align: "right", render: (r) => `${fmt(r.montant_du)} ${devise}` },
+                { key: "message", label: "Message", hideMobile: true, render: (r) => <span className="text-navy-900/60">{r.message}</span> },
+              ]}
+            />
+          )
         )}
       </div>
 
