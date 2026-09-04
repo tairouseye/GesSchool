@@ -39,6 +39,7 @@ export default function RH() {
   const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 }, heures: 173.33 });
   const [modaleRegime, setModaleRegime] = useState(false);
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
+  const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -107,7 +108,7 @@ export default function RH() {
         <div className="flex flex-wrap gap-2">
           <Bouton variante="fantome" onClick={() => setModaleRegime(true)}>Régime</Bouton>
           <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
-          <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
+          <Bouton onClick={() => setPrepPaie(true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
         </div>
       )
       : null;
@@ -270,6 +271,13 @@ export default function RH() {
         salaire={detail} onFermer={() => setDetail(null)}
         ecoleId={ecoleId} elements={elements} devise={devise} modeComplet={regime.mode === "complet"}
         onChange={rechargerPaie}
+      />
+
+      <ModalePreparerPaie
+        ouvert={prepPaie} onFermer={() => setPrepPaie(false)}
+        periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))}
+        modeComplet={regime.mode === "complet"} heuresDefaut={regime.heures} baremeManquant={regime.mode === "complet" && !regime.bareme?.mensuel}
+        onGenerer={(heuresMap) => wrap(async () => { await api.genererPaie(ecoleId, periode, heuresMap); setPrepPaie(false); }, true, "Paie générée.")}
       />
 
       <ModaleBulletin bulletin={bulletin} onFermer={() => setBulletin(null)} ecole={ecole} devise={devise} />
@@ -1228,6 +1236,82 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
         </div>
 
         <div className="flex justify-end"><Bouton onClick={onFermer}>Terminé</Bouton></div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- Étape « Préparer la paie » : heures/absences validées avant génération ---
+function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, heuresDefaut, baremeManquant, onGenerer }) {
+  const [heures, setHeures] = useState({});
+  useEffect(() => {
+    if (!ouvert) return;
+    const m = {};
+    for (const p of employes) m[p.id] = String(heuresDefaut ?? 173.33);
+    setHeures(m);
+    /* eslint-disable-next-line */
+  }, [ouvert]);
+
+  const setH = (id, v) => setHeures((h) => ({ ...h, [id]: v.replace(",", ".") }));
+  const generer = () => {
+    if (!modeComplet) { onGenerer(null); return; }
+    const map = {};
+    for (const p of employes) map[p.id] = Number(heures[p.id]) || 0;
+    onGenerer(map);
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Préparer la paie — ${libellePeriode(periode)}`} large>
+      <div className="space-y-4">
+        <p className="text-sm text-navy-900/60">
+          {modeComplet
+            ? <>Vérifie les <b>heures travaillées</b> de chaque employé et ajuste en cas d'<b>absence</b>, puis valide pour générer les bulletins (Brut = heures × taux horaire).</>
+            : <>Confirme la liste du personnel à inclure dans la paie, puis valide pour générer les fiches.</>}
+        </p>
+        {baremeManquant && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-800">
+            ⚠️ Barème IR non chargé : l'IR et le TRIMF seront à 0. Charge le barème dans « Régime » avant de générer.
+          </div>
+        )}
+        {employes.length === 0 ? (
+          <Carte className="p-6 text-sm text-navy-900/50">Aucune fiche à générer (déjà générées, ou aucun contrat actif ce mois).</Carte>
+        ) : (
+          <Carte className="overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-creme text-navy-900/50">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Employé</th>
+                  <th className="px-4 py-2 font-medium">Fonction</th>
+                  {modeComplet && <th className="px-4 py-2 text-right font-medium">Heures travaillées</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {employes.map((p) => {
+                  const absent = modeComplet && Number(heures[p.id]) < Number(heuresDefaut);
+                  return (
+                    <tr key={p.id} className="border-t border-navy-900/5">
+                      <td className="px-4 py-2 font-medium text-navy-900">{p.prenom} {p.nom}</td>
+                      <td className="px-4 py-2 text-navy-900/60">{p.fonction || "—"}</td>
+                      {modeComplet && (
+                        <td className="px-4 py-2 text-right">
+                          <input value={heures[p.id] ?? ""} inputMode="decimal" onChange={(e) => setH(p.id, e.target.value)}
+                            className={`w-24 rounded-lg border bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500 ${absent ? "border-amber-500/60 text-amber-700" : "border-navy-900/15"}`} />
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Carte>
+        )}
+        {modeComplet && employes.length > 0 && (
+          <p className="text-xs text-navy-900/45">Défaut = {heuresDefaut} h/mois. Réduis les heures d'un employé absent (en orange) ; le reste est prérempli.</p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton onClick={generer} disabled={employes.length === 0}>Valider et générer</Bouton>
+        </div>
       </div>
     </Modale>
   );

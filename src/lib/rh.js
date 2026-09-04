@@ -251,10 +251,11 @@ export async function setHeuresMensuelles(ecoleId, heures) {
 // Construit les lignes GAINS d'un bulletin. En mode complet : Salaire de base
 // (+ sursalaire) = heures × taux horaire de l'employé ; sinon salaire de base
 // plat (contrat). Les éléments récurrents sont ajoutés à plat.
-function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx) {
+function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx, heures) {
   const lignes = [];
   if (ctx && Number(personnel?.taux_horaire) > 0) {
-    for (const l of lignesBrut(ctx.heures, personnel)) {
+    const h = heures != null ? Number(heures) : ctx.heures;
+    for (const l of lignesBrut(h, personnel)) {
       lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, base: l.base, taux: l.taux, montant: l.montant, ordre: l.ordre });
     }
   } else {
@@ -298,10 +299,24 @@ function ajouterStatutaire(lignes, ecoleId, salaireId, personnel, ctx) {
   stat.forEach((l) => lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, montant: l.montant, ordre: l.ordre }));
 }
 
+// Personnel à générer pour une période : contrat actif + pas de fiche existante.
+// Sert à l'étape « Préparer la paie » (heures/absences validées par le comptable).
+export async function personnelAgenerer(ecoleId, periode) {
+  const [pers, contrats, existant] = await Promise.all([
+    getPersonnels(ecoleId),
+    getContratsActifs(ecoleId),
+    supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
+  ]);
+  const deja = new Set((existant.data ?? []).map((s) => s.personnel_id));
+  return pers.filter((p) => !deja.has(p.id) && contratActifPour(contrats[p.id], periode));
+}
+
 // Génère les fiches de paie d'une période pour le personnel au contrat ACTIF.
+// `heuresParEmploye` (optionnel) : { personnel_id: heures } — heures validées par
+// le comptable (absences). À défaut, les heures mensuelles de référence.
 // Composition : Salaire de base + éléments récurrents (+ cotisations/IR/TRIMF
 // en mode complet). Net calculé par trigger.
-export async function genererPaie(ecoleId, periode) {
+export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
   const [pers, contrats, existant, aff, ctx] = await Promise.all([
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
@@ -321,7 +336,8 @@ export async function genererPaie(ecoleId, periode) {
   const lignes = [];
   for (const s of crees) {
     const p = parId.get(s.personnel_id);
-    lignes.push(...lignesInitiales(ecoleId, s.id, p, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id], ctx));
+    const heures = heuresParEmploye ? heuresParEmploye[s.personnel_id] : undefined;
+    lignes.push(...lignesInitiales(ecoleId, s.id, p, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id], ctx, heures));
     ajouterStatutaire(lignes, ecoleId, s.id, p, ctx);
   }
   if (lignes.length) {
