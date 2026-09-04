@@ -194,6 +194,23 @@ export async function getSoldes(ecoleId) {
   });
 }
 
+// Créances : total dû par les familles (factures non annulées, reste à payer).
+export async function getCreancesScolarite(ecoleId, anneeId) {
+  let q = supabase.from("factures").select("montant_total, montant_paye, statut").eq("ecole_id", ecoleId).neq("statut", "annulee");
+  if (anneeId) q = q.eq("annee_id", anneeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).reduce((s, f) => s + Math.max(0, Number(f.montant_total || 0) - Number(f.montant_paye || 0)), 0);
+}
+
+// Dettes envers le personnel : salaires validés mais pas encore payés.
+// (Best-effort : un profil sans accès RH obtient 0 — les salaires relèvent de la RH.)
+export async function getDettesPersonnel(ecoleId) {
+  const { data, error } = await supabase.from("salaires").select("montant_net, statut").eq("ecole_id", ecoleId).eq("statut", "valide");
+  if (error) throw error;
+  return (data ?? []).reduce((s, x) => s + Number(x.montant_net || 0), 0);
+}
+
 // Scolarité encaissée sur une période (depuis les paiements parents).
 export async function getScolaritePeriode(ecoleId, debut, fin) {
   let q = supabase.from("paiements").select("montant").eq("ecole_id", ecoleId);

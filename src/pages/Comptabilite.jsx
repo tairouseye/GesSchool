@@ -24,6 +24,8 @@ export default function Comptabilite() {
   const [recettes, setRecettes] = useState([]);
   const [depenses, setDepenses] = useState([]);
   const [scolarite, setScolarite] = useState(0);
+  const [creances, setCreances] = useState(0);
+  const [dettes, setDettes] = useState(0);
   const [cats, setCats] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense' | 'categories'
@@ -31,18 +33,22 @@ export default function Comptabilite() {
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [sol, rec, dep, sco, cat] = await Promise.all([
+      const [sol, rec, dep, sco, cat, cre, det] = await Promise.all([
         api.getSoldes(ecoleId),
         api.getRecettes(ecoleId, { debut, fin }),
         api.getDepenses(ecoleId, { debut, fin }),
         api.getScolaritePeriode(ecoleId, debut, fin),
         api.getCategories(ecoleId).catch(() => []),
+        api.getCreancesScolarite(ecoleId).catch(() => 0),
+        api.getDettesPersonnel(ecoleId).catch(() => 0),
       ]);
       setSoldes(sol);
       setRecettes(rec);
       setDepenses(dep);
       setScolarite(sco);
       setCats(cat);
+      setCreances(cre);
+      setDettes(det);
     } catch (e) {
       setErreur(e.message);
     }
@@ -60,6 +66,11 @@ export default function Comptabilite() {
   const totalRecettes = recettes.reduce((s, r) => s + Number(r.montant || 0), 0);
   const totalDepenses = depenses.reduce((s, d) => s + Number(d.montant || 0), 0);
   const tresorerie = soldes.reduce((s, c) => s + Number(c.solde || 0), 0);
+  const soldeParType = (t) => soldes.filter((c) => c.type === t).reduce((s, c) => s + Number(c.solde || 0), 0);
+  const soldeCaisse = soldeParType("caisse");
+  const soldeBanque = soldeParType("banque");
+  const soldeMobile = soldeParType("mobile");
+  const salairesMois = depenses.filter((d) => d.categorie === "Salaires").reduce((s, d) => s + Number(d.montant || 0), 0);
   // Résultat de la période : (recettes saisies + scolarité encaissée) - dépenses.
   const resultat = totalRecettes + scolarite - totalDepenses;
 
@@ -106,6 +117,8 @@ export default function Comptabilite() {
         {onglet === "synthese" && (
           <Synthese
             devise={devise} tresorerie={tresorerie} scolarite={scolarite}
+            soldeCaisse={soldeCaisse} soldeBanque={soldeBanque} soldeMobile={soldeMobile} salairesMois={salairesMois}
+            creances={creances} dettes={dettes}
             totalRecettes={totalRecettes} totalDepenses={totalDepenses} resultat={resultat}
             recettes={recettes} depenses={depenses}
           />
@@ -152,48 +165,73 @@ export default function Comptabilite() {
   );
 }
 
-function Synthese({ devise, tresorerie, scolarite, totalRecettes, totalDepenses, resultat, recettes, depenses }) {
+function Synthese({ devise, tresorerie, scolarite, soldeCaisse, soldeBanque, soldeMobile, salairesMois, creances, dettes, totalRecettes, totalDepenses, resultat, recettes, depenses }) {
   const parCategorie = (items) => {
     const m = {};
     for (const it of items) m[it.categorie || "Sans catégorie"] = (m[it.categorie || "Sans catégorie"] || 0) + Number(it.montant || 0);
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
   };
+  const recettesMois = totalRecettes + scolarite;
+
+  // Liste par catégorie avec barre de proportion (graphe simple).
+  const listeCategorie = (items, couleur, vide) => {
+    const cats = parCategorie(items);
+    if (cats.length === 0) return <p className="text-sm text-navy-900/40">{vide}</p>;
+    const max = Math.max(1, ...cats.map(([, v]) => v));
+    return (
+      <ul className="space-y-2.5">
+        {cats.map(([cat, montant]) => (
+          <li key={cat}>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-navy-900/70">{cat}</span>
+              <span className="font-mono tabular-nums">{fmt(montant)} {devise}</span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-navy-900/5">
+              <div className={`h-full ${couleur}`} style={{ width: `${(montant / max) * 100}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
     <div className="space-y-5">
+      {/* Trésorerie : caisse / banque / mobile / total */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCarte label="Trésorerie (tous comptes)" valeur={`${fmt(tresorerie)}`} suffixe={devise} ton="navy" />
-        <KpiCarte label="Recettes (période)" valeur={`${fmt(totalRecettes + scolarite)}`} suffixe={devise} ton="vert"
-          note={scolarite > 0 ? `dont scolarité ${fmt(scolarite)}` : null} />
-        <KpiCarte label="Dépenses (période)" valeur={`${fmt(totalDepenses)}`} suffixe={devise} ton="rouge" />
-        <KpiCarte label="Résultat (période)" valeur={`${fmt(resultat)}`} suffixe={devise} ton={resultat >= 0 ? "or" : "rouge"} />
+        <KpiCarte label="Caisse" valeur={fmt(soldeCaisse)} suffixe={devise} ton="navy" />
+        <KpiCarte label="Banque" valeur={fmt(soldeBanque)} suffixe={devise} ton="navy" />
+        {soldeMobile > 0
+          ? <KpiCarte label="Mobile money" valeur={fmt(soldeMobile)} suffixe={devise} ton="navy" />
+          : <KpiCarte label="Trésorerie totale" valeur={fmt(tresorerie)} suffixe={devise} ton="or" />}
+        {soldeMobile > 0 && <KpiCarte label="Trésorerie totale" valeur={fmt(tresorerie)} suffixe={devise} ton="or" />}
       </div>
 
+      {/* Activité de la période */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCarte label="Recettes (période)" valeur={fmt(recettesMois)} suffixe={devise} ton="vert"
+          note={scolarite > 0 ? `dont scolarité ${fmt(scolarite)}` : null} />
+        <KpiCarte label="Dépenses (période)" valeur={fmt(totalDepenses)} suffixe={devise} ton="rouge"
+          note={salairesMois > 0 ? `dont salaires ${fmt(salairesMois)}` : null} />
+        <KpiCarte label="Résultat (période)" valeur={fmt(resultat)} suffixe={devise} ton={resultat >= 0 ? "or" : "rouge"} />
+        <KpiCarte label="Salaires (période)" valeur={fmt(salairesMois)} suffixe={devise} ton="navy" />
+      </div>
+
+      {/* À recevoir / à payer */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <KpiCarte label="Créances — impayés scolarité" valeur={fmt(creances)} suffixe={devise} ton={creances > 0 ? "rouge" : "vert"} note="reste dû par les familles" />
+        <KpiCarte label="Dettes — salaires à payer" valeur={fmt(dettes)} suffixe={devise} ton={dettes > 0 ? "rouge" : "vert"} note="bulletins validés non réglés" />
+      </div>
+
+      {/* Répartition par catégorie (barres) */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Carte className="p-6">
           <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Dépenses par catégorie</h3>
-          {depenses.length === 0 ? <p className="text-sm text-navy-900/40">Aucune dépense sur la période.</p> : (
-            <ul className="space-y-2">
-              {parCategorie(depenses).map(([cat, montant]) => (
-                <li key={cat} className="flex items-center justify-between text-sm">
-                  <span className="text-navy-900/70">{cat}</span>
-                  <span className="font-mono">{fmt(montant)} {devise}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          {listeCategorie(depenses, "bg-rose-500/70", "Aucune dépense sur la période.")}
         </Carte>
         <Carte className="p-6">
           <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Recettes par catégorie</h3>
-          {recettes.length === 0 ? <p className="text-sm text-navy-900/40">Aucune recette saisie sur la période.</p> : (
-            <ul className="space-y-2">
-              {parCategorie(recettes).map(([cat, montant]) => (
-                <li key={cat} className="flex items-center justify-between text-sm">
-                  <span className="text-navy-900/70">{cat}</span>
-                  <span className="font-mono">{fmt(montant)} {devise}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          {listeCategorie(recettes, "bg-emerald-500/70", "Aucune recette saisie sur la période.")}
           <p className="mt-3 border-t border-navy-900/10 pt-2 text-xs text-navy-900/40">
             La scolarité encaissée ({fmt(scolarite)} {devise}) provient du module Paiements et n'est pas listée ici.
           </p>
