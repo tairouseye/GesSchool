@@ -86,16 +86,22 @@ export default function RH() {
 
   const action = onglet === "personnel"
     ? <Bouton onClick={() => setModalePers(true)}>+ Personnel</Bouton>
-    : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer la paie</Bouton>;
+    : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>;
 
   // Tableau de bord RH (accueil de l'espace) — agrégé depuis les données chargées
   const jour = new Date().toISOString().slice(0, 10);
   const dans60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
-  const masseMois = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  // Personnel dont le contrat est actif sur la période : il doit figurer dans la
+  // paie même si sa fiche n'a pas encore été générée (net = fiche si elle existe,
+  // sinon salaire de base du contrat).
+  const actifs = personnels.filter((p) => api.contratActifPour(contrats[p.id], periode));
+  const ficheDe = (pid) => salaires.find((s) => s.personnel_id === pid);
+  const netPrevu = (p) => { const s = ficheDe(p.id); return s ? Number(s.montant_net || 0) : Number(contrats[p.id]?.salaire_base || 0); };
+  const masseMois = actifs.reduce((sum, p) => sum + netPrevu(p), 0);
   const payeMois = salaires.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
   const restantMois = masseMois - payeMois;
-  const aPayer = salaires.filter((s) => !s.paye).length;
-  const fichesAgenerer = Math.max(0, personnels.length - salaires.length);
+  const aPayer = actifs.filter((p) => { const s = ficheDe(p.id); return !s || !s.paye; }).length;
+  const fichesAgenerer = actifs.filter((p) => !ficheDe(p.id)).length;
   const fonctions = Object.entries(
     personnels.reduce((acc, p) => { const f = p.fonction || "—"; acc[f] = (acc[f] || 0) + 1; return acc; }, {})
   ).sort((a, b) => b[1] - a[1]);
@@ -184,10 +190,18 @@ export default function RH() {
           />
         ) : (
           <PanneauPaie
-            periode={periode} setPeriode={setPeriode} salaires={salaires} devise={devise} ecole={ecole}
+            periode={periode} setPeriode={setPeriode} salaires={salaires} personnels={actifs} contrats={contrats}
+            devise={devise} ecole={ecole}
             comptes={comptes} reglement={reglement} setReglement={setReglement}
-            onMaj={(id, v) => wrap(() => api.majSalaire(id, v), true)}
-            onPayer={(id) => wrap(() => api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode }), true)}
+            onMaj={(ligne, v) => wrap(async () => {
+              if (ligne._nouveau) await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, v);
+              else await api.majSalaire(ligne.id, v);
+            }, true)}
+            onPayer={(ligne, v) => wrap(async () => {
+              let id = ligne.id;
+              if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, v); id = s.id; }
+              await api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode });
+            }, true)}
             onAnnuler={(id) => wrap(() => api.annulerPaiement(id), true)}
             onSuppr={(id) => wrap(() => api.supprimerSalaire(id), true)}
             onBulletin={(s) => setBulletin(s)}
@@ -238,9 +252,25 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
   );
 }
 
-function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
-  const totalNet = salaires.reduce((s, x) => s + Number(x.montant_net || 0), 0);
-  const totalPaye = salaires.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
+function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devise, ecole, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
+  // Fusion : chaque personnel actif figure automatiquement — avec sa fiche si
+  // elle existe, sinon une ligne « à générer » pré-remplie du salaire de base.
+  // On garde aussi les fiches existantes dont le personnel n'est plus « actif »
+  // (contrat terminé ce mois) pour ne pas les faire disparaître.
+  const bySal = new Map(salaires.map((s) => [s.personnel_id, s]));
+  const idsActifs = new Set((personnels || []).map((p) => p.id));
+  const lignes = (personnels || []).map((p) => {
+    const s = bySal.get(p.id);
+    if (s) return s;
+    const base = Number(contrats?.[p.id]?.salaire_base || 0);
+    return { _nouveau: true, id: `new-${p.id}`, personnel_id: p.id,
+      personnels: { prenom: p.prenom, nom: p.nom, fonction: p.fonction },
+      periode, montant_brut: base, prime: 0, retenue: 0, montant_net: base, paye: false };
+  });
+  const orphelines = salaires.filter((s) => !idsActifs.has(s.personnel_id));
+  const toutes = [...lignes, ...orphelines];
+  const totalNet = toutes.reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  const totalPaye = toutes.filter((s) => s.paye).reduce((s, x) => s + Number(x.montant_net || 0), 0);
   const [etatOuvert, setEtatOuvert] = useState(false);
 
   return (
@@ -254,7 +284,7 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, re
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="text-navy-900/50">Masse salariale : <b className="font-mono text-navy-900">{fmt(totalNet)} {devise}</b></span>
           <span className="text-emerald-700">Payé : <b className="font-mono">{fmt(totalPaye)} {devise}</b></span>
-          <Bouton variante="fantome" onClick={() => setEtatOuvert(true)} disabled={salaires.length === 0}>🖨️ État</Bouton>
+          <Bouton variante="fantome" onClick={() => setEtatOuvert(true)} disabled={toutes.length === 0}>🖨️ État</Bouton>
         </div>
       </div>
 
@@ -280,7 +310,7 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, re
               </tr>
             </thead>
             <tbody>
-              {salaires.map((s, k) => (
+              {toutes.map((s, k) => (
                 <tr key={s.id} className="border-b border-navy-900/10">
                   <td className="px-2 py-1.5">{k + 1}</td>
                   <td className="px-2 py-1.5 font-medium">{s.personnels?.nom} {s.personnels?.prenom}</td>
@@ -292,7 +322,7 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, re
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-navy-900/30 font-bold">
-                <td className="px-2 py-2" colSpan={4}>Masse salariale ({salaires.length} personne{salaires.length > 1 ? "s" : ""})</td>
+                <td className="px-2 py-2" colSpan={4}>Masse salariale ({toutes.length} personne{toutes.length > 1 ? "s" : ""})</td>
                 <td className="px-2 py-2 text-right font-mono">{fmt(totalNet)} {devise}</td>
               </tr>
               <tr className="text-emerald-700"><td className="px-2 py-1" colSpan={4}>dont payé</td><td className="px-2 py-1 text-right font-mono">{fmt(totalPaye)} {devise}</td></tr>
@@ -335,9 +365,9 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, re
         </p>
       )}
 
-      {salaires.length === 0 ? (
+      {toutes.length === 0 ? (
         <Carte className="p-8 text-sm text-navy-900/50">
-          Aucune fiche de paie pour {libellePeriode(periode)}. Clique « ⚡ Générer la paie ».
+          Aucun personnel avec un contrat actif pour {libellePeriode(periode)}. Ajoute du personnel (avec un salaire de base) dans l'onglet « Personnel ».
         </Carte>
       ) : (
         <Carte className="overflow-hidden">
@@ -345,16 +375,16 @@ function PanneauPaie({ periode, setPeriode, salaires, devise, ecole, comptes, re
             <thead className="bg-creme text-navy-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Personnel</th>
-                <th className="px-4 py-3 text-right font-medium">Brut</th>
+                <th className="px-4 py-3 text-right font-medium">Salaire de base</th>
                 <th className="px-4 py-3 text-right font-medium">Prime</th>
                 <th className="px-4 py-3 text-right font-medium">Retenue</th>
-                <th className="px-4 py-3 text-right font-medium">Net</th>
+                <th className="px-4 py-3 text-right font-medium">Net à payer</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {salaires.map((s) => (
+              {toutes.map((s) => (
                 <LignePaie key={s.id} s={s} devise={devise}
                   onMaj={onMaj} onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
               ))}
@@ -373,9 +403,12 @@ function LignePaie({ s, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }
   const net = (Number(brut) || 0) + (Number(prime) || 0) - (Number(retenue) || 0);
   const champNum = "w-24 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500 disabled:bg-navy-900/5";
 
+  // L'édition reste possible même après paiement : le net est recalculé et la
+  // dépense comptable liée est resynchronisée (cf. majSalaire → RPC maj_salaire).
+  const elements = { montant_brut: brut, prime, retenue };
   const commit = () => {
     if (Number(brut) !== Number(s.montant_brut) || Number(prime) !== Number(s.prime) || Number(retenue) !== Number(s.retenue)) {
-      onMaj(s.id, { montant_brut: brut, prime, retenue });
+      onMaj(s, elements);
     }
   };
 
@@ -386,27 +419,29 @@ function LignePaie({ s, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }
         <p className="text-xs text-navy-900/40">{s.personnels?.fonction || ""}</p>
       </td>
       <td className="px-4 py-3 text-right">
-        <input value={brut} disabled={s.paye} onChange={(e) => setBrut(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
+        <input value={brut} onChange={(e) => setBrut(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
       </td>
       <td className="px-4 py-3 text-right">
-        <input value={prime} disabled={s.paye} onChange={(e) => setPrime(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
+        <input value={prime} onChange={(e) => setPrime(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
       </td>
       <td className="px-4 py-3 text-right">
-        <input value={retenue} disabled={s.paye} onChange={(e) => setRetenue(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
+        <input value={retenue} onChange={(e) => setRetenue(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
       </td>
       <td className="px-4 py-3 text-right font-mono font-semibold text-navy-900">{fmt(net)}</td>
       <td className="px-4 py-3">
         {s.paye
           ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Payé</span>
-          : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/60">À payer</span>}
+          : s._nouveau
+            ? <span className="rounded-full bg-or-500/10 px-2.5 py-0.5 text-xs font-medium text-or-700">À générer</span>
+            : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/60">À payer</span>}
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-3 text-xs">
           <button onClick={() => onBulletin(s)} className="text-navy-700 hover:text-or-500">bulletin</button>
           {s.paye
             ? <button onClick={() => onAnnuler(s.id)} className="text-navy-900/50 hover:underline">annuler</button>
-            : <button onClick={() => onPayer(s.id, {})} className="font-medium text-emerald-700 hover:underline">payer</button>}
-          {!s.paye && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
+            : <button onClick={() => onPayer(s, elements)} className="font-medium text-emerald-700 hover:underline">payer</button>}
+          {!s.paye && !s._nouveau && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
         </div>
       </td>
     </tr>
@@ -497,7 +532,7 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
 
           <table className="mt-5 w-full text-left text-sm">
             <tbody>
-              <LigneB l="Salaire brut" v={`${fmt(bulletin.montant_brut)} ${devise}`} />
+              <LigneB l="Salaire de base" v={`${fmt(bulletin.montant_brut)} ${devise}`} />
               <LigneB l="Primes / indemnités" v={`+ ${fmt(bulletin.prime)} ${devise}`} />
               <LigneB l="Retenues" v={`− ${fmt(bulletin.retenue)} ${devise}`} />
             </tbody>

@@ -66,6 +66,25 @@ export async function getContratsActifs(ecoleId) {
   return map;
 }
 
+// Dernier jour d'une période 'YYYY-MM' → 'YYYY-MM-DD' (calcul en UTC pour
+// éviter tout décalage de fuseau lors des comparaisons de dates).
+export function finDeMois(periode) {
+  const [a, m] = (periode || "").split("-").map(Number);
+  if (!a || !m) return periode;
+  return new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+}
+
+// Le contrat est-il actif pendant la période 'YYYY-MM' ?
+// (commencé au plus tard le dernier jour du mois ET pas terminé avant le 1er).
+export function contratActifPour(contrat, periode) {
+  if (!contrat) return false;
+  const debutMois = `${periode}-01`;
+  const finMois = finDeMois(periode);
+  if (contrat.debut && contrat.debut > finMois) return false; // pas encore commencé
+  if (contrat.fin && contrat.fin < debutMois) return false;   // déjà terminé
+  return true;
+}
+
 export async function creerContrat(ecoleId, c) {
   const { data, error } = await supabase
     .from("contrats")
@@ -102,7 +121,9 @@ export async function getSalaires(ecoleId, periode) {
   );
 }
 
-// Génère les fiches de paie d'une période depuis les contrats (saute l'existant).
+// Génère les fiches de paie d'une période pour le personnel dont le contrat est
+// ACTIF sur la période (saute l'existant et les contrats terminés / à venir).
+// Le montant est le salaire de base, traité comme un NET (prime/retenue à 0).
 export async function genererPaie(ecoleId, periode) {
   const [pers, contrats, existant] = await Promise.all([
     getPersonnels(ecoleId),
@@ -113,7 +134,9 @@ export async function genererPaie(ecoleId, periode) {
   const lignes = [];
   for (const p of pers) {
     if (deja.has(p.id)) continue;
-    const base = Number(contrats[p.id]?.salaire_base || 0);
+    const contrat = contrats[p.id];
+    if (!contratActifPour(contrat, periode)) continue; // pas de contrat actif ce mois
+    const base = Number(contrat?.salaire_base || 0);
     lignes.push({
       ecole_id: ecoleId,
       personnel_id: p.id,
@@ -131,15 +154,36 @@ export async function genererPaie(ecoleId, periode) {
   return { crees: lignes.length };
 }
 
-// Met à jour les éléments de salaire ; recalcule le net (brut + prime − retenue).
-export async function majSalaire(id, { montant_brut, prime, retenue }) {
-  const brut = Number(montant_brut) || 0;
-  const pr = Number(prime) || 0;
-  const re = Number(retenue) || 0;
-  const { error } = await supabase
+// Crée à la demande une fiche pour UN personnel (utilisé quand on paie/édite
+// directement une ligne pas encore générée). Accepte le salaire de base et,
+// éventuellement, prime/retenue. Renvoie la fiche créée.
+export async function ajouterFichePaie(ecoleId, personnelId, periode, elements = {}) {
+  const base = Number(elements.montant_brut) || 0;
+  const pr = Number(elements.prime) || 0;
+  const re = Number(elements.retenue) || 0;
+  const { data, error } = await supabase
     .from("salaires")
-    .update({ montant_brut: brut, prime: pr, retenue: re, montant_net: brut + pr - re })
-    .eq("id", id);
+    .insert({
+      ecole_id: ecoleId, personnel_id: personnelId, periode,
+      montant_brut: base, prime: pr, retenue: re, montant_net: base + pr - re, paye: false,
+    })
+    .select("*, personnels(prenom, nom, fonction)")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Met à jour les éléments de salaire ; recalcule le net (base + prime − retenue)
+// et resynchronise la dépense comptable liée si le salaire est déjà payé.
+// Passe par une RPC SECURITY DEFINER pour permettre l'édition même après
+// paiement sans exiger le rôle comptable (cf. migration 074).
+export async function majSalaire(id, { montant_brut, prime, retenue }) {
+  const { error } = await supabase.rpc("maj_salaire", {
+    p_salaire: id,
+    p_brut: Number(montant_brut) || 0,
+    p_prime: Number(prime) || 0,
+    p_retenue: Number(retenue) || 0,
+  });
   if (error) throw error;
 }
 

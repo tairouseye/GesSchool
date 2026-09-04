@@ -15,8 +15,11 @@ export const CATEGORIES_DEPENSE = [
   "Maintenance", "Communication", "Restauration", "Divers",
 ];
 
+// NB : « Scolarité » et « Inscription » n'y figurent PAS volontairement — ces
+// encaissements passent par le module Paiements et sont déjà agrégés dans la
+// synthèse (les saisir ici les compterait deux fois).
 export const CATEGORIES_RECETTE = [
-  "Scolarité", "Inscription", "Don", "Subvention", "Location", "Activité", "Divers",
+  "Don", "Subvention", "Location", "Activité", "Divers",
 ];
 
 // --- Comptes ---

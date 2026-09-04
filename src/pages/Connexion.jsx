@@ -53,6 +53,7 @@ export default function Connexion() {
           </h1>
           <p className="text-sm text-creme/60">L'école connectée, la gestion simplifiée</p>
           <p className="mt-1.5 text-xs font-medium text-creme/45">{GESPRO.signature}</p>
+          <p className="mt-2 font-mono text-[11px] text-creme/40">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
         </div>
 
         <div className="rounded-2xl bg-white p-7 shadow-xl">
@@ -116,7 +117,7 @@ export default function Connexion() {
           </div>
         )}
 
-        <GesProSignature ton="sombre" avecContacts avecSlogan={false} className="mt-6" />
+        <GesProSignature ton="sombre" avecContacts avecSlogan={false} avecVersion={false} className="mt-6" />
       </div>
     </div>
   );
