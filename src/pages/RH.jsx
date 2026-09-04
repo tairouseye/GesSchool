@@ -213,16 +213,14 @@ export default function RH() {
             comptes={comptes} reglement={reglement} setReglement={setReglement}
             onDetail={async (ligne) => {
               try {
-                let id = ligne.id;
-                if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, { montant_brut: ligne.montant_brut }); id = s.id; await rechargerPaie(); }
-                setDetail(id);
+                if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, { montant_brut: ligne.montant_brut }); await rechargerPaie(); setDetail({ id: s.id, statut: "brouillon" }); }
+                else setDetail({ id: ligne.id, statut: ligne.statut });
               } catch (e) { toast.erreur(e.message || "Erreur."); }
             }}
-            onPayer={(ligne) => wrap(async () => {
-              let id = ligne.id;
-              if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, { montant_brut: ligne.montant_brut }); id = s.id; }
-              await api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode });
-            }, true)}
+            onValider={(id) => wrap(() => api.validerSalaire(id), true, "Bulletin validé.")}
+            onDevalider={async (id) => { if (await confirmer("Dévalider ce bulletin pour le modifier ?")) wrap(() => api.devaliderSalaire(id), true, "Bulletin repassé en brouillon."); }}
+            onValiderTout={async () => { const ids = salaires.filter((s) => s.statut === "brouillon").map((s) => s.id); if (ids.length && await confirmer(`Valider ${ids.length} bulletin(s) en brouillon ?`)) wrap(async () => { for (const id of ids) await api.validerSalaire(id); }, true, "Bulletins validés."); }}
+            onPayer={(ligne) => wrap(() => api.marquerPaye(ligne.id, { compte_id: reglement.compte_id, mode: reglement.mode }), true, "Salaire payé.")}
             onAnnuler={(id) => wrap(() => api.annulerPaiement(id), true)}
             onSuppr={(id) => wrap(() => api.supprimerSalaire(id), true)}
             onBulletin={(s) => setBulletin(s)}
@@ -253,7 +251,7 @@ export default function RH() {
       />
 
       <ModaleDetailPaie
-        salaireId={detail} onFermer={() => setDetail(null)}
+        salaire={detail} onFermer={() => setDetail(null)}
         ecoleId={ecoleId} elements={elements} devise={devise}
         onChange={rechargerPaie}
       />
@@ -312,7 +310,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
   );
 }
 
-function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devise, ecole, comptes, reglement, setReglement, onDetail, onPayer, onAnnuler, onSuppr, onBulletin }) {
+function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devise, ecole, comptes, reglement, setReglement, onDetail, onValider, onDevalider, onValiderTout, onPayer, onAnnuler, onSuppr, onBulletin }) {
   // Fusion : chaque personnel actif figure automatiquement — avec sa fiche si
   // elle existe, sinon une ligne « à générer » pré-remplie du salaire de base.
   // On garde aussi les fiches existantes dont le personnel n'est plus « actif »
@@ -344,6 +342,9 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="text-navy-900/50">Masse salariale : <b className="font-mono text-navy-900">{fmt(totalNet)} {devise}</b></span>
           <span className="text-emerald-700">Payé : <b className="font-mono">{fmt(totalPaye)} {devise}</b></span>
+          {salaires.some((s) => s.statut === "brouillon") && (
+            <Bouton variante="fantome" onClick={onValiderTout}>✓ Valider la paie</Bouton>
+          )}
           <Bouton variante="fantome" onClick={() => setEtatOuvert(true)} disabled={toutes.length === 0}>🖨️ État</Bouton>
         </div>
       </div>
@@ -443,7 +444,8 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
             <tbody>
               {toutes.map((s) => (
                 <LignePaie key={s.id} s={s} devise={devise}
-                  onDetail={onDetail} onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
+                  onDetail={onDetail} onValider={onValider} onDevalider={onDevalider}
+                  onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
               ))}
             </tbody>
           </table>
@@ -453,10 +455,18 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
   );
 }
 
-function LignePaie({ s, devise, onDetail, onPayer, onAnnuler, onSuppr, onBulletin }) {
-  // La composition (base + gains − retenues) s'édite via « détails » ; le net
-  // affiché ici est celui calculé en base (trigger sur les lignes).
+function LignePaie({ s, devise, onDetail, onValider, onDevalider, onPayer, onAnnuler, onSuppr, onBulletin }) {
+  // Le net vient de la base (trigger sur les lignes). Le statut pilote les actions :
+  // brouillon (éditable) → validé (verrouillé) → payé.
   const net = Number(s.montant_net || 0);
+  const statut = s._nouveau ? "nouveau" : (s.statut || (s.paye ? "paye" : "brouillon"));
+  const badge = {
+    nouveau: ["bg-navy-900/5 text-navy-900/50", "À générer"],
+    brouillon: ["bg-navy-900/5 text-navy-900/60", "Brouillon"],
+    valide: ["bg-sky-500/10 text-sky-700", "Validé"],
+    paye: ["bg-emerald-500/10 text-emerald-700", "Payé"],
+    archive: ["bg-navy-900/10 text-navy-900/50", "Archivé"],
+  }[statut] || ["bg-navy-900/5 text-navy-900/60", statut];
   return (
     <tr className="border-t border-navy-900/5">
       <td className="px-4 py-3">
@@ -465,20 +475,17 @@ function LignePaie({ s, devise, onDetail, onPayer, onAnnuler, onSuppr, onBulleti
       </td>
       <td className="px-4 py-3 text-right font-mono font-semibold text-navy-900">{fmt(net)} <span className="text-xs font-normal text-navy-900/40">{devise}</span></td>
       <td className="px-4 py-3">
-        {s.paye
-          ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Payé</span>
-          : s._nouveau
-            ? <span className="rounded-full bg-or-500/10 px-2.5 py-0.5 text-xs font-medium text-or-700">À générer</span>
-            : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs font-medium text-navy-900/60">À payer</span>}
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badge[0]}`}>{badge[1]}</span>
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center justify-end gap-3 text-xs">
+        <div className="flex flex-wrap items-center justify-end gap-3 text-xs">
           <button onClick={() => onDetail(s)} className="font-medium text-navy-700 hover:text-or-500">détails</button>
           {!s._nouveau && <button onClick={() => onBulletin(s)} className="text-navy-700 hover:text-or-500">bulletin</button>}
-          {s.paye
-            ? <button onClick={() => onAnnuler(s.id)} className="text-navy-900/50 hover:underline">annuler</button>
-            : <button onClick={() => onPayer(s)} className="font-medium text-emerald-700 hover:underline">payer</button>}
-          {!s.paye && !s._nouveau && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
+          {statut === "brouillon" && <button onClick={() => onValider(s.id)} className="font-medium text-sky-700 hover:underline">valider</button>}
+          {statut === "valide" && <button onClick={() => onPayer(s)} className="font-medium text-emerald-700 hover:underline">payer</button>}
+          {statut === "valide" && <button onClick={() => onDevalider(s.id)} className="text-navy-900/50 hover:underline">dévalider</button>}
+          {statut === "paye" && <button onClick={() => onAnnuler(s.id)} className="text-navy-900/50 hover:underline">annuler paiement</button>}
+          {statut === "brouillon" && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
         </div>
       </td>
     </tr>
@@ -842,11 +849,13 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
 }
 
 // --- PHASE D : éditeur de composition d'un bulletin (lignes gains/retenues) ---
-function ModaleDetailPaie({ salaireId, onFermer, ecoleId, elements, devise, onChange }) {
+function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, onChange }) {
   const toast = useToast();
   const confirmer = useConfirm();
   const [lignes, setLignes] = useState([]);
   const [nouv, setNouv] = useState({ elementId: "", libelle: "", sens: "gain", montant: "" });
+  const salaireId = salaire?.id || null;
+  const verrouille = !!salaire && salaire.statut && salaire.statut !== "brouillon";
 
   const recharger = async () => {
     if (!salaireId) return;
@@ -883,19 +892,28 @@ function ModaleDetailPaie({ salaireId, onFermer, ecoleId, elements, devise, onCh
         <div key={l.id} className="flex items-center gap-2">
           <span className="flex-1 text-sm text-navy-900">{l.libelle}</span>
           <span className="text-navy-900/40">{signe}</span>
-          <input defaultValue={l.montant} inputMode="numeric"
-            onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
-            className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
-          <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
-            className="text-xs text-danger-500 hover:underline">×</button>
+          {verrouille
+            ? <span className="w-28 px-2 py-1.5 text-right font-mono text-sm text-navy-900">{fmt(l.montant)}</span>
+            : <input defaultValue={l.montant} inputMode="numeric"
+                onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
+                className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />}
+          {!verrouille && (
+            <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
+              className="text-xs text-danger-500 hover:underline">×</button>
+          )}
         </div>
       ))}
     </div>
   );
 
   return (
-    <Modale ouvert={!!salaireId} onFermer={onFermer} titre="Composition du salaire" large>
+    <Modale ouvert={!!salaire} onFermer={onFermer} titre="Composition du salaire" large>
       <div className="space-y-5">
+        {verrouille && (
+          <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-2.5 text-xs text-sky-800">
+            Bulletin <b>{salaire.statut === "paye" ? "payé" : "validé"}</b> — en lecture seule. {salaire.statut === "paye" ? "Annulez le paiement puis dévalidez" : "Dévalidez-le"} pour le modifier.
+          </div>
+        )}
         {rendreLignes(gains, "Gains", "+")}
         <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
           <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
@@ -913,7 +931,8 @@ function ModaleDetailPaie({ salaireId, onFermer, ecoleId, elements, devise, onCh
           <span className="font-display text-lg font-bold text-navy-900">{fmt(net)} {devise}</span>
         </div>
 
-        {/* Ajout d'une ligne */}
+        {/* Ajout d'une ligne (uniquement en brouillon) */}
+        {!verrouille && (
         <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
           <p className="mb-2 text-sm font-medium text-navy-900/70">Ajouter un élément</p>
           <div className="flex flex-wrap items-end gap-2">
@@ -947,6 +966,7 @@ function ModaleDetailPaie({ salaireId, onFermer, ecoleId, elements, devise, onCh
             <Bouton variante="or" onClick={ajouter}>Ajouter</Bouton>
           </div>
         </div>
+        )}
 
         <div className="flex justify-end">
           <Bouton onClick={onFermer}>Terminé</Bouton>

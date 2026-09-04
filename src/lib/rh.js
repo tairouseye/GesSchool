@@ -316,6 +316,17 @@ export async function majSalaire(id, { montant_brut, prime, retenue }) {
   if (error) throw error;
 }
 
+// Workflow (Phase E) : brouillon → validé → payé.
+export async function validerSalaire(id) {
+  const { error } = await supabase.rpc("valider_salaire", { p_salaire: id });
+  if (error) throw error;
+}
+
+export async function devaliderSalaire(id, motif) {
+  const { error } = await supabase.rpc("devalider_salaire", { p_salaire: id, p_motif: motif || null });
+  if (error) throw error;
+}
+
 // Marque payé ET crée la dépense comptable correspondante (RPC sécurisée).
 export async function marquerPaye(id, { date_paiement, mode, compte_id } = {}) {
   const { error } = await supabase.rpc("payer_salaire", {
