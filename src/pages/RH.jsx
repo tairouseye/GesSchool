@@ -33,6 +33,8 @@ export default function RH() {
   const [erreur, setErreur] = useState("");
   const [formPers, setFormPers] = useState(null); // null = fermé, {} = création, {id…} = édition
   const [nbEnsNonImportes, setNbEnsNonImportes] = useState(0);
+  const [elements, setElements] = useState([]);
+  const [modaleElements, setModaleElements] = useState(false);
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -42,11 +44,12 @@ export default function RH() {
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [pers, con, sig, nbEns] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId), api.compterEnseignantsNonImportes(ecoleId).catch(() => 0)]);
+      const [pers, con, sig, nbEns, els] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId), api.compterEnseignantsNonImportes(ecoleId).catch(() => 0), api.getElementsPaie(ecoleId).catch(() => [])]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
+      setElements(els);
     } catch (e) {
       setErreur(e.message);
     }
@@ -88,7 +91,14 @@ export default function RH() {
 
   const action = onglet === "personnel"
     ? <Bouton onClick={() => setFormPers({})}>+ Personnel</Bouton>
-    : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>;
+    : onglet === "paie"
+      ? (
+        <div className="flex gap-2">
+          <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
+          <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
+        </div>
+      )
+      : null;
 
   // Tableau de bord RH (accueil de l'espace) — agrégé depuis les données chargées
   const jour = new Date().toISOString().slice(0, 10);
@@ -231,6 +241,11 @@ export default function RH() {
           }
           setFormPers(null);
         }, false, formPers && formPers.id ? "Personnel modifié." : "Personnel ajouté.")}
+      />
+
+      <ModaleElementsPaie
+        ouvert={modaleElements} onFermer={() => setModaleElements(false)}
+        ecoleId={ecoleId} elements={elements} onChange={recharger}
       />
 
       <ModaleBulletin bulletin={bulletin} onFermer={() => setBulletin(null)} ecole={ecole} devise={devise} />
@@ -740,5 +755,73 @@ function PanneauDocumentsRH({ personnels, contrats, signataires, ecole, ecoleId,
         )}
       </Carte>
     </div>
+  );
+}
+
+// --- PHASE C : gestionnaire du catalogue d'éléments de paie ---
+function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [ajout, setAjout] = useState({ gain: "", retenue: "" });
+
+  const run = async (fn) => {
+    try { await fn(); await onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  // Fonction (pas un composant) → pas de perte de focus sur le champ d'ajout.
+  const renderSection = (sens, titre, aide) => {
+    const liste = (elements || []).filter((x) => x.sens === sens)
+      .sort((a, b) => (a.ordre - b.ordre) || a.libelle.localeCompare(b.libelle));
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-navy-900">{titre}</p>
+        <p className="text-xs text-navy-900/45">{aide}</p>
+        <ul className="space-y-1.5">
+          {liste.map((el) => (
+            <li key={el.id} className="flex flex-wrap items-center gap-2">
+              <input
+                defaultValue={el.libelle}
+                onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== el.libelle) run(() => api.modifierElementPaie(el.id, { libelle: v })); }}
+                className={`min-w-[8rem] flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500 ${el.actif === false ? "text-navy-900/40 line-through" : ""}`}
+              />
+              <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { recurrent: !el.recurrent }))}
+                className={`rounded-lg border px-2 py-1.5 text-xs ${el.recurrent ? "border-or-500/40 bg-or-500/10 text-or-700" : "border-navy-900/10 text-navy-900/50"}`}
+                title="Repris automatiquement chaque mois">{el.recurrent ? "récurrent" : "ponctuel"}</button>
+              <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { actif: !(el.actif !== false) }))}
+                className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5">{el.actif === false ? "activer" : "masquer"}</button>
+              <button type="button" onClick={async () => { if (await confirmer(`Supprimer l'élément « ${el.libelle} » ?`)) run(() => api.supprimerElementPaie(el.id)); }}
+                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-500 hover:bg-danger-500/5">suppr.</button>
+            </li>
+          ))}
+          {liste.length === 0 && <li className="text-xs text-navy-900/40">Aucun élément.</li>}
+        </ul>
+        <div className="flex gap-2 pt-1">
+          <input value={ajout[sens]} onChange={(e) => setAjout((a) => ({ ...a, [sens]: e.target.value }))}
+            placeholder={sens === "gain" ? "Nouveau gain (ex. Prime de caisse)…" : "Nouvelle retenue…"}
+            className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+          <Bouton variante="fantome" onClick={() => { const v = ajout[sens].trim(); if (!v) return; run(() => api.creerElementPaie(ecoleId, { sens, libelle: v, mode: "fixe", recurrent: false, ordre: liste.length })); setAjout((a) => ({ ...a, [sens]: "" })); }}>
+            + Ajouter
+          </Bouton>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Éléments de paie" large>
+      <div className="space-y-6">
+        <p className="text-xs text-navy-900/50">
+          Définis les gains (primes, indemnités, heures sup.…) et retenues utilisables dans la paie.
+          Un élément <b>récurrent</b> sera repris chaque mois pour l'employé ; un élément <b>ponctuel</b> s'ajoute au besoin.
+          « Masquer » retire un élément des choix sans toucher aux bulletins déjà émis.
+        </p>
+        {renderSection("gain", "Gains", "Primes, indemnités, heures supplémentaires, bonus…")}
+        {renderSection("retenue", "Retenues", "Cotisations, retards, retenues diverses (avances et prêts auront leur module).")}
+        <div className="flex justify-end">
+          <Bouton onClick={onFermer}>Terminé</Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }

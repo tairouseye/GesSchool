@@ -306,3 +306,74 @@ export async function supprimerSalaire(id) {
   const { error } = await supabase.from("salaires").delete().eq("id", id);
   if (error) throw error;
 }
+
+// --- Éléments de paie (catalogue configurable) — Phase C ---
+export async function getElementsPaie(ecoleId, sens) {
+  let q = supabase.from("elements_paie").select("*").eq("ecole_id", ecoleId);
+  if (sens) q = q.eq("sens", sens);
+  const { data, error } = await q.order("sens").order("ordre").order("libelle");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerElementPaie(ecoleId, e) {
+  const { data, error } = await supabase
+    .from("elements_paie")
+    .insert({
+      ecole_id: ecoleId,
+      libelle: (e.libelle || "").trim(),
+      sens: e.sens,
+      mode: e.mode || "fixe",
+      recurrent: !!e.recurrent,
+      imposable: !!e.imposable,
+      ordre: e.ordre || 0,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function modifierElementPaie(id, patch) {
+  const p = {};
+  for (const k of ["libelle", "sens", "mode", "recurrent", "imposable", "ordre", "actif"]) {
+    if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
+  }
+  const { data, error } = await supabase.from("elements_paie").update(p).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerElementPaie(id) {
+  const { error } = await supabase.from("elements_paie").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// --- Éléments récurrents affectés à un employé (utilisé en Phase D) ---
+export async function getElementsPersonnel(ecoleId, personnelId) {
+  const { data, error } = await supabase
+    .from("personnel_elements_paie")
+    .select("*, elements_paie(libelle, sens, mode, recurrent)")
+    .eq("ecole_id", ecoleId)
+    .eq("personnel_id", personnelId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function definirElementPersonnel(ecoleId, personnelId, elementId, montant) {
+  const { data, error } = await supabase
+    .from("personnel_elements_paie")
+    .upsert(
+      { ecole_id: ecoleId, personnel_id: personnelId, element_id: elementId, montant: Number(montant) || 0, actif: true },
+      { onConflict: "personnel_id,element_id" }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function retirerElementPersonnel(id) {
+  const { error } = await supabase.from("personnel_elements_paie").delete().eq("id", id);
+  if (error) throw error;
+}
