@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
 import { getEnseignants } from "@/lib/enseignants.js";
-import { lignesStatutaires } from "@/lib/paie.js";
+import { lignesStatutaires, lignesBrut, arr } from "@/lib/paie.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -32,6 +32,8 @@ function champsFiscaux(p) {
   if (p.situation_familiale !== undefined) f.situation_familiale = p.situation_familiale || null;
   if (p.part_ir !== undefined && p.part_ir !== "") f.part_ir = Number(p.part_ir) || 1;
   if (p.part_trimf !== undefined && p.part_trimf !== "") f.part_trimf = Number(p.part_trimf) || 1;
+  if (p.taux_horaire !== undefined) f.taux_horaire = Number(p.taux_horaire) || 0;
+  if (p.taux_sursalaire !== undefined) f.taux_sursalaire = Number(p.taux_sursalaire) || 0;
   return f;
 }
 
@@ -231,25 +233,47 @@ async function affectationsParPersonnel(ecoleId) {
   return map;
 }
 
-// Construit les lignes GAINS d'un bulletin : « Salaire de base » + éléments
-// récurrents. (Les lignes statutaires — cotisations/IR/TRIMF — sont ajoutées
-// séparément en mode complet.) Net recalculé par trigger.
-function lignesInitiales(ecoleId, salaireId, base, affectations) {
-  const lignes = [{ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: Number(base) || 0, ordre: 0 }];
+// Heures mensuelles de référence (fixes pour tous, définies par le comptable).
+export async function getHeuresMensuelles(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "heures_mensuelles").maybeSingle();
+  if (error) throw error;
+  const h = Number(data?.valeur?.heures);
+  return Number.isFinite(h) && h > 0 ? h : 173.33;
+}
+
+export async function setHeuresMensuelles(ecoleId, heures) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "heures_mensuelles", valeur: { heures: Number(heures) || 0 } }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// Construit les lignes GAINS d'un bulletin. En mode complet : Salaire de base
+// (+ sursalaire) = heures × taux horaire de l'employé ; sinon salaire de base
+// plat (contrat). Les éléments récurrents sont ajoutés à plat.
+function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx) {
+  const lignes = [];
+  if (ctx && Number(personnel?.taux_horaire) > 0) {
+    for (const l of lignesBrut(ctx.heures, personnel)) {
+      lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, base: l.base, taux: l.taux, montant: l.montant, ordre: l.ordre });
+    }
+  } else {
+    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: Number(base) || 0, ordre: 0 });
+  }
   (affectations || []).forEach((a, i) => lignes.push({
     ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
     libelle: a.elements_paie?.libelle || "Élément", sens: a.elements_paie?.sens || "gain", nature: "gain",
-    montant: Number(a.montant) || 0, ordre: i + 1,
+    montant: Number(a.montant) || 0, ordre: 10 + i,
   }));
   return lignes;
 }
 
-// Contexte « régime complet » (mode + cotisations + barème mensuel) si activé.
+// Contexte « régime complet » (mode + cotisations + barème + heures) si activé.
 async function contexteComplet(ecoleId) {
   const mode = await getModePaie(ecoleId);
   if (mode !== "complet") return null;
-  const [cotisations, baremeMensuel] = await Promise.all([getCotisations(ecoleId), getBareme(ecoleId, "mensuel")]);
-  return { cotisations, baremeMensuel };
+  const [cotisations, baremeMensuel, heures] = await Promise.all([getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getHeuresMensuelles(ecoleId)]);
+  return { cotisations, baremeMensuel, heures };
 }
 
 // Ajoute (en mode complet) les lignes statutaires calculées sur le brut soumis.
@@ -285,8 +309,9 @@ export async function genererPaie(ecoleId, periode) {
   const parId = new Map(pers.map((p) => [p.id, p]));
   const lignes = [];
   for (const s of crees) {
-    lignes.push(...lignesInitiales(ecoleId, s.id, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id]));
-    ajouterStatutaire(lignes, ecoleId, s.id, parId.get(s.personnel_id), ctx);
+    const p = parId.get(s.personnel_id);
+    lignes.push(...lignesInitiales(ecoleId, s.id, p, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id], ctx));
+    ajouterStatutaire(lignes, ecoleId, s.id, p, ctx);
   }
   if (lignes.length) {
     const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
@@ -300,11 +325,11 @@ export async function ajouterFichePaie(ecoleId, personnelId, periode, elements =
   const { data, error } = await supabase
     .from("salaires")
     .insert({ ecole_id: ecoleId, personnel_id: personnelId, periode, montant_brut: 0, prime: 0, retenue: 0, montant_net: 0, paye: false })
-    .select("*, personnels(prenom, nom, fonction, part_ir, part_trimf)")
+    .select("*, personnels(prenom, nom, fonction, part_ir, part_trimf, taux_horaire, taux_sursalaire)")
     .single();
   if (error) throw error;
   const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId), contexteComplet(ecoleId)]);
-  const lignes = lignesInitiales(ecoleId, data.id, elements.montant_brut || 0, aff[personnelId]);
+  const lignes = lignesInitiales(ecoleId, data.id, data.personnels, elements.montant_brut || 0, aff[personnelId], ctx);
   ajouterStatutaire(lignes, ecoleId, data.id, data.personnels, ctx);
   const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
   if (e2) throw e2;
@@ -348,6 +373,13 @@ export async function ajouterLigneSalaire(ecoleId, salaireId, l) {
 
 export async function majLigneSalaire(id, montant) {
   const { error } = await supabase.from("salaire_lignes").update({ montant: Number(montant) || 0 }).eq("id", id);
+  if (error) throw error;
+}
+
+// Édite base (heures/assiette) et/ou taux d'une ligne ; montant = round(base × taux).
+export async function majLigneBaseTaux(id, base, taux) {
+  const b = Number(base) || 0, t = Number(taux) || 0;
+  const { error } = await supabase.from("salaire_lignes").update({ base: b, taux: t, montant: arr(b * t) }).eq("id", id);
   if (error) throw error;
 }
 

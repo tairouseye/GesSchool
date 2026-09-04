@@ -36,7 +36,7 @@ export default function RH() {
   const [nbEnsNonImportes, setNbEnsNonImportes] = useState(0);
   const [elements, setElements] = useState([]);
   const [modaleElements, setModaleElements] = useState(false);
-  const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 } });
+  const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 }, heures: 173.33 });
   const [modaleRegime, setModaleRegime] = useState(false);
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
   const [bulletin, setBulletin] = useState(null);
@@ -54,12 +54,13 @@ export default function RH() {
         api.getModePaie(ecoleId).catch(() => "simplifie"), api.getCotisations(ecoleId).catch(() => []),
         api.compterBareme(ecoleId).catch(() => ({ mensuel: 0, annuel: 0 })),
       ]);
+      const heures = await api.getHeuresMensuelles(ecoleId).catch(() => 173.33);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
       setElements(els);
-      setRegime({ mode, cotisations: cots, bareme: bar });
+      setRegime({ mode, cotisations: cots, bareme: bar, heures });
     } catch (e) {
       setErreur(e.message);
     }
@@ -512,6 +513,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
     prenom: "", nom: "", fonction: "Enseignant", telephone: "", email: "", date_embauche: "",
     type: "CDI", salaire_base: "", debut: "", fin: "",
     matricule: "", categorie: "", n_ipres: "", situation_familiale: "", part_ir: "1", part_trimf: "1",
+    taux_horaire: "", taux_sursalaire: "",
   };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -530,6 +532,8 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
       situation_familiale: edition.situation_familiale || "",
       part_ir: edition.part_ir != null ? String(edition.part_ir) : "1",
       part_trimf: edition.part_trimf != null ? String(edition.part_trimf) : "1",
+      taux_horaire: edition.taux_horaire ? String(edition.taux_horaire) : "",
+      taux_sursalaire: edition.taux_sursalaire ? String(edition.taux_sursalaire) : "",
     });
   }, [edition]);
 
@@ -540,7 +544,8 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
         if (!f.prenom.trim() || !f.nom.trim()) return;
         onEnregistrer(
           { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null,
-            matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf },
+            matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf,
+            taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire },
           { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
         if (!enEdition) setF(vide);
@@ -587,8 +592,10 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
             <Champ label="Situation familiale" value={f.situation_familiale} onChange={(e) => maj("situation_familiale", e.target.value)} placeholder="Marié(e), célibataire…" />
             <Champ label="Part IR" type="number" step="0.5" value={f.part_ir} onChange={(e) => maj("part_ir", e.target.value)} />
             <Champ label="Part TRIMF" type="number" step="0.5" value={f.part_trimf} onChange={(e) => maj("part_trimf", e.target.value)} />
+            <Champ label="Taux horaire (base)" value={f.taux_horaire} onChange={(e) => maj("taux_horaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 669,49" />
+            <Champ label="Taux horaire sursalaire" value={f.taux_sursalaire} onChange={(e) => maj("taux_sursalaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 160,27" />
           </div>
-          <p className="mt-2 text-xs text-navy-900/40">Les parts (quotient familial) servent au calcul de l'IR/TRIMF en mode complet.</p>
+          <p className="mt-2 text-xs text-navy-900/40">Les parts servent à l'IR/TRIMF. En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
         </details>
 
         <div className="flex justify-end gap-2">
@@ -905,6 +912,9 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
   const gains = lignes.filter((l) => l.sens === "gain");
   const retenues = lignes.filter((l) => l.sens === "retenue");
   const patronales = lignes.filter((l) => l.sens === "patronal");
+  const cotisImpots = retenues.filter((l) => ["cotisation", "impot"].includes(l.nature));
+  const retenuesManuelles = retenues.filter((l) => !["cotisation", "impot"].includes(l.nature));
+  const auto = (l) => ["cotisation", "impot", "patronal"].includes(l.nature); // recalculé, non édité à la main
   const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalPatronal = patronales.reduce((s, l) => s + Number(l.montant || 0), 0);
@@ -920,25 +930,44 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" });
   };
 
+  const champPetit = "w-16 rounded border border-navy-900/15 bg-white px-1.5 py-1 text-right font-mono text-xs outline-none focus:border-or-500";
   const rendreLignes = (liste, titre, signe) => (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">{titre}</p>
       {liste.length === 0 && <p className="text-xs text-navy-900/40">Aucune ligne.</p>}
-      {liste.map((l) => (
-        <div key={l.id} className="flex items-center gap-2">
-          <span className="flex-1 text-sm text-navy-900">{l.libelle}</span>
-          <span className="text-navy-900/40">{signe}</span>
-          {verrouille
-            ? <span className="w-28 px-2 py-1.5 text-right font-mono text-sm text-navy-900">{fmt(l.montant)}</span>
-            : <input defaultValue={l.montant} inputMode="numeric"
-                onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
-                className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />}
-          {!verrouille && (
-            <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
-              className="text-xs text-danger-500 hover:underline">×</button>
-          )}
-        </div>
-      ))}
+      {liste.map((l) => {
+        const editable = !verrouille && !auto(l);
+        const aTaux = l.taux != null && l.taux !== "";
+        return (
+          <div key={l.id} className="flex flex-wrap items-center gap-2">
+            <span className="min-w-[6rem] flex-1 text-sm text-navy-900">{l.libelle}</span>
+            {aTaux && (
+              <span className="flex items-center gap-1 text-xs text-navy-900/45">
+                {editable
+                  ? <input defaultValue={l.base} inputMode="decimal" title="heures / assiette"
+                      onBlur={(e) => { const b = e.target.value.replace(",", "."); if (Number(b) !== Number(l.base)) run(() => api.majLigneBaseTaux(l.id, b, l.taux)); }} className={champPetit} />
+                  : <span className="font-mono">{l.base}</span>}
+                <span>×</span>
+                {editable
+                  ? <input defaultValue={l.taux} inputMode="decimal" title="taux"
+                      onBlur={(e) => { const t = e.target.value.replace(",", "."); if (Number(t) !== Number(l.taux)) run(() => api.majLigneBaseTaux(l.id, l.base, t)); }} className={champPetit} />
+                  : <span className="font-mono">{l.taux}</span>}
+                <span>=</span>
+              </span>
+            )}
+            <span className="text-navy-900/40">{signe}</span>
+            {(!aTaux && editable)
+              ? <input defaultValue={l.montant} inputMode="numeric"
+                  onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
+                  className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+              : <span className="w-28 px-2 py-1.5 text-right font-mono text-sm text-navy-900">{fmt(l.montant)}</span>}
+            {editable
+              ? <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
+                  className="text-xs text-danger-500 hover:underline">×</button>
+              : <span className="w-3" />}
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -950,12 +979,13 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
             Bulletin <b>{salaire.statut === "paye" ? "payé" : "validé"}</b> — en lecture seule. {salaire.statut === "paye" ? "Annulez le paiement puis dévalidez" : "Dévalidez-le"} pour le modifier.
           </div>
         )}
-        {rendreLignes(gains, "Gains", "+")}
+        {rendreLignes(gains, "Brut", "+")}
         <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
           <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
         </div>
 
-        {rendreLignes(retenues, "Retenues", "−")}
+        {cotisImpots.length > 0 && rendreLignes(cotisImpots, "Cotisations & impôts", "−")}
+        {rendreLignes(retenuesManuelles, "Retenues", "−")}
         {retenues.length > 0 && (
           <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
             <span className="text-navy-900/70">Total retenues</span><span className="font-mono">− {fmt(totalRetenues)} {devise}</span>
@@ -964,7 +994,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
 
         {modeComplet && !verrouille && (
           <button type="button" onClick={() => run(() => api.recalculerStatutaire(ecoleId, salaireId))}
-            className="text-xs font-medium text-sky-700 hover:underline">↻ Recalculer cotisations, IR & TRIMF (depuis les gains)</button>
+            className="text-xs font-medium text-sky-700 hover:underline">↻ Recalculer cotisations, IR & TRIMF (depuis le brut)</button>
         )}
 
         <div className="flex justify-between rounded-xl bg-navy-900/5 px-4 py-3">
@@ -1037,6 +1067,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const cots = regime?.cotisations || [];
   const mode = regime?.mode || "simplifie";
   const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
+  const heures = regime?.heures ?? 173.33;
 
   const run = async (fn) => {
     try { await fn(); await onChange(); }
@@ -1098,14 +1129,26 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
           <p className="mt-2 text-xs text-navy-900/45">
             {mode === "simplifie"
               ? "Paie simple : net = gains − retenues (pas de cotisations ni d'impôt automatiques)."
-              : "Paie statutaire : cotisations, IR (barème) et TRIMF calculés automatiquement (moteur en cours d'activation)."}
+              : "Paie statutaire : Brut = heures × taux horaire ; cotisations, IR (barème) et TRIMF calculés automatiquement."}
           </p>
+        </div>
+
+        {/* Heures mensuelles */}
+        <div>
+          <p className="mb-1 text-sm font-semibold text-navy-900">Heures mensuelles (base du Brut)</p>
+          <div className="flex items-center gap-2">
+            <input defaultValue={heures} inputMode="decimal"
+              onBlur={(e) => { const v = e.target.value.replace(",", "."); if (Number(v) > 0 && Number(v) !== Number(heures)) run(() => api.setHeuresMensuelles(ecoleId, v)); }}
+              className="w-32 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <span className="text-xs text-navy-900/45">h / mois</span>
+          </div>
+          <p className="mt-1 text-xs text-navy-900/45">Fixe pour tout le monde (ajustable par bulletin en cas d'absence). Le taux horaire est défini par employé dans sa fiche.</p>
         </div>
 
         {/* Cotisations */}
         <div className="space-y-2">
           <p className="text-sm font-semibold text-navy-900">Cotisations</p>
-          <p className="text-xs text-navy-900/45">Taux en % ; laisse un plafond vide pour « aucun ». Un forfait (montant fixe) l'emporte sur le taux.</p>
+          <p className="text-xs text-navy-900/45">Taux en % ; le <b>plafond</b> = assiette maximale (ex. 432 000 pour l'IPRES, 63 000 pour la CSS ; vide = aucun). Un forfait (montant fixe, ex. IPM) l'emporte sur le taux.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="text-navy-900/50">
