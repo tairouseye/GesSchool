@@ -35,6 +35,7 @@ export default function RH() {
   const [nbEnsNonImportes, setNbEnsNonImportes] = useState(0);
   const [elements, setElements] = useState([]);
   const [modaleElements, setModaleElements] = useState(false);
+  const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -210,13 +211,16 @@ export default function RH() {
             periode={periode} setPeriode={setPeriode} salaires={salaires} personnels={actifs} contrats={contrats}
             devise={devise} ecole={ecole}
             comptes={comptes} reglement={reglement} setReglement={setReglement}
-            onMaj={(ligne, v) => wrap(async () => {
-              if (ligne._nouveau) await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, v);
-              else await api.majSalaire(ligne.id, v);
-            }, true)}
-            onPayer={(ligne, v) => wrap(async () => {
+            onDetail={async (ligne) => {
+              try {
+                let id = ligne.id;
+                if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, { montant_brut: ligne.montant_brut }); id = s.id; await rechargerPaie(); }
+                setDetail(id);
+              } catch (e) { toast.erreur(e.message || "Erreur."); }
+            }}
+            onPayer={(ligne) => wrap(async () => {
               let id = ligne.id;
-              if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, v); id = s.id; }
+              if (ligne._nouveau) { const s = await api.ajouterFichePaie(ecoleId, ligne.personnel_id, periode, { montant_brut: ligne.montant_brut }); id = s.id; }
               await api.marquerPaye(id, { compte_id: reglement.compte_id, mode: reglement.mode });
             }, true)}
             onAnnuler={(id) => wrap(() => api.annulerPaiement(id), true)}
@@ -246,6 +250,12 @@ export default function RH() {
       <ModaleElementsPaie
         ouvert={modaleElements} onFermer={() => setModaleElements(false)}
         ecoleId={ecoleId} elements={elements} onChange={recharger}
+      />
+
+      <ModaleDetailPaie
+        salaireId={detail} onFermer={() => setDetail(null)}
+        ecoleId={ecoleId} elements={elements} devise={devise}
+        onChange={rechargerPaie}
       />
 
       <ModaleBulletin bulletin={bulletin} onFermer={() => setBulletin(null)} ecole={ecole} devise={devise} />
@@ -302,7 +312,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
   );
 }
 
-function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devise, ecole, comptes, reglement, setReglement, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
+function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devise, ecole, comptes, reglement, setReglement, onDetail, onPayer, onAnnuler, onSuppr, onBulletin }) {
   // Fusion : chaque personnel actif figure automatiquement — avec sa fiche si
   // elle existe, sinon une ligne « à générer » pré-remplie du salaire de base.
   // On garde aussi les fiches existantes dont le personnel n'est plus « actif »
@@ -425,9 +435,6 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
             <thead className="bg-creme text-navy-900/50">
               <tr>
                 <th className="px-4 py-3 font-medium">Personnel</th>
-                <th className="px-4 py-3 text-right font-medium">Salaire de base</th>
-                <th className="px-4 py-3 text-right font-medium">Prime</th>
-                <th className="px-4 py-3 text-right font-medium">Retenue</th>
                 <th className="px-4 py-3 text-right font-medium">Net à payer</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3"></th>
@@ -436,7 +443,7 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
             <tbody>
               {toutes.map((s) => (
                 <LignePaie key={s.id} s={s} devise={devise}
-                  onMaj={onMaj} onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
+                  onDetail={onDetail} onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
               ))}
             </tbody>
           </table>
@@ -446,38 +453,17 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
   );
 }
 
-function LignePaie({ s, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }) {
-  const [brut, setBrut] = useState(String(s.montant_brut ?? 0));
-  const [prime, setPrime] = useState(String(s.prime ?? 0));
-  const [retenue, setRetenue] = useState(String(s.retenue ?? 0));
-  const net = (Number(brut) || 0) + (Number(prime) || 0) - (Number(retenue) || 0);
-  const champNum = "w-24 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500 disabled:bg-navy-900/5";
-
-  // L'édition reste possible même après paiement : le net est recalculé et la
-  // dépense comptable liée est resynchronisée (cf. majSalaire → RPC maj_salaire).
-  const elements = { montant_brut: brut, prime, retenue };
-  const commit = () => {
-    if (Number(brut) !== Number(s.montant_brut) || Number(prime) !== Number(s.prime) || Number(retenue) !== Number(s.retenue)) {
-      onMaj(s, elements);
-    }
-  };
-
+function LignePaie({ s, devise, onDetail, onPayer, onAnnuler, onSuppr, onBulletin }) {
+  // La composition (base + gains − retenues) s'édite via « détails » ; le net
+  // affiché ici est celui calculé en base (trigger sur les lignes).
+  const net = Number(s.montant_net || 0);
   return (
     <tr className="border-t border-navy-900/5">
       <td className="px-4 py-3">
         <p className="font-medium text-navy-900">{s.personnels?.prenom} {s.personnels?.nom}</p>
         <p className="text-xs text-navy-900/40">{s.personnels?.fonction || ""}</p>
       </td>
-      <td className="px-4 py-3 text-right">
-        <input value={brut} onChange={(e) => setBrut(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
-      </td>
-      <td className="px-4 py-3 text-right">
-        <input value={prime} onChange={(e) => setPrime(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
-      </td>
-      <td className="px-4 py-3 text-right">
-        <input value={retenue} onChange={(e) => setRetenue(e.target.value.replace(/[^0-9]/g, ""))} onBlur={commit} className={champNum} />
-      </td>
-      <td className="px-4 py-3 text-right font-mono font-semibold text-navy-900">{fmt(net)}</td>
+      <td className="px-4 py-3 text-right font-mono font-semibold text-navy-900">{fmt(net)} <span className="text-xs font-normal text-navy-900/40">{devise}</span></td>
       <td className="px-4 py-3">
         {s.paye
           ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Payé</span>
@@ -487,10 +473,11 @@ function LignePaie({ s, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-3 text-xs">
-          <button onClick={() => onBulletin(s)} className="text-navy-700 hover:text-or-500">bulletin</button>
+          <button onClick={() => onDetail(s)} className="font-medium text-navy-700 hover:text-or-500">détails</button>
+          {!s._nouveau && <button onClick={() => onBulletin(s)} className="text-navy-700 hover:text-or-500">bulletin</button>}
           {s.paye
             ? <button onClick={() => onAnnuler(s.id)} className="text-navy-900/50 hover:underline">annuler</button>
-            : <button onClick={() => onPayer(s, elements)} className="font-medium text-emerald-700 hover:underline">payer</button>}
+            : <button onClick={() => onPayer(s)} className="font-medium text-emerald-700 hover:underline">payer</button>}
           {!s.paye && !s._nouveau && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
         </div>
       </td>
@@ -573,8 +560,19 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
 }
 
 function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
+  const [lignes, setLignes] = useState([]);
+  useEffect(() => {
+    if (!bulletin?.id) { setLignes([]); return; }
+    let vivant = true;
+    api.getLignesSalaire(bulletin.id).then((l) => { if (vivant) setLignes(l); }).catch(() => {});
+    return () => { vivant = false; };
+  }, [bulletin]);
   if (!bulletin) return null;
-  const net = Number(bulletin.montant_net || 0);
+  const gains = lignes.filter((l) => l.sens === "gain");
+  const retenues = lignes.filter((l) => l.sens === "retenue");
+  const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const net = Number(bulletin.montant_net ?? totalGains - totalRetenues);
   const p = bulletin.personnels || {};
   return (
     <Modale ouvert={!!bulletin} onFermer={onFermer} titre="Bulletin de paie" large>
@@ -596,13 +594,30 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
             </div>
           </div>
 
-          <table className="mt-5 w-full text-left text-sm">
+          <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-navy-900/40">Rémunération</p>
+          <table className="mt-1 w-full text-left text-sm">
             <tbody>
-              <LigneB l="Salaire de base" v={`${fmt(bulletin.montant_brut)} ${devise}`} />
-              <LigneB l="Primes / indemnités" v={`+ ${fmt(bulletin.prime)} ${devise}`} />
-              <LigneB l="Retenues" v={`− ${fmt(bulletin.retenue)} ${devise}`} />
+              {gains.map((l) => <LigneB key={l.id} l={l.libelle} v={`${fmt(l.montant)} ${devise}`} />)}
             </tbody>
           </table>
+          <div className="mt-1 flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
+            <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
+          </div>
+
+          {retenues.length > 0 && (
+            <>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-navy-900/40">Retenues</p>
+              <table className="mt-1 w-full text-left text-sm">
+                <tbody>
+                  {retenues.map((l) => <LigneB key={l.id} l={l.libelle} v={`− ${fmt(l.montant)} ${devise}`} />)}
+                </tbody>
+              </table>
+              <div className="mt-1 flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
+                <span className="text-navy-900/70">Total retenues</span><span className="font-mono">− {fmt(totalRetenues)} {devise}</span>
+              </div>
+            </>
+          )}
+
           <div className="mt-3 flex justify-between border-t-2 border-navy-900/15 pt-3">
             <span className="font-display font-bold text-navy-900">NET À PAYER</span>
             <span className="font-display text-xl font-bold text-navy-900">{fmt(net)} {devise}</span>
@@ -818,6 +833,121 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
         </p>
         {renderSection("gain", "Gains", "Primes, indemnités, heures supplémentaires, bonus…")}
         {renderSection("retenue", "Retenues", "Cotisations, retards, retenues diverses (avances et prêts auront leur module).")}
+        <div className="flex justify-end">
+          <Bouton onClick={onFermer}>Terminé</Bouton>
+        </div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- PHASE D : éditeur de composition d'un bulletin (lignes gains/retenues) ---
+function ModaleDetailPaie({ salaireId, onFermer, ecoleId, elements, devise, onChange }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [lignes, setLignes] = useState([]);
+  const [nouv, setNouv] = useState({ elementId: "", libelle: "", sens: "gain", montant: "" });
+
+  const recharger = async () => {
+    if (!salaireId) return;
+    try { setLignes(await api.getLignesSalaire(salaireId)); } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  useEffect(() => { setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" }); recharger(); /* eslint-disable-next-line */ }, [salaireId]);
+
+  const run = async (fn) => {
+    try { await fn(); await recharger(); onChange && onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  const gains = lignes.filter((l) => l.sens === "gain");
+  const retenues = lignes.filter((l) => l.sens === "retenue");
+  const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const net = totalGains - totalRetenues;
+  const actifs = (elements || []).filter((e) => e.actif !== false);
+
+  const ajouter = () => {
+    const el = actifs.find((e) => e.id === nouv.elementId);
+    const libelle = el ? el.libelle : nouv.libelle.trim();
+    const sens = el ? el.sens : nouv.sens;
+    if (!libelle) { toast.erreur("Choisis un élément ou saisis un libellé."); return; }
+    run(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, montant: nouv.montant, ordre: lignes.length }));
+    setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" });
+  };
+
+  const rendreLignes = (liste, titre, signe) => (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">{titre}</p>
+      {liste.length === 0 && <p className="text-xs text-navy-900/40">Aucune ligne.</p>}
+      {liste.map((l) => (
+        <div key={l.id} className="flex items-center gap-2">
+          <span className="flex-1 text-sm text-navy-900">{l.libelle}</span>
+          <span className="text-navy-900/40">{signe}</span>
+          <input defaultValue={l.montant} inputMode="numeric"
+            onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
+            className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+          <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
+            className="text-xs text-danger-500 hover:underline">×</button>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <Modale ouvert={!!salaireId} onFermer={onFermer} titre="Composition du salaire" large>
+      <div className="space-y-5">
+        {rendreLignes(gains, "Gains", "+")}
+        <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
+          <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
+        </div>
+
+        {rendreLignes(retenues, "Retenues", "−")}
+        {retenues.length > 0 && (
+          <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
+            <span className="text-navy-900/70">Total retenues</span><span className="font-mono">− {fmt(totalRetenues)} {devise}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between rounded-xl bg-navy-900/5 px-4 py-3">
+          <span className="font-display font-bold text-navy-900">NET À PAYER</span>
+          <span className="font-display text-lg font-bold text-navy-900">{fmt(net)} {devise}</span>
+        </div>
+
+        {/* Ajout d'une ligne */}
+        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+          <p className="mb-2 text-sm font-medium text-navy-900/70">Ajouter un élément</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Élément</span>
+              <select value={nouv.elementId} onChange={(e) => setNouv((n) => ({ ...n, elementId: e.target.value }))}
+                className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— Libre —</option>
+                <optgroup label="Gains">
+                  {actifs.filter((e) => e.sens === "gain").map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
+                </optgroup>
+                <optgroup label="Retenues">
+                  {actifs.filter((e) => e.sens === "retenue").map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
+                </optgroup>
+              </select>
+            </label>
+            {!nouv.elementId && (
+              <>
+                <div className="w-40"><Champ label="Libellé" value={nouv.libelle} onChange={(e) => setNouv((n) => ({ ...n, libelle: e.target.value }))} /></div>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Sens</span>
+                  <select value={nouv.sens} onChange={(e) => setNouv((n) => ({ ...n, sens: e.target.value }))}
+                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                    <option value="gain">Gain</option>
+                    <option value="retenue">Retenue</option>
+                  </select>
+                </label>
+              </>
+            )}
+            <div className="w-28"><Champ label="Montant" value={nouv.montant} onChange={(e) => setNouv((n) => ({ ...n, montant: e.target.value.replace(/[^0-9]/g, "") }))} /></div>
+            <Bouton variante="or" onClick={ajouter}>Ajouter</Bouton>
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <Bouton onClick={onFermer}>Terminé</Bouton>
         </div>

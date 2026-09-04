@@ -203,56 +203,103 @@ export async function getSalaires(ecoleId, periode) {
   );
 }
 
-// Génère les fiches de paie d'une période pour le personnel dont le contrat est
-// ACTIF sur la période (saute l'existant et les contrats terminés / à venir).
-// Le montant est le salaire de base, traité comme un NET (prime/retenue à 0).
+// Éléments récurrents d'une école, groupés par personnel (Phase D).
+async function affectationsParPersonnel(ecoleId) {
+  const { data, error } = await supabase
+    .from("personnel_elements_paie")
+    .select("personnel_id, element_id, montant, elements_paie(libelle, sens)")
+    .eq("ecole_id", ecoleId)
+    .eq("actif", true);
+  if (error) throw error;
+  const map = {};
+  for (const a of data ?? []) (map[a.personnel_id] ||= []).push(a);
+  return map;
+}
+
+// Construit les lignes d'un bulletin : « Salaire de base » (gain) + éléments
+// récurrents affectés à l'employé. Le net est recalculé par trigger en base.
+function lignesInitiales(ecoleId, salaireId, base, affectations) {
+  const lignes = [{ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", montant: Number(base) || 0, ordre: 0 }];
+  (affectations || []).forEach((a, i) => lignes.push({
+    ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
+    libelle: a.elements_paie?.libelle || "Élément", sens: a.elements_paie?.sens || "gain",
+    montant: Number(a.montant) || 0, ordre: i + 1,
+  }));
+  return lignes;
+}
+
+// Génère les fiches de paie d'une période pour le personnel au contrat ACTIF
+// (saute l'existant, les contrats terminés / à venir). Chaque fiche est composée
+// dynamiquement : Salaire de base + éléments récurrents. Net calculé par trigger.
 export async function genererPaie(ecoleId, periode) {
-  const [pers, contrats, existant] = await Promise.all([
+  const [pers, contrats, existant, aff] = await Promise.all([
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
+    affectationsParPersonnel(ecoleId),
   ]);
   const deja = new Set((existant.data ?? []).map((s) => s.personnel_id));
-  const lignes = [];
-  for (const p of pers) {
-    if (deja.has(p.id)) continue;
-    const contrat = contrats[p.id];
-    if (!contratActifPour(contrat, periode)) continue; // pas de contrat actif ce mois
-    const base = Number(contrat?.salaire_base || 0);
-    lignes.push({
-      ecole_id: ecoleId,
-      personnel_id: p.id,
-      periode,
-      montant_brut: base,
-      prime: 0,
-      retenue: 0,
-      montant_net: base,
-      paye: false,
-    });
-  }
-  if (lignes.length === 0) return { crees: 0 };
-  const { error } = await supabase.from("salaires").insert(lignes);
+  const aCreer = pers.filter((p) => !deja.has(p.id) && contratActifPour(contrats[p.id], periode));
+  if (aCreer.length === 0) return { crees: 0 };
+  const { data: crees, error } = await supabase
+    .from("salaires")
+    .insert(aCreer.map((p) => ({ ecole_id: ecoleId, personnel_id: p.id, periode, montant_brut: 0, prime: 0, retenue: 0, montant_net: 0, paye: false })))
+    .select("id, personnel_id");
   if (error) throw error;
-  return { crees: lignes.length };
+  const lignes = [];
+  for (const s of crees) {
+    lignes.push(...lignesInitiales(ecoleId, s.id, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id]));
+  }
+  if (lignes.length) {
+    const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
+    if (e2) throw e2;
+  }
+  return { crees: crees.length };
 }
 
-// Crée à la demande une fiche pour UN personnel (utilisé quand on paie/édite
-// directement une ligne pas encore générée). Accepte le salaire de base et,
-// éventuellement, prime/retenue. Renvoie la fiche créée.
+// Crée à la demande une fiche pour UN personnel (paiement/édition d'une ligne
+// pas encore générée) : Salaire de base + éléments récurrents. Renvoie la fiche.
 export async function ajouterFichePaie(ecoleId, personnelId, periode, elements = {}) {
-  const base = Number(elements.montant_brut) || 0;
-  const pr = Number(elements.prime) || 0;
-  const re = Number(elements.retenue) || 0;
   const { data, error } = await supabase
     .from("salaires")
-    .insert({
-      ecole_id: ecoleId, personnel_id: personnelId, periode,
-      montant_brut: base, prime: pr, retenue: re, montant_net: base + pr - re, paye: false,
-    })
+    .insert({ ecole_id: ecoleId, personnel_id: personnelId, periode, montant_brut: 0, prime: 0, retenue: 0, montant_net: 0, paye: false })
     .select("*, personnels(prenom, nom, fonction)")
     .single();
   if (error) throw error;
+  const aff = await affectationsParPersonnel(ecoleId);
+  const lignes = lignesInitiales(ecoleId, data.id, elements.montant_brut || 0, aff[personnelId]);
+  const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
+  if (e2) throw e2;
   return data;
+}
+
+// --- Lignes de bulletin (composition dynamique) — Phase D ---
+export async function getLignesSalaire(salaireId) {
+  const { data, error } = await supabase
+    .from("salaire_lignes").select("*").eq("salaire_id", salaireId)
+    .order("sens").order("ordre");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function ajouterLigneSalaire(ecoleId, salaireId, l) {
+  const { data, error } = await supabase
+    .from("salaire_lignes")
+    .insert({ ecole_id: ecoleId, salaire_id: salaireId, element_id: l.element_id || null, libelle: l.libelle, sens: l.sens, montant: Number(l.montant) || 0, ordre: l.ordre || 0 })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function majLigneSalaire(id, montant) {
+  const { error } = await supabase.from("salaire_lignes").update({ montant: Number(montant) || 0 }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function supprimerLigneSalaire(id) {
+  const { error } = await supabase.from("salaire_lignes").delete().eq("id", id);
+  if (error) throw error;
 }
 
 // Met à jour les éléments de salaire ; recalcule le net (base + prime − retenue)
