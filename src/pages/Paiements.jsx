@@ -7,6 +7,7 @@ import * as api from "@/lib/paiements.js";
 import { GESPRO } from "@/lib/gespro.js";
 import { getTransactions, LIBELLE_STATUT_TX } from "@/lib/paiementEnLigne.js";
 import { getEleves } from "@/lib/eleves.js";
+import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast } from "@/composants/Feedback.jsx";
 
@@ -516,7 +517,8 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais
 function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateur, onChange }) {
   const toast = useToast();
   const [facture, setFacture] = useState(null);
-  const [pay, setPay] = useState({ montant: "", mode: "wave", reference: "", date_paiement: "" });
+  const [pay, setPay] = useState({ montant: "", mode: "wave", reference: "", date_paiement: "", compte_id: "" });
+  const [comptes, setComptes] = useState([]);
   const [erreur, setErreur] = useState("");
 
   const recharger = useCallback(async () => {
@@ -530,6 +532,17 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
   }, [factureId]);
 
   useEffect(() => { setErreur(""); recharger(); }, [recharger]);
+
+  // Comptes de trésorerie : l'encaissement s'y impute pour que le solde de
+  // caisse reflète la scolarité. Facultatif (défaut = 1er compte). Un profil
+  // sans droit compta n'y a pas accès → on ignore l'erreur, le champ se masque.
+  useEffect(() => {
+    let vivant = true;
+    getComptes(ecoleId)
+      .then((cs) => { if (!vivant) return; const a = cs.filter((c) => c.actif !== false); setComptes(a); setPay((p) => (p.compte_id ? p : { ...p, compte_id: a[0]?.id || "" })); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [ecoleId]);
 
   if (!factureId) return null;
   const reste = facture ? (Number(facture.montant_total) || 0) - (Number(facture.montant_paye) || 0) : 0;
@@ -645,8 +658,23 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                   </label>
                   <div className="w-36"><Champ label="Référence" value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} /></div>
                   <div className="w-40"><Champ label="Date" type="date" value={pay.date_paiement} onChange={(e) => setPay((p) => ({ ...p, date_paiement: e.target.value }))} /></div>
+                  {comptes.length > 0 && (
+                    <label className="block">
+                      <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Encaissé dans</span>
+                      <select value={pay.compte_id} onChange={(e) => setPay((p) => ({ ...p, compte_id: e.target.value }))}
+                        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                        <option value="">— Aucun compte —</option>
+                        {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+                      </select>
+                    </label>
+                  )}
                   <Bouton type="submit" variante="or">Encaisser</Bouton>
                 </div>
+                {comptes.length === 0 && (
+                  <p className="mt-2 text-xs text-navy-900/40">
+                    💡 Crée un compte de trésorerie dans <b>Comptabilité</b> pour que la scolarité encaissée alimente ta caisse.
+                  </p>
+                )}
               </form>
             )}
           </div>

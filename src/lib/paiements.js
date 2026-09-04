@@ -152,6 +152,7 @@ export async function encaisser(ecoleId, factureId, p, encaissePar) {
       mode: p.mode,
       reference: p.reference || null,
       date_paiement: p.date_paiement || new Date().toISOString().slice(0, 10),
+      compte_id: p.compte_id || null,
       encaisse_par: encaissePar || null,
     })
     .select()
