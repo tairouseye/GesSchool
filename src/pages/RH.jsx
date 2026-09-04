@@ -1384,6 +1384,23 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, 
     onGenerer(map);
   };
 
+  // Vérification des entêtes : champs manquants par employé (ordonné).
+  const champsEntete = [
+    { cle: "matricule", label: "Matricule" },
+    { cle: "categorie", label: "Catégorie" },
+    { cle: "n_ipres", label: "N° IPRES" },
+    { cle: "situation_familiale", label: "Situation familiale" },
+    { cle: "date_embauche", label: "Date d'entrée" },
+  ];
+  const manquements = (p) => {
+    const m = [];
+    if (modeComplet && !(Number(p.taux_horaire) > 0)) m.push({ label: "Taux horaire", critique: true });
+    for (const c of champsEntete) if (!p[c.cle]) m.push({ label: c.label, critique: false });
+    return m;
+  };
+  const aVerifier = employes.map((p) => ({ p, m: manquements(p) })).filter((x) => x.m.length > 0);
+  const nbCritiques = aVerifier.reduce((n, x) => n + x.m.filter((z) => z.critique).length, 0);
+
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre={`Préparer la paie — ${libellePeriode(periode)}`} large>
       <div className="space-y-4">
@@ -1397,6 +1414,37 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, 
             ⚠️ Barème IR non chargé : l'IR et le TRIMF seront à 0. Charge le barème dans « Régime » avant de générer.
           </div>
         )}
+
+        {/* Vérification des entêtes */}
+        {employes.length > 0 && (
+          aVerifier.length === 0 ? (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-xs text-emerald-800">
+              ✓ Toutes les entêtes sont à jour ({employes.length} employé{employes.length > 1 ? "s" : ""}).
+            </div>
+          ) : (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <p className="text-sm font-semibold text-amber-900">
+                Entêtes à compléter — {aVerifier.length} employé{aVerifier.length > 1 ? "s" : ""}
+                {nbCritiques > 0 && <span className="text-danger-600"> · {nbCritiques} champ(s) critique(s)</span>}
+              </p>
+              <p className="mt-0.5 text-xs text-amber-800/80">Les champs manquants apparaîtront vides sur le bulletin ; un <b>taux horaire</b> manquant met le salaire de base à 0. Complète-les dans la fiche de l'employé.</p>
+              <ul className="mt-2 space-y-1.5">
+                {aVerifier.map(({ p, m }) => (
+                  <li key={p.id} className="text-xs">
+                    <span className="font-medium text-navy-900">{p.prenom} {p.nom}</span>
+                    <span className="text-navy-900/50"> — </span>
+                    {m.map((z, i) => (
+                      <span key={z.label} className={z.critique ? "font-medium text-danger-600" : "text-amber-800"}>
+                        {z.label}{z.critique ? " ⚠️" : ""}{i < m.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        )}
+
         {employes.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/50">Aucune fiche à générer (déjà générées, ou aucun contrat actif ce mois).</Carte>
         ) : (
