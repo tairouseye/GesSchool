@@ -509,3 +509,29 @@ export async function compterBareme(ecoleId) {
   for (const x of data ?? []) r[x.periodicite] = (r[x.periodicite] || 0) + 1;
   return r;
 }
+
+// Remplace le barème d'une périodicité ('mensuel'|'annuel') par les lignes fournies.
+// rows: [{ revenu:Number, trimf:Number, ir:{ "1":x, "1.5":y, ... } }]
+export async function importerBareme(ecoleId, periodicite, rows) {
+  await supabase.from("bareme_ir").delete().eq("ecole_id", ecoleId).eq("periodicite", periodicite);
+  const lignes = (rows || [])
+    .filter((r) => r && Number.isFinite(Number(r.revenu)))
+    .map((r) => ({ ecole_id: ecoleId, periodicite, revenu: Number(r.revenu), trimf: Number(r.trimf) || 0, ir: r.ir || {} }));
+  if (lignes.length === 0) return { importes: 0 };
+  // Insertion par lots (barèmes volumineux : ~5000 lignes).
+  const taille = 1000;
+  for (let i = 0; i < lignes.length; i += taille) {
+    const { error } = await supabase.from("bareme_ir").insert(lignes.slice(i, i + taille));
+    if (error) throw error;
+  }
+  return { importes: lignes.length };
+}
+
+// Barème complet d'une périodicité (pour lecture/moteur côté client).
+export async function getBareme(ecoleId, periodicite) {
+  const { data, error } = await supabase
+    .from("bareme_ir").select("revenu, trimf, ir").eq("ecole_id", ecoleId).eq("periodicite", periodicite)
+    .order("revenu");
+  if (error) throw error;
+  return data ?? [];
+}

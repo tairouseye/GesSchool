@@ -8,6 +8,7 @@ import * as api from "@/lib/rh.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
 import { getSignataires } from "@/lib/academique.js";
+import { parserFeuilleBareme } from "@/lib/bareme.js";
 import { creerDocument } from "@/lib/documents.js";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 
@@ -1024,6 +1025,45 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   };
   const pct = (t) => (Number(t) * 100).toString().replace(/\.0+$/, "");
 
+  // Import du barème (fichier Excel/CSV → lignes bareme_ir).
+  const [wbRef, setWbRef] = useState(null);
+  const [feuilles, setFeuilles] = useState([]);
+  const [mapSheet, setMapSheet] = useState({ mensuel: "", annuel: "" });
+  const [importMsg, setImportMsg] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+
+  const choisirFichier = async (file) => {
+    setImportMsg(""); setFeuilles([]); setWbRef(null);
+    if (!file) return;
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.read(await file.arrayBuffer());
+      setWbRef(wb); setFeuilles(wb.SheetNames);
+      const parNom = (re) => wb.SheetNames.find((n) => re.test(n)) || "";
+      setMapSheet({ mensuel: parNom(/mensuel/i), annuel: parNom(/annuel/i) });
+    } catch (e) { setImportMsg("Lecture impossible : " + (e.message || e)); }
+  };
+
+  const importerBareme = async () => {
+    if (!wbRef) return;
+    setImportBusy(true); setImportMsg("");
+    try {
+      const XLSX = await import("xlsx");
+      let total = 0, detail = [];
+      for (const per of ["mensuel", "annuel"]) {
+        const sheet = mapSheet[per];
+        if (!sheet) continue;
+        const matrix = XLSX.utils.sheet_to_json(wbRef.Sheets[sheet], { header: 1, blankrows: false, defval: "" });
+        const { rows } = parserFeuilleBareme(matrix);
+        const r = await api.importerBareme(ecoleId, per, rows);
+        total += r.importes; detail.push(`${per} : ${r.importes}`);
+      }
+      if (total === 0) { setImportMsg("Aucune feuille sélectionnée."); }
+      else { setImportMsg(`✓ Importé — ${detail.join(" · ")}`); setWbRef(null); setFeuilles([]); await onChange(); }
+    } catch (e) { setImportMsg("Erreur : " + (e.message || e)); }
+    finally { setImportBusy(false); }
+  };
+
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Régime de paie" large>
       <div className="space-y-6">
@@ -1094,11 +1134,29 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
           </div>
         </div>
 
-        {/* Barème IR */}
-        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+        {/* Barème IR — import */}
+        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4 space-y-2">
           <p className="text-sm font-semibold text-navy-900">Barème IR + TRIMF</p>
-          <p className="mt-1 text-xs text-navy-900/60">Chargé : <b>{bar.mensuel}</b> ligne(s) mensuelles · <b>{bar.annuel}</b> annuelles.</p>
-          <p className="mt-1 text-xs text-navy-900/45">L'import du barème (mensuel + annuel) et le calcul automatique de l'IR arrivent à l'étape suivante ; la déduction sera mensuelle, régularisée en fin d'année.</p>
+          <p className="text-xs text-navy-900/60">Chargé : <b>{bar.mensuel}</b> ligne(s) mensuelles · <b>{bar.annuel}</b> annuelles. La déduction est mensuelle ; régularisation annuelle en fin d'année.</p>
+          <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => choisirFichier(e.target.files?.[0] || null)}
+            className="block w-full text-xs text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-xs file:text-navy-900 hover:file:bg-navy-900/10" />
+          {feuilles.length > 0 && (
+            <div className="flex flex-wrap items-end gap-3">
+              {["mensuel", "annuel"].map((per) => (
+                <label key={per} className="block">
+                  <span className="mb-1 block text-xs font-medium text-navy-900/50">Feuille {per}</span>
+                  <select value={mapSheet[per]} onChange={(e) => setMapSheet((m) => ({ ...m, [per]: e.target.value }))}
+                    className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs outline-none focus:border-or-500">
+                    <option value="">— ignorer —</option>
+                    {feuilles.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+              ))}
+              <Bouton variante="or" onClick={importerBareme} disabled={importBusy}>{importBusy ? "Import…" : "Importer le barème"}</Bouton>
+            </div>
+          )}
+          {importMsg && <p className="text-xs text-navy-900/70">{importMsg}</p>}
+          <p className="text-xs text-navy-900/40">Format attendu : colonnes « Revenu brut », « TRIMF », puis « 1 part », « 1,5 parts »… (barème officiel).</p>
         </div>
 
         <div className="flex justify-end"><Bouton onClick={onFermer}>Terminé</Bouton></div>
