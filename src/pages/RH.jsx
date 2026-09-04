@@ -624,65 +624,180 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
     return () => { vivant = false; };
   }, [bulletin]);
   if (!bulletin) return null;
-  const gains = lignes.filter((l) => l.sens === "gain");
-  const retenues = lignes.filter((l) => l.sens === "retenue");
-  const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
-  const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
-  const net = Number(bulletin.montant_net ?? totalGains - totalRetenues);
   const p = bulletin.personnels || {};
+  const nb = (n, d = 2) => (n == null || n === "" ? "" : Number(n).toLocaleString("fr-FR", { maximumFractionDigits: d }));
+  const pct = (t) => (t == null || t === "" ? "" : `${(Number(t) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 3 })} %`);
+  const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "");
+
+  // Rubriques
+  const gains = lignes.filter((l) => l.sens === "gain").sort((a, b) => a.ordre - b.ordre);
+  const gainsSoumis = gains.filter((l) => l.nature !== "non_soumis");
+  const gainsNonSoumis = gains.filter((l) => l.nature === "non_soumis");
+  const totalBrut = gainsSoumis.reduce((s, l) => s + Number(l.montant || 0), 0);
+
+  // Cotisations & impôts regroupés (part employé + patronale par libellé de base)
+  const nomBase = (l) => (l.sens === "patronal" ? l.libelle.replace(/ \(patronal\)$/, "") : l.libelle);
+  const cotisMap = new Map();
+  for (const l of lignes) {
+    const estCotis = l.sens === "retenue" && ["cotisation", "impot"].includes(l.nature);
+    const estPat = l.sens === "patronal";
+    if (!estCotis && !estPat) continue;
+    const nom = nomBase(l);
+    const g = cotisMap.get(nom) || { nom, base: null, tEmp: null, mEmp: 0, tPat: null, mPat: 0, ordre: l.ordre };
+    if (estPat) { g.tPat = l.taux; g.mPat = Number(l.montant) || 0; }
+    else { g.tEmp = l.taux; g.mEmp = Number(l.montant) || 0; }
+    if (g.base == null && l.base != null) g.base = l.base;
+    g.ordre = Math.min(g.ordre, l.ordre);
+    cotisMap.set(nom, g);
+  }
+  const cotis = [...cotisMap.values()].sort((a, b) => a.ordre - b.ordre);
+  const totCotisEmp = cotis.reduce((s, c) => s + c.mEmp, 0);
+  const totCotisPat = cotis.reduce((s, c) => s + c.mPat, 0);
+
+  // Retenues diverses (avances, absences… saisies à la main)
+  const retDiv = lignes.filter((l) => l.sens === "retenue" && !["cotisation", "impot"].includes(l.nature)).sort((a, b) => a.ordre - b.ordre);
+  const totRetDiv = retDiv.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totNonSoumis = gainsNonSoumis.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const net = Number(bulletin.montant_net ?? totalBrut + totNonSoumis - totCotisEmp - totRetDiv);
+
+  const th = "px-2 py-1 text-[11px] font-semibold text-navy-900/60";
+  const td = "px-2 py-1 align-top";
+  const num = "text-right font-mono tabular-nums";
+
   return (
     <Modale ouvert={!!bulletin} onFermer={onFermer} titre="Bulletin de paie" large>
-      <div className="space-y-5">
-        <div className="zone-impression rounded-xl border border-navy-900/10 bg-white p-6">
-          <div className="flex items-start justify-between">
+      <div className="space-y-4">
+        <div className="zone-impression rounded-xl border border-navy-900/15 bg-white p-5 text-navy-900">
+          {/* En-tête */}
+          <div className="flex items-start justify-between gap-3 border-b border-navy-900/15 pb-3">
             <div className="flex items-center gap-3">
               {ecole?.logo_url
                 ? <img src={ecole.logo_url} alt="" className="h-12 w-12 shrink-0 object-contain" />
-                : <Cachet size={48} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />}
+                : <Cachet size={44} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />}
               <div>
-                <p className="font-display text-lg font-bold text-navy-900">{ecole?.nom}</p>
-                <p className="text-xs text-navy-900/50">Bulletin de paie — {libellePeriode(bulletin.periode)}</p>
+                <p className="font-display text-base font-bold">{ecole?.nom}</p>
+                <p className="text-xs text-navy-900/50">{[ecole?.adresse, ecole?.ville].filter(Boolean).join(" · ")}</p>
               </div>
             </div>
-            <div className="text-right text-sm">
-              <p className="font-medium text-navy-900">{p.prenom} {p.nom}</p>
-              <p className="text-xs text-navy-900/50">{p.fonction || ""}</p>
+            <div className="text-right">
+              <p className="font-display text-lg font-bold uppercase tracking-wide">Bulletin de paie</p>
+              <p className="text-xs text-navy-900/60">Mois : <b>{libellePeriode(bulletin.periode)}</b></p>
+              <p className="text-xs text-navy-900/60">Date de paie : {bulletin.date_paiement ? dateFr(bulletin.date_paiement) : "—"}</p>
             </div>
           </div>
 
-          <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-navy-900/40">Rémunération</p>
-          <table className="mt-1 w-full text-left text-sm">
-            <tbody>
-              {gains.map((l) => <LigneB key={l.id} l={l.libelle} v={`${fmt(l.montant)} ${devise}`} />)}
-            </tbody>
-          </table>
-          <div className="mt-1 flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
-            <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
+          {/* Employé */}
+          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+            <p><span className="text-navy-900/50">Matricule :</span> <b>{p.matricule || "—"}</b></p>
+            <p><span className="text-navy-900/50">Nom & prénoms :</span> <b>{p.nom} {p.prenom}</b></p>
+            <p><span className="text-navy-900/50">Sit. famille :</span> {p.situation_familiale || "—"}</p>
+            <p><span className="text-navy-900/50">Emploi :</span> {p.fonction || "—"}</p>
+            <p><span className="text-navy-900/50">Catégorie :</span> {p.categorie || "—"}</p>
+            <p><span className="text-navy-900/50">Date entrée :</span> {dateFr(p.date_embauche) || "—"}</p>
+            <p><span className="text-navy-900/50">Part IR :</span> {p.part_ir ?? "—"}</p>
+            <p><span className="text-navy-900/50">Part TRIMF :</span> {p.part_trimf ?? "—"}</p>
+            <p><span className="text-navy-900/50">N° IPRES :</span> {p.n_ipres || "—"}</p>
           </div>
 
-          {retenues.length > 0 && (
-            <>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-navy-900/40">Retenues</p>
-              <table className="mt-1 w-full text-left text-sm">
-                <tbody>
-                  {retenues.map((l) => <LigneB key={l.id} l={l.libelle} v={`− ${fmt(l.montant)} ${devise}`} />)}
-                </tbody>
-              </table>
-              <div className="mt-1 flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
-                <span className="text-navy-900/70">Total retenues</span><span className="font-mono">− {fmt(totalRetenues)} {devise}</span>
-              </div>
-            </>
-          )}
+          {/* Tableau principal */}
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-y border-navy-900/25 bg-creme/60">
+                  <th className={`${th} text-left`} rowSpan={2}>Libellé</th>
+                  <th className={`${th} text-right`} rowSpan={2}>Base</th>
+                  <th className={`${th} text-center`} colSpan={3}>Part employé</th>
+                  <th className={`${th} text-center`} colSpan={2}>Part patronale</th>
+                </tr>
+                <tr className="border-b border-navy-900/25 text-navy-900/50">
+                  <th className={`${th} text-right`}>Taux</th>
+                  <th className={`${th} text-right`}>Gains</th>
+                  <th className={`${th} text-right`}>Retenues</th>
+                  <th className={`${th} text-right`}>Taux</th>
+                  <th className={`${th} text-right`}>Retenues</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Gains soumis */}
+                {gainsSoumis.map((l) => (
+                  <tr key={l.id} className="border-b border-navy-900/5">
+                    <td className={td}>{l.libelle}</td>
+                    <td className={`${td} ${num}`}>{nb(l.base)}</td>
+                    <td className={`${td} ${num}`}>{nb(l.taux, 3)}</td>
+                    <td className={`${td} ${num}`}>{fmt(l.montant)}</td>
+                    <td className={td}></td><td className={td}></td><td className={td}></td>
+                  </tr>
+                ))}
+                <tr className="border-y border-navy-900/20 font-semibold">
+                  <td className={td} colSpan={3}>Total Brut</td>
+                  <td className={`${td} ${num}`}>{fmt(totalBrut)}</td>
+                  <td className={td}></td><td className={td}></td><td className={td}></td>
+                </tr>
 
-          <div className="mt-3 flex justify-between border-t-2 border-navy-900/15 pt-3">
-            <span className="font-display font-bold text-navy-900">NET À PAYER</span>
-            <span className="font-display text-xl font-bold text-navy-900">{fmt(net)} {devise}</span>
+                {/* Cotisations & impôts */}
+                {cotis.map((c) => (
+                  <tr key={c.nom} className="border-b border-navy-900/5">
+                    <td className={td}>{c.nom}</td>
+                    <td className={`${td} ${num}`}>{nb(c.base)}</td>
+                    <td className={`${td} ${num}`}>{pct(c.tEmp)}</td>
+                    <td className={td}></td>
+                    <td className={`${td} ${num}`}>{c.mEmp ? fmt(c.mEmp) : ""}</td>
+                    <td className={`${td} ${num}`}>{pct(c.tPat)}</td>
+                    <td className={`${td} ${num}`}>{c.mPat ? fmt(c.mPat) : ""}</td>
+                  </tr>
+                ))}
+                {cotis.length > 0 && (
+                  <tr className="border-y border-navy-900/20 font-semibold">
+                    <td className={td} colSpan={4}>Total Cotisations</td>
+                    <td className={`${td} ${num}`}>{fmt(totCotisEmp)}</td>
+                    <td className={td}></td>
+                    <td className={`${td} ${num}`}>{fmt(totCotisPat)}</td>
+                  </tr>
+                )}
+
+                {/* Retenues diverses */}
+                {retDiv.map((l) => (
+                  <tr key={l.id} className="border-b border-navy-900/5">
+                    <td className={td}>{l.libelle}</td>
+                    <td className={td}></td><td className={td}></td><td className={td}></td>
+                    <td className={`${td} ${num}`}>{fmt(l.montant)}</td>
+                    <td className={td}></td><td className={td}></td>
+                  </tr>
+                ))}
+
+                {/* Indemnités non soumises (ajoutées au net) */}
+                {gainsNonSoumis.map((l) => (
+                  <tr key={l.id} className="border-b border-navy-900/5">
+                    <td className={td}>{l.libelle} <span className="text-navy-900/40">(non soumis)</span></td>
+                    <td className={`${td} ${num}`}>{nb(l.base)}</td>
+                    <td className={`${td} ${num}`}>{nb(l.taux, 3)}</td>
+                    <td className={`${td} ${num}`}>{fmt(l.montant)}</td>
+                    <td className={td}></td><td className={td}></td><td className={td}></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="mt-6 flex justify-between text-xs text-navy-900/50">
-            <span>{bulletin.paye ? `Payé le ${bulletin.date_paiement || ""}` : "Non payé"}</span>
-            <span>Signature & cachet</span>
+          {/* Récap + NET */}
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-navy-900/50">Salaire brut</span><span className="font-mono">{fmt(totalBrut)} {devise}</span></div>
+              <div className="flex justify-between"><span className="text-navy-900/50">Brut imposable</span><span className="font-mono">{fmt(totalBrut)} {devise}</span></div>
+              <div className="flex justify-between"><span className="text-navy-900/50">Charges employé</span><span className="font-mono">{fmt(totCotisEmp + totRetDiv)} {devise}</span></div>
+              <div className="flex justify-between"><span className="text-navy-900/50">Charges patronales</span><span className="font-mono">{fmt(totCotisPat)} {devise}</span></div>
+            </div>
+            <div className="flex flex-col justify-center rounded-xl bg-navy-900/5 px-4 py-3">
+              <span className="text-xs font-medium text-navy-900/50">NET À PAYER</span>
+              <span className="font-display text-2xl font-bold text-navy-900">{fmt(net)} {devise}</span>
+            </div>
           </div>
+
+          <div className="mt-6 flex items-end justify-between text-xs text-navy-900/50">
+            <span>{bulletin.paye ? `Payé le ${dateFr(bulletin.date_paiement)}` : "Non payé"}</span>
+            <span className="text-right">Signature & cachet</span>
+          </div>
+          <p className="mt-4 border-t border-navy-900/10 pt-2 text-center text-[10px] text-navy-900/35">Bulletin généré par GesSchool — une solution GesPro</p>
         </div>
 
         <div className="no-print flex justify-end gap-2">

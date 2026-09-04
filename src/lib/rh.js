@@ -210,7 +210,7 @@ export async function supprimerContrat(id) {
 export async function getSalaires(ecoleId, periode) {
   const { data, error } = await supabase
     .from("salaires")
-    .select("*, personnels(prenom, nom, fonction)")
+    .select("*, personnels(prenom, nom, fonction, matricule, categorie, n_ipres, situation_familiale, part_ir, part_trimf, date_embauche)")
     .eq("ecole_id", ecoleId)
     .eq("periode", periode)
     .order("created_at");
