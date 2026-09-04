@@ -31,7 +31,8 @@ export default function RH() {
   const [periode, setPeriode] = useState(moisCourant());
   const [salaires, setSalaires] = useState([]);
   const [erreur, setErreur] = useState("");
-  const [modalePers, setModalePers] = useState(false);
+  const [formPers, setFormPers] = useState(null); // null = fermé, {} = création, {id…} = édition
+  const [nbEnsNonImportes, setNbEnsNonImportes] = useState(0);
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -41,10 +42,11 @@ export default function RH() {
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [pers, con, sig] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId)]);
+      const [pers, con, sig, nbEns] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId), api.compterEnseignantsNonImportes(ecoleId).catch(() => 0)]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
+      setNbEnsNonImportes(nbEns);
     } catch (e) {
       setErreur(e.message);
     }
@@ -85,16 +87,18 @@ export default function RH() {
   };
 
   const action = onglet === "personnel"
-    ? <Bouton onClick={() => setModalePers(true)}>+ Personnel</Bouton>
+    ? <Bouton onClick={() => setFormPers({})}>+ Personnel</Bouton>
     : <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>;
 
   // Tableau de bord RH (accueil de l'espace) — agrégé depuis les données chargées
   const jour = new Date().toISOString().slice(0, 10);
   const dans60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
-  // Personnel dont le contrat est actif sur la période : il doit figurer dans la
-  // paie même si sa fiche n'a pas encore été générée (net = fiche si elle existe,
-  // sinon salaire de base du contrat).
-  const actifs = personnels.filter((p) => api.contratActifPour(contrats[p.id], periode));
+  // Personnel à payer sur la période : tout le personnel figure dans la paie
+  // (même sans fiche générée). On n'exclut que les contrats explicitement
+  // terminés ou pas encore commencés ce mois. Sans contrat enregistré → payable
+  // (net 0 par défaut, à compléter). Net = fiche si elle existe, sinon base.
+  const estPayable = (p) => { const c = contrats[p.id]; return c ? api.contratActifPour(c, periode) : true; };
+  const actifs = personnels.filter(estPayable);
   const ficheDe = (pid) => salaires.find((s) => s.personnel_id === pid);
   const netPrevu = (p) => { const s = ficheDe(p.id); return s ? Number(s.montant_net || 0) : Number(contrats[p.id]?.salaire_base || 0); };
   const masseMois = actifs.reduce((sum, p) => sum + netPrevu(p), 0);
@@ -186,6 +190,9 @@ export default function RH() {
         ) : onglet === "personnel" ? (
           <PanneauPersonnel
             personnels={personnels} contrats={contrats} devise={devise}
+            nbEnsNonImportes={nbEnsNonImportes}
+            onImporter={() => wrap(async () => { const r = await api.importerEnseignantsCommePersonnel(ecoleId); toast.succes(`${r.crees} enseignant(s) ajouté(s) au personnel.`); })}
+            onEditer={(p) => setFormPers({ ...p, contrat: contrats[p.id] || null })}
             onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id), false, "Personnel supprimé."); }}
           />
         ) : (
@@ -210,12 +217,20 @@ export default function RH() {
       </div>
 
       <ModalePersonnel
-        ouvert={modalePers} onFermer={() => setModalePers(false)}
-        onCreer={(p, c) => wrap(async () => {
-          const pers = await api.creerPersonnel(ecoleId, p);
-          if (c.salaire_base) await api.creerContrat(ecoleId, { ...c, personnel_id: pers.id });
-          setModalePers(false);
-        })}
+        edition={formPers} onFermer={() => setFormPers(null)}
+        onEnregistrer={(p, c) => wrap(async () => {
+          if (formPers && formPers.id) {
+            // Édition : maj des infos + du salaire de base (contrat existant ou nouveau).
+            await api.modifierPersonnel(formPers.id, p);
+            if (c.salaire_base !== "" && c.salaire_base != null) {
+              await api.definirSalaireBase(ecoleId, formPers.id, c, formPers.contrat?.id || null);
+            }
+          } else {
+            const pers = await api.creerPersonnel(ecoleId, p);
+            if (c.salaire_base) await api.creerContrat(ecoleId, { ...c, personnel_id: pers.id });
+          }
+          setFormPers(null);
+        }, false, formPers && formPers.id ? "Personnel modifié." : "Personnel ajouté.")}
       />
 
       <ModaleBulletin bulletin={bulletin} onFermer={() => setBulletin(null)} ecole={ecole} devise={devise} />
@@ -223,14 +238,28 @@ export default function RH() {
   );
 }
 
-function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
+function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, onImporter, onEditer, onSuppr }) {
   const [q, setQ] = useState("");
+  const banniere = nbEnsNonImportes > 0 && (
+    <Carte className="flex flex-wrap items-center justify-between gap-3 border-or-500/30 bg-or-500/5 p-4">
+      <p className="text-sm text-navy-900/70">
+        <b>{nbEnsNonImportes}</b> enseignant{nbEnsNonImportes > 1 ? "s" : ""} de la pédagogie {nbEnsNonImportes > 1 ? "ne sont" : "n'est"} pas encore dans le personnel (donc absent{nbEnsNonImportes > 1 ? "s" : ""} de la paie).
+      </p>
+      <Bouton variante="or" onClick={onImporter}>➕ Les ajouter au personnel</Bouton>
+    </Carte>
+  );
   if (personnels.length === 0) {
-    return <Carte className="p-8 text-sm text-navy-900/50">Aucun personnel. Ajoute ton équipe avec « + Personnel ».</Carte>;
+    return (
+      <div className="space-y-3">
+        {banniere}
+        <Carte className="p-8 text-sm text-navy-900/50">Aucun personnel. Ajoute ton équipe avec « + Personnel »{nbEnsNonImportes > 0 ? " ou importe tes enseignants ci-dessus" : ""}.</Carte>
+      </div>
+    );
   }
   const liste = filtreTexte(personnels, q, ["prenom", "nom", "fonction", "telephone", "email"]);
   return (
     <div className="space-y-3">
+    {banniere}
     <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un membre du personnel…" className="max-w-sm" />
     {liste.length === 0 ? (
       <Carte className="p-8 text-sm text-navy-900/50">Aucun résultat pour « {q} ».</Carte>
@@ -238,13 +267,19 @@ function PanneauPersonnel({ personnels, contrats, devise, onSuppr }) {
       <Table
         keyField="id"
         rows={liste}
+        onRowClick={(p) => onEditer(p)}
         columns={[
           { key: "nom", label: "Nom", render: (p) => <span className="font-medium text-navy-900">{p.prenom} {p.nom}</span> },
           { key: "fonction", label: "Fonction", hideMobile: true, render: (p) => <span className="text-navy-900/70">{p.fonction || "—"}</span> },
           { key: "contact", label: "Contact", hideMobile: true, render: (p) => <span className="text-navy-900/60">{p.telephone || p.email || "—"}</span> },
           { key: "contrat", label: "Contrat", hideMobile: true, render: (p) => <span className="text-navy-900/60">{contrats[p.id]?.type || "—"}</span> },
           { key: "salaire", label: "Salaire base", align: "right", render: (p) => (contrats[p.id] ? `${fmt(contrats[p.id].salaire_base)} ${devise}` : "—") },
-          { key: "actions", label: "", align: "right", render: (p) => <button onClick={() => onSuppr(p.id)} className="text-xs text-danger-500 hover:underline">suppr.</button> },
+          { key: "actions", label: "", align: "right", render: (p) => (
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={(e) => { e.stopPropagation(); onEditer(p); }} className="text-xs text-navy-700 hover:text-or-500">éditer</button>
+              <button onClick={(e) => { e.stopPropagation(); onSuppr(p.id); }} className="text-xs text-danger-500 hover:underline">suppr.</button>
+            </div>
+          ) },
         ]}
       />
     )}
@@ -448,23 +483,37 @@ function LignePaie({ s, devise, onMaj, onPayer, onAnnuler, onSuppr, onBulletin }
   );
 }
 
-function ModalePersonnel({ ouvert, onFermer, onCreer }) {
+function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
   const vide = {
     prenom: "", nom: "", fonction: "Enseignant", telephone: "", email: "", date_embauche: "",
-    type: "CDI", salaire_base: "", debut: "",
+    type: "CDI", salaire_base: "", debut: "", fin: "",
   };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const enEdition = !!(edition && edition.id);
+
+  // (Re)pré-remplit le formulaire à chaque ouverture / changement de cible.
+  useEffect(() => {
+    if (!edition) return;
+    const c = edition.contrat || {};
+    setF({
+      prenom: edition.prenom || "", nom: edition.nom || "", fonction: edition.fonction || "Enseignant",
+      telephone: edition.telephone || "", email: edition.email || "", date_embauche: edition.date_embauche || "",
+      type: c.type || "CDI", salaire_base: c.salaire_base != null ? String(c.salaire_base) : "",
+      debut: c.debut || "", fin: c.fin || "",
+    });
+  }, [edition]);
+
   return (
-    <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouveau personnel" large>
+    <Modale ouvert={!!edition} onFermer={onFermer} titre={enEdition ? "Modifier le personnel" : "Nouveau personnel"} large>
       <form className="space-y-4" onSubmit={(e) => {
         e.preventDefault();
         if (!f.prenom.trim() || !f.nom.trim()) return;
-        onCreer(
-          { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.date_embauche },
-          { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null }
+        onEnregistrer(
+          { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null },
+          { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
-        setF(vide);
+        if (!enEdition) setF(vide);
       }}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Champ label="Prénom *" value={f.prenom} onChange={(e) => maj("prenom", e.target.value)} />
@@ -483,8 +532,8 @@ function ModalePersonnel({ ouvert, onFermer, onCreer }) {
         </div>
 
         <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
-          <p className="mb-3 text-sm font-medium text-navy-900/70">Contrat</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <p className="mb-3 text-sm font-medium text-navy-900/70">Contrat & salaire {enEdition ? "" : "(optionnel)"}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
               <select value={f.type} onChange={(e) => maj("type", e.target.value)}
@@ -492,9 +541,11 @@ function ModalePersonnel({ ouvert, onFermer, onCreer }) {
                 {api.TYPES_CONTRAT.map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
             </label>
-            <Champ label="Salaire de base" value={f.salaire_base} onChange={(e) => maj("salaire_base", e.target.value.replace(/[^0-9]/g, ""))} />
-            <Champ label="Date d'embauche" type="date" value={f.date_embauche} onChange={(e) => maj("date_embauche", e.target.value)} />
+            <Champ label="Salaire de base (net)" value={f.salaire_base} onChange={(e) => maj("salaire_base", e.target.value.replace(/[^0-9]/g, ""))} />
+            <Champ label="Début / embauche" type="date" value={f.debut || f.date_embauche} onChange={(e) => maj("debut", e.target.value)} />
+            <Champ label="Fin (optionnel)" type="date" value={f.fin} onChange={(e) => maj("fin", e.target.value)} />
           </div>
+          {enEdition && <p className="mt-2 text-xs text-navy-900/40">Le salaire de base est traité comme un net ; il alimente la paie du mois.</p>}
         </div>
 
         <div className="flex justify-end gap-2">

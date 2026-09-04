@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
+import { getEnseignants } from "@/lib/enseignants.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -32,7 +33,27 @@ export async function creerPersonnel(ecoleId, p) {
       telephone: p.telephone || null,
       email: p.email || null,
       date_embauche: p.date_embauche || null,
+      profil_id: p.profil_id || null,
     })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Édite les informations d'un membre du personnel.
+export async function modifierPersonnel(id, p) {
+  const { data, error } = await supabase
+    .from("personnels")
+    .update({
+      prenom: p.prenom,
+      nom: p.nom,
+      fonction: p.fonction || null,
+      telephone: p.telephone || null,
+      email: p.email || null,
+      date_embauche: p.date_embauche || null,
+    })
+    .eq("id", id)
     .select()
     .single();
   if (error) throw error;
@@ -42,6 +63,44 @@ export async function creerPersonnel(ecoleId, p) {
 export async function supprimerPersonnel(id) {
   const { error } = await supabase.from("personnels").delete().eq("id", id);
   if (error) throw error;
+}
+
+// Pont pédagogie → RH : crée un membre du personnel (fonction « Enseignant »)
+// pour chaque enseignant qui n'en a pas encore, afin qu'il apparaisse dans la
+// paie sans double saisie. Dédoublonnage par profil lié, sinon par nom+prénom.
+export async function importerEnseignantsCommePersonnel(ecoleId) {
+  const [enseignants, personnels] = await Promise.all([
+    getEnseignants(ecoleId),
+    getPersonnels(ecoleId),
+  ]);
+  const norm = (s) => (s || "").trim().toLowerCase();
+  const parProfil = new Set(personnels.filter((p) => p.profil_id).map((p) => p.profil_id));
+  const parNom = new Set(personnels.map((p) => `${norm(p.prenom)}|${norm(p.nom)}`));
+  const aCreer = enseignants.filter((e) =>
+    !(e.profil_id && parProfil.has(e.profil_id)) && !parNom.has(`${norm(e.prenom)}|${norm(e.nom)}`)
+  );
+  if (aCreer.length === 0) return { crees: 0 };
+  const lignes = aCreer.map((e) => ({
+    ecole_id: ecoleId, prenom: e.prenom, nom: e.nom, fonction: "Enseignant",
+    telephone: e.telephone || null, email: e.email || null, profil_id: e.profil_id || null,
+  }));
+  const { error } = await supabase.from("personnels").insert(lignes);
+  if (error) throw error;
+  return { crees: lignes.length };
+}
+
+// Nombre d'enseignants pas encore présents dans le personnel (pour l'invite).
+export async function compterEnseignantsNonImportes(ecoleId) {
+  const [enseignants, personnels] = await Promise.all([
+    getEnseignants(ecoleId),
+    getPersonnels(ecoleId),
+  ]);
+  const norm = (s) => (s || "").trim().toLowerCase();
+  const parProfil = new Set(personnels.filter((p) => p.profil_id).map((p) => p.profil_id));
+  const parNom = new Set(personnels.map((p) => `${norm(p.prenom)}|${norm(p.nom)}`));
+  return enseignants.filter((e) =>
+    !(e.profil_id && parProfil.has(e.profil_id)) && !parNom.has(`${norm(e.prenom)}|${norm(e.nom)}`)
+  ).length;
 }
 
 // --- Contrats ---
@@ -100,6 +159,29 @@ export async function creerContrat(ecoleId, c) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function modifierContrat(id, c) {
+  const { data, error } = await supabase
+    .from("contrats")
+    .update({
+      type: c.type || null,
+      salaire_base: Number(c.salaire_base) || 0,
+      debut: c.debut || null,
+      fin: c.fin || null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Définit le salaire de base courant : met à jour le contrat existant s'il y en
+// a un, sinon en crée un. Simplifie l'édition du salaire depuis la fiche RH.
+export async function definirSalaireBase(ecoleId, personnelId, c, contratId) {
+  if (contratId) return modifierContrat(contratId, c);
+  return creerContrat(ecoleId, { ...c, personnel_id: personnelId });
 }
 
 export async function supprimerContrat(id) {
