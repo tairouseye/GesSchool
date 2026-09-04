@@ -24,26 +24,31 @@ export default function Comptabilite() {
   const [recettes, setRecettes] = useState([]);
   const [depenses, setDepenses] = useState([]);
   const [scolarite, setScolarite] = useState(0);
+  const [cats, setCats] = useState([]);
   const [erreur, setErreur] = useState("");
-  const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense'
+  const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense' | 'categories'
 
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [sol, rec, dep, sco] = await Promise.all([
+      const [sol, rec, dep, sco, cat] = await Promise.all([
         api.getSoldes(ecoleId),
         api.getRecettes(ecoleId, { debut, fin }),
         api.getDepenses(ecoleId, { debut, fin }),
         api.getScolaritePeriode(ecoleId, debut, fin),
+        api.getCategories(ecoleId).catch(() => []),
       ]);
       setSoldes(sol);
       setRecettes(rec);
       setDepenses(dep);
       setScolarite(sco);
+      setCats(cat);
     } catch (e) {
       setErreur(e.message);
     }
   }, [ecoleId, debut, fin]);
+
+  const catsActives = (sens) => cats.filter((c) => c.sens === sens && c.actif !== false);
 
   useEffect(() => { recharger(); }, [recharger]);
 
@@ -60,8 +65,18 @@ export default function Comptabilite() {
 
   const actionBtn = {
     tresorerie: <Bouton onClick={() => setModale("compte")}>+ Compte</Bouton>,
-    recettes: <Bouton onClick={() => setModale("recette")} disabled={soldes.length === 0}>+ Recette</Bouton>,
-    depenses: <Bouton onClick={() => setModale("depense")} disabled={soldes.length === 0}>+ Dépense</Bouton>,
+    recettes: (
+      <div className="flex gap-2">
+        <Bouton variante="fantome" onClick={() => setModale("categories")}>Catégories</Bouton>
+        <Bouton onClick={() => setModale("recette")} disabled={soldes.length === 0}>+ Recette</Bouton>
+      </div>
+    ),
+    depenses: (
+      <div className="flex gap-2">
+        <Bouton variante="fantome" onClick={() => setModale("categories")}>Catégories</Bouton>
+        <Bouton onClick={() => setModale("depense")} disabled={soldes.length === 0}>+ Dépense</Bouton>
+      </div>
+    ),
   }[onglet];
 
   return (
@@ -121,13 +136,17 @@ export default function Comptabilite() {
       />
       <ModaleMouvement
         ouvert={modale === "recette"} type="recette" onFermer={() => setModale(null)}
-        ecoleId={ecoleId} comptes={soldes} devise={devise}
+        ecoleId={ecoleId} comptes={soldes} devise={devise} categories={catsActives("recette")}
         onCreer={(m) => wrap(async () => { await api.creerRecette(ecoleId, m, utilisateur?.id); setModale(null); })}
       />
       <ModaleMouvement
         ouvert={modale === "depense"} type="depense" onFermer={() => setModale(null)}
-        ecoleId={ecoleId} comptes={soldes} devise={devise}
+        ecoleId={ecoleId} comptes={soldes} devise={devise} categories={catsActives("depense")}
         onCreer={(m) => wrap(async () => { await api.creerDepense(ecoleId, m, utilisateur?.id); setModale(null); })}
+      />
+      <ModaleCategories
+        ouvert={modale === "categories"} onFermer={() => setModale(null)}
+        ecoleId={ecoleId} cats={cats} onChange={recharger}
       />
     </>
   );
@@ -290,11 +309,14 @@ function ModaleCompte({ ouvert, onFermer, devise, onCreer }) {
   );
 }
 
-function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, onCreer }) {
+function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, categories, onCreer }) {
   const champDate = type === "recette" ? "date_recette" : "date_depense";
   const champTiers = type === "recette" ? "source" : "beneficiaire";
   const tiersLabel = type === "recette" ? "Source" : "Bénéficiaire";
-  const categories = type === "recette" ? api.CATEGORIES_RECETTE : api.CATEGORIES_DEPENSE;
+  // Catégories configurées (objets {id, libelle}) ou repli sur les constantes.
+  const cats = (categories && categories.length)
+    ? categories
+    : (type === "recette" ? api.CATEGORIES_RECETTE : api.CATEGORIES_DEPENSE).map((l) => ({ libelle: l }));
   const vide = { libelle: "", montant: "", categorie: "", mode: "", compte_id: "", [champTiers]: "", [champDate]: auj() };
   const [f, setF] = useState(vide);
   const [fichier, setFichier] = useState(null);
@@ -310,7 +332,8 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, onC
     try {
       let justificatif_url = null;
       if (fichier) justificatif_url = await api.televerserJustificatif(ecoleId, fichier);
-      onCreer({ ...f, justificatif_url });
+      const cat = cats.find((c) => c.libelle === f.categorie);
+      onCreer({ ...f, categorie_id: cat?.id || null, justificatif_url });
       setF(vide);
       setFichier(null);
     } catch (err) {
@@ -333,7 +356,7 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, onC
             <select value={f.categorie} onChange={(e) => maj("categorie", e.target.value)}
               className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              {cats.map((c) => <option key={c.id || c.libelle} value={c.libelle}>{c.libelle}</option>)}
             </select>
           </label>
           <label className="block">
@@ -377,6 +400,69 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, onC
           </Bouton>
         </div>
       </form>
+    </Modale>
+  );
+}
+
+// Gestionnaire de catégories (par école) — recettes & dépenses. Mobile-first :
+// une liste par sens, renommage en ligne, activation, suppression, ajout.
+function ModaleCategories({ ouvert, onFermer, ecoleId, cats, onChange }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [ajout, setAjout] = useState({ recette: "", depense: "" });
+
+  const run = async (fn) => {
+    try { await fn(); await onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  // Fonction (pas un composant <Section/>) pour éviter tout remontage du champ
+  // d'ajout à chaque frappe (perte de focus).
+  const renderSection = (sens, titre) => {
+    const liste = cats.filter((c) => c.sens === sens).sort((a, b) => (a.ordre - b.ordre) || a.libelle.localeCompare(b.libelle));
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-navy-900">{titre}</p>
+        <ul className="space-y-1.5">
+          {liste.map((c) => (
+            <li key={c.id} className="flex items-center gap-2">
+              <input
+                defaultValue={c.libelle}
+                onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== c.libelle) run(() => api.modifierCategorie(c.id, { libelle: v })); }}
+                className={`flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500 ${c.actif === false ? "text-navy-900/40 line-through" : ""}`}
+              />
+              <button type="button" onClick={() => run(() => api.modifierCategorie(c.id, { actif: !(c.actif !== false) }))}
+                className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5"
+                title={c.actif === false ? "Réactiver" : "Désactiver"}>{c.actif === false ? "activer" : "masquer"}</button>
+              <button type="button" onClick={async () => { if (await confirmer(`Supprimer la catégorie « ${c.libelle} » ? Les opérations existantes gardent leur libellé.`)) run(() => api.supprimerCategorie(c.id)); }}
+                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-500 hover:bg-danger-500/5">suppr.</button>
+            </li>
+          ))}
+          {liste.length === 0 && <li className="text-xs text-navy-900/40">Aucune catégorie.</li>}
+        </ul>
+        <div className="flex gap-2 pt-1">
+          <input value={ajout[sens]} onChange={(e) => setAjout((a) => ({ ...a, [sens]: e.target.value }))}
+            placeholder="Nouvelle catégorie…" className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+          <Bouton variante="fantome" onClick={() => { const v = ajout[sens].trim(); if (!v) return; run(() => api.creerCategorie(ecoleId, { sens, libelle: v, ordre: liste.length })); setAjout((a) => ({ ...a, [sens]: "" })); }}>
+            + Ajouter
+          </Bouton>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Catégories financières" large>
+      <div className="space-y-6">
+        <p className="text-xs text-navy-900/50">
+          Définis les catégories de recettes et de dépenses de ton école. « Masquer » retire une catégorie des choix sans toucher aux opérations déjà enregistrées.
+        </p>
+        {renderSection("recette", "Recettes")}
+        {renderSection("depense", "Dépenses")}
+        <div className="flex justify-end">
+          <Bouton onClick={onFermer}>Terminé</Bouton>
+        </div>
+      </div>
     </Modale>
   );
 }

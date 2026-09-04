@@ -15,12 +15,50 @@ export const CATEGORIES_DEPENSE = [
   "Maintenance", "Communication", "Restauration", "Divers",
 ];
 
+// Listes par défaut — utilisées seulement en REPLI si l'école n'a pas encore
+// de catégories en base (cf. table categories_finance, migration 076).
 // NB : « Scolarité » et « Inscription » n'y figurent PAS volontairement — ces
 // encaissements passent par le module Paiements et sont déjà agrégés dans la
 // synthèse (les saisir ici les compterait deux fois).
 export const CATEGORIES_RECETTE = [
   "Don", "Subvention", "Location", "Activité", "Divers",
 ];
+
+// --- Catégories configurables (par école) ---
+export async function getCategories(ecoleId, sens) {
+  let q = supabase.from("categories_finance").select("*").eq("ecole_id", ecoleId);
+  if (sens) q = q.eq("sens", sens);
+  const { data, error } = await q.order("sens").order("ordre").order("libelle");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerCategorie(ecoleId, { sens, libelle, ordre = 0 }) {
+  const { data, error } = await supabase
+    .from("categories_finance")
+    .insert({ ecole_id: ecoleId, sens, libelle: (libelle || "").trim(), ordre })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function modifierCategorie(id, patch) {
+  const p = {};
+  if (patch.libelle != null) p.libelle = patch.libelle.trim();
+  if (patch.actif != null) p.actif = patch.actif;
+  if (patch.ordre != null) p.ordre = patch.ordre;
+  const { data, error } = await supabase.from("categories_finance").update(p).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// Suppression : les mouvements liés gardent leur libellé (categorie texte) ;
+// seul le lien categorie_id passe à null (FK on delete set null).
+export async function supprimerCategorie(id) {
+  const { error } = await supabase.from("categories_finance").delete().eq("id", id);
+  if (error) throw error;
+}
 
 // --- Comptes ---
 export async function getComptes(ecoleId) {
@@ -82,6 +120,7 @@ export async function creerRecette(ecoleId, r, saisiPar) {
       compte_id: r.compte_id || null,
       libelle: r.libelle,
       categorie: r.categorie || null,
+      categorie_id: r.categorie_id || null,
       montant: Number(r.montant),
       mode: r.mode || null,
       date_recette: r.date_recette || new Date().toISOString().slice(0, 10),
@@ -118,6 +157,7 @@ export async function creerDepense(ecoleId, d, saisiPar) {
       compte_id: d.compte_id || null,
       libelle: d.libelle,
       categorie: d.categorie || null,
+      categorie_id: d.categorie_id || null,
       montant: Number(d.montant),
       mode: d.mode || null,
       date_depense: d.date_depense || new Date().toISOString().slice(0, 10),
