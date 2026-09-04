@@ -851,6 +851,11 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
               <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { recurrent: !el.recurrent }))}
                 className={`rounded-lg border px-2 py-1.5 text-xs ${el.recurrent ? "border-or-500/40 bg-or-500/10 text-or-700" : "border-navy-900/10 text-navy-900/50"}`}
                 title="Repris automatiquement chaque mois">{el.recurrent ? "récurrent" : "ponctuel"}</button>
+              {sens === "gain" && (
+                <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { soumis: !(el.soumis !== false) }))}
+                  className={`rounded-lg border px-2 py-1.5 text-xs ${el.soumis === false ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/10 text-navy-900/50"}`}
+                  title="Non soumis = entre dans le net mais pas dans l'assiette cotisations/IR (ex. transport)">{el.soumis === false ? "non soumis" : "soumis"}</button>
+              )}
               <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { actif: !(el.actif !== false) }))}
                 className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5">{el.actif === false ? "activer" : "masquer"}</button>
               <button type="button" onClick={async () => { if (await confirmer(`Supprimer l'élément « ${el.libelle} » ?`)) run(() => api.supprimerElementPaie(el.id)); }}
@@ -926,7 +931,8 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     const libelle = el ? el.libelle : nouv.libelle.trim();
     const sens = el ? el.sens : nouv.sens;
     if (!libelle) { toast.erreur("Choisis un élément ou saisis un libellé."); return; }
-    run(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, montant: nouv.montant, ordre: lignes.length }));
+    const nature = el && sens === "gain" && el.soumis === false ? "non_soumis" : null;
+    run(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, nature, montant: nouv.montant, ordre: lignes.length }));
     setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" });
   };
 

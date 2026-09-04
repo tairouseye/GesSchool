@@ -224,7 +224,7 @@ export async function getSalaires(ecoleId, periode) {
 async function affectationsParPersonnel(ecoleId) {
   const { data, error } = await supabase
     .from("personnel_elements_paie")
-    .select("personnel_id, element_id, montant, elements_paie(libelle, sens)")
+    .select("personnel_id, element_id, montant, elements_paie(libelle, sens, soumis)")
     .eq("ecole_id", ecoleId)
     .eq("actif", true);
   if (error) throw error;
@@ -260,12 +260,23 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx)
   } else {
     lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: Number(base) || 0, ordre: 0 });
   }
-  (affectations || []).forEach((a, i) => lignes.push({
-    ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
-    libelle: a.elements_paie?.libelle || "Élément", sens: a.elements_paie?.sens || "gain", nature: "gain",
-    montant: Number(a.montant) || 0, ordre: 10 + i,
-  }));
+  (affectations || []).forEach((a, i) => {
+    const sens = a.elements_paie?.sens || "gain";
+    const nonSoumis = sens === "gain" && a.elements_paie?.soumis === false;
+    lignes.push({
+      ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
+      libelle: a.elements_paie?.libelle || "Élément", sens, nature: nonSoumis ? "non_soumis" : (sens === "gain" ? "gain" : "retenue"),
+      montant: Number(a.montant) || 0, ordre: 10 + i,
+    });
+  });
   return lignes;
+}
+
+// Brut SOUMIS (assiette cotisations/IR) = gains hors indemnités « non soumis ».
+function brutSoumis(lignes, salaireId) {
+  return lignes
+    .filter((l) => (salaireId ? l.salaire_id === salaireId : true) && l.sens === "gain" && l.nature !== "non_soumis")
+    .reduce((s, l) => s + Number(l.montant || 0), 0);
 }
 
 // Contexte « régime complet » (mode + cotisations + barème + heures) si activé.
@@ -279,7 +290,7 @@ async function contexteComplet(ecoleId) {
 // Ajoute (en mode complet) les lignes statutaires calculées sur le brut soumis.
 function ajouterStatutaire(lignes, ecoleId, salaireId, personnel, ctx) {
   if (!ctx) return;
-  const brut = lignes.filter((l) => l.salaire_id === salaireId && l.sens === "gain").reduce((s, l) => s + Number(l.montant || 0), 0);
+  const brut = brutSoumis(lignes, salaireId);
   const stat = lignesStatutaires(brut, {
     partIr: personnel?.part_ir || 1, partTrimf: personnel?.part_trimf || 1,
     cotisations: ctx.cotisations, baremeMensuel: ctx.baremeMensuel,
@@ -343,7 +354,7 @@ export async function recalculerStatutaire(ecoleId, salaireId) {
     supabase.from("salaires").select("personnels(part_ir, part_trimf)").eq("id", salaireId).single(),
     getLignesSalaire(salaireId), getCotisations(ecoleId), getBareme(ecoleId, "mensuel"),
   ]);
-  const brut = lignes.filter((l) => l.sens === "gain").reduce((s, l) => s + Number(l.montant || 0), 0);
+  const brut = brutSoumis(lignes);
   const aSuppr = lignes.filter((l) => ["cotisation", "impot", "patronal"].includes(l.nature));
   for (const l of aSuppr) await supabase.from("salaire_lignes").delete().eq("id", l.id);
   const p = sal?.personnels || {};
@@ -364,7 +375,7 @@ export async function getLignesSalaire(salaireId) {
 export async function ajouterLigneSalaire(ecoleId, salaireId, l) {
   const { data, error } = await supabase
     .from("salaire_lignes")
-    .insert({ ecole_id: ecoleId, salaire_id: salaireId, element_id: l.element_id || null, libelle: l.libelle, sens: l.sens, montant: Number(l.montant) || 0, ordre: l.ordre || 0 })
+    .insert({ ecole_id: ecoleId, salaire_id: salaireId, element_id: l.element_id || null, libelle: l.libelle, sens: l.sens, nature: l.nature || null, montant: Number(l.montant) || 0, ordre: l.ordre || 0 })
     .select()
     .single();
   if (error) throw error;
@@ -470,6 +481,7 @@ export async function creerElementPaie(ecoleId, e) {
       mode: e.mode || "fixe",
       recurrent: !!e.recurrent,
       imposable: !!e.imposable,
+      soumis: e.soumis === false ? false : true,
       ordre: e.ordre || 0,
     })
     .select()
@@ -480,7 +492,7 @@ export async function creerElementPaie(ecoleId, e) {
 
 export async function modifierElementPaie(id, patch) {
   const p = {};
-  for (const k of ["libelle", "sens", "mode", "recurrent", "imposable", "ordre", "actif"]) {
+  for (const k of ["libelle", "sens", "mode", "recurrent", "imposable", "soumis", "ordre", "actif"]) {
     if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
   }
   const { data, error } = await supabase.from("elements_paie").update(p).eq("id", id).select().single();
