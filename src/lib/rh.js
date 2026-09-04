@@ -22,6 +22,18 @@ export async function getPersonnels(ecoleId) {
   return data ?? [];
 }
 
+// Champs fiscaux/paie optionnels (part IR/TRIMF, matricule, catégorie…).
+function champsFiscaux(p) {
+  const f = {};
+  if (p.matricule !== undefined) f.matricule = p.matricule || null;
+  if (p.categorie !== undefined) f.categorie = p.categorie || null;
+  if (p.n_ipres !== undefined) f.n_ipres = p.n_ipres || null;
+  if (p.situation_familiale !== undefined) f.situation_familiale = p.situation_familiale || null;
+  if (p.part_ir !== undefined && p.part_ir !== "") f.part_ir = Number(p.part_ir) || 1;
+  if (p.part_trimf !== undefined && p.part_trimf !== "") f.part_trimf = Number(p.part_trimf) || 1;
+  return f;
+}
+
 export async function creerPersonnel(ecoleId, p) {
   const { data, error } = await supabase
     .from("personnels")
@@ -34,6 +46,7 @@ export async function creerPersonnel(ecoleId, p) {
       email: p.email || null,
       date_embauche: p.date_embauche || null,
       profil_id: p.profil_id || null,
+      ...champsFiscaux(p),
     })
     .select()
     .single();
@@ -41,7 +54,7 @@ export async function creerPersonnel(ecoleId, p) {
   return data;
 }
 
-// Édite les informations d'un membre du personnel.
+// Édite les informations d'un membre du personnel (dont champs fiscaux).
 export async function modifierPersonnel(id, p) {
   const { data, error } = await supabase
     .from("personnels")
@@ -52,6 +65,7 @@ export async function modifierPersonnel(id, p) {
       telephone: p.telephone || null,
       email: p.email || null,
       date_embauche: p.date_embauche || null,
+      ...champsFiscaux(p),
     })
     .eq("id", id)
     .select()
@@ -434,4 +448,64 @@ export async function definirElementPersonnel(ecoleId, personnelId, elementId, m
 export async function retirerElementPersonnel(id) {
   const { error } = await supabase.from("personnel_elements_paie").delete().eq("id", id);
   if (error) throw error;
+}
+
+// --- PHASE D-bis : régime de paie (cotisations, mode, barème IR) ---
+
+// Cotisations configurables (définies par le comptable / RH).
+export async function getCotisations(ecoleId) {
+  const { data, error } = await supabase
+    .from("cotisations_paie").select("*").eq("ecole_id", ecoleId).order("ordre").order("libelle");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerCotisation(ecoleId, c) {
+  const { data, error } = await supabase.from("cotisations_paie").insert({
+    ecole_id: ecoleId, libelle: (c.libelle || "").trim(), assiette: c.assiette || "brut",
+    taux_salarial: Number(c.taux_salarial) || 0, taux_patronal: Number(c.taux_patronal) || 0,
+    plafond: c.plafond === "" || c.plafond == null ? null : Number(c.plafond),
+    forfait_salarial: Number(c.forfait_salarial) || 0, forfait_patronal: Number(c.forfait_patronal) || 0,
+    ordre: c.ordre || 0,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function modifierCotisation(id, patch) {
+  const p = {};
+  for (const k of ["libelle", "assiette", "actif", "ordre"]) if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
+  for (const k of ["taux_salarial", "taux_patronal", "forfait_salarial", "forfait_patronal"]) if (patch[k] != null) p[k] = Number(patch[k]) || 0;
+  if (patch.plafond !== undefined) p.plafond = patch.plafond === "" || patch.plafond == null ? null : Number(patch.plafond);
+  const { data, error } = await supabase.from("cotisations_paie").update(p).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerCotisation(id) {
+  const { error } = await supabase.from("cotisations_paie").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Mode de paie de l'école : 'simplifie' (défaut) ou 'complet' (moteur statutaire).
+export async function getModePaie(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "mode_paie").maybeSingle();
+  if (error) throw error;
+  return data?.valeur?.mode || "simplifie";
+}
+
+export async function setModePaie(ecoleId, mode) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "mode_paie", valeur: { mode } }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// Barème IR chargé par l'école (mensuel + annuel). Comptage pour l'état.
+export async function compterBareme(ecoleId) {
+  const { data, error } = await supabase.from("bareme_ir").select("periodicite").eq("ecole_id", ecoleId);
+  if (error) throw error;
+  const r = { mensuel: 0, annuel: 0 };
+  for (const x of data ?? []) r[x.periodicite] = (r[x.periodicite] || 0) + 1;
+  return r;
 }

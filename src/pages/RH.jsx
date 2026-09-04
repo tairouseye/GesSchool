@@ -35,6 +35,8 @@ export default function RH() {
   const [nbEnsNonImportes, setNbEnsNonImportes] = useState(0);
   const [elements, setElements] = useState([]);
   const [modaleElements, setModaleElements] = useState(false);
+  const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 } });
+  const [modaleRegime, setModaleRegime] = useState(false);
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
@@ -45,12 +47,18 @@ export default function RH() {
   const recharger = useCallback(async () => {
     setErreur("");
     try {
-      const [pers, con, sig, nbEns, els] = await Promise.all([api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId), api.compterEnseignantsNonImportes(ecoleId).catch(() => 0), api.getElementsPaie(ecoleId).catch(() => [])]);
+      const [pers, con, sig, nbEns, els, mode, cots, bar] = await Promise.all([
+        api.getPersonnels(ecoleId), api.getContratsActifs(ecoleId), getSignataires(ecoleId),
+        api.compterEnseignantsNonImportes(ecoleId).catch(() => 0), api.getElementsPaie(ecoleId).catch(() => []),
+        api.getModePaie(ecoleId).catch(() => "simplifie"), api.getCotisations(ecoleId).catch(() => []),
+        api.compterBareme(ecoleId).catch(() => ({ mensuel: 0, annuel: 0 })),
+      ]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
       setElements(els);
+      setRegime({ mode, cotisations: cots, bareme: bar });
     } catch (e) {
       setErreur(e.message);
     }
@@ -94,7 +102,8 @@ export default function RH() {
     ? <Bouton onClick={() => setFormPers({})}>+ Personnel</Bouton>
     : onglet === "paie"
       ? (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Bouton variante="fantome" onClick={() => setModaleRegime(true)}>Régime</Bouton>
           <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
           <Bouton onClick={() => wrap(async () => { await api.genererPaie(ecoleId, periode); }, true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
         </div>
@@ -248,6 +257,11 @@ export default function RH() {
       <ModaleElementsPaie
         ouvert={modaleElements} onFermer={() => setModaleElements(false)}
         ecoleId={ecoleId} elements={elements} onChange={recharger}
+      />
+
+      <ModaleRegimePaie
+        ouvert={modaleRegime} onFermer={() => setModaleRegime(false)}
+        ecoleId={ecoleId} regime={regime} devise={devise} onChange={recharger}
       />
 
       <ModaleDetailPaie
@@ -496,6 +510,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
   const vide = {
     prenom: "", nom: "", fonction: "Enseignant", telephone: "", email: "", date_embauche: "",
     type: "CDI", salaire_base: "", debut: "", fin: "",
+    matricule: "", categorie: "", n_ipres: "", situation_familiale: "", part_ir: "1", part_trimf: "1",
   };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -510,6 +525,10 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
       telephone: edition.telephone || "", email: edition.email || "", date_embauche: edition.date_embauche || "",
       type: c.type || "CDI", salaire_base: c.salaire_base != null ? String(c.salaire_base) : "",
       debut: c.debut || "", fin: c.fin || "",
+      matricule: edition.matricule || "", categorie: edition.categorie || "", n_ipres: edition.n_ipres || "",
+      situation_familiale: edition.situation_familiale || "",
+      part_ir: edition.part_ir != null ? String(edition.part_ir) : "1",
+      part_trimf: edition.part_trimf != null ? String(edition.part_trimf) : "1",
     });
   }, [edition]);
 
@@ -519,7 +538,8 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
         e.preventDefault();
         if (!f.prenom.trim() || !f.nom.trim()) return;
         onEnregistrer(
-          { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null },
+          { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null,
+            matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf },
           { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
         if (!enEdition) setF(vide);
@@ -556,6 +576,19 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
           </div>
           {enEdition && <p className="mt-2 text-xs text-navy-900/40">Le salaire de base est traité comme un net ; il alimente la paie du mois.</p>}
         </div>
+
+        <details className="rounded-xl border border-navy-900/10 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-medium text-navy-900/70">Fiscal & paie (régime complet)</summary>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Champ label="Matricule" value={f.matricule} onChange={(e) => maj("matricule", e.target.value)} />
+            <Champ label="Catégorie" value={f.categorie} onChange={(e) => maj("categorie", e.target.value)} placeholder="Ex. 2e classe 1er éch." />
+            <Champ label="N° IPRES" value={f.n_ipres} onChange={(e) => maj("n_ipres", e.target.value)} />
+            <Champ label="Situation familiale" value={f.situation_familiale} onChange={(e) => maj("situation_familiale", e.target.value)} placeholder="Marié(e), célibataire…" />
+            <Champ label="Part IR" type="number" step="0.5" value={f.part_ir} onChange={(e) => maj("part_ir", e.target.value)} />
+            <Champ label="Part TRIMF" type="number" step="0.5" value={f.part_trimf} onChange={(e) => maj("part_trimf", e.target.value)} />
+          </div>
+          <p className="mt-2 text-xs text-navy-900/40">Les parts (quotient familial) servent au calcul de l'IR/TRIMF en mode complet.</p>
+        </details>
 
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
@@ -971,6 +1004,104 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, onChan
         <div className="flex justify-end">
           <Bouton onClick={onFermer}>Terminé</Bouton>
         </div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- PHASE D-bis : régime de paie (mode + cotisations + barème IR) ---
+function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [libelle, setLibelle] = useState("");
+  const cots = regime?.cotisations || [];
+  const mode = regime?.mode || "simplifie";
+  const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
+
+  const run = async (fn) => {
+    try { await fn(); await onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const pct = (t) => (Number(t) * 100).toString().replace(/\.0+$/, "");
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Régime de paie" large>
+      <div className="space-y-6">
+        {/* Mode */}
+        <div>
+          <p className="mb-2 text-sm font-semibold text-navy-900">Mode de calcul</p>
+          <div className="inline-flex rounded-xl bg-navy-900/5 p-1">
+            {[["simplifie", "Simplifié"], ["complet", "Complet (cotisations + IR)"]].map(([v, l]) => (
+              <button key={v} onClick={() => run(() => api.setModePaie(ecoleId, v))}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${mode === v ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>{l}</button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-navy-900/45">
+            {mode === "simplifie"
+              ? "Paie simple : net = gains − retenues (pas de cotisations ni d'impôt automatiques)."
+              : "Paie statutaire : cotisations, IR (barème) et TRIMF calculés automatiquement (moteur en cours d'activation)."}
+          </p>
+        </div>
+
+        {/* Cotisations */}
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-navy-900">Cotisations</p>
+          <p className="text-xs text-navy-900/45">Taux en % ; laisse un plafond vide pour « aucun ». Un forfait (montant fixe) l'emporte sur le taux.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-navy-900/50">
+                <tr>
+                  <th className="py-1 pr-2 font-medium">Libellé</th>
+                  <th className="py-1 px-1 text-right font-medium">% sal.</th>
+                  <th className="py-1 px-1 text-right font-medium">% patr.</th>
+                  <th className="py-1 px-1 text-right font-medium">Plafond</th>
+                  <th className="py-1 px-1 text-right font-medium">Forf. sal.</th>
+                  <th className="py-1 px-1 text-right font-medium">Forf. patr.</th>
+                  <th className="py-1 pl-1"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {cots.map((c) => {
+                  const champ = "w-16 rounded border border-navy-900/15 bg-white px-1.5 py-1 text-right font-mono outline-none focus:border-or-500";
+                  const commit = (patch) => run(() => api.modifierCotisation(c.id, patch));
+                  return (
+                    <tr key={c.id} className={`border-t border-navy-900/5 ${c.actif === false ? "opacity-40" : ""}`}>
+                      <td className="py-1 pr-2">
+                        <input defaultValue={c.libelle} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== c.libelle) commit({ libelle: v }); }}
+                          className="w-40 rounded border border-navy-900/15 bg-white px-2 py-1 outline-none focus:border-or-500" />
+                      </td>
+                      <td className="py-1 px-1 text-right"><input defaultValue={pct(c.taux_salarial)} onBlur={(e) => commit({ taux_salarial: (Number(e.target.value) || 0) / 100 })} className={champ} /></td>
+                      <td className="py-1 px-1 text-right"><input defaultValue={pct(c.taux_patronal)} onBlur={(e) => commit({ taux_patronal: (Number(e.target.value) || 0) / 100 })} className={champ} /></td>
+                      <td className="py-1 px-1 text-right"><input defaultValue={c.plafond ?? ""} onBlur={(e) => commit({ plafond: e.target.value })} className={champ} /></td>
+                      <td className="py-1 px-1 text-right"><input defaultValue={c.forfait_salarial || ""} onBlur={(e) => commit({ forfait_salarial: e.target.value })} className={champ} /></td>
+                      <td className="py-1 px-1 text-right"><input defaultValue={c.forfait_patronal || ""} onBlur={(e) => commit({ forfait_patronal: e.target.value })} className={champ} /></td>
+                      <td className="py-1 pl-1 text-right whitespace-nowrap">
+                        <button type="button" onClick={() => commit({ actif: !(c.actif !== false) })} className="text-navy-900/50 hover:underline">{c.actif === false ? "on" : "off"}</button>
+                        {" "}
+                        <button type="button" onClick={async () => { if (await confirmer(`Supprimer « ${c.libelle} » ?`)) run(() => api.supprimerCotisation(c.id)); }} className="text-danger-500 hover:underline">×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {cots.length === 0 && <tr><td colSpan={7} className="py-2 text-navy-900/40">Aucune cotisation.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <input value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="Nouvelle cotisation…"
+              className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <Bouton variante="fantome" onClick={() => { const v = libelle.trim(); if (!v) return; run(() => api.creerCotisation(ecoleId, { libelle: v, ordre: cots.length })); setLibelle(""); }}>+ Ajouter</Bouton>
+          </div>
+        </div>
+
+        {/* Barème IR */}
+        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+          <p className="text-sm font-semibold text-navy-900">Barème IR + TRIMF</p>
+          <p className="mt-1 text-xs text-navy-900/60">Chargé : <b>{bar.mensuel}</b> ligne(s) mensuelles · <b>{bar.annuel}</b> annuelles.</p>
+          <p className="mt-1 text-xs text-navy-900/45">L'import du barème (mensuel + annuel) et le calcul automatique de l'IR arrivent à l'étape suivante ; la déduction sera mensuelle, régularisée en fin d'année.</p>
+        </div>
+
+        <div className="flex justify-end"><Bouton onClick={onFermer}>Terminé</Bouton></div>
       </div>
     </Modale>
   );
