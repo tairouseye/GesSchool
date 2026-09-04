@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
 import { getEnseignants } from "@/lib/enseignants.js";
+import { lignesStatutaires } from "@/lib/paie.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -230,27 +231,48 @@ async function affectationsParPersonnel(ecoleId) {
   return map;
 }
 
-// Construit les lignes d'un bulletin : « Salaire de base » (gain) + éléments
-// récurrents affectés à l'employé. Le net est recalculé par trigger en base.
+// Construit les lignes GAINS d'un bulletin : « Salaire de base » + éléments
+// récurrents. (Les lignes statutaires — cotisations/IR/TRIMF — sont ajoutées
+// séparément en mode complet.) Net recalculé par trigger.
 function lignesInitiales(ecoleId, salaireId, base, affectations) {
-  const lignes = [{ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", montant: Number(base) || 0, ordre: 0 }];
+  const lignes = [{ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: Number(base) || 0, ordre: 0 }];
   (affectations || []).forEach((a, i) => lignes.push({
     ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
-    libelle: a.elements_paie?.libelle || "Élément", sens: a.elements_paie?.sens || "gain",
+    libelle: a.elements_paie?.libelle || "Élément", sens: a.elements_paie?.sens || "gain", nature: "gain",
     montant: Number(a.montant) || 0, ordre: i + 1,
   }));
   return lignes;
 }
 
-// Génère les fiches de paie d'une période pour le personnel au contrat ACTIF
-// (saute l'existant, les contrats terminés / à venir). Chaque fiche est composée
-// dynamiquement : Salaire de base + éléments récurrents. Net calculé par trigger.
+// Contexte « régime complet » (mode + cotisations + barème mensuel) si activé.
+async function contexteComplet(ecoleId) {
+  const mode = await getModePaie(ecoleId);
+  if (mode !== "complet") return null;
+  const [cotisations, baremeMensuel] = await Promise.all([getCotisations(ecoleId), getBareme(ecoleId, "mensuel")]);
+  return { cotisations, baremeMensuel };
+}
+
+// Ajoute (en mode complet) les lignes statutaires calculées sur le brut soumis.
+function ajouterStatutaire(lignes, ecoleId, salaireId, personnel, ctx) {
+  if (!ctx) return;
+  const brut = lignes.filter((l) => l.salaire_id === salaireId && l.sens === "gain").reduce((s, l) => s + Number(l.montant || 0), 0);
+  const stat = lignesStatutaires(brut, {
+    partIr: personnel?.part_ir || 1, partTrimf: personnel?.part_trimf || 1,
+    cotisations: ctx.cotisations, baremeMensuel: ctx.baremeMensuel,
+  });
+  stat.forEach((l) => lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, montant: l.montant, ordre: l.ordre }));
+}
+
+// Génère les fiches de paie d'une période pour le personnel au contrat ACTIF.
+// Composition : Salaire de base + éléments récurrents (+ cotisations/IR/TRIMF
+// en mode complet). Net calculé par trigger.
 export async function genererPaie(ecoleId, periode) {
-  const [pers, contrats, existant, aff] = await Promise.all([
+  const [pers, contrats, existant, aff, ctx] = await Promise.all([
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
     affectationsParPersonnel(ecoleId),
+    contexteComplet(ecoleId),
   ]);
   const deja = new Set((existant.data ?? []).map((s) => s.personnel_id));
   const aCreer = pers.filter((p) => !deja.has(p.id) && contratActifPour(contrats[p.id], periode));
@@ -260,9 +282,11 @@ export async function genererPaie(ecoleId, periode) {
     .insert(aCreer.map((p) => ({ ecole_id: ecoleId, personnel_id: p.id, periode, montant_brut: 0, prime: 0, retenue: 0, montant_net: 0, paye: false })))
     .select("id, personnel_id");
   if (error) throw error;
+  const parId = new Map(pers.map((p) => [p.id, p]));
   const lignes = [];
   for (const s of crees) {
     lignes.push(...lignesInitiales(ecoleId, s.id, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id]));
+    ajouterStatutaire(lignes, ecoleId, s.id, parId.get(s.personnel_id), ctx);
   }
   if (lignes.length) {
     const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
@@ -271,20 +295,36 @@ export async function genererPaie(ecoleId, periode) {
   return { crees: crees.length };
 }
 
-// Crée à la demande une fiche pour UN personnel (paiement/édition d'une ligne
-// pas encore générée) : Salaire de base + éléments récurrents. Renvoie la fiche.
+// Crée à la demande une fiche pour UN personnel. Renvoie la fiche.
 export async function ajouterFichePaie(ecoleId, personnelId, periode, elements = {}) {
   const { data, error } = await supabase
     .from("salaires")
     .insert({ ecole_id: ecoleId, personnel_id: personnelId, periode, montant_brut: 0, prime: 0, retenue: 0, montant_net: 0, paye: false })
-    .select("*, personnels(prenom, nom, fonction)")
+    .select("*, personnels(prenom, nom, fonction, part_ir, part_trimf)")
     .single();
   if (error) throw error;
-  const aff = await affectationsParPersonnel(ecoleId);
+  const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId), contexteComplet(ecoleId)]);
   const lignes = lignesInitiales(ecoleId, data.id, elements.montant_brut || 0, aff[personnelId]);
+  ajouterStatutaire(lignes, ecoleId, data.id, data.personnels, ctx);
   const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
   if (e2) throw e2;
   return data;
+}
+
+// Recalcule les lignes statutaires d'un bulletin (mode complet) depuis ses gains
+// actuels : remplace cotisations/IR/TRIMF/patronal. Utile après édition des gains.
+export async function recalculerStatutaire(ecoleId, salaireId) {
+  const [{ data: sal }, lignes, cotisations, baremeMensuel] = await Promise.all([
+    supabase.from("salaires").select("personnels(part_ir, part_trimf)").eq("id", salaireId).single(),
+    getLignesSalaire(salaireId), getCotisations(ecoleId), getBareme(ecoleId, "mensuel"),
+  ]);
+  const brut = lignes.filter((l) => l.sens === "gain").reduce((s, l) => s + Number(l.montant || 0), 0);
+  const aSuppr = lignes.filter((l) => ["cotisation", "impot", "patronal"].includes(l.nature));
+  for (const l of aSuppr) await supabase.from("salaire_lignes").delete().eq("id", l.id);
+  const p = sal?.personnels || {};
+  const stat = lignesStatutaires(brut, { partIr: p.part_ir || 1, partTrimf: p.part_trimf || 1, cotisations, baremeMensuel });
+  const ins = stat.map((l) => ({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, montant: l.montant, ordre: l.ordre }));
+  if (ins.length) { const { error } = await supabase.from("salaire_lignes").insert(ins); if (error) throw error; }
 }
 
 // --- Lignes de bulletin (composition dynamique) — Phase D ---

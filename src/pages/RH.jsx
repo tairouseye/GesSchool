@@ -267,7 +267,7 @@ export default function RH() {
 
       <ModaleDetailPaie
         salaire={detail} onFermer={() => setDetail(null)}
-        ecoleId={ecoleId} elements={elements} devise={devise}
+        ecoleId={ecoleId} elements={elements} devise={devise} modeComplet={regime.mode === "complet"}
         onChange={rechargerPaie}
       />
 
@@ -883,7 +883,7 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
 }
 
 // --- PHASE D : éditeur de composition d'un bulletin (lignes gains/retenues) ---
-function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, onChange }) {
+function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeComplet, onChange }) {
   const toast = useToast();
   const confirmer = useConfirm();
   const [lignes, setLignes] = useState([]);
@@ -904,8 +904,10 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, onChan
 
   const gains = lignes.filter((l) => l.sens === "gain");
   const retenues = lignes.filter((l) => l.sens === "retenue");
+  const patronales = lignes.filter((l) => l.sens === "patronal");
   const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totalPatronal = patronales.reduce((s, l) => s + Number(l.montant || 0), 0);
   const net = totalGains - totalRetenues;
   const actifs = (elements || []).filter((e) => e.actif !== false);
 
@@ -960,10 +962,27 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, onChan
           </div>
         )}
 
+        {modeComplet && !verrouille && (
+          <button type="button" onClick={() => run(() => api.recalculerStatutaire(ecoleId, salaireId))}
+            className="text-xs font-medium text-sky-700 hover:underline">↻ Recalculer cotisations, IR & TRIMF (depuis les gains)</button>
+        )}
+
         <div className="flex justify-between rounded-xl bg-navy-900/5 px-4 py-3">
           <span className="font-display font-bold text-navy-900">NET À PAYER</span>
           <span className="font-display text-lg font-bold text-navy-900">{fmt(net)} {devise}</span>
         </div>
+
+        {patronales.length > 0 && (
+          <div className="rounded-xl border border-navy-900/10 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">Charges patronales (employeur)</p>
+            {patronales.map((l) => (
+              <div key={l.id} className="flex justify-between text-xs text-navy-900/60"><span>{l.libelle}</span><span className="font-mono">{fmt(l.montant)}</span></div>
+            ))}
+            <div className="mt-1 flex justify-between border-t border-navy-900/10 pt-1 text-xs font-semibold text-navy-900/70">
+              <span>Total charges patronales</span><span className="font-mono">{fmt(totalPatronal)} {devise}</span>
+            </div>
+          </div>
+        )}
 
         {/* Ajout d'une ligne (uniquement en brouillon) */}
         {!verrouille && (
