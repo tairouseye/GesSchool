@@ -415,20 +415,6 @@ export async function supprimerLigneSalaire(id) {
   if (error) throw error;
 }
 
-// Met à jour les éléments de salaire ; recalcule le net (base + prime − retenue)
-// et resynchronise la dépense comptable liée si le salaire est déjà payé.
-// Passe par une RPC SECURITY DEFINER pour permettre l'édition même après
-// paiement sans exiger le rôle comptable (cf. migration 074).
-export async function majSalaire(id, { montant_brut, prime, retenue }) {
-  const { error } = await supabase.rpc("maj_salaire", {
-    p_salaire: id,
-    p_brut: Number(montant_brut) || 0,
-    p_prime: Number(prime) || 0,
-    p_retenue: Number(retenue) || 0,
-  });
-  if (error) throw error;
-}
-
 // Workflow (Phase E) : brouillon → validé → payé.
 export async function validerSalaire(id) {
   const { error } = await supabase.rpc("valider_salaire", { p_salaire: id });

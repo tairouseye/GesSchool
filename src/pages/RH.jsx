@@ -921,6 +921,15 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     try { await fn(); await recharger(); onChange && onChange(); }
     catch (e) { toast.erreur(e.message || "Erreur."); }
   };
+  // Comme run, mais en mode complet recalcule aussi cotisations/IR/TRIMF (le brut
+  // a pu changer) — évite d'oublier « Recalculer » après une modif de gain.
+  const runCalc = async (fn) => {
+    try {
+      await fn();
+      if (modeComplet && !verrouille) await api.recalculerStatutaire(ecoleId, salaireId);
+      await recharger(); onChange && onChange();
+    } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
 
   const gains = lignes.filter((l) => l.sens === "gain");
   const retenues = lignes.filter((l) => l.sens === "retenue");
@@ -940,7 +949,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     const sens = el ? el.sens : nouv.sens;
     if (!libelle) { toast.erreur("Choisis un élément ou saisis un libellé."); return; }
     const nature = el && sens === "gain" && el.soumis === false ? "non_soumis" : null;
-    run(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, nature, montant: nouv.montant, ordre: lignes.length }));
+    runCalc(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, nature, montant: nouv.montant, ordre: lignes.length }));
     setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" });
   };
 
@@ -959,12 +968,12 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
               <span className="flex items-center gap-1 text-xs text-navy-900/45">
                 {editable
                   ? <input defaultValue={l.base} inputMode="decimal" title="heures / assiette"
-                      onBlur={(e) => { const b = e.target.value.replace(",", "."); if (Number(b) !== Number(l.base)) run(() => api.majLigneBaseTaux(l.id, b, l.taux)); }} className={champPetit} />
+                      onBlur={(e) => { const b = e.target.value.replace(",", "."); if (Number(b) !== Number(l.base)) runCalc(() => api.majLigneBaseTaux(l.id, b, l.taux)); }} className={champPetit} />
                   : <span className="font-mono">{l.base}</span>}
                 <span>×</span>
                 {editable
                   ? <input defaultValue={l.taux} inputMode="decimal" title="taux"
-                      onBlur={(e) => { const t = e.target.value.replace(",", "."); if (Number(t) !== Number(l.taux)) run(() => api.majLigneBaseTaux(l.id, l.base, t)); }} className={champPetit} />
+                      onBlur={(e) => { const t = e.target.value.replace(",", "."); if (Number(t) !== Number(l.taux)) runCalc(() => api.majLigneBaseTaux(l.id, l.base, t)); }} className={champPetit} />
                   : <span className="font-mono">{l.taux}</span>}
                 <span>=</span>
               </span>
@@ -972,11 +981,11 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
             <span className="text-navy-900/40">{signe}</span>
             {(!aTaux && editable)
               ? <input defaultValue={l.montant} inputMode="numeric"
-                  onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) run(() => api.majLigneSalaire(l.id, v)); }}
+                  onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(l.montant)) runCalc(() => api.majLigneSalaire(l.id, v)); }}
                   className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
               : <span className="w-28 px-2 py-1.5 text-right font-mono text-sm text-navy-900">{fmt(l.montant)}</span>}
             {editable
-              ? <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) run(() => api.supprimerLigneSalaire(l.id)); }}
+              ? <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) runCalc(() => api.supprimerLigneSalaire(l.id)); }}
                   className="text-xs text-danger-500 hover:underline">×</button>
               : <span className="w-3" />}
           </div>
