@@ -831,6 +831,35 @@ export async function setSoD(ecoleId, actif) {
   if (error) throw error;
 }
 
+// Livre de paie d'une période : une ligne par employé (brut, cotisations sal.,
+// autres retenues, net, charges patronales), agrégée depuis les lignes.
+export async function getLivrePaie(ecoleId, periode) {
+  const salaires = await getSalaires(ecoleId, periode);
+  if (salaires.length === 0) return [];
+  const ids = salaires.map((s) => s.id);
+  const { data: lignes, error } = await supabase
+    .from("salaire_lignes").select("salaire_id, sens, nature, montant").in("salaire_id", ids);
+  if (error) throw error;
+  const parSal = {};
+  for (const l of lignes ?? []) (parSal[l.salaire_id] ||= []).push(l);
+  return salaires.map((s) => {
+    const ls = parSal[s.id] || [];
+    const somme = (pred) => ls.filter(pred).reduce((x, l) => x + Number(l.montant || 0), 0);
+    const cotisSal = somme((l) => l.sens === "retenue" && ["cotisation", "impot"].includes(l.nature));
+    const autresRet = somme((l) => l.sens === "retenue" && !["cotisation", "impot"].includes(l.nature));
+    return {
+      matricule: s.personnels?.matricule || "",
+      nom: `${s.personnels?.nom || ""} ${s.personnels?.prenom || ""}`.trim(),
+      fonction: s.personnels?.fonction || "",
+      brut: somme((l) => l.sens === "gain"),
+      cotisSal, autresRet,
+      net: Number(s.montant_net || 0),
+      patronal: somme((l) => l.sens === "patronal"),
+      statut: s.statut || (s.paye ? "paye" : "brouillon"),
+    };
+  });
+}
+
 // Diagnostic santé : présence des objets clés (tables/colonnes/fonctions/triggers).
 export async function diagnosticSante() {
   const { data, error } = await supabase.rpc("diagnostic_sante");

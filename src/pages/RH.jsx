@@ -42,6 +42,7 @@ export default function RH() {
   const [avancesPour, setAvancesPour] = useState(null); // personnel dont on gère avances/prêts
   const [dossier, setDossier] = useState(null); // personnel dont on ouvre le dossier 360°
   const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
+  const [livreOuvert, setLivreOuvert] = useState(false);
   const [conges, setConges] = useState([]);
   const [soldesConges, setSoldesConges] = useState({});
   const [congesJoursAn, setCongesJoursAn] = useState(24);
@@ -123,6 +124,7 @@ export default function RH() {
         <div className="flex flex-wrap gap-2">
           <Bouton variante="fantome" onClick={() => setModaleRegime(true)}>Régime</Bouton>
           <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
+          <Bouton variante="fantome" onClick={() => setLivreOuvert(true)}>Livre</Bouton>
           <Bouton onClick={() => setPrepPaie(true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
         </div>
       )
@@ -310,6 +312,11 @@ export default function RH() {
         onEditer={(p) => { setDossier(null); setFormPers({ ...p, contrat: contrats[p.id] || null }); }}
         onAvances={(p) => { setDossier(null); setAvancesPour(p); }}
         onBulletin={(s) => { setDossier(null); setBulletin(s); }}
+      />
+
+      <ModaleLivrePaie
+        ouvert={livreOuvert} onFermer={() => setLivreOuvert(false)}
+        ecoleId={ecoleId} periode={periode} ecole={ecole} devise={devise}
       />
 
       <ModalePreparerPaie
@@ -2062,5 +2069,100 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
         <p className="mt-3 text-xs text-navy-900/40">Informatif : aucune retenue automatique. Ajuste les heures à la préparation de la paie si besoin.</p>
       </Carte>
     </div>
+  );
+}
+
+// --- PHASE 6 : Livre de paie (imprimable + export Excel) ---
+function ModaleLivrePaie({ ouvert, onFermer, ecoleId, periode, ecole, devise }) {
+  const toast = useToast();
+  const [rows, setRows] = useState([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!ouvert) return;
+    let vivant = true;
+    api.getLivrePaie(ecoleId, periode).then((r) => { if (vivant) setRows(r); }).catch((e) => toast.erreur(e.message || "Erreur."));
+    return () => { vivant = false; };
+    /* eslint-disable-next-line */
+  }, [ouvert, periode]);
+
+  const tot = rows.reduce((t, r) => ({
+    brut: t.brut + r.brut, cotisSal: t.cotisSal + r.cotisSal, autresRet: t.autresRet + r.autresRet,
+    net: t.net + r.net, patronal: t.patronal + r.patronal,
+  }), { brut: 0, cotisSal: 0, autresRet: 0, net: 0, patronal: 0 });
+
+  const exporter = async () => {
+    setBusy(true);
+    try {
+      const XLSX = await import("xlsx");
+      const data = rows.map((r) => ({
+        Matricule: r.matricule, "Nom & prénom": r.nom, Fonction: r.fonction,
+        Brut: r.brut, "Cotisations sal.": r.cotisSal, "Autres retenues": r.autresRet,
+        "Net à payer": r.net, "Charges patronales": r.patronal, Statut: r.statut,
+      }));
+      data.push({ Matricule: "", "Nom & prénom": "TOTAL", Fonction: "", Brut: tot.brut, "Cotisations sal.": tot.cotisSal, "Autres retenues": tot.autresRet, "Net à payer": tot.net, "Charges patronales": tot.patronal, Statut: "" });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Livre de paie");
+      XLSX.writeFile(wb, `livre-paie-${ecole?.sigle || "ecole"}-${periode}.xlsx`);
+    } catch (e) { toast.erreur(e.message || "Export impossible."); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Livre de paie — ${libellePeriode(periode)}`} large>
+      <div className="space-y-4">
+        <div className="zone-impression rounded-xl border border-navy-900/15 bg-white p-5 text-navy-900">
+          <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+            {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+            <div className="flex-1">
+              <p className="font-display text-base font-bold">{ecole?.nom}</p>
+              <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+            </div>
+            <p className="text-right text-xs text-navy-900/60">Livre de paie<br />{libellePeriode(periode)}</p>
+          </div>
+          {rows.length === 0 ? <p className="text-sm text-navy-900/40">Aucun bulletin sur la période.</p> : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead><tr className="border-y border-navy-900/25 text-navy-900/60">
+                  <th className="px-2 py-1.5 text-left">Mat.</th><th className="px-2 py-1.5 text-left">Nom & prénom</th>
+                  <th className="px-2 py-1.5 text-left">Fonction</th>
+                  <th className="px-2 py-1.5 text-right">Brut</th><th className="px-2 py-1.5 text-right">Cotis. sal.</th>
+                  <th className="px-2 py-1.5 text-right">Autres ret.</th><th className="px-2 py-1.5 text-right">Net</th>
+                  <th className="px-2 py-1.5 text-right">Ch. patr.</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="border-b border-navy-900/10">
+                      <td className="px-2 py-1.5">{r.matricule || "—"}</td>
+                      <td className="px-2 py-1.5 font-medium">{r.nom}</td>
+                      <td className="px-2 py-1.5">{r.fonction || "—"}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmt(r.brut)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmt(r.cotisSal)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmt(r.autresRet)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold">{fmt(r.net)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmt(r.patronal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot><tr className="border-t-2 border-navy-900/30 font-bold">
+                  <td className="px-2 py-2" colSpan={3}>TOTAL ({rows.length})</td>
+                  <td className="px-2 py-2 text-right font-mono">{fmt(tot.brut)}</td>
+                  <td className="px-2 py-2 text-right font-mono">{fmt(tot.cotisSal)}</td>
+                  <td className="px-2 py-2 text-right font-mono">{fmt(tot.autresRet)}</td>
+                  <td className="px-2 py-2 text-right font-mono">{fmt(tot.net)}</td>
+                  <td className="px-2 py-2 text-right font-mono">{fmt(tot.patronal)}</td>
+                </tr></tfoot>
+              </table>
+              <p className="mt-2 text-[11px] text-navy-900/40">Montants en {devise}. Coût employeur total = net + cotisations salariales + charges patronales.</p>
+            </div>
+          )}
+        </div>
+        <div className="no-print flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
+          <Bouton variante="fantome" onClick={exporter} disabled={busy || rows.length === 0}>{busy ? "…" : "Export Excel"}</Bouton>
+          <Bouton onClick={() => window.print()} disabled={rows.length === 0}>Imprimer / PDF</Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }
