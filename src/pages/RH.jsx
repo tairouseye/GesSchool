@@ -1978,33 +1978,25 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
         </div>
       </Carte>
 
-      <Carte className="overflow-hidden">
-        <div className="p-4 pb-0"><h3 className="font-display text-lg font-semibold text-navy-900">Congés</h3></div>
-        {conges.length === 0 ? <p className="p-5 text-sm text-navy-900/40">Aucune demande.</p> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50"><tr>
-                <th className="px-4 py-2 font-medium">Employé</th><th className="px-4 py-2 font-medium">Type</th>
-                <th className="px-4 py-2 font-medium">Période</th><th className="px-4 py-2 text-right font-medium">Jours</th>
-                <th className="px-4 py-2 font-medium">Statut</th><th className="px-4 py-2"></th>
-              </tr></thead>
-              <tbody>
-                {conges.map((c) => {
-                  const b = statutB[c.statut] || statutB.en_attente;
-                  return (
-                    <tr key={c.id} className="border-t border-navy-900/5">
-                      <td className="px-4 py-2 font-medium text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</td>
-                      <td className="px-4 py-2 text-navy-900/60">{typeLbl[c.type] || c.type}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{c.date_debut} → {c.date_fin}</td>
-                      <td className="px-4 py-2 text-right font-mono">{c.jours}</td>
-                      <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b[0]}`}>{b[1]}</span>{c.statut === "refuse" && c.motif_refus ? <span className="ml-1 text-xs text-navy-900/40">({c.motif_refus})</span> : ""}</td>
-                      <td className="px-4 py-2 text-right"><button onClick={() => onSuppr(c.id)} className="text-xs text-danger-500 hover:underline">suppr.</button></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      <Carte className="p-0">
+        <div className="p-4 pb-2"><h3 className="font-display text-lg font-semibold text-navy-900">Congés</h3></div>
+        {conges.length === 0 ? <p className="p-5 pt-0 text-sm text-navy-900/40">Aucune demande.</p> : (
+          <ul className="divide-y divide-navy-900/5">
+            {conges.map((c) => {
+              const b = statutB[c.statut] || statutB.en_attente;
+              return (
+                <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</p>
+                    <p className="text-xs text-navy-900/50">{typeLbl[c.type] || c.type} · <span className="font-mono">{c.date_debut} → {c.date_fin}</span> · {c.jours} j</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b[0]}`}>{b[1]}</span>
+                  <button onClick={() => onSuppr(c.id)} className="rounded-lg px-2.5 py-1.5 text-sm text-danger-500 hover:bg-navy-900/5">suppr.</button>
+                  {c.statut === "refuse" && c.motif_refus && <p className="w-full text-xs text-navy-900/40">Motif : {c.motif_refus}</p>}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Carte>
 
