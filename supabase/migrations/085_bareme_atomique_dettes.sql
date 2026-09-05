@@ -7,6 +7,12 @@
 --       de `salaires` réservée à la RH, pour le tableau de bord comptable).
 -- =====================================================================
 
+-- Filet de sécurité : garantit la colonne salaires.statut (normalement posée par
+-- la 079). `if not exists` = no-op si elle est déjà là ; le backfill ne touche
+-- QUE les lignes à NULL (n'écrase aucun statut existant : brouillon/valide/paye).
+alter table salaires add column if not exists statut text default 'brouillon';
+update salaires set statut = case when paye then 'paye' else 'brouillon' end where statut is null;
+
 create or replace function remplacer_bareme(p_ecole uuid, p_periodicite text, p_rows jsonb)
 returns integer language plpgsql security definer set search_path = public as $$
 declare n integer;
