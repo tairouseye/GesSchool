@@ -1202,6 +1202,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const toast = useToast();
   const confirmer = useConfirm();
   const [libelle, setLibelle] = useState("");
+  const [diag, setDiag] = useState(null);
   const cots = regime?.cotisations || [];
   const mode = regime?.mode || "simplifie";
   const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
@@ -1357,6 +1358,41 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
           )}
           {importMsg && <p className="text-xs text-navy-900/70">{importMsg}</p>}
           <p className="text-xs text-navy-900/40">Format attendu : colonnes « Revenu brut », « TRIMF », puis « 1 part », « 1,5 parts »… (barème officiel).</p>
+        </div>
+
+        {/* Diagnostic technique */}
+        <div className="rounded-xl border border-navy-900/10 p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-navy-900">Diagnostic technique</p>
+            <Bouton variante="fantome" onClick={async () => { try { setDiag(await api.diagnosticSante()); } catch (e) { toast.erreur(e.message || "Erreur."); } }}>Vérifier l'installation</Bouton>
+          </div>
+          <p className="text-xs text-navy-900/45">Vérifie que tous les objets de la paie existent en base (utile après une restauration du projet).</p>
+          {diag && (() => {
+            const groupes = [["tables", "Tables"], ["colonnes", "Colonnes"], ["fonctions", "Fonctions"], ["triggers", "Triggers"]];
+            const manque = groupes.flatMap(([g]) => Object.entries(diag[g] || {}).filter(([, ok]) => !ok).map(([k]) => k));
+            return (
+              <div className="space-y-2">
+                {manque.length === 0
+                  ? <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-800">✓ Installation complète — tous les objets sont présents.</div>
+                  : <div className="rounded-lg border border-danger-500/30 bg-danger-500/5 px-3 py-2 text-xs text-danger-700"><b>{manque.length} objet(s) manquant(s)</b> : {manque.join(", ")}. Rejoue la migration correspondante.</div>}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {groupes.map(([g, titre]) => (
+                    <div key={g}>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-navy-900/40">{titre}</p>
+                      <ul className="mt-0.5 space-y-0.5">
+                        {Object.entries(diag[g] || {}).map(([k, ok]) => (
+                          <li key={k} className="flex items-center justify-between text-xs">
+                            <span className="font-mono text-navy-900/70">{k}</span>
+                            <span className={ok ? "text-emerald-600" : "text-danger-600"}>{ok ? "✓" : "✗"}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex justify-end"><Bouton onClick={onFermer}>Terminé</Bouton></div>

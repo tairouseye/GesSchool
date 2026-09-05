@@ -614,6 +614,13 @@ export async function importerBareme(ecoleId, periodicite, rows) {
   return { importes: data ?? lignes.length };
 }
 
+// Diagnostic santé : présence des objets clés (tables/colonnes/fonctions/triggers).
+export async function diagnosticSante() {
+  const { data, error } = await supabase.rpc("diagnostic_sante");
+  if (error) throw error;
+  return data || null;
+}
+
 // Barème complet d'une périodicité (pour lecture/moteur côté client).
 export async function getBareme(ecoleId, periodicite) {
   const { data, error } = await supabase
