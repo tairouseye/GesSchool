@@ -259,7 +259,7 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx,
       lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, base: l.base, taux: l.taux, montant: l.montant, ordre: l.ordre });
     }
   } else {
-    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: Number(base) || 0, ordre: 0 });
+    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: arr(base), ordre: 0 });
   }
   (affectations || []).forEach((a, i) => {
     const sens = a.elements_paie?.sens || "gain";
@@ -267,7 +267,7 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx,
     lignes.push({
       ecole_id: ecoleId, salaire_id: salaireId, element_id: a.element_id,
       libelle: a.elements_paie?.libelle || "Élément", sens, nature: nonSoumis ? "non_soumis" : (sens === "gain" ? "gain" : "retenue"),
-      montant: Number(a.montant) || 0, ordre: 10 + i,
+      montant: arr(a.montant), ordre: 10 + i,
     });
   });
   return lignes;
@@ -391,7 +391,7 @@ export async function getLignesSalaire(salaireId) {
 export async function ajouterLigneSalaire(ecoleId, salaireId, l) {
   const { data, error } = await supabase
     .from("salaire_lignes")
-    .insert({ ecole_id: ecoleId, salaire_id: salaireId, element_id: l.element_id || null, libelle: l.libelle, sens: l.sens, nature: l.nature || null, montant: Number(l.montant) || 0, ordre: l.ordre || 0 })
+    .insert({ ecole_id: ecoleId, salaire_id: salaireId, element_id: l.element_id || null, libelle: l.libelle, sens: l.sens, nature: l.nature || null, montant: arr(l.montant), ordre: l.ordre || 0 })
     .select()
     .single();
   if (error) throw error;
@@ -399,7 +399,7 @@ export async function ajouterLigneSalaire(ecoleId, salaireId, l) {
 }
 
 export async function majLigneSalaire(id, montant) {
-  const { error } = await supabase.from("salaire_lignes").update({ montant: Number(montant) || 0 }).eq("id", id);
+  const { error } = await supabase.from("salaire_lignes").update({ montant: arr(montant) }).eq("id", id);
   if (error) throw error;
 }
 
