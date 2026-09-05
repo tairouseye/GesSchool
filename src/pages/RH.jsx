@@ -22,7 +22,7 @@ const libellePeriode = (p) => {
 };
 
 export default function RH() {
-  const { ecoleId, ecole } = useAuth();
+  const { ecoleId, ecole, utilisateur } = useAuth();
   const confirmer = useConfirm();
   const toast = useToast();
   const devise = ecole?.devise || "XOF";
@@ -42,6 +42,9 @@ export default function RH() {
   const [avancesPour, setAvancesPour] = useState(null); // personnel dont on gère avances/prêts
   const [dossier, setDossier] = useState(null); // personnel dont on ouvre le dossier 360°
   const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
+  const [conges, setConges] = useState([]);
+  const [soldesConges, setSoldesConges] = useState({});
+  const [congesJoursAn, setCongesJoursAn] = useState(24);
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -77,8 +80,17 @@ export default function RH() {
     }
   }, [ecoleId, periode]);
 
+  const rechargerConges = useCallback(async () => {
+    const annee = new Date().getFullYear();
+    try {
+      const [c, s, j] = await Promise.all([api.getConges(ecoleId), api.getSoldesConges(ecoleId, annee), api.getCongesJoursAn(ecoleId)]);
+      setConges(c); setSoldesConges(s); setCongesJoursAn(j);
+    } catch (e) { setErreur(e.message); }
+  }, [ecoleId]);
+
   useEffect(() => { recharger(); }, [recharger]);
   useEffect(() => { rechargerPaie(); }, [rechargerPaie]);
+  useEffect(() => { if (onglet === "conges") rechargerConges(); }, [onglet, rechargerConges]);
 
   // Comptes de trésorerie : facultatif (un profil RH sans droit compta n'y a pas
   // accès) — on ignore l'erreur et le sélecteur reste simplement masqué.
@@ -205,9 +217,17 @@ export default function RH() {
           </Carte>
         </div>
 
-        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
+        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["conges", "Congés"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
 
-        {onglet === "documents" ? (
+        {onglet === "conges" ? (
+          <PanneauConges
+            conges={conges} soldesConges={soldesConges} congesJoursAn={congesJoursAn} personnels={personnels}
+            onCreer={(c) => wrap(async () => { await api.creerConge(ecoleId, c, utilisateur?.id); await rechargerConges(); }, false, "Demande enregistrée.")}
+            onDecider={(id, statut, motifRefus) => wrap(async () => { await api.deciderConge(id, { statut, motifRefus, decidePar: utilisateur?.id }); await rechargerConges(); }, false, statut === "approuve" ? "Congé approuvé." : "Congé refusé.")}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette demande ?")) wrap(async () => { await api.supprimerConge(id); await rechargerConges(); }); }}
+            onQuota={(n) => wrap(async () => { await api.setCongesJoursAn(ecoleId, n); await rechargerConges(); }, false, "Quota mis à jour.")}
+          />
+        ) : onglet === "documents" ? (
           <PanneauDocumentsRH
             personnels={personnels} contrats={contrats} signataires={signataires} ecole={ecole} ecoleId={ecoleId}
             onEnvoye={() => { toast.succes("Document envoyé au signataire pour validation."); }}
@@ -1858,5 +1878,131 @@ function ModaleDossierEmploye({ personnel, onFermer, ecoleId, devise, onEditer, 
         <div className="flex justify-end"><Bouton onClick={onFermer}>Fermer</Bouton></div>
       </div>
     </Modale>
+  );
+}
+
+// --- PHASE 4 : Congés (demande, approbation, solde) ---
+function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, onCreer, onDecider, onSuppr, onQuota }) {
+  const confirmer = useConfirm();
+  const toast = useToast();
+  const vide = { personnel_id: "", type: "annuel", date_debut: "", date_fin: "", motif: "" };
+  const [f, setF] = useState(vide);
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  const joursEntre = (d1, d2) => {
+    if (!d1 || !d2) return 0;
+    const a = new Date(d1), b = new Date(d2);
+    if (b < a) return 0;
+    return Math.round((b - a) / 86400000) + 1;
+  };
+  const jours = joursEntre(f.date_debut, f.date_fin);
+  const pris = f.personnel_id ? (soldesConges[f.personnel_id] || 0) : 0;
+  const reste = congesJoursAn - pris;
+
+  const soumettre = () => {
+    if (!f.personnel_id || !f.date_debut || !f.date_fin) { toast.erreur("Employé et dates requis."); return; }
+    if (jours <= 0) { toast.erreur("La date de fin doit suivre le début."); return; }
+    onCreer({ ...f, jours });
+    setF(vide);
+  };
+
+  const enAttente = conges.filter((c) => c.statut === "en_attente");
+  const statutB = { en_attente: ["bg-or-500/10 text-or-700", "En attente"], approuve: ["bg-emerald-500/10 text-emerald-700", "Approuvé"], refuse: ["bg-danger-500/10 text-danger-600", "Refusé"] };
+  const typeLbl = Object.fromEntries(api.TYPES_CONGE);
+
+  return (
+    <div className="space-y-5">
+      <Carte className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <div>
+          <p className="text-sm font-semibold text-navy-900">Quota de congé annuel</p>
+          <p className="text-xs text-navy-900/45">Jours acquis par an et par employé (défaut 24). Le solde se calcule sur les congés annuels approuvés cette année.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input defaultValue={congesJoursAn} inputMode="numeric" onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) && Number(v) !== Number(congesJoursAn)) onQuota(v); }}
+            className="w-20 rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-right font-mono text-sm outline-none focus:border-or-500" />
+          <span className="text-xs text-navy-900/45">j/an</span>
+        </div>
+      </Carte>
+
+      {enAttente.length > 0 && (
+        <Carte className="p-5">
+          <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">À approuver ({enAttente.length})</h3>
+          <ul className="divide-y divide-navy-900/5">
+            {enAttente.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                <span>
+                  <b className="text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</b>
+                  <span className="text-navy-900/50"> — {typeLbl[c.type] || c.type} · {c.jours} j · {c.date_debut} → {c.date_fin}</span>
+                  {c.motif && <span className="text-navy-900/40"> · {c.motif}</span>}
+                </span>
+                <span className="flex items-center gap-3 text-xs">
+                  <button onClick={async () => { if (await confirmer("Approuver ce congé ?")) onDecider(c.id, "approuve"); }} className="font-medium text-emerald-700 hover:underline">approuver</button>
+                  <button onClick={async () => { if (await confirmer("Refuser cette demande ?")) onDecider(c.id, "refuse"); }} className="text-danger-500 hover:underline">refuser</button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Carte>
+      )}
+
+      <Carte className="p-5">
+        <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Nouvelle demande de congé</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Employé</span>
+            <select value={f.personnel_id} onChange={(e) => maj("personnel_id", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— Choisir —</option>
+              {personnels.map((x) => <option key={x.id} value={x.id}>{x.nom} {x.prenom}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
+            <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              {api.TYPES_CONGE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <Champ label="Du" type="date" value={f.date_debut} onChange={(e) => maj("date_debut", e.target.value)} />
+          <Champ label="Au" type="date" value={f.date_fin} onChange={(e) => maj("date_fin", e.target.value)} />
+          <div className="flex items-end text-sm text-navy-900/60">{jours > 0 ? <span><b>{jours}</b> jour(s)</span> : <span className="text-navy-900/30">durée</span>}</div>
+          <Champ label="Motif (optionnel)" value={f.motif} onChange={(e) => maj("motif", e.target.value)} />
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          {f.personnel_id && f.type === "annuel"
+            ? <p className="text-xs text-navy-900/50">Solde annuel : <b>{reste}</b> j restants ({pris} pris / {congesJoursAn}){jours > reste ? " — dépassement !" : ""}</p>
+            : <span />}
+          <Bouton onClick={soumettre}>Enregistrer la demande</Bouton>
+        </div>
+      </Carte>
+
+      <Carte className="overflow-hidden">
+        <div className="p-4 pb-0"><h3 className="font-display text-lg font-semibold text-navy-900">Congés</h3></div>
+        {conges.length === 0 ? <p className="p-5 text-sm text-navy-900/40">Aucune demande.</p> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-creme text-navy-900/50"><tr>
+                <th className="px-4 py-2 font-medium">Employé</th><th className="px-4 py-2 font-medium">Type</th>
+                <th className="px-4 py-2 font-medium">Période</th><th className="px-4 py-2 text-right font-medium">Jours</th>
+                <th className="px-4 py-2 font-medium">Statut</th><th className="px-4 py-2"></th>
+              </tr></thead>
+              <tbody>
+                {conges.map((c) => {
+                  const b = statutB[c.statut] || statutB.en_attente;
+                  return (
+                    <tr key={c.id} className="border-t border-navy-900/5">
+                      <td className="px-4 py-2 font-medium text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</td>
+                      <td className="px-4 py-2 text-navy-900/60">{typeLbl[c.type] || c.type}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{c.date_debut} → {c.date_fin}</td>
+                      <td className="px-4 py-2 text-right font-mono">{c.jours}</td>
+                      <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b[0]}`}>{b[1]}</span>{c.statut === "refuse" && c.motif_refus ? <span className="ml-1 text-xs text-navy-900/40">({c.motif_refus})</span> : ""}</td>
+                      <td className="px-4 py-2 text-right"><button onClick={() => onSuppr(c.id)} className="text-xs text-danger-500 hover:underline">suppr.</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Carte>
+    </div>
   );
 }

@@ -208,6 +208,67 @@ export async function getContratsPersonnel(ecoleId, personnelId) {
   return data ?? [];
 }
 
+// --- PHASE 4 : Congés (demande → approbation → solde) ---
+export const TYPES_CONGE = [
+  ["annuel", "Congé annuel"], ["maladie", "Maladie"], ["maternite", "Maternité"],
+  ["sans_solde", "Sans solde"], ["autre", "Autre"],
+];
+
+export async function getConges(ecoleId, statut) {
+  let q = supabase.from("conges").select("*, personnels(prenom, nom, fonction)").eq("ecole_id", ecoleId);
+  if (statut) q = q.eq("statut", statut);
+  const { data, error } = await q.order("date_debut", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerConge(ecoleId, c, saisiPar) {
+  const { data, error } = await supabase.from("conges").insert({
+    ecole_id: ecoleId, personnel_id: c.personnel_id, type: c.type || "annuel",
+    date_debut: c.date_debut, date_fin: c.date_fin, jours: Number(c.jours) || 0,
+    motif: c.motif || null, saisi_par: saisiPar || null,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deciderConge(id, { statut, motifRefus, decidePar }) {
+  const { error } = await supabase.from("conges").update({
+    statut, motif_refus: statut === "refuse" ? (motifRefus || null) : null,
+    decide_par: decidePar || null, decide_le: new Date().toISOString(),
+  }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function supprimerConge(id) {
+  const { error } = await supabase.from("conges").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Jours de congé ANNUEL approuvés dans l'année, par personnel (pour le solde).
+export async function getSoldesConges(ecoleId, annee) {
+  const { data, error } = await supabase.from("conges")
+    .select("personnel_id, jours").eq("ecole_id", ecoleId).eq("type", "annuel").eq("statut", "approuve")
+    .gte("date_debut", `${annee}-01-01`).lte("date_debut", `${annee}-12-31`);
+  if (error) throw error;
+  const map = {};
+  for (const r of data ?? []) map[r.personnel_id] = (map[r.personnel_id] || 0) + Number(r.jours || 0);
+  return map;
+}
+
+export async function getCongesJoursAn(ecoleId) {
+  const { data, error } = await supabase.from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "conges_jours_an").maybeSingle();
+  if (error) throw error;
+  const n = Number(data?.valeur?.jours);
+  return Number.isFinite(n) && n > 0 ? n : 24;
+}
+
+export async function setCongesJoursAn(ecoleId, jours) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "conges_jours_an", valeur: { jours: Number(jours) || 0 } }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
 // Bulletins d'un employé (tous mois), pour le dossier 360°.
 export async function getSalairesPersonnel(ecoleId, personnelId) {
   const { data, error } = await supabase.from("salaires")
