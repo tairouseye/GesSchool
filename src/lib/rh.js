@@ -760,6 +760,24 @@ export async function supprimerCotisation(id) {
   if (error) throw error;
 }
 
+// Applique un modèle de régime pays : (re)crée les cotisations de l'école.
+export async function appliquerRegimePays(ecoleId, cotisations, remplacer = true) {
+  if (remplacer) {
+    const { error: eDel } = await supabase.from("cotisations_paie").delete().eq("ecole_id", ecoleId);
+    if (eDel) throw eDel;
+  }
+  const lignes = (cotisations || []).map((c, i) => ({
+    ecole_id: ecoleId, libelle: c.libelle, assiette: "brut",
+    taux_salarial: c.taux_salarial || 0, taux_patronal: c.taux_patronal || 0,
+    plafond: c.plafond ?? null, forfait_salarial: c.forfait_salarial || 0, forfait_patronal: c.forfait_patronal || 0, ordre: i,
+  }));
+  if (lignes.length) {
+    const { error } = await supabase.from("cotisations_paie").insert(lignes);
+    if (error) throw error;
+  }
+  return { crees: lignes.length };
+}
+
 // Mode de paie de l'école : 'simplifie' (défaut) ou 'complet' (moteur statutaire).
 export async function getModePaie(ecoleId) {
   const { data, error } = await supabase

@@ -9,6 +9,7 @@ import { getComptes } from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
 import { getSignataires } from "@/lib/academique.js";
 import { parserFeuilleBareme } from "@/lib/bareme.js";
+import { REGIMES_PAYS } from "@/lib/regimes.js";
 import { creerDocument } from "@/lib/documents.js";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 
@@ -1291,6 +1292,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const confirmer = useConfirm();
   const [libelle, setLibelle] = useState("");
   const [diag, setDiag] = useState(null);
+  const [pays, setPays] = useState("");
   const cots = regime?.cotisations || [];
   const mode = regime?.mode || "simplifie";
   const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
@@ -1383,6 +1385,30 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
             className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${sod ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/15 text-navy-900/50"}`}>
             {sod ? "Activée" : "Désactivée"}
           </button>
+        </div>
+
+        {/* Modèle de pays */}
+        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+          <p className="text-sm font-semibold text-navy-900">Modèle de pays</p>
+          <p className="text-xs text-navy-900/45">Pré-remplit les cotisations selon le pays. L'impôt (IR/IPR/ITS) passe par le barème à charger.</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <select value={pays} onChange={(e) => setPays(e.target.value)} className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              <option value="">— Choisir un pays —</option>
+              {Object.keys(REGIMES_PAYS).map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+            <Bouton variante="fantome" disabled={!pays} onClick={async () => {
+              const r = REGIMES_PAYS[pays]; if (!r) return;
+              if (await confirmer(`Appliquer le modèle « ${pays} » ? Cela remplace les cotisations actuelles (${cots.length}).`)) {
+                await run(() => api.appliquerRegimePays(ecoleId, r.cotisations, true));
+                setPays("");
+              }
+            }}>Appliquer</Bouton>
+          </div>
+          {pays && REGIMES_PAYS[pays] && (
+            <p className={`mt-2 text-xs ${REGIMES_PAYS[pays].fiable ? "text-navy-900/50" : "text-amber-700"}`}>
+              {REGIMES_PAYS[pays].fiable ? "" : "⚠️ "}{REGIMES_PAYS[pays].note}
+            </p>
+          )}
         </div>
 
         {/* Cotisations */}
