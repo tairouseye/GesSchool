@@ -282,7 +282,7 @@ export default function RH() {
 
       <ModalePreparerPaie
         ouvert={prepPaie} onFermer={() => setPrepPaie(false)}
-        periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))}
+        periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))} contrats={contrats}
         modeComplet={regime.mode === "complet"} heuresDefaut={regime.heures} baremeManquant={regime.mode === "complet" && !regime.bareme?.mensuel}
         onGenerer={(heuresMap) => wrap(async () => { await api.genererPaie(ecoleId, periode, heuresMap); setPrepPaie(false); }, true, "Paie générée.")}
       />
@@ -1457,12 +1457,27 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
 }
 
 // --- Étape « Préparer la paie » : heures/absences validées avant génération ---
-function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, heuresDefaut, baremeManquant, onGenerer }) {
+function ModalePreparerPaie({ ouvert, onFermer, periode, employes, contrats, modeComplet, heuresDefaut, baremeManquant, onGenerer }) {
   const [heures, setHeures] = useState({});
+  const hDef = Number(heuresDefaut ?? 173.33);
+  // Proratisation : si le contrat commence/finit en cours de mois, heures ≈ prorata
+  // des jours travaillés. Renvoie { heures, jours } (jours=null si mois plein).
+  const prorata = (p) => {
+    const [a, m] = periode.split("-").map(Number);
+    const jm = new Date(Date.UTC(a, m, 0)).getUTCDate();
+    const c = contrats?.[p.id];
+    const debutMois = `${periode}-01`, finMois = `${periode}-${String(jm).padStart(2, "0")}`;
+    let d1 = 1, d2 = jm;
+    if (c?.debut && c.debut > debutMois && c.debut <= finMois) d1 = Number(c.debut.slice(8, 10));
+    if (c?.fin && c.fin >= debutMois && c.fin < finMois) d2 = Number(c.fin.slice(8, 10));
+    const jours = Math.max(0, d2 - d1 + 1);
+    if (jours >= jm) return { heures: hDef, jours: null };
+    return { heures: Math.round((hDef * jours / jm) * 100) / 100, jours };
+  };
   useEffect(() => {
     if (!ouvert) return;
     const m = {};
-    for (const p of employes) m[p.id] = String(heuresDefaut ?? 173.33);
+    for (const p of employes) m[p.id] = String(prorata(p).heures);
     setHeures(m);
     /* eslint-disable-next-line */
   }, [ouvert]);
@@ -1550,10 +1565,13 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, 
               </thead>
               <tbody>
                 {employes.map((p) => {
-                  const absent = modeComplet && Number(heures[p.id]) < Number(heuresDefaut);
+                  const pr = prorata(p);
+                  const absent = modeComplet && Number(heures[p.id]) < hDef;
                   return (
                     <tr key={p.id} className="border-t border-navy-900/5">
-                      <td className="px-4 py-2 font-medium text-navy-900">{p.prenom} {p.nom}</td>
+                      <td className="px-4 py-2 font-medium text-navy-900">{p.prenom} {p.nom}
+                        {pr.jours != null && <span className="ml-2 rounded-full bg-or-500/10 px-2 py-0.5 text-[11px] font-medium text-or-700">prorata {pr.jours} j</span>}
+                      </td>
                       <td className="px-4 py-2 text-navy-900/60">{p.fonction || "—"}</td>
                       {modeComplet && (
                         <td className="px-4 py-2 text-right">
