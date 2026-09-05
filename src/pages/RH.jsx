@@ -502,33 +502,20 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
           Aucun personnel avec un contrat actif pour {libellePeriode(periode)}. Ajoute du personnel (avec un salaire de base) dans l'onglet « Personnel ».
         </Carte>
       ) : (
-        <Carte className="overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-creme text-navy-900/50">
-              <tr>
-                <th className="px-4 py-3 font-medium">Personnel</th>
-                <th className="px-4 py-3 text-right font-medium">Net à payer</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {toutes.map((s) => (
-                <LignePaie key={s.id} s={s} devise={devise}
-                  onDetail={onDetail} onValider={onValider} onDevalider={onDevalider}
-                  onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
-              ))}
-            </tbody>
-          </table>
+        <Carte className="divide-y divide-navy-900/5 overflow-hidden p-0">
+          {toutes.map((s) => (
+            <LignePaie key={s.id} s={s} devise={devise}
+              onDetail={onDetail} onValider={onValider} onDevalider={onDevalider}
+              onPayer={onPayer} onAnnuler={onAnnuler} onSuppr={onSuppr} onBulletin={onBulletin} />
+          ))}
         </Carte>
       )}
     </div>
   );
 }
 
+// Carte de paie (mobile-first) : identité + net/statut, puis actions tactiles.
 function LignePaie({ s, devise, onDetail, onValider, onDevalider, onPayer, onAnnuler, onSuppr, onBulletin }) {
-  // Le net vient de la base (trigger sur les lignes). Le statut pilote les actions :
-  // brouillon (éditable) → validé (verrouillé) → payé.
   const net = Number(s.montant_net || 0);
   const statut = s._nouveau ? "nouveau" : (s.statut || (s.paye ? "paye" : "brouillon"));
   const badge = {
@@ -538,28 +525,27 @@ function LignePaie({ s, devise, onDetail, onValider, onDevalider, onPayer, onAnn
     paye: ["bg-emerald-500/10 text-emerald-700", "Payé"],
     archive: ["bg-navy-900/10 text-navy-900/50", "Archivé"],
   }[statut] || ["bg-navy-900/5 text-navy-900/60", statut];
+  const btn = "rounded-lg px-2.5 py-1.5 font-medium hover:bg-navy-900/5";
   return (
-    <tr className="border-t border-navy-900/5">
-      <td className="px-4 py-3">
-        <p className="font-medium text-navy-900">{s.personnels?.prenom} {s.personnels?.nom}</p>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-navy-900">{s.personnels?.prenom} {s.personnels?.nom}</p>
         <p className="text-xs text-navy-900/40">{s.personnels?.fonction || ""}</p>
-      </td>
-      <td className="px-4 py-3 text-right font-mono font-semibold text-navy-900">{fmt(net)} <span className="text-xs font-normal text-navy-900/40">{devise}</span></td>
-      <td className="px-4 py-3">
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badge[0]}`}>{badge[1]}</span>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap items-center justify-end gap-3 text-xs">
-          <button onClick={() => onDetail(s)} className="font-medium text-navy-700 hover:text-or-500">détails</button>
-          {!s._nouveau && <button onClick={() => onBulletin(s)} className="text-navy-700 hover:text-or-500">bulletin</button>}
-          {statut === "brouillon" && <button onClick={() => onValider(s.id)} className="font-medium text-sky-700 hover:underline">valider</button>}
-          {statut === "valide" && <button onClick={() => onPayer(s)} className="font-medium text-emerald-700 hover:underline">payer</button>}
-          {statut === "valide" && <button onClick={() => onDevalider(s.id)} className="text-navy-900/50 hover:underline">dévalider</button>}
-          {statut === "paye" && <button onClick={() => onAnnuler(s.id)} className="text-navy-900/50 hover:underline">annuler paiement</button>}
-          {statut === "brouillon" && <button onClick={() => onSuppr(s.id)} className="text-rose-500 hover:underline">suppr.</button>}
-        </div>
-      </td>
-    </tr>
+      </div>
+      <div className="text-right">
+        <p className="font-mono font-semibold text-navy-900">{fmt(net)} <span className="text-xs font-normal text-navy-900/40">{devise}</span></p>
+        <span className={`mt-0.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${badge[0]}`}>{badge[1]}</span>
+      </div>
+      <div className="flex w-full flex-wrap items-center gap-1 border-t border-navy-900/5 pt-2 text-sm sm:w-auto sm:border-0 sm:pt-0">
+        <button onClick={() => onDetail(s)} className={`${btn} text-navy-700`}>détails</button>
+        {!s._nouveau && <button onClick={() => onBulletin(s)} className={`${btn} text-navy-700`}>bulletin</button>}
+        {statut === "brouillon" && <button onClick={() => onValider(s.id)} className={`${btn} text-sky-700`}>valider</button>}
+        {statut === "valide" && <button onClick={() => onPayer(s)} className={`${btn} text-emerald-700`}>payer</button>}
+        {statut === "valide" && <button onClick={() => onDevalider(s.id)} className={`${btn} text-navy-900/50`}>dévalider</button>}
+        {statut === "paye" && <button onClick={() => onAnnuler(s.id)} className={`${btn} text-navy-900/50`}>annuler</button>}
+        {statut === "brouillon" && <button onClick={() => onSuppr(s.id)} className={`${btn} text-rose-500`}>suppr.</button>}
+      </div>
+    </div>
   );
 }
 
