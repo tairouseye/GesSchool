@@ -40,6 +40,7 @@ export default function RH() {
   const [modaleRegime, setModaleRegime] = useState(false);
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
   const [avancesPour, setAvancesPour] = useState(null); // personnel dont on gère avances/prêts
+  const [dossier, setDossier] = useState(null); // personnel dont on ouvre le dossier 360°
   const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
@@ -217,6 +218,7 @@ export default function RH() {
             nbEnsNonImportes={nbEnsNonImportes}
             onImporter={() => wrap(async () => { const r = await api.importerEnseignantsCommePersonnel(ecoleId); toast.succes(`${r.crees} enseignant(s) ajouté(s) au personnel.`); })}
             onEditer={(p) => setFormPers({ ...p, contrat: contrats[p.id] || null })}
+            onDossier={(p) => setDossier(p)}
             onAvances={(p) => setAvancesPour(p)}
             onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id), false, "Personnel supprimé."); }}
           />
@@ -280,6 +282,13 @@ export default function RH() {
         ecoleId={ecoleId} devise={devise} periode={periode}
       />
 
+      <ModaleDossierEmploye
+        personnel={dossier} onFermer={() => setDossier(null)} ecoleId={ecoleId} devise={devise}
+        onEditer={(p) => { setDossier(null); setFormPers({ ...p, contrat: contrats[p.id] || null }); }}
+        onAvances={(p) => { setDossier(null); setAvancesPour(p); }}
+        onBulletin={(s) => { setDossier(null); setBulletin(s); }}
+      />
+
       <ModalePreparerPaie
         ouvert={prepPaie} onFermer={() => setPrepPaie(false)}
         periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))} contrats={contrats}
@@ -292,7 +301,7 @@ export default function RH() {
   );
 }
 
-function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, onImporter, onEditer, onAvances, onSuppr }) {
+function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, onImporter, onEditer, onDossier, onAvances, onSuppr }) {
   const [q, setQ] = useState("");
   const banniere = nbEnsNonImportes > 0 && (
     <Carte className="flex flex-wrap items-center justify-between gap-3 border-or-500/30 bg-or-500/5 p-4">
@@ -321,7 +330,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
       <Table
         keyField="id"
         rows={liste}
-        onRowClick={(p) => onEditer(p)}
+        onRowClick={(p) => onDossier(p)}
         columns={[
           { key: "nom", label: "Nom", render: (p) => <span className="font-medium text-navy-900">{p.prenom} {p.nom}</span> },
           { key: "fonction", label: "Fonction", hideMobile: true, render: (p) => <span className="text-navy-900/70">{p.fonction || "—"}</span> },
@@ -530,6 +539,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
     type: "CDI", salaire_base: "", debut: "", fin: "",
     matricule: "", categorie: "", n_ipres: "", situation_familiale: "", part_ir: "1", part_trimf: "1",
     taux_horaire: "", taux_sursalaire: "",
+    sexe: "", date_naissance: "", lieu_naissance: "", adresse: "", personne_prevenir: "", tel_urgence: "",
   };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -550,6 +560,8 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
       part_trimf: edition.part_trimf != null ? String(edition.part_trimf) : "1",
       taux_horaire: edition.taux_horaire ? String(edition.taux_horaire) : "",
       taux_sursalaire: edition.taux_sursalaire ? String(edition.taux_sursalaire) : "",
+      sexe: edition.sexe || "", date_naissance: edition.date_naissance || "", lieu_naissance: edition.lieu_naissance || "",
+      adresse: edition.adresse || "", personne_prevenir: edition.personne_prevenir || "", tel_urgence: edition.tel_urgence || "",
     });
   }, [edition]);
 
@@ -561,7 +573,8 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
         onEnregistrer(
           { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null,
             matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf,
-            taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire },
+            taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire,
+            sexe: f.sexe, date_naissance: f.date_naissance, lieu_naissance: f.lieu_naissance, adresse: f.adresse, personne_prevenir: f.personne_prevenir, tel_urgence: f.tel_urgence },
           { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
         if (!enEdition) setF(vide);
@@ -612,6 +625,23 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
             <Champ label="Taux horaire sursalaire" value={f.taux_sursalaire} onChange={(e) => maj("taux_sursalaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 160,27" />
           </div>
           <p className="mt-2 text-xs text-navy-900/40">La <b>Part IR</b> choisit la colonne du barème IR. Le <b>TRIMF</b> est lu directement dans le barème (la « Part TRIMF » est informative, affichée sur le bulletin). En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
+        </details>
+
+        <details className="rounded-xl border border-navy-900/10 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-medium text-navy-900/70">Identité civile</summary>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Sexe</span>
+              <select value={f.sexe} onChange={(e) => maj("sexe", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option>
+              </select>
+            </label>
+            <Champ label="Date de naissance" type="date" value={f.date_naissance} onChange={(e) => maj("date_naissance", e.target.value)} />
+            <Champ label="Lieu de naissance" value={f.lieu_naissance} onChange={(e) => maj("lieu_naissance", e.target.value)} />
+            <Champ label="Adresse" value={f.adresse} onChange={(e) => maj("adresse", e.target.value)} />
+            <Champ label="Personne à prévenir" value={f.personne_prevenir} onChange={(e) => maj("personne_prevenir", e.target.value)} />
+            <Champ label="Tél. d'urgence" type="tel" value={f.tel_urgence} onChange={(e) => maj("tel_urgence", e.target.value)} />
+          </div>
         </details>
 
         <div className="flex justify-end gap-2">
@@ -1689,6 +1719,140 @@ function ModaleAvancesPret({ personnel, onFermer, ecoleId, devise, periode }) {
             <p className="text-xs text-navy-900/45">L'échéance est déduite automatiquement à la génération de la paie (une fois par mois), jusqu'au solde.</p>
             <Bouton variante="or" onClick={octroyer}>Enregistrer</Bouton>
           </div>
+        </div>
+
+        <div className="flex justify-end"><Bouton onClick={onFermer}>Fermer</Bouton></div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- PHASE 3 : dossier employé 360° ---
+function ModaleDossierEmploye({ personnel, onFermer, ecoleId, devise, onEditer, onAvances, onBulletin }) {
+  const toast = useToast();
+  const [contrats, setContrats] = useState([]);
+  const [avances, setAvances] = useState([]);
+  const [bulletins, setBulletins] = useState([]);
+  const p = personnel;
+  const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+
+  useEffect(() => {
+    if (!p?.id) return;
+    let vivant = true;
+    Promise.all([
+      api.getContratsPersonnel(ecoleId, p.id).catch(() => []),
+      api.getAvancesPrets(ecoleId, p.id).catch(() => []),
+      api.getSalairesPersonnel(ecoleId, p.id).catch(() => []),
+    ]).then(([c, a, b]) => { if (!vivant) return; setContrats(c); setAvances(a); setBulletins(b); });
+    return () => { vivant = false; };
+  }, [p, ecoleId]);
+
+  if (!p) return null;
+  const info = (label, val) => (
+    <div className="text-sm"><span className="text-navy-900/45">{label} : </span><span className="text-navy-900">{val || "—"}</span></div>
+  );
+  const soldeTotal = avances.filter((a) => a.statut === "en_cours").reduce((s, a) => s + Number(a.solde || 0), 0);
+  const statutBadge = { brouillon: ["bg-navy-900/5 text-navy-900/60", "Brouillon"], valide: ["bg-sky-500/10 text-sky-700", "Validé"], paye: ["bg-emerald-500/10 text-emerald-700", "Payé"] };
+
+  return (
+    <Modale ouvert={!!personnel} onFermer={onFermer} titre={`Dossier — ${p.prenom} ${p.nom}`} large>
+      <div className="space-y-5">
+        {/* En-tête */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-lg font-bold text-navy-900">{p.prenom} {p.nom}</p>
+            <p className="text-sm text-navy-900/50">{p.fonction || "—"}{p.categorie ? ` · ${p.categorie}` : ""}{p.matricule ? ` · Mat. ${p.matricule}` : ""}</p>
+          </div>
+          <div className="flex gap-2">
+            <Bouton variante="fantome" onClick={() => onAvances(p)}>Avances</Bouton>
+            <Bouton onClick={() => onEditer(p)}>Éditer</Bouton>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Identité */}
+          <Carte className="p-4 space-y-1">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Identité</p>
+            {info("Sexe", p.sexe === "M" ? "Masculin" : p.sexe === "F" ? "Féminin" : "")}
+            {info("Naissance", [dateFr(p.date_naissance), p.lieu_naissance].filter((x) => x && x !== "—").join(" à "))}
+            {info("Adresse", p.adresse)}
+            {info("Téléphone", p.telephone)}
+            {info("Email", p.email)}
+            {info("À prévenir", [p.personne_prevenir, p.tel_urgence].filter(Boolean).join(" · "))}
+          </Carte>
+          {/* Pro / fiscal */}
+          <Carte className="p-4 space-y-1">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Professionnel &amp; paie</p>
+            {info("Date d'entrée", dateFr(p.date_embauche))}
+            {info("Situation familiale", p.situation_familiale)}
+            {info("N° IPRES", p.n_ipres)}
+            {info("Part IR / TRIMF", `${p.part_ir ?? "—"} / ${p.part_trimf ?? "—"}`)}
+            {info("Taux horaire (base / sursal.)", `${p.taux_horaire ? fmt(p.taux_horaire) : "—"} / ${p.taux_sursalaire ? fmt(p.taux_sursalaire) : "—"}`)}
+          </Carte>
+        </div>
+
+        {/* Contrats */}
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Historique des contrats</p>
+          {contrats.length === 0 ? <p className="text-sm text-navy-900/40">Aucun contrat enregistré.</p> : (
+            <div className="overflow-x-auto rounded-xl border border-navy-900/10">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-creme text-navy-900/50"><tr>
+                  <th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Début</th>
+                  <th className="px-3 py-2 font-medium">Fin</th><th className="px-3 py-2 text-right font-medium">Salaire base</th>
+                  <th className="px-3 py-2 font-medium">Motif fin</th>
+                </tr></thead>
+                <tbody>
+                  {contrats.map((c) => (
+                    <tr key={c.id} className="border-t border-navy-900/5">
+                      <td className="px-3 py-2">{c.type || "—"}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{dateFr(c.debut)}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{c.fin ? dateFr(c.fin) : "—"}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmt(c.salaire_base)} {devise}</td>
+                      <td className="px-3 py-2 text-navy-900/60">{c.motif_fin || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Avances / prêts */}
+        {avances.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Avances &amp; prêts — solde en cours {fmt(soldeTotal)} {devise}</p>
+            <ul className="space-y-1">
+              {avances.map((a) => (
+                <li key={a.id} className="flex items-center justify-between text-sm">
+                  <span className="text-navy-900/70 capitalize">{a.type === "pret" ? "Prêt" : "Avance"}{a.motif ? ` — ${a.motif}` : ""}</span>
+                  <span className="font-mono">{fmt(a.solde)} / {fmt(a.montant)} {devise}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Bulletins */}
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Bulletins</p>
+          {bulletins.length === 0 ? <p className="text-sm text-navy-900/40">Aucun bulletin.</p> : (
+            <ul className="divide-y divide-navy-900/5">
+              {bulletins.slice(0, 12).map((s) => {
+                const bg = statutBadge[s.statut] || statutBadge.brouillon;
+                return (
+                  <li key={s.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                    <span className="text-navy-900/70">{libellePeriode(s.periode)}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-mono">{fmt(s.montant_net)} {devise}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${bg[0]}`}>{bg[1]}</span>
+                      <button onClick={() => onBulletin({ ...s, personnels: p })} className="text-xs text-navy-700 hover:text-or-500">voir</button>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
         <div className="flex justify-end"><Bouton onClick={onFermer}>Fermer</Bouton></div>

@@ -37,6 +37,15 @@ function champsFiscaux(p) {
   return f;
 }
 
+// Champs d'identité civile optionnels (dossier employé — Phase 3).
+function champsIdentite(p) {
+  const f = {};
+  for (const k of ["sexe", "date_naissance", "lieu_naissance", "adresse", "personne_prevenir", "tel_urgence"]) {
+    if (p[k] !== undefined) f[k] = p[k] || null;
+  }
+  return f;
+}
+
 export async function creerPersonnel(ecoleId, p) {
   const { data, error } = await supabase
     .from("personnels")
@@ -50,6 +59,7 @@ export async function creerPersonnel(ecoleId, p) {
       date_embauche: p.date_embauche || null,
       profil_id: p.profil_id || null,
       ...champsFiscaux(p),
+      ...champsIdentite(p),
     })
     .select()
     .single();
@@ -69,6 +79,7 @@ export async function modifierPersonnel(id, p) {
       email: p.email || null,
       date_embauche: p.date_embauche || null,
       ...champsFiscaux(p),
+      ...champsIdentite(p),
     })
     .eq("id", id)
     .select()
@@ -171,6 +182,8 @@ export async function creerContrat(ecoleId, c) {
       salaire_base: Number(c.salaire_base) || 0,
       debut: c.debut || null,
       fin: c.fin || null,
+      periode_essai_fin: c.periode_essai_fin || null,
+      motif_fin: c.motif_fin || null,
     })
     .select()
     .single();
@@ -179,19 +192,29 @@ export async function creerContrat(ecoleId, c) {
 }
 
 export async function modifierContrat(id, c) {
-  const { data, error } = await supabase
-    .from("contrats")
-    .update({
-      type: c.type || null,
-      salaire_base: Number(c.salaire_base) || 0,
-      debut: c.debut || null,
-      fin: c.fin || null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const p = { type: c.type || null, salaire_base: Number(c.salaire_base) || 0, debut: c.debut || null, fin: c.fin || null };
+  if (c.periode_essai_fin !== undefined) p.periode_essai_fin = c.periode_essai_fin || null;
+  if (c.motif_fin !== undefined) p.motif_fin = c.motif_fin || null;
+  const { data, error } = await supabase.from("contrats").update(p).eq("id", id).select().single();
   if (error) throw error;
   return data;
+}
+
+// Historique des contrats d'un employé (plus récent d'abord).
+export async function getContratsPersonnel(ecoleId, personnelId) {
+  const { data, error } = await supabase.from("contrats").select("*")
+    .eq("ecole_id", ecoleId).eq("personnel_id", personnelId).order("debut", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Bulletins d'un employé (tous mois), pour le dossier 360°.
+export async function getSalairesPersonnel(ecoleId, personnelId) {
+  const { data, error } = await supabase.from("salaires")
+    .select("id, periode, montant_net, statut, paye, date_paiement")
+    .eq("ecole_id", ecoleId).eq("personnel_id", personnelId).order("periode", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 }
 
 // Définit le salaire de base courant : met à jour le contrat existant s'il y en
