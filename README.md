@@ -32,6 +32,7 @@ Migrations dans [`supabase/migrations/`](supabase/migrations) — à exécuter d
 
 ## Documentation
 
+- [`CHANGELOG.md`](CHANGELOG.md) — journal des modifications par version
 - [`docs/schema_gestion_scolaire.sql`](docs/schema_gestion_scolaire.sql) — schéma de référence (11 domaines, RLS multi-tenant)
 - [`docs/maquette_gestion_scolaire.jsx`](docs/maquette_gestion_scolaire.jsx) — identité visuelle & écrans MVP
 - [`docs/plan_phases_developpement.md`](docs/plan_phases_developpement.md) — plan par phases
