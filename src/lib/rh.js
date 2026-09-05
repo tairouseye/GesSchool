@@ -614,6 +614,36 @@ export async function importerBareme(ecoleId, periodicite, rows) {
   return { importes: data ?? lignes.length };
 }
 
+// Journal d'audit d'un bulletin (transitions + modifs de montants), acteur résolu.
+export async function getJournalAudit(salaireId) {
+  const { data, error } = await supabase
+    .from("journal_audit").select("*").eq("entite_id", salaireId)
+    .order("created_at", { ascending: false }).limit(50);
+  if (error) throw error;
+  const rows = data ?? [];
+  const ids = [...new Set(rows.map((r) => r.utilisateur).filter(Boolean))];
+  const noms = {};
+  if (ids.length) {
+    const { data: p } = await supabase.from("profils").select("id, prenom, nom").in("id", ids);
+    for (const x of p ?? []) noms[x.id] = `${x.prenom || ""} ${x.nom || ""}`.trim();
+  }
+  return rows.map((r) => ({ ...r, acteur: noms[r.utilisateur] || null }));
+}
+
+// Séparation des tâches (le valideur ne peut pas payer) — réglage par école.
+export async function getSoD(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "paie_sod").maybeSingle();
+  if (error) throw error;
+  return !!data?.valeur?.actif;
+}
+
+export async function setSoD(ecoleId, actif) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "paie_sod", valeur: { actif: !!actif } }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
 // Diagnostic santé : présence des objets clés (tables/colonnes/fonctions/triggers).
 export async function diagnosticSante() {
   const { data, error } = await supabase.rpc("diagnostic_sante");

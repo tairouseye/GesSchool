@@ -55,13 +55,13 @@ export default function RH() {
         api.getModePaie(ecoleId).catch(() => "simplifie"), api.getCotisations(ecoleId).catch(() => []),
         api.compterBareme(ecoleId).catch(() => ({ mensuel: 0, annuel: 0 })),
       ]);
-      const heures = await api.getHeuresMensuelles(ecoleId).catch(() => 173.33);
+      const [heures, sod] = await Promise.all([api.getHeuresMensuelles(ecoleId).catch(() => 173.33), api.getSoD(ecoleId).catch(() => false)]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
       setElements(els);
-      setRegime({ mode, cotisations: cots, bareme: bar, heures });
+      setRegime({ mode, cotisations: cots, bareme: bar, heures, sod });
     } catch (e) {
       setErreur(e.message);
     }
@@ -1022,6 +1022,8 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
   const toast = useToast();
   const confirmer = useConfirm();
   const [lignes, setLignes] = useState([]);
+  const [histo, setHisto] = useState([]);
+  const [voirHisto, setVoirHisto] = useState(false);
   const [nouv, setNouv] = useState({ elementId: "", libelle: "", sens: "gain", montant: "" });
   const salaireId = salaire?.id || null;
   const verrouille = !!salaire && salaire.statut && salaire.statut !== "brouillon";
@@ -1030,10 +1032,14 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     if (!salaireId) return;
     try { setLignes(await api.getLignesSalaire(salaireId)); } catch (e) { toast.erreur(e.message || "Erreur."); }
   };
-  useEffect(() => { setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" }); recharger(); /* eslint-disable-next-line */ }, [salaireId]);
+  const rechargerHisto = async () => {
+    if (!salaireId) return;
+    try { setHisto(await api.getJournalAudit(salaireId)); } catch { /* audit best-effort */ }
+  };
+  useEffect(() => { setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" }); setVoirHisto(false); recharger(); rechargerHisto(); /* eslint-disable-next-line */ }, [salaireId]);
 
   const run = async (fn) => {
-    try { await fn(); await recharger(); onChange && onChange(); }
+    try { await fn(); await recharger(); await rechargerHisto(); onChange && onChange(); }
     catch (e) { toast.erreur(e.message || "Erreur."); }
   };
   // Comme run, mais en mode complet recalcule aussi cotisations/IR/TRIMF (le brut
@@ -1042,8 +1048,16 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     try {
       await fn();
       if (modeComplet && !verrouille) await api.recalculerStatutaire(ecoleId, salaireId);
-      await recharger(); onChange && onChange();
+      await recharger(); await rechargerHisto(); onChange && onChange();
     } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const libelleOp = { validation: "Validé", devalidation: "Dévalidé", paiement: "Payé", annulation_paiement: "Paiement annulé", modif_montant: "Montant modifié", suppr_ligne: "Ligne retirée" };
+  const detailOp = (r) => {
+    const d = r.details || {};
+    if (r.operation === "modif_montant") return `${d.libelle} : ${fmt(d.ancien)} → ${fmt(d.nouveau)}`;
+    if (r.operation === "suppr_ligne") return `${d.libelle} (${fmt(d.montant)})`;
+    if (d.net != null) return `net ${fmt(d.net)}`;
+    return "";
   };
 
   const gains = lignes.filter((l) => l.sens === "gain");
@@ -1189,6 +1203,26 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
         </div>
         )}
 
+        {/* Historique / piste d'audit du bulletin */}
+        {histo.length > 0 && (
+          <div className="rounded-xl border border-navy-900/10 p-3">
+            <button type="button" onClick={() => setVoirHisto((v) => !v)} className="flex w-full items-center justify-between text-left">
+              <span className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">Historique ({histo.length})</span>
+              <span className="text-xs text-navy-900/40">{voirHisto ? "masquer" : "afficher"}</span>
+            </button>
+            {voirHisto && (
+              <ul className="mt-2 space-y-1.5">
+                {histo.map((r) => (
+                  <li key={r.id} className="flex items-start justify-between gap-2 text-xs">
+                    <span className="text-navy-900/70"><b>{libelleOp[r.operation] || r.operation}</b>{detailOp(r) ? ` — ${detailOp(r)}` : ""}</span>
+                    <span className="shrink-0 text-right text-navy-900/40">{r.acteur || "—"}<br />{new Date(r.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-end">
           <Bouton onClick={onFermer}>Terminé</Bouton>
         </div>
@@ -1207,6 +1241,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const mode = regime?.mode || "simplifie";
   const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
   const heures = regime?.heures ?? 173.33;
+  const sod = !!regime?.sod;
 
   const run = async (fn) => {
     try { await fn(); await onChange(); }
@@ -1282,6 +1317,18 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
             <span className="text-xs text-navy-900/45">h / mois</span>
           </div>
           <p className="mt-1 text-xs text-navy-900/45">Fixe pour tout le monde (ajustable par bulletin en cas d'absence). Le taux horaire est défini par employé dans sa fiche.</p>
+        </div>
+
+        {/* Séparation des tâches (contrôle interne) */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-navy-900">Séparation des tâches</p>
+            <p className="text-xs text-navy-900/45">Si activée, la personne qui <b>valide</b> un bulletin ne peut pas le <b>payer</b> (exige un second utilisateur). Recommandé dès qu'au moins deux personnes gèrent la paie.</p>
+          </div>
+          <button type="button" onClick={() => run(() => api.setSoD(ecoleId, !sod))}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${sod ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/15 text-navy-900/50"}`}>
+            {sod ? "Activée" : "Désactivée"}
+          </button>
         </div>
 
         {/* Cotisations */}
