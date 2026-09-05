@@ -39,6 +39,7 @@ export default function RH() {
   const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 }, heures: 173.33 });
   const [modaleRegime, setModaleRegime] = useState(false);
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
+  const [avancesPour, setAvancesPour] = useState(null); // personnel dont on gère avances/prêts
   const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
@@ -216,6 +217,7 @@ export default function RH() {
             nbEnsNonImportes={nbEnsNonImportes}
             onImporter={() => wrap(async () => { const r = await api.importerEnseignantsCommePersonnel(ecoleId); toast.succes(`${r.crees} enseignant(s) ajouté(s) au personnel.`); })}
             onEditer={(p) => setFormPers({ ...p, contrat: contrats[p.id] || null })}
+            onAvances={(p) => setAvancesPour(p)}
             onSuppr={async (id) => { if (await confirmer("Supprimer ce membre du personnel ?")) wrap(() => api.supprimerPersonnel(id), false, "Personnel supprimé."); }}
           />
         ) : (
@@ -273,6 +275,11 @@ export default function RH() {
         onChange={rechargerPaie}
       />
 
+      <ModaleAvancesPret
+        personnel={avancesPour} onFermer={() => setAvancesPour(null)}
+        ecoleId={ecoleId} devise={devise} periode={periode}
+      />
+
       <ModalePreparerPaie
         ouvert={prepPaie} onFermer={() => setPrepPaie(false)}
         periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))}
@@ -285,7 +292,7 @@ export default function RH() {
   );
 }
 
-function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, onImporter, onEditer, onSuppr }) {
+function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, onImporter, onEditer, onAvances, onSuppr }) {
   const [q, setQ] = useState("");
   const banniere = nbEnsNonImportes > 0 && (
     <Carte className="flex flex-wrap items-center justify-between gap-3 border-or-500/30 bg-or-500/5 p-4">
@@ -323,6 +330,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
           { key: "salaire", label: "Salaire base", align: "right", render: (p) => (contrats[p.id] ? `${fmt(contrats[p.id].salaire_base)} ${devise}` : "—") },
           { key: "actions", label: "", align: "right", render: (p) => (
             <div className="flex items-center justify-end gap-3">
+              <button onClick={(e) => { e.stopPropagation(); onAvances(p); }} className="text-xs text-navy-700 hover:text-or-500">avances</button>
               <button onClick={(e) => { e.stopPropagation(); onEditer(p); }} className="text-xs text-navy-700 hover:text-or-500">éditer</button>
               <button onClick={(e) => { e.stopPropagation(); onSuppr(p.id); }} className="text-xs text-danger-500 hover:underline">suppr.</button>
             </div>
@@ -1065,7 +1073,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
   const patronales = lignes.filter((l) => l.sens === "patronal");
   const cotisImpots = retenues.filter((l) => ["cotisation", "impot"].includes(l.nature));
   const retenuesManuelles = retenues.filter((l) => !["cotisation", "impot"].includes(l.nature));
-  const auto = (l) => ["cotisation", "impot", "patronal"].includes(l.nature); // recalculé, non édité à la main
+  const auto = (l) => ["cotisation", "impot", "patronal", "remboursement"].includes(l.nature); // géré par le système, non édité à la main
   const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalPatronal = patronales.reduce((s, l) => s + Number(l.montant || 0), 0);
@@ -1567,6 +1575,105 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, modeComplet, 
           <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton onClick={generer} disabled={employes.length === 0}>Valider et générer</Bouton>
         </div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- PHASE 2 : Avances & Prêts d'un employé ---
+function ModaleAvancesPret({ personnel, onFermer, ecoleId, devise, periode }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [liste, setListe] = useState([]);
+  const vide = { type: "avance", montant: "", motif: "", nb_echeances: "1", montant_echeance: "", premiere_echeance: periode };
+  const [f, setF] = useState(vide);
+  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const persId = personnel?.id || null;
+
+  const recharger = async () => {
+    if (!persId) return;
+    try { setListe(await api.getAvancesPrets(ecoleId, persId)); } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  useEffect(() => { setF({ ...vide, premiere_echeance: periode }); recharger(); /* eslint-disable-next-line */ }, [persId]);
+
+  const octroyer = async () => {
+    if (!f.montant) { toast.erreur("Montant requis."); return; }
+    if (!/^\d{4}-\d{2}$/.test(f.premiere_echeance)) { toast.erreur("1re échéance au format AAAA-MM."); return; }
+    try {
+      await api.creerAvancePret(ecoleId, { ...f, personnel_id: persId });
+      setF({ ...vide, premiere_echeance: periode });
+      await recharger();
+      toast.succes("Enregistré. L'échéance sera déduite à la génération de la paie.");
+    } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  const nbEch = Math.max(1, Number(f.nb_echeances) || 1);
+  const echAuto = f.montant_echeance || (f.montant ? String(Math.round(Number(f.montant) / nbEch)) : "");
+
+  return (
+    <Modale ouvert={!!personnel} onFermer={onFermer} titre={personnel ? `Avances & prêts — ${personnel.prenom} ${personnel.nom}` : "Avances & prêts"} large>
+      <div className="space-y-5">
+        {/* En cours */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">En cours</p>
+          {liste.length === 0 ? <p className="text-sm text-navy-900/40">Aucune avance ni prêt.</p> : (
+            <div className="scroll-x overflow-x-auto rounded-xl border border-navy-900/10">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-creme text-navy-900/50"><tr>
+                  <th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Motif</th>
+                  <th className="px-3 py-2 text-right font-medium">Montant</th><th className="px-3 py-2 text-right font-medium">Échéance</th>
+                  <th className="px-3 py-2 text-right font-medium">Solde</th><th className="px-3 py-2 font-medium">Statut</th><th className="px-3 py-2"></th>
+                </tr></thead>
+                <tbody>
+                  {liste.map((a) => (
+                    <tr key={a.id} className="border-t border-navy-900/5">
+                      <td className="px-3 py-2 capitalize">{a.type === "pret" ? "Prêt" : "Avance"}</td>
+                      <td className="px-3 py-2 text-navy-900/60">{a.motif || "—"}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmt(a.montant)}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmt(a.montant_echeance)}<span className="text-navy-900/40">/{a.nb_echeances}</span></td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold">{fmt(a.solde)}</td>
+                      <td className="px-3 py-2">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${a.statut === "annule" ? "bg-navy-900/5 text-navy-900/50" : a.solde <= 0 ? "bg-emerald-500/10 text-emerald-700" : "bg-or-500/10 text-or-700"}`}>
+                          {a.statut === "annule" ? "Annulé" : a.solde <= 0 ? "Soldé" : "En cours"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {a.statut === "en_cours" && a.solde > 0 && (
+                          <button onClick={async () => { if (await confirmer("Annuler cette avance/prêt ? Les remboursements déjà prélevés restent.")) { try { await api.annulerAvancePret(a.id); await recharger(); } catch (e) { toast.erreur(e.message); } } }}
+                            className="text-xs text-danger-500 hover:underline">annuler</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Octroyer */}
+        <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">
+          <p className="mb-3 text-sm font-medium text-navy-900/70">Accorder une avance / un prêt</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Type</span>
+              <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="avance">Avance sur salaire</option><option value="pret">Prêt</option>
+              </select>
+            </label>
+            <Champ label={`Montant (${devise})`} value={f.montant} onChange={(e) => maj("montant", e.target.value.replace(/[^0-9]/g, ""))} />
+            <Champ label="Motif" value={f.motif} onChange={(e) => maj("motif", e.target.value)} placeholder="Tabaski, frais médicaux…" />
+            <Champ label="Nombre d'échéances" type="number" value={f.nb_echeances} onChange={(e) => maj("nb_echeances", e.target.value.replace(/[^0-9]/g, ""))} />
+            <Champ label={`Échéance/mois (${devise})`} value={echAuto} onChange={(e) => maj("montant_echeance", e.target.value.replace(/[^0-9]/g, ""))} />
+            <Champ label="1re échéance (AAAA-MM)" value={f.premiere_echeance} onChange={(e) => maj("premiere_echeance", e.target.value)} />
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-navy-900/45">L'échéance est déduite automatiquement à la génération de la paie (une fois par mois), jusqu'au solde.</p>
+            <Bouton variante="or" onClick={octroyer}>Enregistrer</Bouton>
+          </div>
+        </div>
+
+        <div className="flex justify-end"><Bouton onClick={onFermer}>Fermer</Bouton></div>
       </div>
     </Modale>
   );

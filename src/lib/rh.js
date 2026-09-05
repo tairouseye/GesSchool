@@ -317,12 +317,13 @@ export async function personnelAgenerer(ecoleId, periode) {
 // Composition : Salaire de base + éléments récurrents (+ cotisations/IR/TRIMF
 // en mode complet). Net calculé par trigger.
 export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
-  const [pers, contrats, existant, aff, ctx] = await Promise.all([
+  const [pers, contrats, existant, aff, ctx, dues] = await Promise.all([
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
     affectationsParPersonnel(ecoleId),
     contexteComplet(ecoleId),
+    echeancesDues(ecoleId, periode),
   ]);
   const deja = new Set((existant.data ?? []).map((s) => s.personnel_id));
   const aCreer = pers.filter((p) => !deja.has(p.id) && contratActifPour(contrats[p.id], periode));
@@ -334,15 +335,24 @@ export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
   if (error) throw error;
   const parId = new Map(pers.map((p) => [p.id, p]));
   const lignes = [];
+  const rembRows = [];
   for (const s of crees) {
     const p = parId.get(s.personnel_id);
     const heures = heuresParEmploye ? heuresParEmploye[s.personnel_id] : undefined;
     lignes.push(...lignesInitiales(ecoleId, s.id, p, contrats[s.personnel_id]?.salaire_base || 0, aff[s.personnel_id], ctx, heures));
     ajouterStatutaire(lignes, ecoleId, s.id, p, ctx);
+    for (const d of dues[s.personnel_id] || []) {
+      lignes.push({ ecole_id: ecoleId, salaire_id: s.id, libelle: d.libelle, sens: "retenue", nature: "remboursement", montant: d.montant, ordre: 200 });
+      rembRows.push({ ecole_id: ecoleId, avance_pret_id: d.avance_pret_id, salaire_id: s.id, periode, montant: d.montant });
+    }
   }
   if (lignes.length) {
     const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
     if (e2) throw e2;
+  }
+  if (rembRows.length) {
+    const { error: e3 } = await supabase.from("remboursements").insert(rembRows);
+    if (e3) throw e3;
   }
   return { crees: crees.length };
 }
@@ -377,6 +387,70 @@ export async function recalculerStatutaire(ecoleId, salaireId) {
   const stat = lignesStatutaires(brut, { partIr: p.part_ir || 1, partTrimf: p.part_trimf || 1, cotisations, baremeMensuel });
   const ins = stat.map((l) => ({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, montant: l.montant, ordre: l.ordre }));
   if (ins.length) { const { error } = await supabase.from("salaire_lignes").insert(ins); if (error) throw error; }
+}
+
+// --- PHASE 2 : Avances & Prêts ---
+// Liste avec solde DÉRIVÉ (montant − Σ remboursements) et statut effectif.
+export async function getAvancesPrets(ecoleId, personnelId) {
+  let q = supabase.from("avances_prets").select("*").eq("ecole_id", ecoleId);
+  if (personnelId) q = q.eq("personnel_id", personnelId);
+  const { data, error } = await q.order("date_octroi", { ascending: false });
+  if (error) throw error;
+  const aps = data ?? [];
+  if (aps.length === 0) return [];
+  const { data: remb } = await supabase.from("remboursements").select("avance_pret_id, montant, periode").in("avance_pret_id", aps.map((a) => a.id));
+  const parAp = {};
+  for (const r of remb ?? []) (parAp[r.avance_pret_id] ||= []).push(r);
+  return aps.map((a) => {
+    const rs = parAp[a.id] || [];
+    const rembourse = rs.reduce((s, r) => s + Number(r.montant || 0), 0);
+    return { ...a, rembourse, solde: Math.max(0, Number(a.montant || 0) - rembourse) };
+  });
+}
+
+export async function creerAvancePret(ecoleId, a) {
+  const nb = Math.max(1, Number(a.nb_echeances) || 1);
+  const montant = Number(a.montant) || 0;
+  const echeance = a.montant_echeance ? Number(a.montant_echeance) : arr(montant / nb);
+  const { data, error } = await supabase.from("avances_prets").insert({
+    ecole_id: ecoleId, personnel_id: a.personnel_id, type: a.type || "avance",
+    montant, date_octroi: a.date_octroi || new Date().toISOString().slice(0, 10),
+    motif: a.motif || null, mode: a.mode || null, nb_echeances: nb,
+    montant_echeance: echeance, premiere_echeance: a.premiere_echeance,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function annulerAvancePret(id) {
+  const { error } = await supabase.from("avances_prets").update({ statut: "annule" }).eq("id", id);
+  if (error) throw error;
+}
+
+// Échéances dues pour une période, par personnel (avances/prêts en cours, non
+// encore prélevés ce mois, solde restant > 0).
+async function echeancesDues(ecoleId, periode) {
+  const { data: aps } = await supabase.from("avances_prets").select("*")
+    .eq("ecole_id", ecoleId).eq("statut", "en_cours").lte("premiere_echeance", periode);
+  const list = aps ?? [];
+  if (list.length === 0) return {};
+  const { data: remb } = await supabase.from("remboursements").select("avance_pret_id, periode, montant").in("avance_pret_id", list.map((a) => a.id));
+  const parAp = {};
+  for (const r of remb ?? []) (parAp[r.avance_pret_id] ||= []).push(r);
+  const map = {};
+  for (const a of list) {
+    const rs = parAp[a.id] || [];
+    if (rs.some((r) => r.periode === periode)) continue; // déjà prélevé ce mois
+    const solde = Number(a.montant || 0) - rs.reduce((s, r) => s + Number(r.montant || 0), 0);
+    if (solde <= 0) continue;
+    const montant = Math.min(Number(a.montant_echeance) || solde, solde);
+    if (montant <= 0) continue;
+    (map[a.personnel_id] ||= []).push({
+      avance_pret_id: a.id, montant: arr(montant),
+      libelle: `Remboursement ${a.type === "pret" ? "prêt" : "avance"}${a.motif ? " — " + a.motif : ""}`,
+    });
+  }
+  return map;
 }
 
 // --- Lignes de bulletin (composition dynamique) — Phase D ---
