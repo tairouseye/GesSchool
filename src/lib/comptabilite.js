@@ -204,11 +204,12 @@ export async function getCreancesScolarite(ecoleId, anneeId) {
 }
 
 // Dettes envers le personnel : salaires validés mais pas encore payés.
-// (Best-effort : un profil sans accès RH obtient 0 — les salaires relèvent de la RH.)
+// Via RPC SECURITY DEFINER → accessible aussi au comptable (la RLS de `salaires`
+// est réservée à la RH), pour le tableau de bord comptable.
 export async function getDettesPersonnel(ecoleId) {
-  const { data, error } = await supabase.from("salaires").select("montant_net, statut").eq("ecole_id", ecoleId).eq("statut", "valide");
+  const { data, error } = await supabase.rpc("dettes_personnel", { p_ecole: ecoleId });
   if (error) throw error;
-  return (data ?? []).reduce((s, x) => s + Number(x.montant_net || 0), 0);
+  return Number(data) || 0;
 }
 
 // Scolarité encaissée sur une période (depuis les paiements parents).

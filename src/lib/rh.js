@@ -596,21 +596,22 @@ export async function compterBareme(ecoleId) {
   return r;
 }
 
-// Remplace le barème d'une périodicité ('mensuel'|'annuel') par les lignes fournies.
+// Remplace ATOMIQUEMENT le barème d'une périodicité (delete+insert en une
+// transaction, via RPC) → jamais de barème partiel en cas d'échec.
 // rows: [{ revenu:Number, trimf:Number, ir:{ "1":x, "1.5":y, ... } }]
 export async function importerBareme(ecoleId, periodicite, rows) {
-  await supabase.from("bareme_ir").delete().eq("ecole_id", ecoleId).eq("periodicite", periodicite);
   const lignes = (rows || [])
     .filter((r) => r && Number.isFinite(Number(r.revenu)))
-    .map((r) => ({ ecole_id: ecoleId, periodicite, revenu: Number(r.revenu), trimf: Number(r.trimf) || 0, ir: r.ir || {} }));
+    .map((r) => {
+      // Élague les IR à 0 (allège le transfert et le stockage ; absent ⇒ 0 au lookup).
+      const ir = {};
+      for (const [k, v] of Object.entries(r.ir || {})) if (Number(v) !== 0) ir[k] = Number(v);
+      return { revenu: Number(r.revenu), trimf: Number(r.trimf) || 0, ir };
+    });
   if (lignes.length === 0) return { importes: 0 };
-  // Insertion par lots (barèmes volumineux : ~5000 lignes).
-  const taille = 1000;
-  for (let i = 0; i < lignes.length; i += taille) {
-    const { error } = await supabase.from("bareme_ir").insert(lignes.slice(i, i + taille));
-    if (error) throw error;
-  }
-  return { importes: lignes.length };
+  const { data, error } = await supabase.rpc("remplacer_bareme", { p_ecole: ecoleId, p_periodicite: periodicite, p_rows: lignes });
+  if (error) throw error;
+  return { importes: data ?? lignes.length };
 }
 
 // Barème complet d'une périodicité (pour lecture/moteur côté client).

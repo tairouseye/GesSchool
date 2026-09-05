@@ -603,7 +603,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
             <Champ label="Taux horaire (base)" value={f.taux_horaire} onChange={(e) => maj("taux_horaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 669,49" />
             <Champ label="Taux horaire sursalaire" value={f.taux_sursalaire} onChange={(e) => maj("taux_sursalaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 160,27" />
           </div>
-          <p className="mt-2 text-xs text-navy-900/40">Les parts servent à l'IR/TRIMF. En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
+          <p className="mt-2 text-xs text-navy-900/40">La <b>Part IR</b> choisit la colonne du barème IR. Le <b>TRIMF</b> est lu directement dans le barème (la « Part TRIMF » est informative, affichée sur le bulletin). En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
         </details>
 
         <div className="flex justify-end gap-2">
