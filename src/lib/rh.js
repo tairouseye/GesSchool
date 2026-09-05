@@ -269,6 +269,35 @@ export async function setCongesJoursAn(ecoleId, jours) {
   if (error) throw error;
 }
 
+// --- PHASE 4 : Absences RH ---
+export const TYPES_ABSENCE_RH = [
+  ["absence", "Absence"], ["retard", "Retard"], ["maladie", "Maladie"], ["autorisation", "Autorisation"],
+];
+
+export async function getAbsencesRh(ecoleId, personnelId) {
+  let q = supabase.from("absences_rh").select("*, personnels(prenom, nom, fonction)").eq("ecole_id", ecoleId);
+  if (personnelId) q = q.eq("personnel_id", personnelId);
+  const { data, error } = await q.order("date_debut", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerAbsenceRh(ecoleId, a, saisiPar) {
+  const { data, error } = await supabase.from("absences_rh").insert({
+    ecole_id: ecoleId, personnel_id: a.personnel_id, type: a.type || "absence",
+    date_debut: a.date_debut, date_fin: a.date_fin || null,
+    heures: a.heures ? Number(a.heures) : null, justifie: !!a.justifie, motif: a.motif || null,
+    saisi_par: saisiPar || null,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerAbsenceRh(id) {
+  const { error } = await supabase.from("absences_rh").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // Bulletins d'un employé (tous mois), pour le dossier 360°.
 export async function getSalairesPersonnel(ecoleId, personnelId) {
   const { data, error } = await supabase.from("salaires")

@@ -45,6 +45,7 @@ export default function RH() {
   const [conges, setConges] = useState([]);
   const [soldesConges, setSoldesConges] = useState({});
   const [congesJoursAn, setCongesJoursAn] = useState(24);
+  const [absencesRh, setAbsencesRh] = useState([]);
   const [bulletin, setBulletin] = useState(null);
   const [comptes, setComptes] = useState([]);
   const [signataires, setSignataires] = useState([]);
@@ -83,8 +84,8 @@ export default function RH() {
   const rechargerConges = useCallback(async () => {
     const annee = new Date().getFullYear();
     try {
-      const [c, s, j] = await Promise.all([api.getConges(ecoleId), api.getSoldesConges(ecoleId, annee), api.getCongesJoursAn(ecoleId)]);
-      setConges(c); setSoldesConges(s); setCongesJoursAn(j);
+      const [c, s, j, ab] = await Promise.all([api.getConges(ecoleId), api.getSoldesConges(ecoleId, annee), api.getCongesJoursAn(ecoleId), api.getAbsencesRh(ecoleId)]);
+      setConges(c); setSoldesConges(s); setCongesJoursAn(j); setAbsencesRh(ab);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId]);
 
@@ -217,15 +218,17 @@ export default function RH() {
           </Carte>
         </div>
 
-        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["conges", "Congés"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
+        <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["conges", "Congés & absences"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
 
         {onglet === "conges" ? (
           <PanneauConges
-            conges={conges} soldesConges={soldesConges} congesJoursAn={congesJoursAn} personnels={personnels}
+            conges={conges} soldesConges={soldesConges} congesJoursAn={congesJoursAn} personnels={personnels} absences={absencesRh}
             onCreer={(c) => wrap(async () => { await api.creerConge(ecoleId, c, utilisateur?.id); await rechargerConges(); }, false, "Demande enregistrée.")}
             onDecider={(id, statut, motifRefus) => wrap(async () => { await api.deciderConge(id, { statut, motifRefus, decidePar: utilisateur?.id }); await rechargerConges(); }, false, statut === "approuve" ? "Congé approuvé." : "Congé refusé.")}
             onSuppr={async (id) => { if (await confirmer("Supprimer cette demande ?")) wrap(async () => { await api.supprimerConge(id); await rechargerConges(); }); }}
             onQuota={(n) => wrap(async () => { await api.setCongesJoursAn(ecoleId, n); await rechargerConges(); }, false, "Quota mis à jour.")}
+            onCreerAbsence={(a) => wrap(async () => { await api.creerAbsenceRh(ecoleId, a, utilisateur?.id); await rechargerConges(); }, false, "Absence enregistrée.")}
+            onSupprAbsence={async (id) => { if (await confirmer("Supprimer cette absence ?")) wrap(async () => { await api.supprimerAbsenceRh(id); await rechargerConges(); }); }}
           />
         ) : onglet === "documents" ? (
           <PanneauDocumentsRH
@@ -1882,12 +1885,20 @@ function ModaleDossierEmploye({ personnel, onFermer, ecoleId, devise, onEditer, 
 }
 
 // --- PHASE 4 : Congés (demande, approbation, solde) ---
-function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, onCreer, onDecider, onSuppr, onQuota }) {
+function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absences = [], onCreer, onDecider, onSuppr, onQuota, onCreerAbsence, onSupprAbsence }) {
   const confirmer = useConfirm();
   const toast = useToast();
   const vide = { personnel_id: "", type: "annuel", date_debut: "", date_fin: "", motif: "" };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const videAbs = { personnel_id: "", type: "absence", date_debut: "", date_fin: "", justifie: false, motif: "" };
+  const [fa, setFa] = useState(videAbs);
+  const majA = (k, v) => setFa((s) => ({ ...s, [k]: v }));
+  const typeAbsLbl = Object.fromEntries(api.TYPES_ABSENCE_RH);
+  const soumettreAbs = () => {
+    if (!fa.personnel_id || !fa.date_debut) { toast.erreur("Employé et date requis."); return; }
+    onCreerAbsence(fa); setFa(videAbs);
+  };
 
   const joursEntre = (d1, d2) => {
     if (!d1 || !d2) return 0;
@@ -2002,6 +2013,53 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, onCree
             </table>
           </div>
         )}
+      </Carte>
+
+      {/* Absences & retards */}
+      <Carte className="p-5">
+        <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">Absences &amp; retards</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Employé</span>
+            <select value={fa.personnel_id} onChange={(e) => majA("personnel_id", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— Choisir —</option>
+              {personnels.map((x) => <option key={x.id} value={x.id}>{x.nom} {x.prenom}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
+            <select value={fa.type} onChange={(e) => majA("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              {api.TYPES_ABSENCE_RH.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <Champ label="Du" type="date" value={fa.date_debut} onChange={(e) => majA("date_debut", e.target.value)} />
+          <Champ label="Au (optionnel)" type="date" value={fa.date_fin} onChange={(e) => majA("date_fin", e.target.value)} />
+          <Champ label="Motif (optionnel)" value={fa.motif} onChange={(e) => majA("motif", e.target.value)} />
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm text-navy-900/70">
+            <input type="checkbox" checked={fa.justifie} onChange={(e) => majA("justifie", e.target.checked)} /> Justifiée
+          </label>
+          <Bouton onClick={soumettreAbs}>Enregistrer l'absence</Bouton>
+        </div>
+        {absences.length > 0 && (
+          <ul className="mt-4 divide-y divide-navy-900/5">
+            {absences.slice(0, 15).map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                <span>
+                  <b className="text-navy-900">{a.personnels?.prenom} {a.personnels?.nom}</b>
+                  <span className="text-navy-900/50"> — {typeAbsLbl[a.type] || a.type} · {a.date_debut}{a.date_fin ? ` → ${a.date_fin}` : ""}</span>
+                  {a.motif && <span className="text-navy-900/40"> · {a.motif}</span>}
+                </span>
+                <span className="flex items-center gap-3 text-xs">
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${a.justifie ? "bg-emerald-500/10 text-emerald-700" : "bg-or-500/10 text-or-700"}`}>{a.justifie ? "justifiée" : "non justifiée"}</span>
+                  <button onClick={() => onSupprAbsence(a.id)} className="text-danger-500 hover:underline">suppr.</button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-xs text-navy-900/40">Informatif : aucune retenue automatique. Ajuste les heures à la préparation de la paie si besoin.</p>
       </Carte>
     </div>
   );
