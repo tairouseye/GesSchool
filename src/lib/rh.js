@@ -878,6 +878,35 @@ export async function getLivrePaie(ecoleId, periode) {
   });
 }
 
+// Récapitulatif de paiement d'une période (pour le comptable) : par employé,
+// Net à payer + institutions (VRS = IR/TRIMF, cotisations IPRES/CSS…, IPM) +
+// total institutions + total décaissé (net + institutions).
+export async function getRecapSalaires(ecoleId, periode) {
+  const salaires = await getSalaires(ecoleId, periode);
+  if (salaires.length === 0) return [];
+  const ids = salaires.map((s) => s.id);
+  const { data: lignes, error } = await supabase
+    .from("salaire_lignes").select("salaire_id, sens, nature, libelle, montant").in("salaire_id", ids);
+  if (error) throw error;
+  const parSal = {};
+  for (const l of lignes ?? []) (parSal[l.salaire_id] ||= []).push(l);
+  const estIPM = (l) => (l.libelle || "").toLowerCase().startsWith("ipm");
+  return salaires.map((s) => {
+    const ls = parSal[s.id] || [];
+    const somme = (pred) => ls.filter(pred).reduce((x, l) => x + Number(l.montant || 0), 0);
+    const vrs = somme((l) => l.nature === "impot");
+    const ipm = somme((l) => ["cotisation", "patronal"].includes(l.nature) && estIPM(l));
+    const cotisSoc = somme((l) => ["cotisation", "patronal"].includes(l.nature) && !estIPM(l));
+    const net = Number(s.montant_net || 0);
+    const inst = vrs + ipm + cotisSoc;
+    return {
+      matricule: s.personnels?.matricule || "",
+      nom: `${s.personnels?.nom || ""} ${s.personnels?.prenom || ""}`.trim(),
+      net, vrs, cotisSoc, ipm, inst, total: net + inst,
+    };
+  });
+}
+
 // Diagnostic santé : présence des objets clés (tables/colonnes/fonctions/triggers).
 export async function diagnosticSante() {
   const { data, error } = await supabase.rpc("diagnostic_sante");

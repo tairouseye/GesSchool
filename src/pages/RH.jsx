@@ -44,6 +44,7 @@ export default function RH() {
   const [dossier, setDossier] = useState(null); // personnel dont on ouvre le dossier 360°
   const [prepPaie, setPrepPaie] = useState(false); // étape « Préparer la paie »
   const [livreOuvert, setLivreOuvert] = useState(false);
+  const [recapOuvert, setRecapOuvert] = useState(false);
   const [conges, setConges] = useState([]);
   const [soldesConges, setSoldesConges] = useState({});
   const [congesJoursAn, setCongesJoursAn] = useState(24);
@@ -126,6 +127,7 @@ export default function RH() {
           <Bouton variante="fantome" onClick={() => setModaleRegime(true)}>Régime</Bouton>
           <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
           <Bouton variante="fantome" onClick={() => setLivreOuvert(true)}>Livre</Bouton>
+          <Bouton variante="fantome" onClick={() => setRecapOuvert(true)}>Récap</Bouton>
           <Bouton onClick={() => setPrepPaie(true)} disabled={personnels.length === 0}>⚡ Générer les fiches</Bouton>
         </div>
       )
@@ -317,6 +319,11 @@ export default function RH() {
 
       <ModaleLivrePaie
         ouvert={livreOuvert} onFermer={() => setLivreOuvert(false)}
+        ecoleId={ecoleId} periode={periode} ecole={ecole} devise={devise}
+      />
+
+      <ModaleRecapSalaires
+        ouvert={recapOuvert} onFermer={() => setRecapOuvert(false)}
         ecoleId={ecoleId} periode={periode} ecole={ecole} devise={devise}
       />
 
@@ -2158,6 +2165,114 @@ function ModaleLivrePaie({ ouvert, onFermer, ecoleId, periode, ecole, devise }) 
                 </tr></tfoot>
               </table>
               <p className="mt-2 text-[11px] text-navy-900/40">Montants en {devise}. Coût employeur total = net + cotisations salariales + charges patronales.</p>
+            </div>
+          )}
+        </div>
+        <div className="no-print flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
+          <Bouton variante="fantome" onClick={exporter} disabled={busy || rows.length === 0}>{busy ? "…" : "Export Excel"}</Bouton>
+          <Bouton onClick={() => window.print()} disabled={rows.length === 0}>Imprimer / PDF</Bouton>
+        </div>
+      </div>
+    </Modale>
+  );
+}
+
+// --- Récapitulatif des salaires (rapport comptable, façon feuille « Résumé ») ---
+function ModaleRecapSalaires({ ouvert, onFermer, ecoleId, periode, ecole, devise }) {
+  const toast = useToast();
+  const [rows, setRows] = useState([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!ouvert) return;
+    let vivant = true;
+    api.getRecapSalaires(ecoleId, periode).then((r) => { if (vivant) setRows(r); }).catch((e) => toast.erreur(e.message || "Erreur."));
+    return () => { vivant = false; };
+    /* eslint-disable-next-line */
+  }, [ouvert, periode]);
+
+  const tot = rows.reduce((t, r) => ({
+    net: t.net + r.net, vrs: t.vrs + r.vrs, cotisSoc: t.cotisSoc + r.cotisSoc,
+    ipm: t.ipm + r.ipm, inst: t.inst + r.inst, total: t.total + r.total,
+  }), { net: 0, vrs: 0, cotisSoc: 0, ipm: 0, inst: 0, total: 0 });
+
+  const exporter = async () => {
+    setBusy(true);
+    try {
+      const XLSX = await import("xlsx");
+      const data = rows.map((r, i) => ({
+        "N°": i + 1, "Mle": r.matricule, "Nom & Prénoms": r.nom, "Net à payer": r.net,
+        "VRS (IR/TRIMF)": r.vrs, "IPRES + CSS": r.cotisSoc, "IPM": r.ipm,
+        "Inst. à payer": r.inst, "Total (net+inst.)": r.total,
+      }));
+      data.push({ "N°": "", "Mle": "", "Nom & Prénoms": "TOTAL", "Net à payer": tot.net, "VRS (IR/TRIMF)": tot.vrs, "IPRES + CSS": tot.cotisSoc, "IPM": tot.ipm, "Inst. à payer": tot.inst, "Total (net+inst.)": tot.total });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Récap salaires");
+      XLSX.writeFile(wb, `recap-salaires-${ecole?.sigle || "ecole"}-${periode}.xlsx`);
+    } catch (e) { toast.erreur(e.message || "Export impossible."); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Récapitulatif — ${libellePeriode(periode)}`} large>
+      <div className="space-y-4">
+        <div className="zone-impression rounded-xl border border-navy-900/15 bg-white p-5 text-navy-900">
+          <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+            {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+            <div className="flex-1">
+              <p className="font-display text-base font-bold">{ecole?.nom}</p>
+              <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+            </div>
+            <p className="text-right text-xs text-navy-900/60">Édité le {new Date().toLocaleDateString("fr-FR")}</p>
+          </div>
+          <h1 className="mb-3 text-center font-display text-base font-bold uppercase tracking-wide">Récapitulatif des salaires — {libellePeriode(periode)}</h1>
+          {rows.length === 0 ? <p className="text-sm text-navy-900/40">Aucun bulletin sur la période.</p> : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="border-y border-navy-900/25 text-navy-900/60">
+                    <th className="px-2 py-1.5 text-left">N°</th><th className="px-2 py-1.5 text-left">Mle</th>
+                    <th className="px-2 py-1.5 text-left">Nom &amp; Prénoms</th>
+                    <th className="px-2 py-1.5 text-right">Net à payer</th>
+                    <th className="px-2 py-1.5 text-right">VRS</th><th className="px-2 py-1.5 text-right">IPRES+CSS</th>
+                    <th className="px-2 py-1.5 text-right">IPM</th><th className="px-2 py-1.5 text-right">Inst. à payer</th>
+                    <th className="px-2 py-1.5 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="border-b border-navy-900/10">
+                      <td className="px-2 py-1.5">{i + 1}</td>
+                      <td className="px-2 py-1.5 font-mono">{r.matricule || "—"}</td>
+                      <td className="px-2 py-1.5 font-medium">{r.nom}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold">{fmt(r.net)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{r.vrs ? fmt(r.vrs) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{r.cotisSoc ? fmt(r.cotisSoc) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{r.ipm ? fmt(r.ipm) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmt(r.inst)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold">{fmt(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-navy-900/30 font-bold">
+                    <td className="px-2 py-2" colSpan={3}>TOTAL ({rows.length})</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.net)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.vrs)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.cotisSoc)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.ipm)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.inst)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(tot.total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div className="mt-3 grid grid-cols-1 gap-1 text-xs text-navy-900/60 sm:grid-cols-2">
+                <p>Total <b>net à payer</b> (employés) : <span className="font-mono">{fmt(tot.net)} {devise}</span></p>
+                <p>Total <b>à verser aux institutions</b> : <span className="font-mono">{fmt(tot.inst)} {devise}</span></p>
+                <p className="sm:col-span-2">Total <b>décaissé</b> (net + institutions) : <span className="font-mono font-semibold">{fmt(tot.total)} {devise}</span></p>
+              </div>
+              <p className="mt-2 text-[11px] text-navy-900/40">VRS = IR + TRIMF (impôts) · IPRES+CSS = cotisations sociales (part salariale + patronale) · IPM = mutuelle santé. Montants en {devise}.</p>
             </div>
           )}
         </div>
