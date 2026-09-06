@@ -28,7 +28,12 @@ export default function Comptabilite() {
   const [dettes, setDettes] = useState(0);
   const [cats, setCats] = useState([]);
   const [erreur, setErreur] = useState("");
-  const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense' | 'categories'
+  const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense' | 'categories' | 'piece'
+
+  // Comptabilité générale (chargée à la demande)
+  const [plan, setPlan] = useState([]);
+  const [journaux, setJournaux] = useState([]);
+  const [pieces, setPieces] = useState([]);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -57,6 +62,23 @@ export default function Comptabilite() {
   const catsActives = (sens) => cats.filter((c) => c.sens === sens && c.actif !== false);
 
   useEffect(() => { recharger(); }, [recharger]);
+
+  // Comptabilité générale : plan comptable + journaux + journal des pièces,
+  // chargés à l'ouverture des onglets concernés.
+  const rechargerCompta = useCallback(async () => {
+    try {
+      const [pl, jx, pcs] = await Promise.all([
+        api.getPlanComptable(ecoleId),
+        api.getJournaux(ecoleId),
+        api.getPieces(ecoleId, { debut, fin }),
+      ]);
+      setPlan(pl); setJournaux(jx); setPieces(pcs);
+    } catch (e) { setErreur(e.message); }
+  }, [ecoleId, debut, fin]);
+
+  useEffect(() => {
+    if (onglet === "plan" || onglet === "journal") rechargerCompta();
+  }, [onglet, rechargerCompta]);
 
   const wrap = async (fn, msg) => {
     try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
@@ -88,6 +110,7 @@ export default function Comptabilite() {
         <Bouton onClick={() => setModale("depense")} disabled={soldes.length === 0}>+ Dépense</Bouton>
       </div>
     ),
+    journal: <Bouton onClick={() => setModale("piece")} disabled={journaux.length === 0}>+ Écriture</Bouton>,
   }[onglet];
 
   return (
@@ -99,14 +122,14 @@ export default function Comptabilite() {
         {/* Onglets */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1">
-            {[["synthese", "Synthèse"], ["tresorerie", "Trésorerie"], ["recettes", "Recettes"], ["depenses", "Dépenses"]].map(([k, l]) => (
+            {[["synthese", "Synthèse"], ["tresorerie", "Trésorerie"], ["recettes", "Recettes"], ["depenses", "Dépenses"], ["plan", "Plan comptable"], ["journal", "Journal"]].map(([k, l]) => (
               <button key={k} onClick={() => setOnglet(k)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
                 {l}
               </button>
             ))}
           </div>
-          {onglet !== "tresorerie" && (
+          {onglet !== "tresorerie" && onglet !== "plan" && (
             <div className="flex items-end gap-2">
               <Champ label="Du" type="date" value={debut} onChange={(e) => setDebut(e.target.value)} />
               <Champ label="Au" type="date" value={fin} onChange={(e) => setFin(e.target.value)} />
@@ -141,6 +164,15 @@ export default function Comptabilite() {
             onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id), "Dépense supprimée."); }}
           />
         )}
+
+        {onglet === "plan" && <PlanComptable plan={plan} />}
+
+        {onglet === "journal" && (
+          <Journal
+            pieces={pieces} devise={devise}
+            onSuppr={async (id) => { if (await confirmer("Supprimer cette pièce ?")) { await wrap(() => api.supprimerPiece(id)); rechargerCompta(); } }}
+          />
+        )}
       </div>
 
       <ModaleCompte
@@ -160,6 +192,11 @@ export default function Comptabilite() {
       <ModaleCategories
         ouvert={modale === "categories"} onFermer={() => setModale(null)}
         ecoleId={ecoleId} cats={cats} onChange={recharger}
+      />
+      <ModaleSaisiePiece
+        ouvert={modale === "piece"} onFermer={() => setModale(null)}
+        journaux={journaux} plan={plan} devise={devise}
+        onEnregistrer={async (p) => { const ok = await wrap(() => api.comptabiliserPiece(p), "Pièce comptabilisée."); if (ok) { setModale(null); rechargerCompta(); } return ok; }}
       />
     </>
   );
@@ -501,6 +538,190 @@ function ModaleCategories({ ouvert, onFermer, ecoleId, cats, onChange }) {
           <Bouton onClick={onFermer}>Terminé</Bouton>
         </div>
       </div>
+    </Modale>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Comptabilité générale (étape 2) : plan comptable, journal, saisie pièce
+// ---------------------------------------------------------------------
+
+const CLASSES_LIB = {
+  1: "Classe 1 — Ressources durables",
+  2: "Classe 2 — Immobilisations",
+  3: "Classe 3 — Stocks",
+  4: "Classe 4 — Tiers",
+  5: "Classe 5 — Trésorerie",
+  6: "Classe 6 — Charges",
+  7: "Classe 7 — Produits",
+  8: "Classe 8 — Autres",
+};
+const selCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+
+function PlanComptable({ plan }) {
+  if (!plan.length) return <EtatVide icone="📚" titre="Plan comptable vide">Le plan comptable SYSCOHADA est amorcé à l'installation.</EtatVide>;
+  const profondeur = (c) => plan.filter((p) => c.numero.startsWith(p.numero) && p.numero.length < c.numero.length).length;
+  const classes = [...new Set(plan.map((c) => c.classe))].sort();
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-navy-900/50">Plan comptable de l'école (modèle SYSCOHADA). Les rubriques en gras regroupent les comptes ; seuls les comptes imputables reçoivent des écritures.</p>
+      {classes.map((cl) => (
+        <Carte key={cl}>
+          <h3 className="mb-2 font-semibold text-navy-900">{CLASSES_LIB[cl] || `Classe ${cl}`}</h3>
+          <div className="divide-y divide-navy-900/5">
+            {plan.filter((c) => c.classe === cl).map((c) => (
+              <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm" style={{ paddingLeft: `${profondeur(c) * 16}px` }}>
+                <span className="w-16 shrink-0 font-mono text-navy-900/60">{c.numero}</span>
+                <span className={c.imputable ? "text-navy-900" : "font-semibold text-navy-900"}>{c.libelle}</span>
+                {!c.actif && <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/40">inactif</span>}
+              </div>
+            ))}
+          </div>
+        </Carte>
+      ))}
+    </div>
+  );
+}
+
+function Journal({ pieces, devise, onSuppr }) {
+  if (!pieces.length) return <EtatVide icone="📒" titre="Aucune écriture">Enregistrez une pièce avec « + Écriture », ou attendez les écritures générées par les opérations (étapes suivantes).</EtatVide>;
+  return (
+    <div className="space-y-3">
+      {pieces.map((p) => {
+        const totalD = (p.lignes || []).reduce((s, l) => s + Number(l.debit || 0), 0);
+        return (
+          <Carte key={p.id}>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-semibold text-navy-900">{p.numero}</span>
+                  <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/60">{p.journal?.code}</span>
+                  {p.source_type !== "manuel" && <span className="rounded bg-or-500/10 px-1.5 py-0.5 text-xs text-or-700">auto · {p.source_type}</span>}
+                  {p.statut === "annulee" && <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-xs text-red-600">annulée</span>}
+                </div>
+                <div className="mt-0.5 text-sm text-navy-900">{p.libelle}</div>
+                <div className="text-xs text-navy-900/50">{p.date_piece}{p.reference ? ` · réf. ${p.reference}` : ""}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-navy-900">{fmt(totalD)} {devise}</div>
+                {p.source_type === "manuel" && (
+                  <button onClick={() => onSuppr(p.id)} className="mt-1 text-xs text-red-600 hover:underline">Supprimer</button>
+                )}
+              </div>
+            </div>
+            <div className="mt-2 divide-y divide-navy-900/5 border-t border-navy-900/5 pt-1">
+              {(p.lignes || []).map((l) => (
+                <div key={l.id} className="grid grid-cols-12 gap-2 py-1 text-xs">
+                  <span className="col-span-2 font-mono text-navy-900/60">{l.compte?.numero}</span>
+                  <span className="col-span-6 text-navy-900/80">{l.compte?.libelle}{l.libelle && l.libelle !== p.libelle ? ` — ${l.libelle}` : ""}</span>
+                  <span className="col-span-2 text-right tabular-nums text-navy-900/80">{Number(l.debit) ? fmt(l.debit) : ""}</span>
+                  <span className="col-span-2 text-right tabular-nums text-navy-900/80">{Number(l.credit) ? fmt(l.credit) : ""}</span>
+                </div>
+              ))}
+            </div>
+          </Carte>
+        );
+      })}
+    </div>
+  );
+}
+
+function ModaleSaisiePiece({ ouvert, onFermer, journaux, plan, devise, onEnregistrer }) {
+  const ligneVide = { compte: "", libelle: "", debit: "", credit: "" };
+  const [journalId, setJournalId] = useState("");
+  const [date, setDate] = useState(auj());
+  const [libelle, setLibelle] = useState("");
+  const [reference, setReference] = useState("");
+  const [lignes, setLignes] = useState([{ ...ligneVide }, { ...ligneVide }]);
+  const [enCours, setEnCours] = useState(false);
+
+  useEffect(() => {
+    if (ouvert) {
+      setJournalId(journaux[0]?.id || ""); setDate(auj()); setLibelle(""); setReference("");
+      setLignes([{ ...ligneVide }, { ...ligneVide }]);
+    }
+  }, [ouvert]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const imputables = plan.filter((c) => c.imputable && c.actif);
+  const majLigne = (i, champ, val) => setLignes((ls) => ls.map((l, k) => (k === i ? { ...l, [champ]: val } : l)));
+  const num = (v) => v.replace(/[^0-9]/g, "");
+  const sumD = lignes.reduce((s, l) => s + Number(l.debit || 0), 0);
+  const sumC = lignes.reduce((s, l) => s + Number(l.credit || 0), 0);
+  const equilibre = sumD === sumC && sumD > 0;
+  const valides = lignes.filter((l) => l.compte && (Number(l.debit) > 0 || Number(l.credit) > 0));
+  const pretPour = journalId && equilibre && valides.length >= 2;
+
+  const soumettre = async (e) => {
+    e.preventDefault();
+    if (!pretPour || enCours) return;
+    setEnCours(true);
+    await onEnregistrer({
+      journalId, date, libelle: libelle.trim() || "Écriture", reference: reference.trim() || null,
+      lignes: valides.map((l) => ({
+        compte: l.compte, libelle: l.libelle.trim() || null,
+        debit: Number(l.debit || 0), credit: Number(l.credit || 0),
+      })),
+    });
+    setEnCours(false);
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouvelle écriture (opérations diverses)" large>
+      <form className="space-y-4" onSubmit={soumettre}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Journal *</span>
+            <select value={journalId} onChange={(e) => setJournalId(e.target.value)} className={selCls}>
+              {journaux.map((j) => <option key={j.id} value={j.id}>{j.code} — {j.libelle}</option>)}
+            </select>
+          </label>
+          <Champ label="Date *" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <Champ label="Référence" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° facture, reçu…" />
+        </div>
+        <Champ label="Libellé *" value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="Objet de l'opération" />
+
+        <div className="space-y-2">
+          <div className="grid grid-cols-12 gap-2 px-1 text-xs font-medium uppercase tracking-wide text-navy-900/40">
+            <span className="col-span-5">Compte</span>
+            <span className="col-span-3">Libellé</span>
+            <span className="col-span-2 text-right">Débit</span>
+            <span className="col-span-2 text-right">Crédit</span>
+          </div>
+          {lignes.map((l, i) => (
+            <div key={i} className="grid grid-cols-12 items-center gap-2">
+              <select value={l.compte} onChange={(e) => majLigne(i, "compte", e.target.value)} className={`col-span-5 ${selCls}`}>
+                <option value="">— compte —</option>
+                {imputables.map((c) => <option key={c.id} value={c.numero}>{c.numero} — {c.libelle}</option>)}
+              </select>
+              <input value={l.libelle} onChange={(e) => majLigne(i, "libelle", e.target.value)} placeholder="(optionnel)" className={`col-span-3 ${selCls}`} />
+              <input value={l.debit} onChange={(e) => { const v = num(e.target.value); majLigne(i, "debit", v); if (v) majLigne(i, "credit", ""); }} inputMode="numeric" className={`col-span-2 text-right ${selCls}`} />
+              <div className="col-span-2 flex items-center gap-1">
+                <input value={l.credit} onChange={(e) => { const v = num(e.target.value); majLigne(i, "credit", v); if (v) majLigne(i, "debit", ""); }} inputMode="numeric" className={`flex-1 text-right ${selCls}`} />
+                {lignes.length > 2 && (
+                  <button type="button" onClick={() => setLignes((ls) => ls.filter((_, k) => k !== i))} className="text-navy-900/30 hover:text-red-600" title="Retirer">✕</button>
+                )}
+              </div>
+            </div>
+          ))}
+          <Bouton type="button" variante="fantome" onClick={() => setLignes((ls) => [...ls, { ...ligneVide }])}>+ Ligne</Bouton>
+        </div>
+
+        <div className={`flex items-center justify-between rounded-xl border p-3 text-sm ${equilibre ? "border-green-500/30 bg-green-500/5" : "border-navy-900/10 bg-navy-900/5"}`}>
+          <span className="font-medium text-navy-900/70">Totaux</span>
+          <div className="flex items-center gap-4 tabular-nums">
+            <span>Débit <b>{fmt(sumD)}</b></span>
+            <span>Crédit <b>{fmt(sumC)}</b></span>
+            <span className={equilibre ? "font-semibold text-green-700" : "font-semibold text-navy-900/50"}>
+              {equilibre ? "✓ Équilibré" : `Écart ${fmt(Math.abs(sumD - sumC))} ${devise}`}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton type="submit" disabled={!pretPour || enCours}>{enCours ? "Enregistrement…" : "Comptabiliser"}</Bouton>
+        </div>
+      </form>
     </Modale>
   );
 }

@@ -221,3 +221,62 @@ export async function getScolaritePeriode(ecoleId, debut, fin) {
   if (error) throw error;
   return (data ?? []).reduce((s, p) => s + Number(p.montant || 0), 0);
 }
+
+// =====================================================================
+//  Comptabilité générale (migrations 094–095) — plan comptable, journaux,
+//  exercices, pièces & écritures en partie double.
+// =====================================================================
+
+// --- Plan comptable ---
+export async function getPlanComptable(ecoleId) {
+  const { data, error } = await supabase
+    .from("plan_comptable").select("*").eq("ecole_id", ecoleId).order("numero");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Journaux ---
+export async function getJournaux(ecoleId) {
+  const { data, error } = await supabase
+    .from("journaux").select("*").eq("ecole_id", ecoleId).order("code");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Exercices & périodes ---
+export async function getExercices(ecoleId) {
+  const { data, error } = await supabase
+    .from("exercices").select("*").eq("ecole_id", ecoleId).order("date_debut", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Pièces + écritures (journal comptable) ---
+export async function getPieces(ecoleId, { debut, fin, journalId } = {}) {
+  let q = supabase
+    .from("pieces")
+    .select("*, journal:journaux(code, libelle), lignes:ecritures(id, libelle, debit, credit, compte:plan_comptable(numero, libelle))")
+    .eq("ecole_id", ecoleId);
+  if (debut) q = q.gte("date_piece", debut);
+  if (fin) q = q.lte("date_piece", fin);
+  if (journalId) q = q.eq("journal_id", journalId);
+  const { data, error } = await q.order("date_piece", { ascending: false }).order("numero", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Comptabilise une pièce équilibrée (contrôle Σdébit = Σcrédit côté serveur).
+// lignes : [{ compte: '706'|uuid, libelle, debit, credit, tiers_type, tiers_id }]
+export async function comptabiliserPiece({ journalId, date, libelle, lignes, reference, sourceType = "manuel", sourceId = null, statut = "validee" }) {
+  const { data, error } = await supabase.rpc("comptabiliser_piece", {
+    p_journal_id: journalId, p_date: date, p_libelle: libelle, p_lignes: lignes,
+    p_reference: reference ?? null, p_source_type: sourceType, p_source_id: sourceId, p_statut: statut,
+  });
+  if (error) throw error;
+  return data; // uuid de la pièce
+}
+
+export async function supprimerPiece(id) {
+  const { error } = await supabase.rpc("supprimer_piece", { p_id: id });
+  if (error) throw error;
+}
