@@ -67,13 +67,13 @@ export default function RH() {
         api.getModePaie(ecoleId).catch(() => "simplifie"), api.getCotisations(ecoleId).catch(() => []),
         api.compterBareme(ecoleId).catch(() => ({ mensuel: 0, annuel: 0 })),
       ]);
-      const [heures, sod, baseNet] = await Promise.all([api.getHeuresMensuelles(ecoleId).catch(() => 173.33), api.getSoD(ecoleId).catch(() => false), api.getBaseEstNet(ecoleId).catch(() => true)]);
+      const [heures, sod, baseNet, absence] = await Promise.all([api.getHeuresMensuelles(ecoleId).catch(() => 173.33), api.getSoD(ecoleId).catch(() => false), api.getBaseEstNet(ecoleId).catch(() => true), api.getAbsenceRetenue(ecoleId).catch(() => ({ mode: "aucun", montant_jour: 0, jours_mois: 26 }))]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
       setElements(els);
-      setRegime({ mode, cotisations: cots, bareme: bar, heures, sod, baseNet });
+      setRegime({ mode, cotisations: cots, bareme: bar, heures, sod, baseNet, absence });
       api.getRegimes(ecoleId).then(setRegimes).catch(() => setRegimes([]));
     } catch (e) {
       setErreur(e.message);
@@ -1361,6 +1361,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const heures = regime?.heures ?? 173.33;
   const sod = !!regime?.sod;
   const baseNet = regime?.baseNet !== false;
+  const absence = regime?.absence || { mode: "aucun", montant_jour: 0, jours_mois: 26 };
 
   const run = async (fn) => {
     try { await fn(); await onChange(); }
@@ -1463,6 +1464,36 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
             </button>
           </div>
         )}
+
+        {/* Retenue sur absences (P5) */}
+        <div className="rounded-xl border border-navy-900/10 p-4">
+          <p className="text-sm font-semibold text-navy-900">Retenue sur absences</p>
+          <p className="text-xs text-navy-900/45">Sur les absences <b>non justifiées</b> (type absence/maladie) du mois. <b>Proratisé</b> = jours × (brut soumis ÷ jours/mois) ; <b>forfait</b> = jours × montant/jour. Pour un salaire à l'heure, préférez plutôt l'ajustement des heures (évite le double compte).</p>
+          <div className="mt-2 flex flex-wrap items-end gap-3">
+            <div className="inline-flex rounded-xl bg-navy-900/5 p-1">
+              {[["aucun", "Aucune"], ["proratise", "Proratisée"], ["forfait", "Forfait"]].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => run(() => api.setAbsenceRetenue(ecoleId, { ...absence, mode: v }))}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${absence.mode === v ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>{l}</button>
+              ))}
+            </div>
+            {absence.mode === "forfait" && (
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-navy-900/60">Montant / jour ({devise})</span>
+                <input defaultValue={absence.montant_jour || ""} inputMode="numeric"
+                  onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) !== Number(absence.montant_jour)) run(() => api.setAbsenceRetenue(ecoleId, { ...absence, montant_jour: v })); }}
+                  className="w-28 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              </label>
+            )}
+            {absence.mode === "proratise" && (
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-navy-900/60">Jours / mois</span>
+                <input defaultValue={absence.jours_mois || 26} inputMode="numeric"
+                  onBlur={(e) => { const v = e.target.value.replace(/[^0-9]/g, ""); if (Number(v) && Number(v) !== Number(absence.jours_mois)) run(() => api.setAbsenceRetenue(ecoleId, { ...absence, jours_mois: v })); }}
+                  className="w-24 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              </label>
+            )}
+          </div>
+        </div>
 
         {/* Modèle de pays */}
         <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">

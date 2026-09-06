@@ -512,13 +512,15 @@ export async function personnelAgenerer(ecoleId, periode) {
 // Composition : Salaire de base + éléments récurrents (+ cotisations/IR/TRIMF
 // en mode complet). Net calculé par trigger.
 export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
-  const [pers, contrats, existant, aff, ctx, dues] = await Promise.all([
+  const [pers, contrats, existant, aff, ctx, dues, absCfg, absJours] = await Promise.all([
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
     affectationsParPersonnel(ecoleId, moisDePeriode(periode)),
     contexteComplet(ecoleId),
     echeancesDues(ecoleId, periode),
+    getAbsenceRetenue(ecoleId).catch(() => ({ mode: "aucun" })),
+    joursAbsenceParPersonnel(ecoleId, periode).catch(() => ({})),
   ]);
   const deja = new Set((existant.data ?? []).map((s) => s.personnel_id));
   const aCreer = pers.filter((p) => !deja.has(p.id) && contratActifPour(contrats[p.id], periode));
@@ -539,6 +541,16 @@ export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
     for (const d of dues[s.personnel_id] || []) {
       lignes.push({ ecole_id: ecoleId, salaire_id: s.id, libelle: d.libelle, sens: "retenue", nature: "remboursement", montant: d.montant, ordre: 200 });
       rembRows.push({ ecole_id: ecoleId, avance_pret_id: d.avance_pret_id, salaire_id: s.id, periode, montant: d.montant });
+    }
+    // Retenue sur absences non justifiées (si la règle est activée).
+    const jours = absJours[s.personnel_id] || 0;
+    if (absCfg.mode !== "aucun" && jours > 0) {
+      const brut = brutSoumis(lignes, s.id);
+      const parJour = absCfg.mode === "forfait" ? absCfg.montant_jour : arr(brut / (absCfg.jours_mois || 26));
+      const montant = arr(jours * parJour);
+      if (montant > 0) {
+        lignes.push({ ecole_id: ecoleId, salaire_id: s.id, libelle: `Retenue absences (${jours} j)`, sens: "retenue", nature: "absence", montant, ordre: 210 });
+      }
     }
   }
   if (lignes.length) {
@@ -1008,6 +1020,46 @@ export async function setBaseEstNet(ecoleId, actif) {
   const { error } = await supabase.from("parametres")
     .upsert({ ecole_id: ecoleId, cle: "paie_base_net", valeur: { actif: !!actif } }, { onConflict: "ecole_id,cle" });
   if (error) throw error;
+}
+
+// Règle de retenue sur absences (P5) : mode 'aucun' | 'proratise' | 'forfait'.
+// proratise = jours × (brut soumis / jours_mois) ; forfait = jours × montant_jour.
+export async function getAbsenceRetenue(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "absence_retenue").maybeSingle();
+  if (error) throw error;
+  const v = data?.valeur || {};
+  return { mode: v.mode || "aucun", montant_jour: Number(v.montant_jour) || 0, jours_mois: Number(v.jours_mois) || 26 };
+}
+export async function setAbsenceRetenue(ecoleId, cfg) {
+  const valeur = { mode: cfg.mode || "aucun", montant_jour: Number(cfg.montant_jour) || 0, jours_mois: Number(cfg.jours_mois) || 26 };
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "absence_retenue", valeur }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// Jours d'absence NON justifiée (type absence/maladie) chevauchant une période
+// 'YYYY-MM', par employé → { personnel_id: jours }.
+export async function joursAbsenceParPersonnel(ecoleId, periode) {
+  const debut = `${periode}-01`;
+  const fin = finDeMois(periode);
+  const { data, error } = await supabase
+    .from("absences_rh")
+    .select("personnel_id, type, date_debut, date_fin, justifie")
+    .eq("ecole_id", ecoleId).eq("justifie", false)
+    .in("type", ["absence", "maladie"])
+    .lte("date_debut", fin);
+  if (error) throw error;
+  const jour = 86400000;
+  const map = {};
+  for (const a of data ?? []) {
+    const d0 = a.date_debut > debut ? a.date_debut : debut;
+    const d1 = a.date_fin ? (a.date_fin < fin ? a.date_fin : fin) : (a.date_debut < fin ? a.date_debut : fin);
+    if (d1 < d0) continue;
+    const jours = Math.round((Date.parse(d1) - Date.parse(d0)) / jour) + 1;
+    if (jours > 0) map[a.personnel_id] = (map[a.personnel_id] || 0) + jours;
+  }
+  return map;
 }
 
 // Barème IR chargé par l'école (mensuel + annuel). Comptage pour l'état.
