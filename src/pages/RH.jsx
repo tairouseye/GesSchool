@@ -64,13 +64,13 @@ export default function RH() {
         api.getModePaie(ecoleId).catch(() => "simplifie"), api.getCotisations(ecoleId).catch(() => []),
         api.compterBareme(ecoleId).catch(() => ({ mensuel: 0, annuel: 0 })),
       ]);
-      const [heures, sod] = await Promise.all([api.getHeuresMensuelles(ecoleId).catch(() => 173.33), api.getSoD(ecoleId).catch(() => false)]);
+      const [heures, sod, baseNet] = await Promise.all([api.getHeuresMensuelles(ecoleId).catch(() => 173.33), api.getSoD(ecoleId).catch(() => false), api.getBaseEstNet(ecoleId).catch(() => true)]);
       setPersonnels(pers);
       setContrats(con);
       setSignataires(sig);
       setNbEnsNonImportes(nbEns);
       setElements(els);
-      setRegime({ mode, cotisations: cots, bareme: bar, heures, sod });
+      setRegime({ mode, cotisations: cots, bareme: bar, heures, sod, baseNet });
     } catch (e) {
       setErreur(e.message);
     }
@@ -1305,6 +1305,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const bar = regime?.bareme || { mensuel: 0, annuel: 0 };
   const heures = regime?.heures ?? 173.33;
   const sod = !!regime?.sod;
+  const baseNet = regime?.baseNet !== false;
 
   const run = async (fn) => {
     try { await fn(); await onChange(); }
@@ -1393,6 +1394,20 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
             {sod ? "Activée" : "Désactivée"}
           </button>
         </div>
+
+        {/* Salaire de base = net (calcul du brut à l'envers) — mode complet */}
+        {mode === "complet" && (
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-navy-900">Le salaire de base est un montant NET</p>
+              <p className="text-xs text-navy-900/45">Si activé, le <b>salaire de base</b> saisi (pour un salaire fixe) est le <b>net à verser</b> : le brut est calculé à l'envers pour que, cotisations et IR déduits, l'employé touche exactement ce montant. Sinon, le salaire de base est traité comme un <b>brut</b>. <i>(Ne concerne pas les employés payés à l'heure via un taux horaire.)</i></p>
+            </div>
+            <button type="button" onClick={() => run(() => api.setBaseEstNet(ecoleId, !baseNet))}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${baseNet ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/15 text-navy-900/50"}`}>
+              {baseNet ? "Net" : "Brut"}
+            </button>
+          </div>
+        )}
 
         {/* Modèle de pays */}
         <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4">

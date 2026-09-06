@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
 import { getEnseignants } from "@/lib/enseignants.js";
-import { lignesStatutaires, lignesBrut, arr } from "@/lib/paie.js";
+import { lignesStatutaires, lignesBrut, arr, brutPourNet } from "@/lib/paie.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -372,7 +372,16 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx,
       lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, base: l.base, taux: l.taux, montant: l.montant, ordre: l.ordre });
     }
   } else {
-    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: arr(base), ordre: 0 });
+    // Salaire fixe. En régime complet « base = net », on calcule le brut à
+    // l'envers pour que net = salaire de base saisi (cotisations/IR déduits).
+    let montantBase = arr(base);
+    if (ctx && ctx.baseEstNet && Number(base) > 0) {
+      montantBase = brutPourNet(base, {
+        partIr: personnel?.part_ir || 1, partTrimf: personnel?.part_trimf || 1,
+        cotisations: ctx.cotisations, baremeMensuel: ctx.baremeMensuel,
+      });
+    }
+    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: montantBase, ordre: 0 });
   }
   (affectations || []).forEach((a, i) => {
     const sens = a.elements_paie?.sens || "gain";
@@ -397,8 +406,10 @@ function brutSoumis(lignes, salaireId) {
 async function contexteComplet(ecoleId) {
   const mode = await getModePaie(ecoleId);
   if (mode !== "complet") return null;
-  const [cotisations, baremeMensuel, heures] = await Promise.all([getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getHeuresMensuelles(ecoleId)]);
-  return { cotisations, baremeMensuel, heures };
+  const [cotisations, baremeMensuel, heures, baseEstNet] = await Promise.all([
+    getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getHeuresMensuelles(ecoleId), getBaseEstNet(ecoleId),
+  ]);
+  return { cotisations, baremeMensuel, heures, baseEstNet };
 }
 
 // Ajoute (en mode complet) les lignes statutaires calculées sur le brut soumis.
@@ -789,6 +800,20 @@ export async function getModePaie(ecoleId) {
 export async function setModePaie(ecoleId, mode) {
   const { error } = await supabase.from("parametres")
     .upsert({ ecole_id: ecoleId, cle: "mode_paie", valeur: { mode } }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
+// « Le salaire de base est un montant NET » (régime complet) : si vrai, le brut
+// est calculé à l'envers pour que le net = salaire de base saisi. Défaut : true.
+export async function getBaseEstNet(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "paie_base_net").maybeSingle();
+  if (error) throw error;
+  return data?.valeur?.actif !== false; // défaut true
+}
+export async function setBaseEstNet(ecoleId, actif) {
+  const { error } = await supabase.from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: "paie_base_net", valeur: { actif: !!actif } }, { onConflict: "ecole_id,cle" });
   if (error) throw error;
 }
 

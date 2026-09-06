@@ -50,3 +50,33 @@ export function lignesStatutaires(brutSoumis, { partIr = 1, partTrimf = 1, cotis
   if (trimf > 0) lignes.push({ libelle: "TRIMF", sens: "retenue", nature: "impot", base: brutSoumis, taux: null, montant: trimf, ordre: ordre++ });
   return lignes;
 }
+
+// Net résultant d'un brut soumis (doit refléter EXACTEMENT lignesStatutaires) :
+// net = brut − Σ cotisations salariales − IR − TRIMF.
+export function netDeBrut(brut, { partIr = 1, partTrimf = 1, cotisations = [], baremeMensuel = [] } = {}) {
+  const b = arr(brut);
+  const cot = calculerCotisations(b, cotisations);
+  const sal = cot.reduce((s, c) => s + (c.sal > 0 ? c.sal : 0), 0);
+  const { ir } = chercherBareme(baremeMensuel, b, partIr);
+  const { trimf } = chercherBareme(baremeMensuel, b, partTrimf);
+  return b - sal - ir - trimf;
+}
+
+// Brut soumis nécessaire pour obtenir un NET cible (calcul « à l'envers »).
+// net(brut) est croissant → recherche dichotomique, puis ajustement au franc
+// pour tomber exactement sur la cible (sinon le plus petit brut qui l'atteint).
+export function brutPourNet(netCible, ctx = {}) {
+  const cible = arr(netCible);
+  if (cible <= 0) return 0;
+  let lo = cible, hi = cible, garde = 0;
+  while (netDeBrut(hi, ctx) < cible && garde++ < 100) hi = hi > 0 ? hi * 2 : cible + 1000;
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (netDeBrut(mid, ctx) < cible) lo = mid; else hi = mid;
+  }
+  // hi = plus petit brut avec net(hi) ≥ cible ; on cherche l'égalité exacte.
+  for (let b = Math.max(0, hi - 3); b <= hi + 1; b++) {
+    if (netDeBrut(b, ctx) === cible) return b;
+  }
+  return hi;
+}
