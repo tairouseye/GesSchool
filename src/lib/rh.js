@@ -339,17 +339,32 @@ export async function getSalaires(ecoleId, periode) {
 // spécifique l'emporte pour un même élément) :
 //   global 'tous'(1) < global 'categorie'(2) < global 'fonction'(3) < régime(4) < individuel(5)
 // Les exclusions retirent un élément global pour des employés précis.
-async function affectationsParPersonnel(ecoleId) {
+// Un élément périodique ne se déclenche que sur ses mois (mois = 1..12).
+function moisDeclenche(el, mois) {
+  if (!el || !mois) return true;
+  const arr = el.mois_declenchement;
+  if (Array.isArray(arr) && arr.length) return arr.includes(mois);
+  switch (el.periodicite) {
+    case "trimestriel": return [3, 6, 9, 12].includes(mois);
+    case "semestriel":  return [6, 12].includes(mois);
+    case "annuel":      return mois === 12;
+    case "ponctuel":    return false;
+    default:            return true; // mensuel
+  }
+}
+
+async function affectationsParPersonnel(ecoleId, moisCourant = null) {
+  const champsEl = "libelle, sens, soumis, periodicite, mois_declenchement";
   const [pers, indiv, regEls, glob, excl] = await Promise.all([
     supabase.from("personnels").select("id, regime_id, categorie, fonction").eq("ecole_id", ecoleId),
     supabase.from("personnel_elements_paie")
-      .select("personnel_id, element_id, montant, elements_paie(libelle, sens, soumis)")
+      .select(`personnel_id, element_id, montant, elements_paie(${champsEl})`)
       .eq("ecole_id", ecoleId).eq("actif", true),
     supabase.from("regime_elements")
-      .select("regime_id, element_id, montant, elements_paie(libelle, sens, soumis)")
+      .select(`regime_id, element_id, montant, elements_paie(${champsEl})`)
       .eq("ecole_id", ecoleId),
     supabase.from("element_affectations")
-      .select("id, element_id, portee, valeur, montant, elements_paie(libelle, sens, soumis)")
+      .select(`id, element_id, portee, valeur, montant, elements_paie(${champsEl})`)
       .eq("ecole_id", ecoleId).eq("actif", true),
     supabase.from("element_exclusions").select("affectation_id, personnel_id").eq("ecole_id", ecoleId),
   ]);
@@ -386,12 +401,20 @@ async function affectationsParPersonnel(ecoleId) {
     const acc = (map[a.personnel_id] ||= new Map());
     acc.set(a.element_id, { montant: a.montant, elements_paie: a.elements_paie, prio: 5 });
   }
-  // Conversion Map -> liste attendue par lignesInitiales
+  // Conversion Map -> liste, en filtrant les éléments périodiques hors mois.
   const out = {};
   for (const [pid, acc] of Object.entries(map)) {
-    out[pid] = [...acc.entries()].map(([element_id, v]) => ({ element_id, montant: v.montant, elements_paie: v.elements_paie }));
+    out[pid] = [...acc.entries()]
+      .filter(([, v]) => moisDeclenche(v.elements_paie, moisCourant))
+      .map(([element_id, v]) => ({ element_id, montant: v.montant, elements_paie: v.elements_paie }));
   }
   return out;
+}
+
+// Mois (1..12) d'une période 'YYYY-MM'.
+function moisDePeriode(periode) {
+  const m = Number((periode || "").split("-")[1]);
+  return m >= 1 && m <= 12 ? m : null;
 }
 
 // Heures mensuelles de référence (fixes pour tous, définies par le comptable).
@@ -493,7 +516,7 @@ export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
     getPersonnels(ecoleId),
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
-    affectationsParPersonnel(ecoleId),
+    affectationsParPersonnel(ecoleId, moisDePeriode(periode)),
     contexteComplet(ecoleId),
     echeancesDues(ecoleId, periode),
   ]);
@@ -537,7 +560,7 @@ export async function ajouterFichePaie(ecoleId, personnelId, periode, elements =
     .select("*, personnels(prenom, nom, fonction, part_ir, part_trimf, taux_horaire, taux_sursalaire)")
     .single();
   if (error) throw error;
-  const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId), contexteComplet(ecoleId)]);
+  const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId, moisDePeriode(periode)), contexteComplet(ecoleId)]);
   const lignes = lignesInitiales(ecoleId, data.id, data.personnels, elements.montant_brut || 0, aff[personnelId], ctx);
   ajouterStatutaire(lignes, ecoleId, data.id, data.personnels, ctx);
   const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
@@ -735,6 +758,8 @@ export async function creerElementPaie(ecoleId, e) {
       recurrent: !!e.recurrent,
       imposable: !!e.imposable,
       soumis: e.soumis === false ? false : true,
+      periodicite: e.periodicite || "mensuel",
+      mois_declenchement: e.mois_declenchement && e.mois_declenchement.length ? e.mois_declenchement : null,
       ordre: e.ordre || 0,
     })
     .select()
@@ -745,9 +770,10 @@ export async function creerElementPaie(ecoleId, e) {
 
 export async function modifierElementPaie(id, patch) {
   const p = {};
-  for (const k of ["libelle", "sens", "mode", "recurrent", "imposable", "soumis", "ordre", "actif"]) {
+  for (const k of ["libelle", "sens", "mode", "recurrent", "imposable", "soumis", "periodicite", "ordre", "actif"]) {
     if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
   }
+  if (patch.mois_declenchement !== undefined) p.mois_declenchement = (patch.mois_declenchement && patch.mois_declenchement.length) ? patch.mois_declenchement : null;
   const { data, error } = await supabase.from("elements_paie").update(p).eq("id", id).select().single();
   if (error) throw error;
   return data;

@@ -1061,6 +1061,14 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
               <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { recurrent: !el.recurrent }))}
                 className={`rounded-lg border px-2 py-1.5 text-xs ${el.recurrent ? "border-or-500/40 bg-or-500/10 text-or-700" : "border-navy-900/10 text-navy-900/50"}`}
                 title="Repris automatiquement chaque mois">{el.recurrent ? "récurrent" : "ponctuel"}</button>
+              <select value={el.periodicite || "mensuel"} onChange={(e) => run(() => api.modifierElementPaie(el.id, { periodicite: e.target.value }))}
+                className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs text-navy-900/70 outline-none focus:border-or-500"
+                title="Mois de déclenchement : trimestriel = 3/6/9/12 · semestriel = 6/12 · annuel/13e mois = décembre">
+                <option value="mensuel">mensuel</option>
+                <option value="trimestriel">trimestriel</option>
+                <option value="semestriel">semestriel</option>
+                <option value="annuel">annuel</option>
+              </select>
               {sens === "gain" && (
                 <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { soumis: !(el.soumis !== false) }))}
                   className={`rounded-lg border px-2 py-1.5 text-xs ${el.soumis === false ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/10 text-navy-900/50"}`}
@@ -1092,6 +1100,7 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
         <p className="text-xs text-navy-900/50">
           Définis les gains (primes, indemnités, heures sup.…) et retenues utilisables dans la paie.
           Un élément <b>récurrent</b> sera repris chaque mois pour l'employé ; un élément <b>ponctuel</b> s'ajoute au besoin.
+          La <b>périodicité</b> limite les mois de déclenchement (trimestriel = 3/6/9/12 · semestriel = 6/12 · annuel/13ᵉ mois = décembre) — l'élément ne figure alors que sur ces mois, une seule fois par période.
           « Masquer » retire un élément des choix sans toucher aux bulletins déjà émis.
         </p>
         {renderSection("gain", "Gains", "Primes, indemnités, heures supplémentaires, bonus…")}
