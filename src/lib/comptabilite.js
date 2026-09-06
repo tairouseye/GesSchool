@@ -280,3 +280,26 @@ export async function supprimerPiece(id) {
   const { error } = await supabase.rpc("supprimer_piece", { p_id: id });
   if (error) throw error;
 }
+
+// --- Activation + reprise (étape 3) ---
+export async function getParametresCompta(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres_compta").select("*").eq("ecole_id", ecoleId).maybeSingle();
+  if (error) throw error;
+  return data || { ecole_id: ecoleId, compta_active: false };
+}
+
+export async function setComptaActive(ecoleId, active) {
+  const { error } = await supabase
+    .from("parametres_compta")
+    .upsert({ ecole_id: ecoleId, compta_active: active, updated_at: new Date().toISOString() }, { onConflict: "ecole_id" });
+  if (error) throw error;
+}
+
+// Reprend (comptabilise) toutes les opérations de l'exercice courant.
+// Active aussi la comptabilité de l'école. Renvoie { factures, paiements, depenses, exercice }.
+export async function comptabiliserExercice(exerciceId = null) {
+  const { data, error } = await supabase.rpc("comptabiliser_exercice", { p_exercice_id: exerciceId });
+  if (error) throw error;
+  return data || {};
+}

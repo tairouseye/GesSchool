@@ -34,6 +34,7 @@ export default function Comptabilite() {
   const [plan, setPlan] = useState([]);
   const [journaux, setJournaux] = useState([]);
   const [pieces, setPieces] = useState([]);
+  const [params, setParams] = useState({ compta_active: false });
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -67,12 +68,13 @@ export default function Comptabilite() {
   // chargés à l'ouverture des onglets concernés.
   const rechargerCompta = useCallback(async () => {
     try {
-      const [pl, jx, pcs] = await Promise.all([
+      const [pl, jx, pcs, par] = await Promise.all([
         api.getPlanComptable(ecoleId),
         api.getJournaux(ecoleId),
         api.getPieces(ecoleId, { debut, fin }),
+        api.getParametresCompta(ecoleId).catch(() => ({ compta_active: false })),
       ]);
-      setPlan(pl); setJournaux(jx); setPieces(pcs);
+      setPlan(pl); setJournaux(jx); setPieces(pcs); setParams(par);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId, debut, fin]);
 
@@ -110,7 +112,13 @@ export default function Comptabilite() {
         <Bouton onClick={() => setModale("depense")} disabled={soldes.length === 0}>+ Dépense</Bouton>
       </div>
     ),
-    journal: <Bouton onClick={() => setModale("piece")} disabled={journaux.length === 0}>+ Écriture</Bouton>,
+    journal: (
+      <div className="flex gap-2">
+        <Bouton variante="fantome" onClick={() => setModale("paramCompta")}>Paramètres</Bouton>
+        <Bouton onClick={() => setModale("piece")} disabled={journaux.length === 0}>+ Écriture</Bouton>
+      </div>
+    ),
+    plan: <Bouton variante="fantome" onClick={() => setModale("paramCompta")}>Paramètres</Bouton>,
   }[onglet];
 
   return (
@@ -165,6 +173,10 @@ export default function Comptabilite() {
           />
         )}
 
+        {(onglet === "plan" || onglet === "journal") && !params.compta_active && (
+          <Alerte ton="info">La comptabilité générale n'est pas encore activée. Ouvrez « Paramètres » pour l'activer et reprendre les opérations de l'exercice courant.</Alerte>
+        )}
+
         {onglet === "plan" && <PlanComptable plan={plan} />}
 
         {onglet === "journal" && (
@@ -197,6 +209,18 @@ export default function Comptabilite() {
         ouvert={modale === "piece"} onFermer={() => setModale(null)}
         journaux={journaux} plan={plan} devise={devise}
         onEnregistrer={async (p) => { const ok = await wrap(() => api.comptabiliserPiece(p), "Pièce comptabilisée."); if (ok) { setModale(null); rechargerCompta(); } return ok; }}
+      />
+      <ModaleParamCompta
+        ouvert={modale === "paramCompta"} onFermer={() => setModale(null)}
+        params={params}
+        onToggle={async (v) => { await wrap(() => api.setComptaActive(ecoleId, v)); rechargerCompta(); }}
+        onReprendre={async () => {
+          try {
+            const r = await api.comptabiliserExercice();
+            toast.succes(`Reprise ${r.exercice || ""} : ${r.factures} factures, ${r.paiements} règlements, ${r.depenses} dépenses.`);
+            setModale(null); rechargerCompta();
+          } catch (e) { toast.erreur(e.message); }
+        }}
       />
     </>
   );
@@ -722,6 +746,58 @@ function ModaleSaisiePiece({ ouvert, onFermer, journaux, plan, devise, onEnregis
           <Bouton type="submit" disabled={!pretPour || enCours}>{enCours ? "Enregistrement…" : "Comptabiliser"}</Bouton>
         </div>
       </form>
+    </Modale>
+  );
+}
+
+function ModaleParamCompta({ ouvert, onFermer, params, onToggle, onReprendre }) {
+  const [enCours, setEnCours] = useState(false);
+  const actif = !!params.compta_active;
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Comptabilité générale — paramètres" large>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between rounded-xl border border-navy-900/10 bg-navy-900/5 p-4">
+          <div>
+            <div className="font-medium text-navy-900">Comptabilité générale</div>
+            <div className="text-sm text-navy-900/60">
+              {actif
+                ? "Activée : les nouvelles opérations génèrent automatiquement leurs écritures."
+                : "Désactivée : aucune écriture n'est générée pour cette école."}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={async () => { setEnCours(true); await onToggle(!actif); setEnCours(false); }}
+            disabled={enCours}
+            className={`relative h-7 w-12 shrink-0 rounded-full transition ${actif ? "bg-emerald-500" : "bg-navy-900/20"}`}
+            aria-pressed={actif}
+          >
+            <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition ${actif ? "left-[22px]" : "left-0.5"}`} />
+          </button>
+        </div>
+
+        <div className="rounded-xl border border-navy-900/10 p-4">
+          <div className="font-medium text-navy-900">Reprendre l'exercice courant</div>
+          <p className="mt-1 text-sm text-navy-900/60">
+            Génère (ou complète) les écritures de toutes les factures, règlements et dépenses de
+            l'exercice comptable ouvert. L'opération est <b>idempotente</b> : la relancer ne crée
+            pas de doublon. Elle active aussi la comptabilité si besoin.
+          </p>
+          <div className="mt-3">
+            <Bouton
+              onClick={async () => { setEnCours(true); await onReprendre(); setEnCours(false); }}
+              disabled={enCours}
+            >
+              {enCours ? "Traitement…" : "Reprendre l'exercice courant"}
+            </Bouton>
+          </div>
+        </div>
+
+        <p className="text-xs text-navy-900/40">
+          Les salaires seront comptabilisés dans une prochaine mise à jour. Le livre de caisse
+          (trésorerie, recettes, dépenses) reste disponible indépendamment.
+        </p>
+      </div>
     </Modale>
   );
 }
