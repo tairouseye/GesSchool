@@ -226,7 +226,7 @@ export default function Comptabilite() {
         onReprendre={async (exerciceId) => {
           try {
             const r = await api.comptabiliserExercice(exerciceId || null);
-            toast.succes(`Reprise ${r.exercice || ""} : ${r.factures} factures, ${r.paiements} règlements, ${r.depenses} dépenses.`);
+            toast.succes(`Reprise ${r.exercice || ""} : ${r.factures} factures, ${r.paiements} règlements, ${r.depenses} dépenses, ${r.salaires ?? 0} salaires.`);
             setModale(null); rechargerCompta();
           } catch (e) { toast.erreur(e.message); }
         }}
@@ -832,7 +832,8 @@ function ModaleParamCompta({ ouvert, onFermer, params, exercices = [], onToggle,
         </div>
 
         <p className="text-xs text-navy-900/40">
-          Les salaires seront comptabilisés dans une prochaine mise à jour. Le livre de caisse
+          Écritures générées automatiquement : facturation & règlements scolarité, dépenses, et
+          <b> salaires</b> (constatation à la validation, règlement au paiement). Le livre de caisse
           (trésorerie, recettes, dépenses) reste disponible indépendamment.
         </p>
       </div>
