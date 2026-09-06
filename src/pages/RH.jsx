@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte, Table } from "@/composants/ui.jsx";
@@ -1104,12 +1104,22 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     try { await fn(); await recharger(); await rechargerHisto(); onChange && onChange(); }
     catch (e) { toast.erreur(e.message || "Erreur."); }
   };
+  // Verrou anti-chevauchement : empêche deux recalculs simultanés (édition auto +
+  // clic ↻) qui pourraient réinsérer deux jeux de cotisations (doublons).
+  const calcEnCours = useRef(false);
+  const [calcBusy, setCalcBusy] = useState(false);
+  const recalculer = async () => {
+    if (calcEnCours.current || !modeComplet || verrouille) return;
+    calcEnCours.current = true; setCalcBusy(true);
+    try { await api.recalculerStatutaire(ecoleId, salaireId); }
+    finally { calcEnCours.current = false; setCalcBusy(false); }
+  };
   // Comme run, mais en mode complet recalcule aussi cotisations/IR/TRIMF (le brut
   // a pu changer) — évite d'oublier « Recalculer » après une modif de gain.
   const runCalc = async (fn) => {
     try {
       await fn();
-      if (modeComplet && !verrouille) await api.recalculerStatutaire(ecoleId, salaireId);
+      await recalculer();
       await recharger(); await rechargerHisto(); onChange && onChange();
     } catch (e) { toast.erreur(e.message || "Erreur."); }
   };
@@ -1123,15 +1133,18 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
   };
 
   const gains = lignes.filter((l) => l.sens === "gain");
+  const gainsSoumis = gains.filter((l) => l.nature !== "non_soumis");        // entrent dans le Brut (assiette)
+  const gainsNonSoumis = gains.filter((l) => l.nature === "non_soumis");     // primes/indemnités : ajoutées APRÈS déductions
   const retenues = lignes.filter((l) => l.sens === "retenue");
   const patronales = lignes.filter((l) => l.sens === "patronal");
   const cotisImpots = retenues.filter((l) => ["cotisation", "impot"].includes(l.nature));
   const retenuesManuelles = retenues.filter((l) => !["cotisation", "impot"].includes(l.nature));
   const auto = (l) => ["cotisation", "impot", "patronal", "remboursement"].includes(l.nature); // géré par le système, non édité à la main
-  const totalGains = gains.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totalBrut = gainsSoumis.reduce((s, l) => s + Number(l.montant || 0), 0);
+  const totalNonSoumis = gainsNonSoumis.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalRetenues = retenues.reduce((s, l) => s + Number(l.montant || 0), 0);
   const totalPatronal = patronales.reduce((s, l) => s + Number(l.montant || 0), 0);
-  const net = totalGains - totalRetenues;
+  const net = totalBrut + totalNonSoumis - totalRetenues;
   const actifs = (elements || []).filter((e) => e.actif !== false);
 
   const ajouter = () => {
@@ -1139,7 +1152,9 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     const libelle = el ? el.libelle : nouv.libelle.trim();
     const sens = el ? el.sens : nouv.sens;
     if (!libelle) { toast.erreur("Choisis un élément ou saisis un libellé."); return; }
-    const nature = el && sens === "gain" && el.soumis === false ? "non_soumis" : null;
+    // Une prime/indemnité ajoutée est NON soumise par défaut (ajoutée après les
+    // déductions, hors assiette). Exception : un élément explicitement « soumis ».
+    const nature = sens === "gain" && !(el && el.soumis === true) ? "non_soumis" : null;
     runCalc(() => api.ajouterLigneSalaire(ecoleId, salaireId, { element_id: el?.id || null, libelle, sens, nature, montant: nouv.montant, ordre: lignes.length }));
     setNouv({ elementId: "", libelle: "", sens: "gain", montant: "" });
   };
@@ -1193,9 +1208,9 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
             Bulletin <b>{salaire.statut === "paye" ? "payé" : "validé"}</b> — en lecture seule. {salaire.statut === "paye" ? "Annulez le paiement puis dévalidez" : "Dévalidez-le"} pour le modifier.
           </div>
         )}
-        {rendreLignes(gains, "Brut", "+")}
+        {rendreLignes(gainsSoumis, "Brut (assiette cotisations & impôt)", "+")}
         <div className="flex justify-between border-t border-navy-900/10 pt-1 text-sm font-semibold">
-          <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalGains)} {devise}</span>
+          <span className="text-navy-900/70">Total brut</span><span className="font-mono">{fmt(totalBrut)} {devise}</span>
         </div>
 
         {cotisImpots.length > 0 && rendreLignes(cotisImpots, "Cotisations & impôts", "−")}
@@ -1206,9 +1221,15 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
           </div>
         )}
 
+        {/* Primes & indemnités NON soumises : ajoutées APRÈS les déductions */}
+        {gainsNonSoumis.length > 0 && rendreLignes(gainsNonSoumis, "Primes & indemnités (après déductions)", "+")}
+
         {modeComplet && !verrouille && (
-          <button type="button" onClick={() => run(() => api.recalculerStatutaire(ecoleId, salaireId))}
-            className="text-xs font-medium text-sky-700 hover:underline">↻ Recalculer cotisations, IR & TRIMF (depuis le brut)</button>
+          <button type="button" disabled={calcBusy}
+            onClick={async () => { await recalculer(); await recharger(); await rechargerHisto(); onChange && onChange(); }}
+            className="text-xs font-medium text-sky-700 hover:underline disabled:opacity-50">
+            {calcBusy ? "↻ Recalcul…" : "↻ Recalculer cotisations, IR & TRIMF (depuis le brut)"}
+          </button>
         )}
 
         <div className="flex justify-between rounded-xl bg-navy-900/5 px-4 py-3">

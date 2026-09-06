@@ -505,8 +505,13 @@ export async function recalculerStatutaire(ecoleId, salaireId) {
     getLignesSalaire(salaireId), getCotisations(ecoleId), getBareme(ecoleId, "mensuel"),
   ]);
   const brut = brutSoumis(lignes);
-  const aSuppr = lignes.filter((l) => ["cotisation", "impot", "patronal"].includes(l.nature));
-  for (const l of aSuppr) await supabase.from("salaire_lignes").delete().eq("id", l.id);
+  // Suppression ATOMIQUE des lignes auto (cotisations/impôts + TOUTES les
+  // patronales) en une requête → évite les doublons si un recalcul se relance.
+  const { error: eDel } = await supabase
+    .from("salaire_lignes").delete()
+    .eq("salaire_id", salaireId)
+    .or("nature.in.(cotisation,impot),sens.eq.patronal");
+  if (eDel) throw eDel;
   const p = sal?.personnels || {};
   const stat = lignesStatutaires(brut, { partIr: p.part_ir || 1, partTrimf: p.part_trimf || 1, cotisations, baremeMensuel });
   const ins = stat.map((l) => ({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, montant: l.montant, ordre: l.ordre }));
