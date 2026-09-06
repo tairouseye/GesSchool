@@ -296,10 +296,17 @@ export async function setComptaActive(ecoleId, active) {
   if (error) throw error;
 }
 
-// Reprend (comptabilise) toutes les opérations de l'exercice courant.
+// Reprend (comptabilise) toutes les opérations d'un exercice (par défaut l'exercice ouvert).
 // Active aussi la comptabilité de l'école. Renvoie { factures, paiements, depenses, exercice }.
 export async function comptabiliserExercice(exerciceId = null) {
   const { data, error } = await supabase.rpc("comptabiliser_exercice", { p_exercice_id: exerciceId });
   if (error) throw error;
   return data || {};
+}
+
+// Crée un exercice (+ périodes) pour chaque année scolaire sans exercice. Renvoie le nombre créé.
+export async function assurerExercices() {
+  const { data, error } = await supabase.rpc("assurer_exercices");
+  if (error) throw error;
+  return Number(data) || 0;
 }

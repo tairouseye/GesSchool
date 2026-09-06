@@ -35,6 +35,7 @@ export default function Comptabilite() {
   const [journaux, setJournaux] = useState([]);
   const [pieces, setPieces] = useState([]);
   const [params, setParams] = useState({ compta_active: false });
+  const [exercices, setExercices] = useState([]);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -68,13 +69,14 @@ export default function Comptabilite() {
   // chargés à l'ouverture des onglets concernés.
   const rechargerCompta = useCallback(async () => {
     try {
-      const [pl, jx, pcs, par] = await Promise.all([
+      const [pl, jx, pcs, par, exs] = await Promise.all([
         api.getPlanComptable(ecoleId),
         api.getJournaux(ecoleId),
         api.getPieces(ecoleId, { debut, fin }),
         api.getParametresCompta(ecoleId).catch(() => ({ compta_active: false })),
+        api.getExercices(ecoleId).catch(() => []),
       ]);
-      setPlan(pl); setJournaux(jx); setPieces(pcs); setParams(par);
+      setPlan(pl); setJournaux(jx); setPieces(pcs); setParams(par); setExercices(exs);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId, debut, fin]);
 
@@ -212,11 +214,18 @@ export default function Comptabilite() {
       />
       <ModaleParamCompta
         ouvert={modale === "paramCompta"} onFermer={() => setModale(null)}
-        params={params}
+        params={params} exercices={exercices}
         onToggle={async (v) => { await wrap(() => api.setComptaActive(ecoleId, v)); rechargerCompta(); }}
-        onReprendre={async () => {
+        onCreerExercices={async () => {
           try {
-            const r = await api.comptabiliserExercice();
+            const n = await api.assurerExercices();
+            toast.succes(n > 0 ? `${n} exercice(s) créé(s).` : "Aucun exercice manquant.");
+            rechargerCompta();
+          } catch (e) { toast.erreur(e.message); }
+        }}
+        onReprendre={async (exerciceId) => {
+          try {
+            const r = await api.comptabiliserExercice(exerciceId || null);
             toast.succes(`Reprise ${r.exercice || ""} : ${r.factures} factures, ${r.paiements} règlements, ${r.depenses} dépenses.`);
             setModale(null); rechargerCompta();
           } catch (e) { toast.erreur(e.message); }
@@ -750,9 +759,16 @@ function ModaleSaisiePiece({ ouvert, onFermer, journaux, plan, devise, onEnregis
   );
 }
 
-function ModaleParamCompta({ ouvert, onFermer, params, onToggle, onReprendre }) {
+function ModaleParamCompta({ ouvert, onFermer, params, exercices = [], onToggle, onCreerExercices, onReprendre }) {
   const [enCours, setEnCours] = useState(false);
+  const [exId, setExId] = useState("");
   const actif = !!params.compta_active;
+  useEffect(() => {
+    if (ouvert) {
+      const ouvert1 = exercices.find((e) => e.statut === "ouvert");
+      setExId((prev) => prev || ouvert1?.id || exercices[0]?.id || "");
+    }
+  }, [ouvert, exercices]);
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Comptabilité générale — paramètres" large>
       <div className="space-y-5">
@@ -777,18 +793,40 @@ function ModaleParamCompta({ ouvert, onFermer, params, onToggle, onReprendre }) 
         </div>
 
         <div className="rounded-xl border border-navy-900/10 p-4">
-          <div className="font-medium text-navy-900">Reprendre l'exercice courant</div>
+          <div className="font-medium text-navy-900">Reprendre un exercice</div>
           <p className="mt-1 text-sm text-navy-900/60">
             Génère (ou complète) les écritures de toutes les factures, règlements et dépenses de
-            l'exercice comptable ouvert. L'opération est <b>idempotente</b> : la relancer ne crée
-            pas de doublon. Elle active aussi la comptabilité si besoin.
+            l'exercice choisi. L'opération est <b>idempotente</b> : la relancer ne crée pas de
+            doublon. Elle active aussi la comptabilité si besoin.
           </p>
-          <div className="mt-3">
-            <Bouton
-              onClick={async () => { setEnCours(true); await onReprendre(); setEnCours(false); }}
+          {exercices.length === 0 ? (
+            <div className="mt-3 rounded-lg bg-or-500/10 p-3 text-sm text-or-700">
+              Aucun exercice comptable. Créez-les d'abord (bouton ci-dessous) à partir des années scolaires.
+            </div>
+          ) : (
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Exercice</span>
+              <select value={exId} onChange={(e) => setExId(e.target.value)} className={selCls}>
+                {exercices.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.libelle} ({e.date_debut} → {e.date_fin}){e.statut === "cloture" ? " · clôturé" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Bouton variante="fantome"
+              onClick={async () => { setEnCours(true); await onCreerExercices(); setEnCours(false); }}
               disabled={enCours}
             >
-              {enCours ? "Traitement…" : "Reprendre l'exercice courant"}
+              Créer les exercices manquants
+            </Bouton>
+            <Bouton
+              onClick={async () => { setEnCours(true); await onReprendre(exId); setEnCours(false); }}
+              disabled={enCours || !exId}
+            >
+              {enCours ? "Traitement…" : "Reprendre l'exercice"}
             </Bouton>
           </div>
         </div>
