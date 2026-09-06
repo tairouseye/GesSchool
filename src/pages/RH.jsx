@@ -39,6 +39,9 @@ export default function RH() {
   const [modaleElements, setModaleElements] = useState(false);
   const [regime, setRegime] = useState({ mode: "simplifie", cotisations: [], bareme: { mensuel: 0, annuel: 0 }, heures: 173.33 });
   const [modaleRegime, setModaleRegime] = useState(false);
+  const [regimes, setRegimes] = useState([]);          // régimes de rémunération (P2)
+  const [modaleRegimes, setModaleRegimes] = useState(false);
+  const [modaleGlobaux, setModaleGlobaux] = useState(false); // éléments globaux (P3)
   const [detail, setDetail] = useState(null); // salaire_id dont on édite la composition
   const [avancesPour, setAvancesPour] = useState(null); // personnel dont on gère avances/prêts
   const [dossier, setDossier] = useState(null); // personnel dont on ouvre le dossier 360°
@@ -71,6 +74,7 @@ export default function RH() {
       setNbEnsNonImportes(nbEns);
       setElements(els);
       setRegime({ mode, cotisations: cots, bareme: bar, heures, sod, baseNet });
+      api.getRegimes(ecoleId).then(setRegimes).catch(() => setRegimes([]));
     } catch (e) {
       setErreur(e.message);
     }
@@ -125,6 +129,8 @@ export default function RH() {
       ? (
         <div className="flex flex-wrap gap-2">
           <Bouton variante="fantome" onClick={() => setModaleRegime(true)}>Régime</Bouton>
+          <Bouton variante="fantome" onClick={() => setModaleRegimes(true)}>Régimes</Bouton>
+          <Bouton variante="fantome" onClick={() => setModaleGlobaux(true)}>Global</Bouton>
           <Bouton variante="fantome" onClick={() => setModaleElements(true)}>Éléments</Bouton>
           <Bouton variante="fantome" onClick={() => setLivreOuvert(true)}>Livre</Bouton>
           <Bouton variante="fantome" onClick={() => setRecapOuvert(true)}>Récap</Bouton>
@@ -273,7 +279,7 @@ export default function RH() {
       </div>
 
       <ModalePersonnel
-        edition={formPers} onFermer={() => setFormPers(null)}
+        edition={formPers} regimes={regimes} onFermer={() => setFormPers(null)}
         onEnregistrer={(p, c) => wrap(async () => {
           if (formPers && formPers.id) {
             // Édition : maj des infos + du salaire de base (contrat existant ou nouveau).
@@ -292,6 +298,16 @@ export default function RH() {
       <ModaleElementsPaie
         ouvert={modaleElements} onFermer={() => setModaleElements(false)}
         ecoleId={ecoleId} elements={elements} onChange={recharger}
+      />
+
+      <ModaleRegimes
+        ouvert={modaleRegimes} onFermer={() => setModaleRegimes(false)}
+        ecoleId={ecoleId} elements={elements} personnels={personnels} devise={devise} onChange={recharger}
+      />
+
+      <ModaleElementsGlobaux
+        ouvert={modaleGlobaux} onFermer={() => setModaleGlobaux(false)}
+        ecoleId={ecoleId} elements={elements} personnels={personnels} devise={devise}
       />
 
       <ModaleRegimePaie
@@ -557,12 +573,12 @@ function LignePaie({ s, devise, onDetail, onValider, onDevalider, onPayer, onAnn
   );
 }
 
-function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
+function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
   const vide = {
     prenom: "", nom: "", fonction: "Enseignant", telephone: "", email: "", date_embauche: "",
     type: "CDI", salaire_base: "", debut: "", fin: "",
     matricule: "", categorie: "", n_ipres: "", situation_familiale: "", part_ir: "1", part_trimf: "1",
-    taux_horaire: "", taux_sursalaire: "",
+    taux_horaire: "", taux_sursalaire: "", regime_id: "",
     sexe: "", date_naissance: "", lieu_naissance: "", adresse: "", personne_prevenir: "", tel_urgence: "",
   };
   const [f, setF] = useState(vide);
@@ -584,6 +600,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
       part_trimf: edition.part_trimf != null ? String(edition.part_trimf) : "1",
       taux_horaire: edition.taux_horaire ? String(edition.taux_horaire) : "",
       taux_sursalaire: edition.taux_sursalaire ? String(edition.taux_sursalaire) : "",
+      regime_id: edition.regime_id || "",
       sexe: edition.sexe || "", date_naissance: edition.date_naissance || "", lieu_naissance: edition.lieu_naissance || "",
       adresse: edition.adresse || "", personne_prevenir: edition.personne_prevenir || "", tel_urgence: edition.tel_urgence || "",
     });
@@ -597,7 +614,7 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
         onEnregistrer(
           { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null,
             matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf,
-            taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire,
+            taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire, regime_id: f.regime_id || null,
             sexe: f.sexe, date_naissance: f.date_naissance, lieu_naissance: f.lieu_naissance, adresse: f.adresse, personne_prevenir: f.personne_prevenir, tel_urgence: f.tel_urgence },
           { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
@@ -647,8 +664,16 @@ function ModalePersonnel({ edition, onFermer, onEnregistrer }) {
             <Champ label="Part TRIMF" type="number" step="0.5" value={f.part_trimf} onChange={(e) => maj("part_trimf", e.target.value)} />
             <Champ label="Taux horaire (base)" value={f.taux_horaire} onChange={(e) => maj("taux_horaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 669,49" />
             <Champ label="Taux horaire sursalaire" value={f.taux_sursalaire} onChange={(e) => maj("taux_sursalaire", e.target.value.replace(/[^0-9.,]/g, ""))} placeholder="Ex. 160,27" />
+            <label className="block sm:col-span-3">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Régime de rémunération</span>
+              <select value={f.regime_id} onChange={(e) => maj("regime_id", e.target.value)}
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— Aucun (éléments individuels seulement) —</option>
+                {regimes.filter((r) => r.actif !== false).map((r) => <option key={r.id} value={r.id}>{r.libelle}</option>)}
+              </select>
+            </label>
           </div>
-          <p className="mt-2 text-xs text-navy-900/40">La <b>Part IR</b> choisit la colonne du barème IR. Le <b>TRIMF</b> est lu directement dans le barème (la « Part TRIMF » est informative, affichée sur le bulletin). En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
+          <p className="mt-2 text-xs text-navy-900/40">Le <b>régime</b> apporte automatiquement ses éléments récurrents (gérés dans « Régimes »). La <b>Part IR</b> choisit la colonne du barème IR. Le <b>TRIMF</b> est lu directement dans le barème (la « Part TRIMF » est informative, affichée sur le bulletin). En mode complet, le Brut = heures mensuelles × taux horaire (base + sursalaire).</p>
         </details>
 
         <details className="rounded-xl border border-navy-900/10 bg-white p-4">
@@ -2317,6 +2342,266 @@ function ModaleRecapSalaires({ ouvert, onFermer, ecoleId, periode, ecole, devise
           <Bouton variante="fantome" onClick={exporter} disabled={busy || rows.length === 0}>{busy ? "…" : "Export Excel"}</Bouton>
           <Bouton onClick={() => window.print()} disabled={rows.length === 0}>Imprimer / PDF</Bouton>
         </div>
+      </div>
+    </Modale>
+  );
+}
+
+// ---------------------------------------------------------------------
+// P2 — Gestion des régimes de rémunération (bundle d'éléments récurrents)
+// ---------------------------------------------------------------------
+function ModaleRegimes({ ouvert, onFermer, ecoleId, elements, personnels = [], devise, onChange }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [liste, setListe] = useState([]);
+  const [sel, setSel] = useState(null);          // régime sélectionné
+  const [lignes, setLignes] = useState([]);       // éléments du régime sélectionné
+  const [nouvNom, setNouvNom] = useState("");
+  const [ajout, setAjout] = useState({ elementId: "", montant: "" });
+  const [bulkCat, setBulkCat] = useState("");
+  const selChampCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+
+  const categories = [...new Set(personnels.map((p) => p.categorie).filter(Boolean))].sort();
+  const elGain = (elements || []).filter((e) => e.actif !== false);
+
+  const chargerListe = async () => {
+    try { setListe(await api.getRegimes(ecoleId)); } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const chargerLignes = async (regimeId) => {
+    if (!regimeId) { setLignes([]); return; }
+    try { setLignes(await api.getRegimeElements(ecoleId, regimeId)); } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  useEffect(() => { if (ouvert) { chargerListe(); setSel(null); setLignes([]); } }, [ouvert]); // eslint-disable-line
+
+  const run = async (fn, msg) => {
+    try { await fn(); if (msg) toast.succes(msg); await chargerListe(); onChange && onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  const creer = async () => {
+    if (!nouvNom.trim()) return;
+    try { const r = await api.creerRegime(ecoleId, { libelle: nouvNom }); setNouvNom(""); await chargerListe(); setSel(r); chargerLignes(r.id); onChange && onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const ouvrir = (r) => { setSel(r); chargerLignes(r.id); };
+  const ajouterElement = async () => {
+    if (!sel || !ajout.elementId) return;
+    try { await api.definirRegimeElement(ecoleId, sel.id, ajout.elementId, ajout.montant || 0); setAjout({ elementId: "", montant: "" }); await chargerLignes(sel.id); await chargerListe(); onChange && onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const retirer = async (id) => { try { await api.retirerRegimeElement(id); await chargerLignes(sel.id); await chargerListe(); onChange && onChange(); } catch (e) { toast.erreur(e.message); } };
+  const appliquerCat = async () => {
+    if (!sel || !bulkCat) return;
+    try { const n = await api.affecterRegimeCategorie(ecoleId, sel.id, bulkCat); toast.succes(`Régime affecté à ${n} employé(s) « ${bulkCat} ».`); await chargerListe(); onChange && onChange(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Régimes de rémunération" large>
+      <div className="space-y-5">
+        <p className="text-sm text-navy-900/55">Un régime regroupe des <b>éléments récurrents</b> (primes, indemnités) et s'affecte à un employé ou à toute une <b>catégorie</b>. À la génération, l'employé reçoit les éléments de son régime ; une affectation individuelle prime sur le régime.</p>
+
+        {/* Création */}
+        <div className="flex flex-wrap items-end gap-2">
+          <Champ label="Nouveau régime" value={nouvNom} onChange={(e) => setNouvNom(e.target.value)} placeholder="Ex. Régime enseignant" className="flex-1" />
+          <Bouton onClick={creer} disabled={!nouvNom.trim()}>+ Créer</Bouton>
+        </div>
+
+        {/* Liste des régimes */}
+        {liste.length === 0 ? (
+          <p className="text-sm text-navy-900/40">Aucun régime pour le moment.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {liste.map((r) => (
+              <button key={r.id} type="button" onClick={() => ouvrir(r)}
+                className={`rounded-xl border p-3 text-left transition ${sel?.id === r.id ? "border-or-500 bg-or-500/5" : "border-navy-900/10 hover:border-navy-900/25"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-navy-900">{r.libelle}</span>
+                  {r.actif === false && <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/40">inactif</span>}
+                </div>
+                <div className="mt-0.5 text-xs text-navy-900/50">{r.nb_elements} élément(s) · {r.nb_employes} employé(s)</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Détail du régime sélectionné */}
+        {sel && (
+          <div className="rounded-xl border border-navy-900/10 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-display font-semibold text-navy-900">{sel.libelle}</h3>
+              <button type="button" onClick={async () => { if (await confirmer(`Supprimer le régime « ${sel.libelle} » ? Les employés concernés seront détachés.`)) { await run(() => api.supprimerRegime(sel.id), "Régime supprimé."); setSel(null); setLignes([]); } }}
+                className="text-xs text-rose-600 hover:underline">Supprimer le régime</button>
+            </div>
+
+            {/* Éléments du régime */}
+            {lignes.length === 0 ? (
+              <p className="text-sm text-navy-900/40">Aucun élément. Ajoutez-en ci-dessous.</p>
+            ) : (
+              <div className="divide-y divide-navy-900/5">
+                {lignes.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between py-1.5 text-sm">
+                    <span className="text-navy-900">{l.elements_paie?.libelle}
+                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${l.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-700"}`}>{l.elements_paie?.sens}</span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-mono text-navy-900/70">{fmt(l.montant)} {devise}</span>
+                      <button type="button" onClick={() => retirer(l.id)} className="text-navy-900/30 hover:text-rose-600" title="Retirer">✕</button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Ajout d'un élément */}
+            <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-navy-900/10 pt-3">
+              <label className="block flex-1">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élément</span>
+                <select value={ajout.elementId} onChange={(e) => setAjout((a) => ({ ...a, elementId: e.target.value }))} className={selChampCls}>
+                  <option value="">— choisir —</option>
+                  {elGain.map((e) => <option key={e.id} value={e.id}>{e.libelle} ({e.sens})</option>)}
+                </select>
+              </label>
+              <Champ label={`Montant (${devise})`} value={ajout.montant} onChange={(e) => setAjout((a) => ({ ...a, montant: e.target.value.replace(/[^0-9]/g, "") }))} className="w-32" />
+              <Bouton variante="fantome" onClick={ajouterElement} disabled={!ajout.elementId}>+ Ajouter</Bouton>
+            </div>
+
+            {/* Affectation en masse à une catégorie */}
+            {categories.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-end gap-2 rounded-lg bg-navy-900/5 p-3">
+                <label className="block flex-1">
+                  <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Appliquer à une catégorie</span>
+                  <select value={bulkCat} onChange={(e) => setBulkCat(e.target.value)} className={selChampCls}>
+                    <option value="">— catégorie —</option>
+                    {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <Bouton onClick={appliquerCat} disabled={!bulkCat}>Affecter</Bouton>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Modale>
+  );
+}
+
+// ---------------------------------------------------------------------
+// P3 — Éléments globaux : appliquer un élément à une portée + exclusions
+// ---------------------------------------------------------------------
+function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels = [], devise }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [liste, setListe] = useState([]);
+  const [expand, setExpand] = useState(null); // affectation dont on gère les exclusions
+  const [f, setF] = useState({ elementId: "", portee: "tous", valeur: "", montant: "" });
+  const selCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+  const PORTEE = { tous: "Tous les employés", categorie: "Catégorie", fonction: "Fonction" };
+
+  const elActifs = (elements || []).filter((e) => e.actif !== false);
+  const categories = [...new Set(personnels.map((p) => p.categorie).filter(Boolean))].sort();
+  const fonctions = [...new Set(personnels.map((p) => p.fonction).filter(Boolean))].sort();
+
+  const charger = async () => { try { setListe(await api.getElementsGlobaux(ecoleId)); } catch (e) { toast.erreur(e.message || "Erreur."); } };
+  useEffect(() => { if (ouvert) { charger(); setExpand(null); setF({ elementId: "", portee: "tous", valeur: "", montant: "" }); } }, [ouvert]); // eslint-disable-line
+
+  const ajouter = async () => {
+    if (!f.elementId) return;
+    if (f.portee !== "tous" && !f.valeur) { toast.erreur("Choisis une valeur pour la portée."); return; }
+    try {
+      await api.definirElementGlobal(ecoleId, { elementId: f.elementId, portee: f.portee, valeur: f.portee === "tous" ? "" : f.valeur, montant: f.montant || 0 });
+      setF({ elementId: "", portee: "tous", valeur: "", montant: "" }); await charger();
+    } catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+  const retirer = async (id) => { if (await confirmer("Retirer cette application globale ?")) { try { await api.retirerElementGlobal(id); await charger(); } catch (e) { toast.erreur(e.message); } } };
+
+  // Employés dans le périmètre d'une affectation
+  const perimetre = (a) => personnels.filter((p) =>
+    a.portee === "tous" ? true : a.portee === "categorie" ? (p.categorie || "") === a.valeur : (p.fonction || "") === a.valeur);
+
+  const basculer = async (a, personnelId, exclure) => {
+    try { await api.basculerExclusion(ecoleId, a.id, personnelId, exclure); await charger(); }
+    catch (e) { toast.erreur(e.message || "Erreur."); }
+  };
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Éléments globaux" large>
+      <div className="space-y-5">
+        <p className="text-sm text-navy-900/55">Applique un élément (prime, indemnité) à <b>tous</b> les employés, à une <b>catégorie</b> ou une <b>fonction</b>, avec un montant par défaut. Tu peux <b>exclure</b> des employés précis. Priorité : global &lt; régime &lt; affectation individuelle.</p>
+
+        {/* Ajout */}
+        <div className="rounded-xl border border-navy-900/10 p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élément</span>
+              <select value={f.elementId} onChange={(e) => setF((s) => ({ ...s, elementId: e.target.value }))} className={selCls}>
+                <option value="">— choisir —</option>
+                {elActifs.map((e) => <option key={e.id} value={e.id}>{e.libelle} ({e.sens})</option>)}
+              </select>
+            </label>
+            <Champ label={`Montant (${devise})`} value={f.montant} onChange={(e) => setF((s) => ({ ...s, montant: e.target.value.replace(/[^0-9]/g, "") }))} />
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Portée</span>
+              <select value={f.portee} onChange={(e) => setF((s) => ({ ...s, portee: e.target.value, valeur: "" }))} className={selCls}>
+                <option value="tous">Tous les employés</option>
+                <option value="categorie">Une catégorie</option>
+                <option value="fonction">Une fonction</option>
+              </select>
+            </label>
+            {f.portee !== "tous" && (
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{f.portee === "categorie" ? "Catégorie" : "Fonction"}</span>
+                <select value={f.valeur} onChange={(e) => setF((s) => ({ ...s, valeur: e.target.value }))} className={selCls}>
+                  <option value="">— choisir —</option>
+                  {(f.portee === "categorie" ? categories : fonctions).map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          <div className="mt-3"><Bouton onClick={ajouter} disabled={!f.elementId}>+ Appliquer</Bouton></div>
+        </div>
+
+        {/* Liste */}
+        {liste.length === 0 ? (
+          <p className="text-sm text-navy-900/40">Aucune application globale.</p>
+        ) : (
+          <div className="space-y-2">
+            {liste.map((a) => {
+              const perim = perimetre(a);
+              const exclus = new Set((a.element_exclusions || []).map((x) => x.personnel_id));
+              return (
+                <div key={a.id} className="rounded-xl border border-navy-900/10 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="font-medium text-navy-900">{a.elements_paie?.libelle}</span>
+                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${a.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-700"}`}>{a.elements_paie?.sens}</span>
+                      <div className="mt-0.5 text-xs text-navy-900/50">
+                        {PORTEE[a.portee]}{a.valeur ? ` · ${a.valeur}` : ""} · {perim.length} employé(s){a.nb_exclusions > 0 ? ` · ${a.nb_exclusions} exclu(s)` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-navy-900/70">{fmt(a.montant)} {devise}</span>
+                      <button type="button" onClick={() => setExpand(expand === a.id ? null : a.id)} className="text-xs text-sky-700 hover:underline">Exclusions</button>
+                      <button type="button" onClick={() => retirer(a.id)} className="text-navy-900/30 hover:text-rose-600" title="Retirer">✕</button>
+                    </div>
+                  </div>
+                  {expand === a.id && (
+                    <div className="mt-2 max-h-56 overflow-y-auto rounded-lg bg-navy-900/5 p-2">
+                      {perim.length === 0 ? <p className="p-1 text-xs text-navy-900/40">Aucun employé dans ce périmètre.</p> : perim.map((p) => (
+                        <label key={p.id} className="flex items-center justify-between gap-2 px-1 py-1 text-sm">
+                          <span className="text-navy-900/80">{p.prenom} {p.nom} <span className="text-navy-900/40">· {p.fonction || "—"}{p.categorie ? ` · ${p.categorie}` : ""}</span></span>
+                          <span className="flex items-center gap-1 text-xs text-navy-900/50">
+                            <input type="checkbox" checked={exclus.has(p.id)} onChange={(e) => basculer(a, p.id, e.target.checked)} /> exclure
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Modale>
   );

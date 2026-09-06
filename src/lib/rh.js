@@ -34,6 +34,7 @@ function champsFiscaux(p) {
   if (p.part_trimf !== undefined && p.part_trimf !== "") f.part_trimf = Number(p.part_trimf) || 1;
   if (p.taux_horaire !== undefined) f.taux_horaire = Number(p.taux_horaire) || 0;
   if (p.taux_sursalaire !== undefined) f.taux_sursalaire = Number(p.taux_sursalaire) || 0;
+  if (p.regime_id !== undefined) f.regime_id = p.regime_id || null;
   return f;
 }
 
@@ -334,16 +335,63 @@ export async function getSalaires(ecoleId, periode) {
 }
 
 // Éléments récurrents d'une école, groupés par personnel (Phase D).
+// Éléments récurrents effectifs par employé. Fusion par PRIORITÉ (le plus
+// spécifique l'emporte pour un même élément) :
+//   global 'tous'(1) < global 'categorie'(2) < global 'fonction'(3) < régime(4) < individuel(5)
+// Les exclusions retirent un élément global pour des employés précis.
 async function affectationsParPersonnel(ecoleId) {
-  const { data, error } = await supabase
-    .from("personnel_elements_paie")
-    .select("personnel_id, element_id, montant, elements_paie(libelle, sens, soumis)")
-    .eq("ecole_id", ecoleId)
-    .eq("actif", true);
-  if (error) throw error;
+  const [pers, indiv, regEls, glob, excl] = await Promise.all([
+    supabase.from("personnels").select("id, regime_id, categorie, fonction").eq("ecole_id", ecoleId),
+    supabase.from("personnel_elements_paie")
+      .select("personnel_id, element_id, montant, elements_paie(libelle, sens, soumis)")
+      .eq("ecole_id", ecoleId).eq("actif", true),
+    supabase.from("regime_elements")
+      .select("regime_id, element_id, montant, elements_paie(libelle, sens, soumis)")
+      .eq("ecole_id", ecoleId),
+    supabase.from("element_affectations")
+      .select("id, element_id, portee, valeur, montant, elements_paie(libelle, sens, soumis)")
+      .eq("ecole_id", ecoleId).eq("actif", true),
+    supabase.from("element_exclusions").select("affectation_id, personnel_id").eq("ecole_id", ecoleId),
+  ]);
+  if (pers.error) throw pers.error;
+
+  const parRegime = {};
+  for (const r of regEls.data ?? []) (parRegime[r.regime_id] ||= []).push(r);
+  // exclusions : set "affectationId|personnelId"
+  const exclSet = new Set((excl.data ?? []).map((e) => `${e.affectation_id}|${e.personnel_id}`));
+  const globaux = glob.data ?? [];
+
   const map = {};
-  for (const a of data ?? []) (map[a.personnel_id] ||= []).push(a);
-  return map;
+  for (const p of pers.data ?? []) {
+    const acc = new Map(); // element_id -> { montant, elements_paie, prio }
+    const put = (element_id, montant, elements_paie, prio) => {
+      const cur = acc.get(element_id);
+      if (!cur || prio >= cur.prio) acc.set(element_id, { montant, elements_paie, prio });
+    };
+    // Globaux applicables (hors exclusions)
+    for (const g of globaux) {
+      if (exclSet.has(`${g.id}|${p.id}`)) continue;
+      let prio = 0;
+      if (g.portee === "tous") prio = 1;
+      else if (g.portee === "categorie" && (p.categorie || "") === g.valeur) prio = 2;
+      else if (g.portee === "fonction" && (p.fonction || "") === g.valeur) prio = 3;
+      if (prio > 0) put(g.element_id, g.montant, g.elements_paie, prio);
+    }
+    // Régime
+    for (const re of parRegime[p.regime_id] || []) put(re.element_id, re.montant, re.elements_paie, 4);
+    map[p.id] = acc;
+  }
+  // Individuel (priorité max)
+  for (const a of indiv.data ?? []) {
+    const acc = (map[a.personnel_id] ||= new Map());
+    acc.set(a.element_id, { montant: a.montant, elements_paie: a.elements_paie, prio: 5 });
+  }
+  // Conversion Map -> liste attendue par lignesInitiales
+  const out = {};
+  for (const [pid, acc] of Object.entries(map)) {
+    out[pid] = [...acc.entries()].map(([element_id, v]) => ({ element_id, montant: v.montant, elements_paie: v.elements_paie }));
+  }
+  return out;
 }
 
 // Heures mensuelles de référence (fixes pour tous, définies par le comptable).
@@ -737,6 +785,120 @@ export async function definirElementPersonnel(ecoleId, personnelId, elementId, m
 export async function retirerElementPersonnel(id) {
   const { error } = await supabase.from("personnel_elements_paie").delete().eq("id", id);
   if (error) throw error;
+}
+
+// --- P2 : Régimes de rémunération ---
+export async function getRegimes(ecoleId) {
+  const { data, error } = await supabase
+    .from("regimes_paie")
+    .select("*, regime_elements(id), personnels(count)")
+    .eq("ecole_id", ecoleId).order("libelle");
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    ...r,
+    nb_elements: r.regime_elements?.length || 0,
+    nb_employes: r.personnels?.[0]?.count ?? 0,
+  }));
+}
+
+export async function creerRegime(ecoleId, { libelle, description }) {
+  const { data, error } = await supabase.from("regimes_paie")
+    .insert({ ecole_id: ecoleId, libelle: (libelle || "").trim(), description: description || null })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function modifierRegime(id, patch) {
+  const p = {};
+  if (patch.libelle != null) p.libelle = patch.libelle.trim();
+  if (patch.description !== undefined) p.description = patch.description || null;
+  if (patch.actif != null) p.actif = patch.actif;
+  const { error } = await supabase.from("regimes_paie").update(p).eq("id", id);
+  if (error) throw error;
+}
+
+export async function supprimerRegime(id) {
+  const { error } = await supabase.from("regimes_paie").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function getRegimeElements(ecoleId, regimeId) {
+  const { data, error } = await supabase.from("regime_elements")
+    .select("*, elements_paie(libelle, sens, mode, soumis)")
+    .eq("ecole_id", ecoleId).eq("regime_id", regimeId).order("ordre");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function definirRegimeElement(ecoleId, regimeId, elementId, montant) {
+  const { error } = await supabase.from("regime_elements")
+    .upsert({ ecole_id: ecoleId, regime_id: regimeId, element_id: elementId, montant: Number(montant) || 0 },
+            { onConflict: "regime_id,element_id" });
+  if (error) throw error;
+}
+
+export async function retirerRegimeElement(id) {
+  const { error } = await supabase.from("regime_elements").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Affecte un régime à un employé, ou en masse à une catégorie (bulk).
+export async function affecterRegime(personnelId, regimeId) {
+  const { error } = await supabase.from("personnels")
+    .update({ regime_id: regimeId || null }).eq("id", personnelId);
+  if (error) throw error;
+}
+
+export async function affecterRegimeCategorie(ecoleId, regimeId, categorie) {
+  const { error, count } = await supabase.from("personnels")
+    .update({ regime_id: regimeId || null }, { count: "exact" })
+    .eq("ecole_id", ecoleId).eq("categorie", categorie);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+// --- P3 : Éléments globaux (portée) + exclusions ---
+export async function getElementsGlobaux(ecoleId) {
+  const { data, error } = await supabase.from("element_affectations")
+    .select("*, elements_paie(libelle, sens, soumis), element_exclusions(id, personnel_id)")
+    .eq("ecole_id", ecoleId).order("created_at");
+  if (error) throw error;
+  return (data ?? []).map((a) => ({ ...a, nb_exclusions: a.element_exclusions?.length || 0 }));
+}
+
+export async function definirElementGlobal(ecoleId, { elementId, portee, valeur, montant }) {
+  const { data, error } = await supabase.from("element_affectations")
+    .upsert({ ecole_id: ecoleId, element_id: elementId, portee, valeur: valeur || "", montant: Number(montant) || 0 },
+            { onConflict: "ecole_id,element_id,portee,valeur" })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function retirerElementGlobal(id) {
+  const { error } = await supabase.from("element_affectations").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function getExclusions(affectationId) {
+  const { data, error } = await supabase.from("element_exclusions")
+    .select("id, personnel_id").eq("affectation_id", affectationId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function basculerExclusion(ecoleId, affectationId, personnelId, exclure) {
+  if (exclure) {
+    const { error } = await supabase.from("element_exclusions")
+      .upsert({ ecole_id: ecoleId, affectation_id: affectationId, personnel_id: personnelId },
+              { onConflict: "affectation_id,personnel_id" });
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from("element_exclusions")
+      .delete().eq("affectation_id", affectationId).eq("personnel_id", personnelId);
+    if (error) throw error;
+  }
 }
 
 // --- PHASE D-bis : régime de paie (cotisations, mode, barème IR) ---
