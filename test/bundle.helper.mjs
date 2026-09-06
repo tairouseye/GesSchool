@@ -39,3 +39,24 @@ export async function chargerPermissions() {
   cache = await import(pathToFileURL(sortie).href);
   return cache;
 }
+
+let cachePaie = null;
+
+// Bundle le moteur de paie pur (paie.js + bareme.js) — sans Supabase.
+export async function chargerPaie() {
+  if (cachePaie) return cachePaie;
+  const dir = mkdtempSync(join(tmpdir(), "gesschool-paie-"));
+  const entree = join(dir, "__entry.mjs");
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(entree, [
+    'export * from "@/lib/paie.js";',
+    'export * from "@/lib/bareme.js";',
+  ].join("\n"));
+  const sortie = join(dir, "bundle.mjs");
+  await build({
+    entryPoints: [entree], bundle: true, format: "esm", platform: "node",
+    outfile: sortie, alias: { "@": join(RACINE, "src") }, logLevel: "error",
+  });
+  cachePaie = await import(pathToFileURL(sortie).href);
+  return cachePaie;
+}
