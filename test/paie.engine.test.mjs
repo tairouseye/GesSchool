@@ -89,3 +89,16 @@ test("brutPourNet : le brut est ≥ au net et croît avec la cible", () => {
   assert.ok(b2 > b1, "monotone croissant");
   assert.equal(M.brutPourNet(0, CTX), 0);
 });
+
+const BAREME_ANNUEL = [
+  { periodicite: "annuel", revenu: 0,       trimf: 0, ir: { "1": 0 } },
+  { periodicite: "annuel", revenu: 1200000, trimf: 0, ir: { "1": 60000 } },
+  { periodicite: "annuel", revenu: 2400000, trimf: 0, ir: { "1": 240000 } },
+];
+
+test("regularisationIR : IR annuel − cumul mensuel (complément / trop-perçu)", () => {
+  // revenu annuel 2 500 000 → tranche 2 400 000 → IR annuel 240 000
+  assert.equal(M.regularisationIR(2500000, 200000, BAREME_ANNUEL, 1), 40000);   // complément à retenir
+  assert.equal(M.regularisationIR(2500000, 260000, BAREME_ANNUEL, 1), -20000);  // trop-perçu à restituer
+  assert.equal(M.regularisationIR(2500000, 240000, BAREME_ANNUEL, 1), 0);       // pile
+});

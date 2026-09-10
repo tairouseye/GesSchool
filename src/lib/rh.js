@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
 import { getEnseignants } from "@/lib/enseignants.js";
-import { lignesStatutaires, lignesBrut, arr, brutPourNet } from "@/lib/paie.js";
+import { lignesStatutaires, lignesBrut, arr, brutPourNet, regularisationIR } from "@/lib/paie.js";
 
 // GesSchool — couche « RH & paie » : personnels, contrats, salaires.
 
@@ -477,10 +477,38 @@ function brutSoumis(lignes, salaireId) {
 async function contexteComplet(ecoleId) {
   const mode = await getModePaie(ecoleId);
   if (mode !== "complet") return null;
-  const [cotisations, baremeMensuel, heures, baseEstNet] = await Promise.all([
-    getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getHeuresMensuelles(ecoleId), getBaseEstNet(ecoleId),
+  const [cotisations, baremeMensuel, baremeAnnuel, heures, baseEstNet] = await Promise.all([
+    getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getBareme(ecoleId, "annuel"),
+    getHeuresMensuelles(ecoleId), getBaseEstNet(ecoleId),
   ]);
-  return { cotisations, baremeMensuel, heures, baseEstNet };
+  return { cotisations, baremeMensuel, baremeAnnuel, heures, baseEstNet };
+}
+
+// Cumul annuel (IR retenu + brut soumis) des périodes AAAA-01..AAAA-11 par
+// employé — base de la régularisation IR de décembre.
+async function cumulIRparPersonnel(ecoleId, annee, personnelIds) {
+  const out = {};
+  if (!personnelIds?.length) return out;
+  const { data: sals, error } = await supabase
+    .from("salaires").select("id, personnel_id")
+    .eq("ecole_id", ecoleId).gte("periode", `${annee}-01`).lt("periode", `${annee}-12`)
+    .in("personnel_id", personnelIds);
+  if (error) throw error;
+  const persDe = new Map((sals ?? []).map((s) => [s.id, s.personnel_id]));
+  const ids = [...persDe.keys()];
+  if (!ids.length) return out;
+  const { data: lignes, error: e2 } = await supabase
+    .from("salaire_lignes").select("salaire_id, sens, nature, libelle, montant").in("salaire_id", ids);
+  if (e2) throw e2;
+  for (const l of lignes ?? []) {
+    const pid = persDe.get(l.salaire_id);
+    if (!pid) continue;
+    (out[pid] ||= { ir: 0, brut: 0 });
+    const m = Number(l.montant || 0);
+    if (l.nature === "impot" && /\bIR\b/.test(l.libelle || "")) out[pid].ir += m;
+    if (l.sens === "gain" && l.nature !== "non_soumis") out[pid].brut += m;
+  }
+  return out;
 }
 
 // Ajoute (en mode complet) les lignes statutaires calculées sur le brut soumis.
@@ -553,6 +581,26 @@ export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
       }
     }
   }
+  // Décembre : régularisation annuelle de l'IR (barème annuel vs cumul mensuel).
+  if (moisDePeriode(periode) === 12 && ctx && (ctx.baremeAnnuel?.length)) {
+    const annee = periode.slice(0, 4);
+    const cumul = await cumulIRparPersonnel(ecoleId, annee, crees.map((s) => s.personnel_id));
+    for (const s of crees) {
+      const p = parId.get(s.personnel_id);
+      const decBrut = brutSoumis(lignes, s.id);
+      const decIR = lignes
+        .filter((l) => l.salaire_id === s.id && l.nature === "impot" && /\bIR\b/.test(l.libelle || ""))
+        .reduce((x, l) => x + Number(l.montant || 0), 0);
+      const prior = cumul[s.personnel_id] || { ir: 0, brut: 0 };
+      const regul = regularisationIR(prior.brut + decBrut, prior.ir + decIR, ctx.baremeAnnuel, p?.part_ir || 1);
+      if (regul > 0) {
+        lignes.push({ ecole_id: ecoleId, salaire_id: s.id, libelle: "Régularisation IR (annuelle)", sens: "retenue", nature: "regularisation", montant: regul, ordre: 220 });
+      } else if (regul < 0) {
+        lignes.push({ ecole_id: ecoleId, salaire_id: s.id, libelle: "Régularisation IR (trop-perçu)", sens: "gain", nature: "non_soumis", montant: -regul, ordre: 220 });
+      }
+    }
+  }
+
   if (lignes.length) {
     const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
     if (e2) throw e2;

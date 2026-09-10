@@ -62,6 +62,14 @@ export function netDeBrut(brut, { partIr = 1, partTrimf = 1, cotisations = [], b
   return b - sal - ir - trimf;
 }
 
+// Régularisation IR annuelle (décembre) : IR dû sur le revenu annuel (barème
+// annuel) − somme des IR mensuels déjà retenus dans l'année.
+//   > 0 : complément d'IR à retenir ;  < 0 : trop-perçu à restituer.
+export function regularisationIR(revenuAnnuel, irCumuleMensuel, baremeAnnuel = [], partIr = 1) {
+  const { ir } = chercherBareme(baremeAnnuel, arr(revenuAnnuel), partIr);
+  return arr(ir) - arr(irCumuleMensuel);
+}
+
 // Brut soumis nécessaire pour obtenir un NET cible (calcul « à l'envers »).
 // net(brut) est croissant → recherche dichotomique, puis ajustement au franc
 // pour tomber exactement sur la cible (sinon le plus petit brut qui l'atteint).
