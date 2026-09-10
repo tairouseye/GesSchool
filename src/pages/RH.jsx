@@ -344,7 +344,8 @@ export default function RH() {
       />
 
       <ModalePreparerPaie
-        ouvert={prepPaie} onFermer={() => setPrepPaie(false)}
+        ouvert={prepPaie} onFermer={() => setPrepPaie(false)} ecoleId={ecoleId}
+        onAllerConges={() => { setPrepPaie(false); setOnglet("conges"); }}
         periode={periode} employes={actifs.filter((p) => !ficheDe(p.id))} contrats={contrats}
         modeComplet={regime.mode === "complet"} heuresDefaut={regime.heures} baremeManquant={regime.mode === "complet" && !regime.bareme?.mensuel}
         onGenerer={(heuresMap) => wrap(async () => { await api.genererPaie(ecoleId, periode, heuresMap); setPrepPaie(false); }, true, "Paie générée.")}
@@ -1637,9 +1638,18 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
 }
 
 // --- Étape « Préparer la paie » : heures/absences validées avant génération ---
-function ModalePreparerPaie({ ouvert, onFermer, periode, employes, contrats, modeComplet, heuresDefaut, baremeManquant, onGenerer }) {
+function ModalePreparerPaie({ ouvert, onFermer, ecoleId, onAllerConges, periode, employes, contrats, modeComplet, heuresDefaut, baremeManquant, onGenerer }) {
   const [heures, setHeures] = useState({});
+  const [congesAttente, setCongesAttente] = useState([]);
+  const [absencesMois, setAbsencesMois] = useState([]);
   const hDef = Number(heuresDefaut ?? 173.33);
+  // Chevauchement d'une plage [d1,d2] avec le mois de paie.
+  const dansLeMois = (d1, d2) => {
+    const [a, m] = periode.split("-").map(Number);
+    const jm = new Date(Date.UTC(a, m, 0)).getUTCDate();
+    const debut = `${periode}-01`, fin = `${periode}-${String(jm).padStart(2, "0")}`;
+    return (d1 || "") <= fin && ((d2 || d1 || "") >= debut);
+  };
   // Proratisation : si le contrat commence/finit en cours de mois, heures ≈ prorata
   // des jours travaillés. Renvoie { heures, jours } (jours=null si mois plein).
   const prorata = (p) => {
@@ -1659,6 +1669,17 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, contrats, mod
     const m = {};
     for (const p of employes) m[p.id] = String(prorata(p).heures);
     setHeures(m);
+    // Congés en attente + absences chevauchant le mois (à traiter avant génération).
+    (async () => {
+      try {
+        const [cg, ab] = await Promise.all([
+          api.getConges(ecoleId, "en_attente").catch(() => []),
+          api.getAbsencesRh(ecoleId).catch(() => []),
+        ]);
+        setCongesAttente((cg || []).filter((c) => dansLeMois(c.date_debut, c.date_fin)));
+        setAbsencesMois((ab || []).filter((a) => dansLeMois(a.date_debut, a.date_fin)));
+      } catch { setCongesAttente([]); setAbsencesMois([]); }
+    })();
     /* eslint-disable-next-line */
   }, [ouvert]);
 
@@ -1698,6 +1719,30 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, contrats, mod
         {baremeManquant && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-800">
             ⚠️ Barème IR non chargé : l'IR et le TRIMF seront à 0. Charge le barème dans « Régime » avant de générer.
+          </div>
+        )}
+
+        {/* Congés à valider + absences du mois — à traiter AVANT la génération */}
+        {congesAttente.length > 0 && (
+          <div className="rounded-xl border border-danger-500/40 bg-danger-500/5 p-4">
+            <p className="text-sm font-semibold text-danger-600">
+              ⛔ {congesAttente.length} congé(s) en attente sur {libellePeriode(periode)} — à valider avant de générer
+            </p>
+            <ul className="mt-2 space-y-1 text-xs text-navy-900/70">
+              {congesAttente.map((c) => (
+                <li key={c.id}>
+                  <b>{c.personnels?.prenom} {c.personnels?.nom}</b> — {c.type}, du {c.date_debut}{c.date_fin ? ` au ${c.date_fin}` : ""}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-2">
+              <Bouton variante="fantome" onClick={onAllerConges}>Aller à « Congés &amp; absences »</Bouton>
+            </div>
+          </div>
+        )}
+        {absencesMois.length > 0 && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-800">
+            🗓️ {absencesMois.length} absence(s) enregistrée(s) ce mois — les absences <b>non justifiées</b> (absence/maladie) génèrent une retenue selon la règle du régime. Vérifie-les dans « Congés &amp; absences » si besoin.
           </div>
         )}
 
@@ -1769,9 +1814,12 @@ function ModalePreparerPaie({ ouvert, onFermer, periode, employes, contrats, mod
         {modeComplet && employes.length > 0 && (
           <p className="text-xs text-navy-900/45">Défaut = {heuresDefaut} h/mois. Réduis les heures d'un employé absent (en orange) ; le reste est prérempli.</p>
         )}
+        {congesAttente.length > 0 && (
+          <p className="text-right text-xs font-medium text-danger-600">Génération bloquée : validez ou refusez d'abord les congés en attente.</p>
+        )}
         <div className="flex justify-end gap-2">
           <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton onClick={generer} disabled={employes.length === 0}>Valider et générer</Bouton>
+          <Bouton onClick={generer} disabled={employes.length === 0 || congesAttente.length > 0}>Valider et générer</Bouton>
         </div>
       </div>
     </Modale>
