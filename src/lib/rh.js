@@ -822,6 +822,7 @@ export async function creerElementPaie(ecoleId, e) {
       soumis: e.soumis === false ? false : true,
       periodicite: e.periodicite || "mensuel",
       mois_declenchement: e.mois_declenchement && e.mois_declenchement.length ? e.mois_declenchement : null,
+      compte_pc_id: e.compte_pc_id || null,
       ordre: e.ordre || 0,
     })
     .select()
@@ -836,6 +837,7 @@ export async function modifierElementPaie(id, patch) {
     if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
   }
   if (patch.mois_declenchement !== undefined) p.mois_declenchement = (patch.mois_declenchement && patch.mois_declenchement.length) ? patch.mois_declenchement : null;
+  if (patch.compte_pc_id !== undefined) p.compte_pc_id = patch.compte_pc_id || null;
   const { data, error } = await supabase.from("elements_paie").update(p).eq("id", id).select().single();
   if (error) throw error;
   return data;
@@ -844,6 +846,15 @@ export async function modifierElementPaie(id, patch) {
 export async function supprimerElementPaie(id) {
   const { error } = await supabase.from("elements_paie").delete().eq("id", id);
   if (error) throw error;
+}
+
+// Comptes imputables du plan comptable (pour mapper un élément de paie — P6).
+export async function getComptesImputables(ecoleId) {
+  const { data, error } = await supabase
+    .from("plan_comptable").select("id, numero, libelle")
+    .eq("ecole_id", ecoleId).eq("imputable", true).eq("actif", true).order("numero");
+  if (error) throw error;
+  return data ?? [];
 }
 
 // --- Éléments récurrents affectés à un employé (utilisé en Phase D) ---

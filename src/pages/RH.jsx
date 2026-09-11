@@ -1037,6 +1037,8 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
   const toast = useToast();
   const confirmer = useConfirm();
   const [ajout, setAjout] = useState({ gain: "", retenue: "" });
+  const [comptes, setComptes] = useState([]);
+  useEffect(() => { if (ouvert) api.getComptesImputables(ecoleId).then(setComptes).catch(() => setComptes([])); }, [ouvert, ecoleId]);
 
   const run = async (fn) => {
     try { await fn(); await onChange(); }
@@ -1074,6 +1076,13 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
                 <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { soumis: !(el.soumis !== false) }))}
                   className={`rounded-lg border px-2 py-1.5 text-xs ${el.soumis === false ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700" : "border-navy-900/10 text-navy-900/50"}`}
                   title="Non soumis = entre dans le net mais pas dans l'assiette cotisations/IR (ex. transport)">{el.soumis === false ? "non soumis" : "soumis"}</button>
+              )}
+              {comptes.length > 0 && (
+                <select value={el.compte_pc_id || ""} onChange={(e) => run(() => api.modifierElementPaie(el.id, { compte_pc_id: e.target.value || null }))}
+                  className="max-w-[9rem] rounded-lg border border-navy-900/15 bg-white px-1.5 py-1.5 text-xs text-navy-900/70 outline-none focus:border-or-500" title="Compte comptable (SYSCOHADA)">
+                  <option value="">compte…</option>
+                  {comptes.map((c) => <option key={c.id} value={c.id}>{c.numero} — {c.libelle}</option>)}
+                </select>
               )}
               <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { actif: !(el.actif !== false) }))}
                 className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5">{el.actif === false ? "activer" : "masquer"}</button>

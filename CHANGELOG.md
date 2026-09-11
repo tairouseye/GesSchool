@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.153.0] — migration 103
+- **RH & Paie — compte comptable par élément (P6 audit)** : chaque élément de paie peut porter son **compte du plan comptable**. La comptabilisation des salaires (`poster_salaire_charge`) répartit alors les **charges (débit)** et les **retenues (crédit)** sur ces comptes, avec repli sur les comptes par défaut (661/423/organismes) et **équilibre garanti**. Sélecteur de compte dans **Éléments de paie**. *(PDF téléchargeable et historique de salaire déjà assurés par l'impression navigateur + dossier employé/piste d'audit existants.)*
+
 ## [2.152.0] — migration 102
 - **RH & Paie — règles versionnées (P9 audit)** : cotisations et barème IR portent une **date d'effet** (+ date de fin pour les cotisations). La paie d'une période utilise la **version en vigueur ce mois-là** (`getCotisationsPour`/`getBaremePour`, `contexteComplet` et recalcul période-aware). `remplacer_bareme` **ajoute une version datée** (l'historique est conservé) au lieu de tout écraser. UI Régime : colonne « Effet » sur les cotisations, champ « à partir du » à l'import + liste des versions. Non destructif : l'existant prend effet le 2000-01-01.
 
