@@ -1374,6 +1374,9 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
   const [wbRef, setWbRef] = useState(null);
   const [feuilles, setFeuilles] = useState([]);
   const [mapSheet, setMapSheet] = useState({ mensuel: "", annuel: "" });
+  const [dateEffet, setDateEffet] = useState(`${new Date().getFullYear()}-01-01`);
+  const [versions, setVersions] = useState([]);
+  useEffect(() => { if (ouvert) api.getVersionsBareme(ecoleId).then(setVersions).catch(() => setVersions([])); }, [ouvert, ecoleId]);
   const [importMsg, setImportMsg] = useState("");
   const [importBusy, setImportBusy] = useState(false);
 
@@ -1400,11 +1403,11 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
         if (!sheet) continue;
         const matrix = XLSX.utils.sheet_to_json(wbRef.Sheets[sheet], { header: 1, blankrows: false, defval: "" });
         const { rows } = parserFeuilleBareme(matrix);
-        const r = await api.importerBareme(ecoleId, per, rows);
+        const r = await api.importerBareme(ecoleId, per, rows, dateEffet || null);
         total += r.importes; detail.push(`${per} : ${r.importes}`);
       }
       if (total === 0) { setImportMsg("Aucune feuille sélectionnée."); }
-      else { setImportMsg(`✓ Importé — ${detail.join(" · ")}`); setWbRef(null); setFeuilles([]); await onChange(); }
+      else { setImportMsg(`✓ Importé (effet ${dateEffet}) — ${detail.join(" · ")}`); setWbRef(null); setFeuilles([]); await onChange(); api.getVersionsBareme(ecoleId).then(setVersions).catch(() => {}); }
     } catch (e) { setImportMsg("Erreur : " + (e.message || e)); }
     finally { setImportBusy(false); }
   };
@@ -1534,6 +1537,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
                   <th className="py-1 px-1 text-right font-medium">Plafond</th>
                   <th className="py-1 px-1 text-right font-medium">Forf. sal.</th>
                   <th className="py-1 px-1 text-right font-medium">Forf. patr.</th>
+                  <th className="py-1 px-1 font-medium">Effet</th>
                   <th className="py-1 pl-1"></th>
                 </tr>
               </thead>
@@ -1552,6 +1556,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
                       <td className="py-1 px-1 text-right"><input defaultValue={c.plafond ?? ""} onBlur={(e) => commit({ plafond: e.target.value })} className={champ} /></td>
                       <td className="py-1 px-1 text-right"><input defaultValue={c.forfait_salarial || ""} onBlur={(e) => commit({ forfait_salarial: e.target.value })} className={champ} /></td>
                       <td className="py-1 px-1 text-right"><input defaultValue={c.forfait_patronal || ""} onBlur={(e) => commit({ forfait_patronal: e.target.value })} className={champ} /></td>
+                      <td className="py-1 px-1"><input type="date" defaultValue={c.date_effet || ""} onBlur={(e) => { if (e.target.value && e.target.value !== c.date_effet) commit({ date_effet: e.target.value }); }} className="rounded border border-navy-900/15 bg-white px-1.5 py-1 text-xs outline-none focus:border-or-500" /></td>
                       <td className="py-1 pl-1 text-right whitespace-nowrap">
                         <button type="button" onClick={() => commit({ actif: !(c.actif !== false) })} className="text-navy-900/50 hover:underline">{c.actif === false ? "on" : "off"}</button>
                         {" "}
@@ -1560,7 +1565,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
                     </tr>
                   );
                 })}
-                {cots.length === 0 && <tr><td colSpan={7} className="py-2 text-navy-900/40">Aucune cotisation.</td></tr>}
+                {cots.length === 0 && <tr><td colSpan={8} className="py-2 text-navy-900/40">Aucune cotisation.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1575,6 +1580,14 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
         <div className="rounded-xl border border-navy-900/10 bg-creme/40 p-4 space-y-2">
           <p className="text-sm font-semibold text-navy-900">Barème IR + TRIMF</p>
           <p className="text-xs text-navy-900/60">Chargé : <b>{bar.mensuel}</b> ligne(s) mensuelles · <b>{bar.annuel}</b> annuelles. La déduction est mensuelle ; régularisation annuelle en fin d'année.</p>
+          {versions.length > 0 && (
+            <p className="text-xs text-navy-900/50">Versions : {versions.map((v) => `${v.periodicite} dès ${v.date_effet} (${v.lignes})`).join(" · ")}</p>
+          )}
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-navy-900/50">À partir du (date d'effet de la version importée)</span>
+            <input type="date" value={dateEffet} onChange={(e) => setDateEffet(e.target.value)}
+              className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs outline-none focus:border-or-500" />
+          </label>
           <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => choisirFichier(e.target.files?.[0] || null)}
             className="block w-full text-xs text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-xs file:text-navy-900 hover:file:bg-navy-900/10" />
           {feuilles.length > 0 && (

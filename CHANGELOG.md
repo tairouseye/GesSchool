@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.152.0] — migration 102
+- **RH & Paie — règles versionnées (P9 audit)** : cotisations et barème IR portent une **date d'effet** (+ date de fin pour les cotisations). La paie d'une période utilise la **version en vigueur ce mois-là** (`getCotisationsPour`/`getBaremePour`, `contexteComplet` et recalcul période-aware). `remplacer_bareme` **ajoute une version datée** (l'historique est conservé) au lieu de tout écraser. UI Régime : colonne « Effet » sur les cotisations, champ « à partir du » à l'import + liste des versions. Non destructif : l'existant prend effet le 2000-01-01.
+
 ## [2.151.0]
 - **RH & Paie — régularisation IR annuelle (décembre)** : à la génération de **décembre**, une ligne **« Régularisation IR (annuelle) »** compare l'IR dû sur le **revenu annuel** (barème annuel) à la **somme des IR mensuels** déjà retenus → complément à retenir (> 0) ou **trop-perçu restitué** (< 0). Inclut naturellement le 13ᵉ mois s'il est soumis. Fonction pure `regularisationIR` testée. Nécessite le **barème annuel** chargé (mode complet).
 

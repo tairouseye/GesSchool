@@ -474,11 +474,12 @@ function brutSoumis(lignes, salaireId) {
 }
 
 // Contexte « régime complet » (mode + cotisations + barème + heures) si activé.
-async function contexteComplet(ecoleId) {
+async function contexteComplet(ecoleId, periode) {
   const mode = await getModePaie(ecoleId);
   if (mode !== "complet") return null;
+  // Règles EN VIGUEUR pour la période (versioning par date d'effet, P9).
   const [cotisations, baremeMensuel, baremeAnnuel, heures, baseEstNet] = await Promise.all([
-    getCotisations(ecoleId), getBareme(ecoleId, "mensuel"), getBareme(ecoleId, "annuel"),
+    getCotisationsPour(ecoleId, periode), getBaremePour(ecoleId, "mensuel", periode), getBaremePour(ecoleId, "annuel", periode),
     getHeuresMensuelles(ecoleId), getBaseEstNet(ecoleId),
   ]);
   return { cotisations, baremeMensuel, baremeAnnuel, heures, baseEstNet };
@@ -545,7 +546,7 @@ export async function genererPaie(ecoleId, periode, heuresParEmploye = null) {
     getContratsActifs(ecoleId),
     supabase.from("salaires").select("personnel_id").eq("ecole_id", ecoleId).eq("periode", periode),
     affectationsParPersonnel(ecoleId, moisDePeriode(periode)),
-    contexteComplet(ecoleId),
+    contexteComplet(ecoleId, periode),
     echeancesDues(ecoleId, periode),
     getAbsenceRetenue(ecoleId).catch(() => ({ mode: "aucun" })),
     joursAbsenceParPersonnel(ecoleId, periode).catch(() => ({})),
@@ -620,7 +621,7 @@ export async function ajouterFichePaie(ecoleId, personnelId, periode, elements =
     .select("*, personnels(prenom, nom, fonction, part_ir, part_trimf, taux_horaire, taux_sursalaire)")
     .single();
   if (error) throw error;
-  const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId, moisDePeriode(periode)), contexteComplet(ecoleId)]);
+  const [aff, ctx] = await Promise.all([affectationsParPersonnel(ecoleId, moisDePeriode(periode)), contexteComplet(ecoleId, periode)]);
   const lignes = lignesInitiales(ecoleId, data.id, data.personnels, elements.montant_brut || 0, aff[personnelId], ctx);
   ajouterStatutaire(lignes, ecoleId, data.id, data.personnels, ctx);
   const { error: e2 } = await supabase.from("salaire_lignes").insert(lignes);
@@ -631,9 +632,10 @@ export async function ajouterFichePaie(ecoleId, personnelId, periode, elements =
 // Recalcule les lignes statutaires d'un bulletin (mode complet) depuis ses gains
 // actuels : remplace cotisations/IR/TRIMF/patronal. Utile après édition des gains.
 export async function recalculerStatutaire(ecoleId, salaireId) {
-  const [{ data: sal }, lignes, cotisations, baremeMensuel] = await Promise.all([
-    supabase.from("salaires").select("personnels(part_ir, part_trimf)").eq("id", salaireId).single(),
-    getLignesSalaire(salaireId), getCotisations(ecoleId), getBareme(ecoleId, "mensuel"),
+  const { data: sal } = await supabase.from("salaires").select("periode, personnels(part_ir, part_trimf)").eq("id", salaireId).single();
+  const periode = sal?.periode;
+  const [lignes, cotisations, baremeMensuel] = await Promise.all([
+    getLignesSalaire(salaireId), getCotisationsPour(ecoleId, periode), getBaremePour(ecoleId, "mensuel", periode),
   ]);
   const brut = brutSoumis(lignes);
   // Suppression ATOMIQUE des lignes auto (cotisations/impôts + TOUTES les
@@ -997,12 +999,15 @@ export async function getCotisations(ecoleId) {
   return data ?? [];
 }
 
+const codeCotisation = (libelle) => (libelle || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
 export async function creerCotisation(ecoleId, c) {
   const { data, error } = await supabase.from("cotisations_paie").insert({
-    ecole_id: ecoleId, libelle: (c.libelle || "").trim(), assiette: c.assiette || "brut",
+    ecole_id: ecoleId, libelle: (c.libelle || "").trim(), code: c.code || codeCotisation(c.libelle), assiette: c.assiette || "brut",
     taux_salarial: Number(c.taux_salarial) || 0, taux_patronal: Number(c.taux_patronal) || 0,
     plafond: c.plafond === "" || c.plafond == null ? null : Number(c.plafond),
     forfait_salarial: Number(c.forfait_salarial) || 0, forfait_patronal: Number(c.forfait_patronal) || 0,
+    date_effet: c.date_effet || undefined, date_fin: c.date_fin || null,
     ordre: c.ordre || 0,
   }).select().single();
   if (error) throw error;
@@ -1014,6 +1019,8 @@ export async function modifierCotisation(id, patch) {
   for (const k of ["libelle", "assiette", "actif", "ordre"]) if (patch[k] != null) p[k] = k === "libelle" ? patch[k].trim() : patch[k];
   for (const k of ["taux_salarial", "taux_patronal", "forfait_salarial", "forfait_patronal"]) if (patch[k] != null) p[k] = Number(patch[k]) || 0;
   if (patch.plafond !== undefined) p.plafond = patch.plafond === "" || patch.plafond == null ? null : Number(patch.plafond);
+  if (patch.date_effet !== undefined) p.date_effet = patch.date_effet || undefined;
+  if (patch.date_fin !== undefined) p.date_fin = patch.date_fin || null;
   const { data, error } = await supabase.from("cotisations_paie").update(p).eq("id", id).select().single();
   if (error) throw error;
   return data;
@@ -1122,7 +1129,7 @@ export async function compterBareme(ecoleId) {
 // Remplace ATOMIQUEMENT le barème d'une périodicité (delete+insert en une
 // transaction, via RPC) → jamais de barème partiel en cas d'échec.
 // rows: [{ revenu:Number, trimf:Number, ir:{ "1":x, "1.5":y, ... } }]
-export async function importerBareme(ecoleId, periodicite, rows) {
+export async function importerBareme(ecoleId, periodicite, rows, dateEffet = null) {
   const lignes = (rows || [])
     .filter((r) => r && Number.isFinite(Number(r.revenu)))
     .map((r) => {
@@ -1132,9 +1139,24 @@ export async function importerBareme(ecoleId, periodicite, rows) {
       return { revenu: Number(r.revenu), trimf: Number(r.trimf) || 0, ir };
     });
   if (lignes.length === 0) return { importes: 0 };
-  const { data, error } = await supabase.rpc("remplacer_bareme", { p_ecole: ecoleId, p_periodicite: periodicite, p_rows: lignes });
+  const { data, error } = await supabase.rpc("remplacer_bareme", {
+    p_ecole: ecoleId, p_periodicite: periodicite, p_rows: lignes, p_date_effet: dateEffet || null,
+  });
   if (error) throw error;
   return { importes: data ?? lignes.length };
+}
+
+// Versions de barème disponibles (dates d'effet distinctes) par périodicité.
+export async function getVersionsBareme(ecoleId) {
+  const { data, error } = await supabase
+    .from("bareme_ir").select("periodicite, date_effet").eq("ecole_id", ecoleId);
+  if (error) throw error;
+  const m = {};
+  for (const r of data ?? []) {
+    const k = `${r.periodicite}|${r.date_effet}`;
+    (m[k] ||= { periodicite: r.periodicite, date_effet: r.date_effet, lignes: 0 }).lignes++;
+  }
+  return Object.values(m).sort((a, b) => (b.date_effet || "").localeCompare(a.date_effet || ""));
 }
 
 // Journal d'audit d'un bulletin (transitions + modifs de montants), acteur résolu.
@@ -1232,11 +1254,38 @@ export async function diagnosticSante() {
   return data || null;
 }
 
-// Barème complet d'une périodicité (pour lecture/moteur côté client).
+// Barème complet d'une périodicité (toutes versions confondues — lecture/UI).
 export async function getBareme(ecoleId, periodicite) {
   const { data, error } = await supabase
-    .from("bareme_ir").select("revenu, trimf, ir").eq("ecole_id", ecoleId).eq("periodicite", periodicite)
+    .from("bareme_ir").select("revenu, trimf, ir, date_effet").eq("ecole_id", ecoleId).eq("periodicite", periodicite)
     .order("revenu");
   if (error) throw error;
   return data ?? [];
+}
+
+// P9 — Version EN VIGUEUR pour une période : le barème dont la date d'effet est
+// la plus récente parmi celles ≤ fin de la période.
+export async function getBaremePour(ecoleId, periodicite, periode) {
+  if (!periode) return [];
+  const cutoff = finDeMois(periode);
+  const { data, error } = await supabase
+    .from("bareme_ir").select("revenu, trimf, ir, date_effet")
+    .eq("ecole_id", ecoleId).eq("periodicite", periodicite).lte("date_effet", cutoff)
+    .order("date_effet", { ascending: false }).order("revenu");
+  if (error) throw error;
+  const rows = data ?? [];
+  if (!rows.length) return [];
+  const vEffet = rows[0].date_effet; // plus récente ≤ cutoff
+  return rows.filter((r) => r.date_effet === vEffet).sort((a, b) => Number(a.revenu) - Number(b.revenu));
+}
+
+// P9 — Cotisations en vigueur pour une période (date_effet ≤ fin ; date_fin ≥ début).
+export async function getCotisationsPour(ecoleId, periode) {
+  if (!periode) return getCotisations(ecoleId);
+  const debut = `${periode}-01`, fin = finDeMois(periode);
+  const { data, error } = await supabase
+    .from("cotisations_paie").select("*").eq("ecole_id", ecoleId).lte("date_effet", fin)
+    .order("ordre").order("libelle");
+  if (error) throw error;
+  return (data ?? []).filter((c) => c.actif !== false && (!c.date_fin || c.date_fin >= debut));
 }
