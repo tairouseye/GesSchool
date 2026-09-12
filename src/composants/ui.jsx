@@ -264,21 +264,22 @@ export function Modale({ ouvert, onFermer, titre, children, large = false }) {
 
   if (!ouvert) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-navy-900/40 p-4" onClick={onFermer}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/40 p-2 sm:p-4" onClick={onFermer}>
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label={typeof titre === "string" ? titre : undefined}
         tabIndex={-1}
-        className={`w-full ${large ? "max-w-2xl" : "max-w-lg"} rounded-2xl bg-white shadow-xl outline-none`}
+        className={`flex max-h-[92dvh] w-full ${large ? "max-w-2xl" : "max-w-lg"} flex-col rounded-2xl bg-white shadow-xl outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-navy-900/10 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-navy-900/10 px-6 py-4">
           <h3 className="font-display text-lg font-semibold text-navy-900">{titre}</h3>
           <button onClick={onFermer} aria-label="Fermer" className="text-navy-900/40 hover:text-navy-900">✕</button>
         </div>
-        <div className="max-h-[75vh] overflow-auto p-6">{children}</div>
+        {/* contenu scrollable : occupe la hauteur restante, bas toujours atteignable */}
+        <div className="min-h-0 flex-1 overflow-auto p-6" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>{children}</div>
       </div>
     </div>
   );
