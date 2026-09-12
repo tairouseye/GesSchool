@@ -592,27 +592,61 @@ const CLASSES_LIB = {
 const selCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
 
 function PlanComptable({ plan }) {
+  const [ouverts, setOuverts] = useState(() => new Set());
   if (!plan.length) return <EtatVide icone="📚" titre="Plan comptable vide">Le plan comptable SYSCOHADA est amorcé à l'installation.</EtatVide>;
-  const profondeur = (c) => plan.filter((p) => c.numero.startsWith(p.numero) && p.numero.length < c.numero.length).length;
-  const classes = [...new Set(plan.map((c) => c.classe))].sort();
+
+  // Arbre : parent = plus long préfixe présent (numérotation SYSCOHADA).
+  const parentDe = (c) => {
+    let best = null;
+    for (const p of plan) {
+      if (p.numero !== c.numero && c.numero.startsWith(p.numero) && p.numero.length < c.numero.length
+          && (!best || p.numero.length > best.numero.length)) best = p;
+    }
+    return best;
+  };
+  const tri = (a, b) => a.numero.localeCompare(b.numero);
+  const enfants = new Map();
+  const racines = [];
+  for (const c of plan) {
+    const par = parentDe(c);
+    if (par) { if (!enfants.has(par.id)) enfants.set(par.id, []); enfants.get(par.id).push(c); }
+    else racines.push(c);
+  }
+  racines.sort(tri);
+  for (const arr of enfants.values()) arr.sort(tri);
+  const avecEnfants = plan.filter((c) => enfants.has(c.id));
+
+  const toggle = (id) => setOuverts((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toutOuvert = ouverts.size >= avecEnfants.length && avecEnfants.length > 0;
+  const toggleTout = () => setOuverts(toutOuvert ? new Set() : new Set(avecEnfants.map((c) => c.id)));
+
+  const rendre = (c, prof) => {
+    const kids = enfants.get(c.id) || [];
+    const open = ouverts.has(c.id);
+    return (
+      <div key={c.id}>
+        <div className={`flex items-center gap-2 border-b border-navy-900/5 py-1.5 text-sm ${kids.length ? "cursor-pointer hover:bg-navy-900/[0.02]" : ""}`}
+          style={{ paddingLeft: `${prof * 18}px` }} onClick={kids.length ? () => toggle(c.id) : undefined}>
+          <span className="w-4 shrink-0 text-center text-navy-900/40">{kids.length ? (open ? "▾" : "▸") : ""}</span>
+          <span className="w-14 shrink-0 font-mono text-navy-900/60">{c.numero}</span>
+          <span className={c.imputable ? "text-navy-900" : "font-semibold text-navy-900"}>{c.libelle}</span>
+          {c.actif === false && <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/40">inactif</span>}
+        </div>
+        {open && kids.map((k) => rendre(k, prof + 1))}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-navy-900/50">Plan comptable de l'école (modèle SYSCOHADA). Les rubriques en gras regroupent les comptes ; seuls les comptes imputables reçoivent des écritures.</p>
-      {classes.map((cl) => (
-        <Carte key={cl}>
-          <h3 className="mb-2 font-semibold text-navy-900">{CLASSES_LIB[cl] || `Classe ${cl}`}</h3>
-          <div className="divide-y divide-navy-900/5">
-            {plan.filter((c) => c.classe === cl).map((c) => (
-              <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm" style={{ paddingLeft: `${profondeur(c) * 16}px` }}>
-                <span className="w-16 shrink-0 font-mono text-navy-900/60">{c.numero}</span>
-                <span className={c.imputable ? "text-navy-900" : "font-semibold text-navy-900"}>{c.libelle}</span>
-                {!c.actif && <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/40">inactif</span>}
-              </div>
-            ))}
-          </div>
-        </Carte>
-      ))}
-    </div>
+    <Carte>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm text-navy-900/50">Plan comptable (SYSCOHADA). Clique une classe/rubrique pour déplier ; en gras = rubriques (non imputables).</p>
+        <button onClick={toggleTout} className="shrink-0 rounded-lg border border-navy-900/15 px-2.5 py-1 text-xs font-medium text-navy-900/70 hover:bg-navy-900/5">
+          {toutOuvert ? "Tout replier" : "Tout déplier"}
+        </button>
+      </div>
+      <div>{racines.map((r) => rendre(r, 0))}</div>
+    </Carte>
   );
 }
 
