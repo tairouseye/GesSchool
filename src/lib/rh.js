@@ -443,16 +443,20 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx,
       lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: l.libelle, sens: l.sens, nature: l.nature, base: l.base, taux: l.taux, montant: l.montant, ordre: l.ordre });
     }
   } else {
-    // Salaire fixe. En régime complet « base = net », on calcule le brut à
-    // l'envers pour que net = salaire de base saisi (cotisations/IR déduits).
-    let montantBase = arr(base);
+    // Salaire fixe. En régime complet « base = net » : brut calculé à l'envers
+    // pour que net = salaire de base saisi, EXPRIMÉ en heures × taux horaire
+    // dérivé (le taux est la variable qui « matche » le net ; heures fixes).
+    const bl = { ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: arr(base), ordre: 0 };
     if (ctx && ctx.baseEstNet && Number(base) > 0) {
-      montantBase = brutPourNet(base, {
+      const B = brutPourNet(base, {
         partIr: personnel?.part_ir || 1, partTrimf: personnel?.part_trimf || 1,
         cotisations: ctx.cotisations, baremeMensuel: ctx.baremeMensuel,
       });
+      const h = Number(ctx.heures) || 0;
+      bl.montant = B;
+      if (h > 0) { bl.base = h; bl.taux = B / h; }  // taux horaire dérivé (affiché sur le bulletin)
     }
-    lignes.push({ ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: montantBase, ordre: 0 });
+    lignes.push(bl);
   }
   (affectations || []).forEach((a, i) => {
     const sens = a.elements_paie?.sens || "gain";
