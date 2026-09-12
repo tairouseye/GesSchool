@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.154.0]
+- **Correctif barème volumineux** : `compterBareme` utilise un **COUNT serveur** (exact, sans charger les lignes) et le chargement du barème (`getBaremePour`) est **paginé**. Un barème réel (ex. 2013 ≈ 14 800 lignes) était tronqué à ~1000 lignes → faux « barème non chargé » à la génération **et** IR faussé pour les hauts revenus. Corrigé.
+
 ## [2.153.0] — migration 103
 - **RH & Paie — compte comptable par élément (P6 audit)** : chaque élément de paie peut porter son **compte du plan comptable**. La comptabilisation des salaires (`poster_salaire_charge`) répartit alors les **charges (débit)** et les **retenues (crédit)** sur ces comptes, avec repli sur les comptes par défaut (661/423/organismes) et **équilibre garanti**. Sélecteur de compte dans **Éléments de paie**. *(PDF téléchargeable et historique de salaire déjà assurés par l'impression navigateur + dossier employé/piste d'audit existants.)*
 

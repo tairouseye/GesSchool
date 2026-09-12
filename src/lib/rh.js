@@ -1130,11 +1130,16 @@ export async function joursAbsenceParPersonnel(ecoleId, periode) {
 
 // Barème IR chargé par l'école (mensuel + annuel). Comptage pour l'état.
 export async function compterBareme(ecoleId) {
-  const { data, error } = await supabase.from("bareme_ir").select("periodicite").eq("ecole_id", ecoleId);
-  if (error) throw error;
-  const r = { mensuel: 0, annuel: 0 };
-  for (const x of data ?? []) r[x.periodicite] = (r[x.periodicite] || 0) + 1;
-  return r;
+  // COUNT côté serveur (head:true) → exact et sans charger les lignes : un gros
+  // barème (ex. 2013 réel ≈ 14 800 lignes) était tronqué à 1000 → faux « non chargé ».
+  const cpt = async (p) => {
+    const { count, error } = await supabase.from("bareme_ir")
+      .select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("periodicite", p);
+    if (error) throw error;
+    return count || 0;
+  };
+  const [mensuel, annuel] = await Promise.all([cpt("mensuel"), cpt("annuel")]);
+  return { mensuel, annuel };
 }
 
 // Remplace ATOMIQUEMENT le barème d'une périodicité (delete+insert en une
@@ -1279,15 +1284,28 @@ export async function getBareme(ecoleId, periodicite) {
 export async function getBaremePour(ecoleId, periodicite, periode) {
   if (!periode) return [];
   const cutoff = finDeMois(periode);
-  const { data, error } = await supabase
-    .from("bareme_ir").select("revenu, trimf, ir, date_effet")
+  // 1) Date d'effet EN VIGUEUR (la plus récente ≤ fin de période).
+  const { data: v, error: eV } = await supabase
+    .from("bareme_ir").select("date_effet")
     .eq("ecole_id", ecoleId).eq("periodicite", periodicite).lte("date_effet", cutoff)
-    .order("date_effet", { ascending: false }).order("revenu");
-  if (error) throw error;
-  const rows = data ?? [];
-  if (!rows.length) return [];
-  const vEffet = rows[0].date_effet; // plus récente ≤ cutoff
-  return rows.filter((r) => r.date_effet === vEffet).sort((a, b) => Number(a.revenu) - Number(b.revenu));
+    .order("date_effet", { ascending: false }).limit(1);
+  if (eV) throw eV;
+  const effet = v?.[0]?.date_effet;
+  if (!effet) return [];
+  // 2) Toutes les lignes de cette version, PAGINÉES (contourne la limite serveur
+  //    ~1000 lignes : un barème réel peut avoir plusieurs milliers de tranches).
+  const rows = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("bareme_ir").select("revenu, trimf, ir")
+      .eq("ecole_id", ecoleId).eq("periodicite", periodicite).eq("date_effet", effet)
+      .order("revenu").range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return rows;
 }
 
 // P9 — Cotisations en vigueur pour une période (date_effet ≤ fin ; date_fin ≥ début).
