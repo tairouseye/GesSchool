@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.157.0] — migration 104
+- **Super_admin — accès à toutes les écoles** : `entrer_ecole` autorise un super_admin à entrer dans **n'importe quelle** école (support/maintenance), sans être propriétaire. Bouton **« entrer »** dans la console SuperAdmin (à côté de « gérer ») → bascule le contexte sur l'école choisie (RH, paie, compta…). Un seul compte pour toutes les écoles.
+
 ## [2.156.0]
 - **Paie — net TOTAL = salaire de base** : en « base = net », la partie soumise vise *(salaire de base − indemnités non soumises)* ; avec la prime de transport rajoutée après déductions, le **net final égale exactement le salaire de base** saisi.
 

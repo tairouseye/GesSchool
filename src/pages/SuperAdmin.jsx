@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
+import { entrerEcole } from "@/lib/pilotage.js";
 import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
 import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, offresCatalogue, simulerEchelle, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
@@ -18,7 +19,8 @@ const TONS = {
 };
 
 export default function SuperAdmin() {
-  const { profil, deconnexion } = useAuth();
+  const { profil, deconnexion, rafraichirProfil } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const [ecoles, setEcoles] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -35,6 +37,12 @@ export default function SuperAdmin() {
   }, []);
 
   useEffect(() => { recharger(); }, [recharger]);
+
+  // Entrer dans le contexte d'une école (super_admin) pour la gérer (RH, paie…).
+  const entrer = async (id) => {
+    try { await entrerEcole(id); await rafraichirProfil?.(); navigate("/"); }
+    catch (e) { toast.erreur(e.message || "Accès à l'école impossible."); }
+  };
 
   const wrap = async (fn, msg) => {
     try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
@@ -125,7 +133,9 @@ export default function SuperAdmin() {
                       : <span className="text-xs text-navy-900/30">aucun</span>}
                   </td>
                   <td className="px-5 py-3 font-mono text-xs">{e.fin || "—"}</td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
+                    <button onClick={() => entrer(e.id)} className="text-xs font-medium text-emerald-700 hover:text-emerald-800">entrer</button>
+                    <span className="mx-1.5 text-navy-900/20">·</span>
                     <button onClick={() => setEdit(e)} className="text-xs font-medium text-navy-700 hover:text-or-500">gérer</button>
                   </td>
                 </tr>
