@@ -448,7 +448,14 @@ function lignesInitiales(ecoleId, salaireId, personnel, base, affectations, ctx,
     // dérivé (le taux est la variable qui « matche » le net ; heures fixes).
     const bl = { ecole_id: ecoleId, salaire_id: salaireId, libelle: "Salaire de base", sens: "gain", nature: "base", montant: arr(base), ordre: 0 };
     if (ctx && ctx.baseEstNet && Number(base) > 0) {
-      const B = brutPourNet(base, {
+      // Net TOTAL visé = salaire de base (indemnités non soumises INCLUSES) : la
+      // partie soumise vise (base − indemnités non soumises), le transport étant
+      // rajouté après déductions → net final = salaire de base exactement.
+      const nonSoumis = (affectations || []).reduce((s, a) =>
+        ((a.elements_paie?.sens || "gain") === "gain" && a.elements_paie?.soumis === false)
+          ? s + arr(a.montant) : s, 0);
+      const cible = Math.max(0, arr(base) - nonSoumis);
+      const B = brutPourNet(cible, {
         partIr: personnel?.part_ir || 1, partTrimf: personnel?.part_trimf || 1,
         cotisations: ctx.cotisations, baremeMensuel: ctx.baremeMensuel,
       });

@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.156.0]
+- **Paie — net TOTAL = salaire de base** : en « base = net », la partie soumise vise *(salaire de base − indemnités non soumises)* ; avec la prime de transport rajoutée après déductions, le **net final égale exactement le salaire de base** saisi.
+
 ## [2.155.0]
 - **Paie — salaire de base = net exprimé en heures × taux horaire dérivé** : en régime complet « base = net », le brut calculé à l'envers est présenté comme *heures mensuelles × taux horaire*, le **taux étant la variable dérivée** qui fait correspondre le net saisi (Personnel). Le net du bulletin = salaire de base saisi.
 - **Prime de transport non soumise** : sortie de l'assiette cotisations/IR, **ajoutée après les déductions** (indemnité non imposable). Réglable par élément (bouton soumis/non soumis).
