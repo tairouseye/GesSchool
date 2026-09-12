@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.159.0]
+- **Correctif génération de paie bloquée (gros barème)** : le chargement du barème pour le calcul se fait de nouveau en **une seule requête** (au lieu de ~15 pages) — la pagination introduite en 2.154 pouvait faire **caler la génération en silence** sur un barème volumineux (2013 réel). Le comptage reste un COUNT serveur.
+
 ## [2.158.0]
 - **UX mobile — fenêtres (modales) adaptées à l'écran** : les fenêtres sont plafonnées à la hauteur visible (`dvh`), en-tête fixe et **contenu qui défile** jusqu'en bas (boutons toujours atteignables), en **portrait comme en paysage** ; prise en compte de la zone sûre iPhone (encoche). Corrige le bas de fenêtre coupé (ex. « Régime », « Préparer la paie »).
 

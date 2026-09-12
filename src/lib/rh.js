@@ -1303,20 +1303,14 @@ export async function getBaremePour(ecoleId, periodicite, periode) {
   if (eV) throw eV;
   const effet = v?.[0]?.date_effet;
   if (!effet) return [];
-  // 2) Toutes les lignes de cette version, PAGINÉES (contourne la limite serveur
-  //    ~1000 lignes : un barème réel peut avoir plusieurs milliers de tranches).
-  const rows = [];
-  const PAGE = 1000;
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from("bareme_ir").select("revenu, trimf, ir")
-      .eq("ecole_id", ecoleId).eq("periodicite", periodicite).eq("date_effet", effet)
-      .order("revenu").range(from, from + PAGE - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < PAGE) break;
-  }
-  return rows;
+  // 2) Toutes les lignes de cette version en UNE requête (limite haute ; ce projet
+  //    ne tronque pas les gros barèmes). Évite les allers-retours qui pouvaient caler.
+  const { data, error } = await supabase
+    .from("bareme_ir").select("revenu, trimf, ir")
+    .eq("ecole_id", ecoleId).eq("periodicite", periodicite).eq("date_effet", effet)
+    .order("revenu").limit(50000);
+  if (error) throw error;
+  return data ?? [];
 }
 
 // P9 — Cotisations en vigueur pour une période (date_effet ≤ fin ; date_fin ≥ début).
