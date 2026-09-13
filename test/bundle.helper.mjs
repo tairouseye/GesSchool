@@ -40,6 +40,34 @@ export async function chargerPermissions() {
   return cache;
 }
 
+// Bundle générique d'un ou plusieurs modules src/lib (réexports) → namespace.
+const _cacheGen = new Map();
+export async function chargerLib(cle, exportsLignes) {
+  if (_cacheGen.has(cle)) return _cacheGen.get(cle);
+  const dir = mkdtempSync(join(tmpdir(), `gesschool-${cle}-`));
+  const entree = join(dir, "__entry.mjs");
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(entree, exportsLignes.join("\n"));
+  const sortie = join(dir, "bundle.mjs");
+  await build({
+    entryPoints: [entree], bundle: true, format: "esm", platform: "node",
+    outfile: sortie, alias: { "@": join(RACINE, "src") }, logLevel: "error",
+    // Shim des variables Vite (certains modules importent supabase.js qui lit
+    // import.meta.env au chargement) — valeurs factices, aucun appel réseau ici.
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify("https://placeholder.supabase.co"),
+      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify("placeholder-anon-key"),
+      "import.meta.env.DEV": "false",
+      "import.meta.env.PROD": "true",
+    },
+  });
+  const ns = await import(pathToFileURL(sortie).href);
+  _cacheGen.set(cle, ns);
+  return ns;
+}
+export const chargerTarif = () => chargerLib("tarif", ['export * from "@/lib/tarification.js";']);
+export const chargerEDT = () => chargerLib("edt", ['export * from "@/lib/generateurEDT.js";']);
+
 let cachePaie = null;
 
 // Bundle le moteur de paie pur (paie.js + bareme.js) — sans Supabase.
