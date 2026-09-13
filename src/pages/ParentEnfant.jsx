@@ -520,20 +520,27 @@ function Cahier({ entrees }) {
 
 function Fournitures({ items }) {
   if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
+  // Article fourni / disponible à l'école (note mentionnant l'école) → mis en évidence.
+  const fourniEcole = (f) => (f.note || "").toLowerCase().includes("école");
+  const yEnA = items.some(fourniEcole);
   return (
     <Carte className="p-6">
-      <h3 className="mb-3 font-display font-semibold text-navy-900">Liste des fournitures</h3>
+      <h3 className="mb-1 font-display font-semibold text-navy-900">Liste des fournitures</h3>
+      {yEnA && <p className="mb-3 text-xs text-rose-600">En <b>rouge</b> : fourni ou disponible à l'école (pas besoin de l'acheter ailleurs).</p>}
       <ul className="divide-y divide-navy-900/5">
-        {items.map((f, i) => (
-          <li key={i} className="flex items-center justify-between py-2 text-sm">
-            <span className="text-navy-900">
-              <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
-              <span className="font-medium">{f.libelle}</span>
-              {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
-              {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
-            </span>
-          </li>
-        ))}
+        {items.map((f, i) => {
+          const ecole = fourniEcole(f);
+          return (
+            <li key={i} className="flex items-center justify-between py-2 text-sm">
+              <span className={ecole ? "text-rose-600" : "text-navy-900"}>
+                <span className={`font-mono text-xs ${ecole ? "text-rose-600" : "text-or-600"}`}>×{f.quantite}</span>{" "}
+                <span className={ecole ? "font-bold" : "font-medium"}>{f.libelle}</span>
+                {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
+                {f.note && <span className={`ml-2 text-xs ${ecole ? "font-semibold text-rose-600" : "text-navy-900/50"}`}>— {f.note}</span>}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </Carte>
   );

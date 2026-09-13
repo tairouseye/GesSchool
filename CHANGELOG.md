@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.161.0]
+- **Espace parent — fournitures fournies par l'école en évidence** : dans la liste de fournitures de l'enfant, les articles **fournis ou disponibles à l'école** (note mentionnant l'école) s'affichent en **rouge gras**, avec une légende (« pas besoin de l'acheter ailleurs »).
+
 ## [2.160.0]
 - **Comptabilité — Plan comptable en arbre repliable** : les classes et comptes parents se **déplient/replient** (cascade), avec bouton « Tout déplier / Tout replier » — fini la longue liste plate.
 
