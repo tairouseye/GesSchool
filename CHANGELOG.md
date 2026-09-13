@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.162.0] — migration 105
+- **Fournitures — case « fourni par l'école »** : indicateur explicite par article (colonne `fourni_ecole`), réglable côté staff (bouton « école » sur chaque ligne + case dans le formulaire). L'espace parent affiche ces articles en **rouge gras** selon cette case (plus le mot-clé). Backfill : les articles dont la note mentionnait l'école sont cochés automatiquement.
+
 ## [2.161.0]
 - **Espace parent — fournitures fournies par l'école en évidence** : dans la liste de fournitures de l'enfant, les articles **fournis ou disponibles à l'école** (note mentionnant l'école) s'affichent en **rouge gras**, avec une légende (« pas besoin de l'acheter ailleurs »).
 

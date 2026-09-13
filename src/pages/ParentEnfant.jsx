@@ -520,8 +520,8 @@ function Cahier({ entrees }) {
 
 function Fournitures({ items }) {
   if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
-  // Article fourni / disponible à l'école (note mentionnant l'école) → mis en évidence.
-  const fourniEcole = (f) => (f.note || "").toLowerCase().includes("école");
+  // Article fourni / disponible à l'école (case cochée par le staff ; repli sur la note).
+  const fourniEcole = (f) => f.fourni_ecole === true || (f.note || "").toLowerCase().includes("école");
   const yEnA = items.some(fourniEcole);
   return (
     <Carte className="p-6">

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
-import { getNiveaux, getFournitures, creerFourniture, supprimerFourniture } from "@/lib/academique.js";
+import { getNiveaux, getFournitures, creerFourniture, modifierFourniture, supprimerFourniture } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Fournitures() {
@@ -51,16 +51,23 @@ export default function Fournitures() {
               <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">{g.libelle}</h3>
               <ul className="divide-y divide-navy-900/5">
                 {g.items.map((f) => (
-                  <li key={f.id} className="flex items-center justify-between py-2 text-sm">
-                    <span className="text-navy-900">
-                      <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
-                      <span className="font-medium">{f.libelle}</span>
+                  <li key={f.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className={f.fourni_ecole ? "text-rose-600" : "text-navy-900"}>
+                      <span className={`font-mono text-xs ${f.fourni_ecole ? "text-rose-600" : "text-or-600"}`}>×{f.quantite}</span>{" "}
+                      <span className={f.fourni_ecole ? "font-bold" : "font-medium"}>{f.libelle}</span>
                       {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
-                      {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
+                      {f.note && <span className={`ml-2 text-xs ${f.fourni_ecole ? "font-semibold text-rose-600" : "text-navy-900/50"}`}>— {f.note}</span>}
                     </span>
-                    <button onClick={async () => { if (await confirmer("Supprimer cette fourniture ?")) wrap(() => supprimerFourniture(f.id), "Fourniture supprimée."); }} className="text-xs text-rose-500 hover:underline">
-                      supprimer
-                    </button>
+                    <span className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                      <button onClick={() => wrap(() => modifierFourniture(f.id, { fourni_ecole: !f.fourni_ecole }), f.fourni_ecole ? "Retiré de « fourni par l'école »." : "Marqué « fourni par l'école ».")}
+                        className={`rounded-full border px-2 py-0.5 text-xs font-medium ${f.fourni_ecole ? "border-rose-500/40 bg-rose-500/10 text-rose-600" : "border-navy-900/15 text-navy-900/50"}`}
+                        title="Fourni ou disponible à l'école (affiché en rouge chez le parent)">
+                        {f.fourni_ecole ? "✓ école" : "école ?"}
+                      </button>
+                      <button onClick={async () => { if (await confirmer("Supprimer cette fourniture ?")) wrap(() => supprimerFourniture(f.id), "Fourniture supprimée."); }} className="text-xs text-rose-500 hover:underline">
+                        supprimer
+                      </button>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -73,7 +80,7 @@ export default function Fournitures() {
 }
 
 function FormFourniture({ niveaux, onAjout }) {
-  const vide = { libelle: "", quantite: "1", obligatoire: true, niveau_id: "", note: "" };
+  const vide = { libelle: "", quantite: "1", obligatoire: true, fourni_ecole: false, niveau_id: "", note: "" };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
@@ -96,6 +103,9 @@ function FormFourniture({ niveaux, onAjout }) {
         <div className="min-w-36 flex-1"><Champ label="Note (optionnel)" value={f.note} onChange={(e) => maj("note", e.target.value)} placeholder="grand format…" /></div>
         <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70">
           <input type="checkbox" checked={f.obligatoire} onChange={(e) => maj("obligatoire", e.target.checked)} /> Obligatoire
+        </label>
+        <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70" title="Sera affiché en rouge chez le parent">
+          <input type="checkbox" checked={f.fourni_ecole} onChange={(e) => maj("fourni_ecole", e.target.checked)} /> Fourni par l'école
         </label>
         <Bouton type="submit">+ Ajouter</Bouton>
       </form>
