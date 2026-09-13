@@ -581,6 +581,7 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
     matricule: "", categorie: "", n_ipres: "", situation_familiale: "", part_ir: "1", part_trimf: "1",
     taux_horaire: "", taux_sursalaire: "", regime_id: "",
     sexe: "", date_naissance: "", lieu_naissance: "", adresse: "", personne_prevenir: "", tel_urgence: "",
+    pays: "", numero_fiscal: "", banque: "", compte_bancaire: "", mobile_money: "", personnes_a_charge: "",
   };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -604,6 +605,9 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
       regime_id: edition.regime_id || "",
       sexe: edition.sexe || "", date_naissance: edition.date_naissance || "", lieu_naissance: edition.lieu_naissance || "",
       adresse: edition.adresse || "", personne_prevenir: edition.personne_prevenir || "", tel_urgence: edition.tel_urgence || "",
+      pays: edition.pays || "", numero_fiscal: edition.numero_fiscal || "", banque: edition.banque || "",
+      compte_bancaire: edition.compte_bancaire || "", mobile_money: edition.mobile_money || "",
+      personnes_a_charge: edition.personnes_a_charge != null ? String(edition.personnes_a_charge) : "",
     });
   }, [edition]);
 
@@ -616,7 +620,8 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
           { prenom: f.prenom.trim(), nom: f.nom.trim(), fonction: f.fonction, telephone: f.telephone, email: f.email, date_embauche: f.debut || f.date_embauche || null,
             matricule: f.matricule, categorie: f.categorie, n_ipres: f.n_ipres, situation_familiale: f.situation_familiale, part_ir: f.part_ir, part_trimf: f.part_trimf,
             taux_horaire: f.taux_horaire, taux_sursalaire: f.taux_sursalaire, regime_id: f.regime_id || null,
-            sexe: f.sexe, date_naissance: f.date_naissance, lieu_naissance: f.lieu_naissance, adresse: f.adresse, personne_prevenir: f.personne_prevenir, tel_urgence: f.tel_urgence },
+            sexe: f.sexe, date_naissance: f.date_naissance, lieu_naissance: f.lieu_naissance, adresse: f.adresse, personne_prevenir: f.personne_prevenir, tel_urgence: f.tel_urgence,
+            pays: f.pays, numero_fiscal: f.numero_fiscal, banque: f.banque, compte_bancaire: f.compte_bancaire, mobile_money: f.mobile_money, personnes_a_charge: f.personnes_a_charge },
           { type: f.type, salaire_base: f.salaire_base, debut: f.debut || f.date_embauche || null, fin: f.fin || null }
         );
         if (!enEdition) setF(vide);
@@ -692,6 +697,19 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
             <Champ label="Personne à prévenir" value={f.personne_prevenir} onChange={(e) => maj("personne_prevenir", e.target.value)} />
             <Champ label="Tél. d'urgence" type="tel" value={f.tel_urgence} onChange={(e) => maj("tel_urgence", e.target.value)} />
           </div>
+        </details>
+
+        <details className="rounded-xl border border-navy-900/10 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-medium text-navy-900/70">Paiement & coordonnées bancaires</summary>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Champ label="Pays" value={f.pays} onChange={(e) => maj("pays", e.target.value)} placeholder="Sénégal" />
+            <Champ label="N° fiscal / NINEA" value={f.numero_fiscal} onChange={(e) => maj("numero_fiscal", e.target.value)} />
+            <Champ label="Personnes à charge" type="number" value={f.personnes_a_charge} onChange={(e) => maj("personnes_a_charge", e.target.value.replace(/[^0-9]/g, ""))} />
+            <Champ label="Banque" value={f.banque} onChange={(e) => maj("banque", e.target.value)} placeholder="CBAO, Ecobank…" />
+            <Champ label="Compte bancaire / IBAN" value={f.compte_bancaire} onChange={(e) => maj("compte_bancaire", e.target.value)} />
+            <Champ label="Mobile money" value={f.mobile_money} onChange={(e) => maj("mobile_money", e.target.value)} placeholder="Wave / Orange Money" />
+          </div>
+          <p className="mt-2 text-xs text-navy-900/40">Coordonnées de règlement du salaire (banque ou mobile money) et informations fiscales de l'employé.</p>
         </details>
 
         <div className="flex justify-end gap-2">

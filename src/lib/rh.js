@@ -47,6 +47,16 @@ function champsIdentite(p) {
   return f;
 }
 
+// Coordonnées de paiement + fiscal (migration 106).
+function champsPaiement(p) {
+  const f = {};
+  for (const k of ["pays", "numero_fiscal", "banque", "compte_bancaire", "mobile_money"]) {
+    if (p[k] !== undefined) f[k] = p[k] || null;
+  }
+  if (p.personnes_a_charge !== undefined && p.personnes_a_charge !== "") f.personnes_a_charge = Number(p.personnes_a_charge) || 0;
+  return f;
+}
+
 export async function creerPersonnel(ecoleId, p) {
   const { data, error } = await supabase
     .from("personnels")
@@ -61,6 +71,7 @@ export async function creerPersonnel(ecoleId, p) {
       profil_id: p.profil_id || null,
       ...champsFiscaux(p),
       ...champsIdentite(p),
+      ...champsPaiement(p),
     })
     .select()
     .single();
@@ -81,6 +92,7 @@ export async function modifierPersonnel(id, p) {
       date_embauche: p.date_embauche || null,
       ...champsFiscaux(p),
       ...champsIdentite(p),
+      ...champsPaiement(p),
     })
     .eq("id", id)
     .select()

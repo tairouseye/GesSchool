@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.163.0] — migration 106
+- **RH — fiche employé complétée** : nouveaux champs **pays, n° fiscal (NINEA), banque, compte bancaire/IBAN, mobile money, personnes à charge** (section « Paiement & coordonnées bancaires » de la fiche). Complète la conformité paie/SYSCOHADA (le n° IPRES existait déjà).
+
 ## [2.162.0] — migration 105
 - **Fournitures — case « fourni par l'école »** : indicateur explicite par article (colonne `fourni_ecole`), réglable côté staff (bouton « école » sur chaque ligne + case dans le formulaire). L'espace parent affiche ces articles en **rouge gras** selon cette case (plus le mot-clé). Backfill : les articles dont la note mentionnait l'école sont cochés automatiquement.
 
