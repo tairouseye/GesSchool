@@ -6,6 +6,9 @@ import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
 import { urlSignee } from "@/lib/stockage.js";
+import Cachet from "@/composants/Cachet.jsx";
+import SceauVerification from "@/composants/SceauVerification.jsx";
+import { codeDepense } from "@/lib/verification.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -29,6 +32,7 @@ export default function Comptabilite() {
   const [cats, setCats] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null); // 'compte' | 'recette' | 'depense' | 'categories' | 'piece'
+  const [recu, setRecu] = useState(null); // dépense sélectionnée pour impression du reçu
 
   // Comptabilité générale (chargée à la demande)
   const [plan, setPlan] = useState([]);
@@ -170,7 +174,7 @@ export default function Comptabilite() {
 
         {onglet === "depenses" && (
           <Mouvements
-            type="depense" items={depenses} devise={devise}
+            type="depense" items={depenses} devise={devise} onRecu={setRecu}
             onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id), "Dépense supprimée."); }}
           />
         )}
@@ -203,6 +207,7 @@ export default function Comptabilite() {
         ecoleId={ecoleId} comptes={soldes} devise={devise} categories={catsActives("depense")}
         onCreer={(m) => wrap(async () => { await api.creerDepense(ecoleId, m, utilisateur?.id); setModale(null); })}
       />
+      <ModaleRecuDepense recu={recu} ecole={ecole} devise={devise} onFermer={() => setRecu(null)} />
       <ModaleCategories
         ouvert={modale === "categories"} onFermer={() => setModale(null)}
         ecoleId={ecoleId} cats={cats} onChange={recharger}
@@ -352,7 +357,7 @@ function Tresorerie({ soldes, devise, onSuppr }) {
   );
 }
 
-function Mouvements({ type, items, devise, onSuppr }) {
+function Mouvements({ type, items, devise, onSuppr, onRecu }) {
   const champDate = type === "recette" ? "date_recette" : "date_depense";
   const champTiers = type === "recette" ? "source" : "beneficiaire";
   const tiersLabel = type === "recette" ? "Source" : "Bénéficiaire";
@@ -376,15 +381,70 @@ function Mouvements({ type, items, devise, onSuppr }) {
         ) },
         { key: "actions", label: "", align: "right", render: (it) => (
           <div className="flex items-center justify-end gap-3">
+            {type === "depense" && onRecu && (
+              <button onClick={() => onRecu(it)} className="text-xs text-navy-700 hover:text-or-500" title="Reçu de dépense">🧾 reçu</button>
+            )}
             {it.justificatif_url && (
               <button onClick={async () => { const u = await urlSignee("justificatifs", it.justificatif_url); if (u) window.open(u, "_blank", "noreferrer"); }}
-                className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 reçu</button>
+                className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 pièce</button>
             )}
             <button onClick={() => onSuppr(it.id)} className="text-xs text-danger-500 hover:underline">suppr.</button>
           </div>
         ) },
       ]}
     />
+  );
+}
+
+// Reçu de dépense imprimable (avec QR d'authentification).
+function ModaleRecuDepense({ recu, ecole, devise, onFermer }) {
+  const modeLbl = recu?.mode ? (MODES.find(([v]) => v === recu.mode)?.[1] || recu.mode) : null;
+  const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—");
+  return (
+    <Modale ouvert={!!recu} onFermer={onFermer} titre="Reçu de dépense">
+      {recu && (
+        <div className="space-y-4">
+          <div className="zone-impression rounded-xl border border-navy-900/10 bg-white p-6 text-navy-900">
+            <div className="flex items-center gap-3 border-b border-navy-900/10 pb-4">
+              {ecole?.logo_url
+                ? <img src={ecole.logo_url} alt="" className="h-12 w-12 object-contain" />
+                : <Cachet size={48} sigle={ecole?.sigle || "GS"} className="text-navy-900/70" />}
+              <div>
+                <p className="font-display text-lg font-bold">{ecole?.nom}</p>
+                <p className="text-xs text-navy-900/50">{[ecole?.adresse, ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+              </div>
+            </div>
+
+            <h1 className="mt-5 text-center font-display text-xl font-bold uppercase tracking-wide">Reçu de dépense</h1>
+
+            <div className="mt-6 space-y-2 text-sm">
+              <div className="flex justify-between border-b border-navy-900/5 py-1.5"><span className="text-navy-900/50">Objet</span><span className="text-right font-medium">{recu.libelle}</span></div>
+              {recu.categorie && <div className="flex justify-between border-b border-navy-900/5 py-1.5"><span className="text-navy-900/50">Catégorie</span><span className="text-right">{recu.categorie}</span></div>}
+              <div className="flex justify-between border-b border-navy-900/5 py-1.5"><span className="text-navy-900/50">Bénéficiaire</span><span className="text-right font-medium">{recu.beneficiaire || "—"}</span></div>
+              {modeLbl && <div className="flex justify-between border-b border-navy-900/5 py-1.5"><span className="text-navy-900/50">Mode de règlement</span><span className="text-right">{modeLbl}</span></div>}
+              <div className="flex justify-between border-b border-navy-900/5 py-1.5"><span className="text-navy-900/50">Date</span><span className="text-right">{dateFr(recu.date_depense)}</span></div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between rounded-xl bg-navy-900/5 px-4 py-3">
+              <span className="text-xs font-medium text-navy-900/50">MONTANT</span>
+              <span className="font-display text-2xl font-bold">{fmt(recu.montant)} {devise}</span>
+            </div>
+
+            <div className="mt-8 flex items-end justify-between text-xs text-navy-900/50">
+              <span>Fait à {ecole?.ville || "—"}, le {dateFr(recu.date_depense)}</span>
+              <span className="text-right">Signature & cachet</span>
+            </div>
+
+            <SceauVerification code={codeDepense(recu.id)} reference={recu.libelle} />
+          </div>
+
+          <div className="no-print flex justify-end gap-2">
+            <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
+            <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+          </div>
+        </div>
+      )}
+    </Modale>
   );
 }
 

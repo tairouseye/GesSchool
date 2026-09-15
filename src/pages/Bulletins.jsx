@@ -3,6 +3,8 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
+import SceauVerification from "@/composants/SceauVerification.jsx";
+import { codeBulletin } from "@/lib/verification.js";
 import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
@@ -418,6 +420,7 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
         <span>{ecole?.nom} · {ecole?.sigle}</span>
       </div>
+      <SceauVerification code={codeBulletin(resultat.eleve.id, periode?.id)} reference={periode?.libelle} />
       {GESPRO.afficherBranding && (
         <p className="mt-2 text-center text-[9px] text-navy-900/30">Solution développée par {GESPRO.nom}</p>
       )}

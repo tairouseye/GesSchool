@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
+import { codeDoc } from "@/lib/verification.js";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
 import { getAnneeCourante, getSignataires } from "@/lib/academique.js";
 import { getDernierBulletin } from "@/lib/bulletins.js";
@@ -240,7 +241,7 @@ export default function Certificats() {
               ecole={ecole} titre={apercu.titre} corps={apercu.corps}
               signataire={apercu.signataire_nom ? `${apercu.signataire_fonction} — ${apercu.signataire_nom}` : apercu.signataire_fonction}
               signatureUrl={apercu.signature_url} ville={apercu.ville} date={apercu.date_doc} reference={apercu.reference}
-              signature={apercu.statut === "valide"} />
+              signature={apercu.statut === "valide"} code={apercu.statut === "valide" ? codeDoc(apercu.id) : null} />
             {apercu.statut === "valide" && (
               <div className="no-print mt-4 flex justify-end"><Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton></div>
             )}

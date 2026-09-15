@@ -1,7 +1,7 @@
 {
   "name": "gesschool",
   "private": true,
-  "version": "2.163.0",
+  "version": "2.164.0",
   "type": "module",
   "description": "GesSchool — SaaS multi-tenant de gestion scolaire (PWA)",
   "scripts": {
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "qrcode-generator": "^1.4.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",

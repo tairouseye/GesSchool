@@ -10,6 +10,8 @@ import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
 import { Icone } from "@/composants/Icones.jsx";
+import SceauVerification from "@/composants/SceauVerification.jsx";
+import { codeBulletinId } from "@/lib/verification.js";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -430,6 +432,7 @@ function BulletinParent({ b, lignes }) {
         <span>Total coefficients : <span className="font-mono">{totalCoef}</span></span>
         <span>{b.ecole} · {b.sigle}</span>
       </div>
+      <SceauVerification code={codeBulletinId(b.id)} reference={b.periode} />
     </div>
   );
 }

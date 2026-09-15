@@ -12,6 +12,8 @@ import { parserFeuilleBareme } from "@/lib/bareme.js";
 import { REGIMES_PAYS } from "@/lib/regimes.js";
 import { creerDocument } from "@/lib/documents.js";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
+import SceauVerification from "@/composants/SceauVerification.jsx";
+import { codePaie } from "@/lib/verification.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const moisCourant = () => new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -903,7 +905,8 @@ function ModaleBulletin({ bulletin, onFermer, ecole, devise }) {
             <span>{bulletin.paye ? `Payé le ${dateFr(bulletin.date_paiement)}` : "Non payé"}</span>
             <span className="text-right">Signature & cachet</span>
           </div>
-          <p className="mt-4 border-t border-navy-900/10 pt-2 text-center text-[10px] text-navy-900/35">Bulletin généré par GesSchool — une solution GesPro</p>
+          <SceauVerification code={codePaie(bulletin.id)} reference={libellePeriode(bulletin.periode)} />
+          <p className="mt-3 border-t border-navy-900/10 pt-2 text-center text-[10px] text-navy-900/35">Bulletin généré par GesSchool — une solution GesPro</p>
         </div>
 
         <div className="no-print flex justify-end gap-2">

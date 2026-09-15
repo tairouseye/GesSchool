@@ -1,4 +1,5 @@
 import Cachet from "@/composants/Cachet.jsx";
+import SceauVerification from "@/composants/SceauVerification.jsx";
 import { GESPRO } from "@/lib/gespro.js";
 
 const dateLisible = (d) =>
@@ -6,7 +7,7 @@ const dateLisible = (d) =>
 
 // Rendu imprimable d'un document officiel. `signature` = affiche la signature
 // (uniquement une fois le document validé).
-export default function DocumentOfficiel({ ecole, titre, corps, signataire, signatureUrl, ville, date, reference, signature = true }) {
+export default function DocumentOfficiel({ ecole, titre, corps, signataire, signatureUrl, ville, date, reference, signature = true, code = null }) {
   return (
     <div className="zone-impression relative mx-auto max-w-3xl overflow-hidden rounded-xl border border-navy-900/10 bg-white p-10">
       <Cachet size={240} sigle={ecole?.sigle || "GS"} className="pointer-events-none absolute -right-10 top-1/3 text-or-500/5" />
@@ -50,6 +51,8 @@ export default function DocumentOfficiel({ ecole, titre, corps, signataire, sign
           <p className="text-[10px] text-navy-900/30">Signature et cachet</p>
         </div>
       </div>
+
+      {code && <SceauVerification code={code} reference={reference} />}
     </div>
   );
 }
