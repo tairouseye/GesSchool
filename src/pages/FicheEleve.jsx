@@ -8,6 +8,7 @@ import { genererCodeTuteur } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
+import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
 
@@ -15,6 +16,7 @@ export default function FicheEleve() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { ecoleId, ecole, roles } = useAuth();
+  const L = lexiqueEleve(ecole?.type_etablissement);
   const peutEditer = peutEditerEleves(roles);
   const gereParents = peutGererParents(roles); // responsable pédagogique : codes parents
   const peutMessage = peutVoir(roles, "messagerie");
@@ -75,8 +77,8 @@ export default function FicheEleve() {
     }
   };
 
-  if (chargement) return (<><EnTete titre="Fiche élève" /><div className="p-8 text-navy-900/50">Chargement…</div></>);
-  if (!eleve) return (<><EnTete titre="Fiche élève" /><div className="p-8 text-navy-900/50">Élève introuvable.</div></>);
+  if (chargement) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8 text-navy-900/50">Chargement…</div></>);
+  if (!eleve) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8 text-navy-900/50">{L.S} introuvable.</div></>);
 
   return (
     <>
@@ -152,15 +154,15 @@ export default function FicheEleve() {
               variante="fantome"
               className="mt-5 w-full text-rose-600"
               onClick={async () => {
-                if (await confirmer({ message: "Supprimer définitivement cet élève ?", confirmer: "Supprimer" })) {
+                if (await confirmer({ message: `Supprimer définitivement cet ${L.s} ?`, confirmer: "Supprimer" })) {
                   wrap(async () => {
                     await api.supprimerEleve(eleve.id);
                     navigate("/eleves");
-                  }, "Élève supprimé.");
+                  }, `${L.S} supprimé.`);
                 }
               }}
             >
-              Supprimer l'élève
+              Supprimer l'{L.s}
             </Bouton>
           )}
         </Carte>
@@ -347,6 +349,8 @@ function Info({ label, valeur, mono }) {
 }
 
 function ModaleEditEleve({ ouvert, onFermer, eleve, champs = [], onEnregistrer }) {
+  const { ecole } = useAuth();
+  const M = motEleve(ecole?.type_etablissement);
   const [f, setF] = useState({});
   useEffect(() => {
     if (eleve) setF({
@@ -359,7 +363,7 @@ function ModaleEditEleve({ ouvert, onFermer, eleve, champs = [], onEnregistrer }
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const majPerso = (cle, v) => setF((s) => ({ ...s, champs_perso: { ...s.champs_perso, [cle]: v } }));
   return (
-    <Modale ouvert={ouvert} onFermer={onFermer} titre="Modifier l'élève" large>
+    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Modifier l'${M}`} large>
       <form
         className="space-y-4"
         onSubmit={(e) => {

@@ -33,7 +33,7 @@ export const ESPACES = [
     roles: ["comptable", "secretaire"], // comptable = responsable ; secretaire = opérationnel
     items: [
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
-      { to: "/eleves", label: "Élèves & inscriptions", icone: "👤", cle: "eleves" },
+      { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
       { to: "/certificats", label: "Documents", icone: "🧾", cle: "certificats" },
       { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes" },
@@ -62,7 +62,7 @@ export const ESPACES = [
       { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"] },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"] },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"] },
-      { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
+      { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"] },
       { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"] },

@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.172.0]
+- **Supérieur — vocabulaire « étudiant »** : en mode Supérieur, le terme « élève » devient « **étudiant** » (helper `lexique.js` selon `type_etablissement`). Première passe sur les écrans les plus visibles : **menu** (Élèves → Étudiants), **page Élèves** (titre, boutons, colonnes, import, création, suppression) et **fiche**. Les autres pages (documents, finances…) suivront. À l'école : inchangé.
+
 ## [2.171.0] — migration 114
 - **Supérieur — Consentement d'accès parent aux notes (étapes A2 + A3)** :
   - **A2** — le parent (déjà lié à l'étudiant) voit un bouton **« Demander l'accès aux notes »** sur les sections Notes/Bulletins ; l'étudiant reçoit la demande dans son **espace** et l'**autorise / refuse / révoque**.

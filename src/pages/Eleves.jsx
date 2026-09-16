@@ -8,12 +8,14 @@ import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { peutEditerEleves, voitTousEleves } from "@/lib/permissions.js";
+import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import Photo from "@/composants/Photo.jsx";
 import { urlsSignees } from "@/lib/stockage.js";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
   const { ecoleId, ecole, roles, profil } = useAuth();
+  const L = lexiqueEleve(ecole?.type_etablissement); // { s, p, S, P } → élève/étudiant
   const peutEditer = peutEditerEleves(roles);
   const vueGlobale = voitTousEleves(roles);
   const navigate = useNavigate();
@@ -94,7 +96,7 @@ export default function Eleves() {
 
   async function supprimerUn(e) {
     const ok = await confirmer({
-      titre: "Supprimer l'élève",
+      titre: `Supprimer l'${L.s}`,
       message: `Supprimer définitivement ${e.prenom} ${e.nom} ? Toutes ses données (inscriptions, notes, factures, absences, liens parents…) seront perdues. Cette action est irréversible.`,
       confirmer: "Supprimer",
     });
@@ -102,7 +104,7 @@ export default function Eleves() {
     try {
       await api.supprimerEleve(e.id);
       setSelection((s) => { const n = new Set(s); n.delete(e.id); return n; });
-      toast.succes("Élève supprimé.");
+      toast.succes(`${L.S} supprimé.`);
       await recharger();
     } catch (err) { setErreur(err.message); }
   }
@@ -111,14 +113,14 @@ export default function Eleves() {
     const n = selection.size;
     if (!n) return;
     const ok = await confirmer({
-      titre: `Supprimer ${n} élève(s)`,
-      message: `Supprimer définitivement ${n} élève(s) et TOUTES leurs données (inscriptions, notes, factures, absences, liens parents…) ? Cette action est irréversible.`,
-      confirmer: `Supprimer ${n} élève(s)`,
+      titre: `Supprimer ${n} ${L.p}`,
+      message: `Supprimer définitivement ${n} ${L.p} et TOUTES leurs données (inscriptions, notes, factures, absences, liens parents…) ? Cette action est irréversible.`,
+      confirmer: `Supprimer ${n} ${L.p}`,
     });
     if (!ok) return;
     try {
       for (const id of selection) await api.supprimerEleve(id);
-      toast.succes(`${n} élève(s) supprimé(s).`);
+      toast.succes(`${n} ${L.p} supprimé(s).`);
       setSelection(new Set());
       await recharger();
     } catch (err) { setErreur(err.message); }
@@ -127,8 +129,8 @@ export default function Eleves() {
   return (
     <>
       <EnTete
-        titre="Élèves & inscriptions"
-        sousTitre={annee ? `Année ${annee.libelle} · ${eleves.length} élève(s)` : "Aucune année courante"}
+        titre={`${L.P} & inscriptions`}
+        sousTitre={annee ? `Année ${annee.libelle} · ${eleves.length} ${L.p}` : "Aucune année courante"}
         action={
           peutEditer && (
             <div className="flex flex-wrap gap-2">
@@ -136,7 +138,7 @@ export default function Eleves() {
                 ↑ Importer (Excel)
               </Bouton>
               <Bouton onClick={() => setModale(true)} disabled={!annee}>
-                + Nouvel élève
+                + Nouvel {L.s}
               </Bouton>
             </div>
           )
@@ -150,7 +152,7 @@ export default function Eleves() {
             <input
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
-              placeholder="Rechercher un élève, un matricule…"
+              placeholder={`Rechercher un ${L.s}, un matricule…`}
               className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
             />
             <select
@@ -182,7 +184,7 @@ export default function Eleves() {
 
           {peutEditer && selection.size > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-or-500/5 px-4 py-2.5 text-sm">
-              <span className="font-medium text-navy-900">{selection.size} élève(s) sélectionné(s)</span>
+              <span className="font-medium text-navy-900">{selection.size} {L.p} sélectionné(s)</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setSelection(new Set())} className="text-xs text-navy-900/50 hover:text-navy-900">Désélectionner</button>
                 <button onClick={supprimerSelection}
@@ -197,15 +199,15 @@ export default function Eleves() {
             <div className="p-4"><SkeletonListe lignes={6} /></div>
           ) : filtres.length === 0 ? (
             eleves.length === 0 ? (
-              <EtatVide icone="🎓" titre="Aucun élève" className="m-4">
+              <EtatVide icone="🎓" titre={`Aucun ${L.s}`} className="m-4">
                 {peutEditer
-                  ? "Créez le premier élève avec « + Nouvel élève », ou importez une liste depuis Excel."
+                  ? `Créez le premier ${L.s} avec « + Nouvel ${L.s} », ou importez une liste depuis Excel.`
                   : vueGlobale
-                    ? "Aucun élève enregistré pour le moment."
-                    : "Aucun élève dans vos classes pour l'année en cours."}
+                    ? `Aucun ${L.s} enregistré pour le moment.`
+                    : `Aucun ${L.s} dans vos classes pour l'année en cours.`}
               </EtatVide>
             ) : (
-              <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun élève ne correspond à votre recherche.</EtatVide>
+              <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun {L.s} ne correspond à votre recherche.</EtatVide>
             )
           ) : (
             <table className="w-full text-left text-sm">
@@ -219,7 +221,7 @@ export default function Eleves() {
                     </th>
                   )}
                   <th className="px-6 py-3 font-medium">Matricule</th>
-                  <th className="px-6 py-3 font-medium">Élève</th>
+                  <th className="px-6 py-3 font-medium">{L.S}</th>
                   <th className="px-6 py-3 font-medium">Sexe</th>
                   <th className="px-6 py-3 font-medium">Classe</th>
                   <th className="px-6 py-3 font-medium">Statut</th>
@@ -272,7 +274,7 @@ export default function Eleves() {
                       </td>
                       {peutEditer && (
                         <td className="px-6 py-4 text-right" onClick={(ev) => ev.stopPropagation()}>
-                          <button onClick={() => supprimerUn(e)} title="Supprimer l'élève"
+                          <button onClick={() => supprimerUn(e)} title={`Supprimer l'${L.s}`}
                             className="rounded-lg px-2 py-1 text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-600">
                             🗑️
                           </button>
@@ -346,7 +348,7 @@ export default function Eleves() {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-[10px] text-navy-900/40">{filtres.length} élève(s) · Cochez les présences par jour dans les colonnes numérotées.</p>
+          <p className="mt-2 text-[10px] text-navy-900/40">{filtres.length} {L.p} · Cochez les présences par jour dans les colonnes numérotées.</p>
           <div className="mt-8 text-right text-sm">L'enseignant(e) / Le surveillant<br /><span className="text-navy-900/30">_____________________</span></div>
         </div>
         <div className="no-print mt-4 flex justify-end">
@@ -389,6 +391,9 @@ function motifTexte(s) {
 }
 
 function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs = [], onFini }) {
+  const { ecole } = useAuth();
+  const M = motEleve(ecole?.type_etablissement);
+  const Mp = motEleve(ecole?.type_etablissement, { pluriel: true });
   const [lignes, setLignes] = useState([]);
   const [entetes, setEntetes] = useState([]);
   const [mapping, setMapping] = useState({});
@@ -439,7 +444,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
   }
 
   return (
-    <Modale ouvert={ouvert} onFermer={() => { reset(); onFermer(); }} titre="Importer des élèves (Excel/CSV)" large>
+    <Modale ouvert={ouvert} onFermer={() => { reset(); onFermer(); }} titre={`Importer des ${Mp} (Excel/CSV)`} large>
       <div className="space-y-4">
         <Alerte ton="erreur">{erreur}</Alerte>
 
@@ -471,7 +476,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
                   ))}
                 </div>
                 <p className="text-xs text-navy-900/40">
-                  La colonne « Classe » doit correspondre au libellé exact d'une classe existante pour inscrire l'élève.
+                  La colonne « Classe » doit correspondre au libellé exact d'une classe existante pour inscrire l'{M}.
                 </p>
 
                 {champs.length > 0 && (
@@ -500,7 +505,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
                 <div className="flex justify-end gap-2">
                   <Bouton type="button" variante="fantome" onClick={() => { reset(); onFermer(); }}>Annuler</Bouton>
                   <Bouton type="button" onClick={importer} disabled={enCours}>
-                    {enCours ? "Import en cours…" : `Importer ${lignes.length} élève(s)`}
+                    {enCours ? "Import en cours…" : `Importer ${lignes.length} ${Mp}`}
                   </Bouton>
                 </div>
               </>
@@ -511,7 +516,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
         {resultat && (
           <div className="space-y-3">
             <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              ✅ {resultat.crees} élève(s) créé(s){resultat.inscrits ? ` · ${resultat.inscrits} inscrit(s)` : ""}
+              ✅ {resultat.crees} {Mp} créé(s){resultat.inscrits ? ` · ${resultat.inscrits} inscrit(s)` : ""}
               {resultat.tuteurs ? ` · ${resultat.tuteurs} parent(s) lié(s)` : ""}
               {resultat.ignores ? ` · ${resultat.ignores} ignoré(s) (prénom/nom manquant)` : ""}.
             </div>
@@ -526,6 +531,8 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
 }
 
 function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, onCree }) {
+  const { ecole } = useAuth();
+  const M = motEleve(ecole?.type_etablissement);
   const vide = {
     prenom: "", nom: "", sexe: "", date_naissance: "", lieu_naissance: "",
     classe_id: "", t_prenom: "", t_nom: "", t_tel: "", t_lien: "Parent",
@@ -569,7 +576,7 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
   }
 
   return (
-    <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouvel élève" large>
+    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Nouvel ${M}`} large>
       <form onSubmit={soumettre} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Champ label="Prénom *" value={f.prenom} onChange={(e) => maj("prenom", e.target.value)} required />
@@ -623,7 +630,7 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton type="submit" disabled={enCours || !f.prenom.trim() || !f.nom.trim()}>
-            {enCours ? "Création…" : "Créer l'élève"}
+            {enCours ? "Création…" : `Créer l'${M}`}
           </Bouton>
         </div>
       </form>

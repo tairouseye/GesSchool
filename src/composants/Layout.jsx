@@ -83,6 +83,9 @@ export default function Layout() {
   // pour ne jamais proposer un lien qui mènerait à un refus.
   const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole?.type_etablissement));
 
+  // Libellé d'un item adapté au type d'établissement (ex. Élèves → Étudiants au supérieur).
+  const libItem = (it) => (it.labelSup && ecole?.type_etablissement === "superieur" ? it.labelSup : it.label);
+
   // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un menu.
   const accessibles = espacesAccessibles(roles, estPromoteur).filter((e) => menusDe(e).length > 0);
   const [espaceId, setEspaceId] = useState(() => espaceParDefaut(roles, estPromoteur)?.id);
@@ -218,7 +221,7 @@ export default function Layout() {
               {({ isActive }) => (
                 <>
                   <span className="w-5 text-center">{item.icone}</span>
-                  {item.label}
+                  {libItem(item)}
                   {pastille(item.cle) > 0 && (
                     // Sur l'onglet actif (fond doré), la pastille dorée serait
                     // invisible : on inverse les couleurs.
@@ -351,7 +354,7 @@ export default function Layout() {
                         <button key={item.to} onClick={() => ouvrirTuile(item.to)}
                           className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition active:scale-[.98]">
                           <Icone name={item.cle} className="h-7 w-7 text-or-500" />
-                          <span className="text-sm font-semibold text-creme">{item.label}</span>
+                          <span className="text-sm font-semibold text-creme">{libItem(item)}</span>
                           {pastille(item.cle) > 0 && (
                             <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
                               {pastille(item.cle)}
