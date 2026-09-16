@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { lierParent } from "@/lib/parent.js";
+import { lierEtudiant } from "@/lib/etudiant.js";
 import { lierEnseignant } from "@/lib/enseignants.js";
 import { rejoindre } from "@/lib/membres.js";
 import Cachet from "@/composants/Cachet.jsx";
@@ -10,7 +11,7 @@ import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 // Landing pour un utilisateur connecté sans profil : créer une école (staff)
 // ou se rattacher à ses enfants via un code (parent).
 export default function Bienvenue() {
-  const { utilisateur, aProfil, estParent, deconnexion, rafraichirProfil } = useAuth();
+  const { utilisateur, aProfil, estParent, estEtudiant, deconnexion, rafraichirProfil } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState(null); // null | 'parent' | 'enseignant' | 'membre'
   const [code, setCode] = useState("");
@@ -25,6 +26,7 @@ export default function Bienvenue() {
 
   // Déjà rattaché → rediriger
   if (estParent) return <Navigate to="/parent" replace />;
+  if (estEtudiant) return <Navigate to="/etudiant" replace />;
   if (aProfil) return <Navigate to="/" replace />;
 
   async function lier(e) {
@@ -41,6 +43,10 @@ export default function Bienvenue() {
         await lierEnseignant(code.trim());
         await rafraichirProfil();
         navigate("/", { replace: true });
+      } else if (mode === "etudiant") {
+        await lierEtudiant(code.trim());
+        await rafraichirProfil();
+        navigate("/etudiant", { replace: true });
       } else {
         await lierParent(code.trim());
         await rafraichirProfil();
@@ -53,8 +59,8 @@ export default function Bienvenue() {
     }
   }
 
-  const estCode = mode === "parent" || mode === "enseignant" || mode === "membre";
-  const libelleEspace = mode === "membre" ? "Espace personnel" : mode === "enseignant" ? "Espace enseignant" : "Espace parent";
+  const estCode = mode === "parent" || mode === "enseignant" || mode === "membre" || mode === "etudiant";
+  const libelleEspace = mode === "membre" ? "Espace personnel" : mode === "enseignant" ? "Espace enseignant" : mode === "etudiant" ? "Espace étudiant" : "Espace parent";
 
   return (
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
@@ -124,6 +130,14 @@ export default function Bienvenue() {
               <div className="text-2xl">👪</div>
               <p className="mt-3 font-display text-lg font-bold text-navy-900">Je suis un parent</p>
               <p className="mt-1 text-sm text-navy-900/50">Suivre la scolarité de mon enfant avec un code de liaison.</p>
+            </button>
+            <button
+              onClick={() => setMode("etudiant")}
+              className="rounded-2xl bg-white p-6 text-left shadow-xl transition hover:ring-2 hover:ring-or-500"
+            >
+              <div className="text-2xl">🎓</div>
+              <p className="mt-3 font-display text-lg font-bold text-navy-900">Je suis un étudiant</p>
+              <p className="mt-1 text-sm text-navy-900/50">Accéder à mon espace (supérieur) avec le code de mon établissement.</p>
             </button>
           </div>
         )}

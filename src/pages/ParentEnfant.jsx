@@ -5,6 +5,7 @@ import {
   ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
+  alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
 } from "@/lib/parent.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
@@ -40,6 +41,9 @@ export default function ParentEnfant() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
+  const [alertes, setAlertes] = useState({}); // pastilles « nouveau » par catégorie
+  const [acces, setAcces] = useState({ requiert: false, statut: null }); // consentement notes (supérieur)
+
   const loadedRef = useRef(new Set());      // sections déjà chargées (dédup)
   const [charge, setCharge] = useState({}); // idem, pour piloter le rendu
 
@@ -49,11 +53,11 @@ export default function ParentEnfant() {
   // (5 requêtes au lieu de 14, dont beaucoup pour des onglets jamais ouverts).
   const chargerInitial = useCallback(async () => {
     try {
-      const [enf, f, dem, can, tra] = await Promise.all([
-        mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id),
+      const [enf, f, dem, can, tra, al, acc] = await Promise.all([
+        mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id), alertesEnfant(id), monAccesNotes(id),
       ]);
       setEnfant((enf || []).find((x) => x.eleve_id === id) || null);
-      setFactures(f); setDemandes(dem); setCantine(can); setTransport(tra);
+      setFactures(f); setDemandes(dem); setCantine(can); setTransport(tra); setAlertes(al || {}); setAcces(acc || { requiert: false, statut: null });
     } catch (e) { setErreur(e.message); }
   }, [id]);
 
@@ -89,16 +93,41 @@ export default function ParentEnfant() {
   // Ouverture d'une section → charge ses données à la demande.
   useEffect(() => { if (onglet) chargerSection(onglet); }, [onglet, chargerSection]);
 
+  // Ouverture d'une section → marque comme lues les alertes de sa catégorie
+  // (la pastille « nouveau » disparaît). Le test dans l'updater évite tout appel inutile.
+  useEffect(() => {
+    const cat = { notes: "note", absences: "absence", paiements: "facture" }[onglet];
+    if (!cat) return;
+    setAlertes((a) => {
+      if (!(a[cat] > 0)) return a;
+      marquerAlertesLues(id, cat).catch(() => {});
+      return { ...a, [cat]: 0 };
+    });
+  }, [onglet, id]);
+
   // Rafraîchit après une action (paiement déclaré, absence justifiée, demande…).
   const rafraichir = async () => {
     await chargerInitial();
     if (onglet) await chargerSection(onglet, true);
   };
 
+  // Consentement (supérieur) : le parent demande l'accès aux notes.
+  const [demandeEnCours, setDemandeEnCours] = useState(false);
+  async function demanderAcces() {
+    setDemandeEnCours(true); setErreur("");
+    try { const st = await demanderAccesNotes(id); setAcces((a) => ({ ...a, statut: st || "en_attente" })); }
+    catch (e) { setErreur(e.message); }
+    finally { setDemandeEnCours(false); }
+  }
+  const notesGatees = acces.requiert && acces.statut !== "autorise";
+
   // Badges calculés depuis les données déjà chargées (aucune requête en plus).
   const impayes = factures.filter((f) => (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0) > 0).length;
   const demandesEnCours = demandes.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
-  const badges = { paiements: impayes, documents: demandesEnCours };
+  const badges = {
+    paiements: impayes, documents: demandesEnCours,
+    notes: alertes.note || 0, absences: alertes.absence || 0,
+  };
 
   // Sections disponibles (Cantine/Transport seulement si abonnement).
   const tuiles = TUILES.filter((t) => (t.cle !== "cantine" || cantine) && (t.cle !== "transport" || transport));
@@ -159,9 +188,9 @@ export default function ParentEnfant() {
           {!charge[onglet] ? (
         <SkeletonListe lignes={4} />
       ) : onglet === "notes" ? (
-        <Notes notes={notes} />
+        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Notes notes={notes} />
       ) : onglet === "bulletins" ? (
-        <Bulletins bulletins={bulletins} onErreur={setErreur} />
+        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Bulletins bulletins={bulletins} onErreur={setErreur} />
       ) : onglet === "cahier" ? (
         <Cahier entrees={cahier} />
       ) : onglet === "emploi" ? (
@@ -434,6 +463,36 @@ function BulletinParent({ b, lignes }) {
       </div>
       <SceauVerification code={codeBulletinId(b.id)} reference={b.periode} />
     </div>
+  );
+}
+
+// Panneau de consentement (supérieur) : les notes/bulletins d'un étudiant majeur
+// ne sont visibles qu'avec son autorisation.
+function ConsentementNotes({ statut, enCours, onDemander }) {
+  return (
+    <Carte className="p-6 text-center">
+      <div className="text-3xl">🔒</div>
+      <h3 className="mt-2 font-display text-lg font-bold text-navy-900">Accès soumis à l'autorisation de l'étudiant</h3>
+      {statut === "en_attente" ? (
+        <p className="mx-auto mt-2 max-w-md text-sm text-navy-900/60">
+          Votre demande a été envoyée. L'étudiant doit l'<b>autoriser</b> depuis son espace pour que vous puissiez consulter ses notes et bulletins.
+        </p>
+      ) : statut === "refuse" || statut === "revoque" ? (
+        <>
+          <p className="mx-auto mt-2 max-w-md text-sm text-navy-900/60">
+            {statut === "refuse" ? "Votre demande a été refusée." : "L'accès a été révoqué par l'étudiant."} Vous pouvez en faire une nouvelle.
+          </p>
+          <Bouton className="mt-4" onClick={onDemander} disabled={enCours}>{enCours ? "…" : "Redemander l'accès"}</Bouton>
+        </>
+      ) : (
+        <>
+          <p className="mx-auto mt-2 max-w-md text-sm text-navy-900/60">
+            Cet étudiant étant majeur, la consultation de ses notes nécessite son accord. Envoyez une demande : il pourra l'autoriser depuis son espace.
+          </p>
+          <Bouton className="mt-4" onClick={onDemander} disabled={enCours}>{enCours ? "…" : "Demander l'accès aux notes"}</Bouton>
+        </>
+      )}
+    </Carte>
   );
 }
 

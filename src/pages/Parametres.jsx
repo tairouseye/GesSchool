@@ -199,7 +199,7 @@ function ModaleRegle({ regle, onFermer, onValider }) {
 function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
   const [f, setF] = useState({
     nom: "", sigle: "", devise: "XOF", pays: "Sénégal", ville: "", adresse: "",
-    telephone: "", email: "",
+    telephone: "", email: "", type_etablissement: "ecole",
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
   });
   const [up, setUp] = useState("");
@@ -209,6 +209,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       nom: ecole.nom || "", sigle: ecole.sigle || "", devise: ecole.devise || "XOF",
       pays: ecole.pays || "Sénégal", ville: ecole.ville || "", adresse: ecole.adresse || "",
       telephone: ecole.telephone || "", email: ecole.email || "",
+      type_etablissement: ecole.type_etablissement || "ecole",
       couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
       couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
       logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
@@ -241,6 +242,18 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
         <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
+        <label className="block sm:col-span-2">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type d'établissement</span>
+          <select value={f.type_etablissement} onChange={(e) => maj("type_etablissement", e.target.value)}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="ecole">École (préscolaire, primaire, secondaire)</option>
+            <option value="superieur">Enseignement supérieur (université — LMD)</option>
+          </select>
+          <span className="mt-1.5 block text-xs text-navy-900/45">
+            « Supérieur » bascule l'espace Pédagogie en mode LMD : Filières &amp; maquettes (UE, crédits, semestres)
+            remplacent Niveaux &amp; classes, Notes et Bulletins. Le reste (finances, communication, documents) est identique.
+          </span>
+        </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
           <select value={f.pays}

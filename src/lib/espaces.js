@@ -55,22 +55,29 @@ export const ESPACES = [
     icone: "🎓",
     accueil: "/pedagogie",
     roles: ["direction", "enseignant", "surveillant"], // direction = responsable pédagogique
+    // `types` = types d'établissement où l'item s'affiche ; absent = tous.
+    // La branche académique bascule ainsi entre « école » et « supérieur » (LMD).
     items: [
       { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
-      { to: "/appel", label: "Appel", icone: "✅", cle: "appel" },
-      { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier" },
-      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression" },
+      { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"] },
+      { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"] },
+      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"] },
       { to: "/eleves", label: "Élèves", icone: "👤", cle: "eleves" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
-      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure" },
+      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"] },
+      { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"] },
+      { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"] },
+      { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"] },
+      { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"] },
+      { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"] },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
-      { to: "/notes", label: "Notes", icone: "✎", cle: "notes" },
-      { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins" },
-      { to: "/classement", label: "Classement", icone: "🏆", cle: "classement" },
+      { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"] },
+      { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"] },
+      { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"] },
       { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi" },
-      { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire" },
-      { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite" },
-      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures" },
+      { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"] },
+      { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"] },
+      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"] },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
@@ -136,12 +143,19 @@ export function routeOuvrable(item, roles, estPromoteur, modulesActifs) {
   return peutVoir(roles, item.cle);
 }
 
+// L'item est-il pertinent pour ce TYPE d'établissement ? (bascule école ↔ supérieur)
+// Un item sans `types` s'affiche partout ; sinon il faut que le type courant y figure.
+export function itemPourType(item, typeEtab) {
+  if (!item.types) return true;
+  return item.types.includes(typeEtab || "ecole");
+}
+
 // Première page réellement accessible, tous espaces confondus.
 // Renvoie `null` si l'utilisateur n'a accès à RIEN : l'appelant doit alors
 // afficher un écran explicite plutôt que de rediriger indéfiniment.
-export function premiereRoute(roles, estPromoteur, modulesActifs) {
+export function premiereRoute(roles, estPromoteur, modulesActifs, typeEtab) {
   for (const e of espacesAccessibles(roles, estPromoteur)) {
-    const it = e.items.find((x) => routeOuvrable(x, roles, estPromoteur, modulesActifs));
+    const it = e.items.find((x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, typeEtab));
     if (it) return it.to;
   }
   return null;

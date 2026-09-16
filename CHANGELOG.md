@@ -5,6 +5,41 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.171.0] — migration 114
+- **Supérieur — Consentement d'accès parent aux notes (étapes A2 + A3)** :
+  - **A2** — le parent (déjà lié à l'étudiant) voit un bouton **« Demander l'accès aux notes »** sur les sections Notes/Bulletins ; l'étudiant reçoit la demande dans son **espace** et l'**autorise / refuse / révoque**.
+  - **A3** — au supérieur, les notes et bulletins ne remontent au parent **que si l'accès est autorisé** (RPC `enfant_notes` / `enfant_bulletins` gatées) ; sinon la section affiche l'état de la demande. **À l'école, comportement inchangé** (le parent voit librement).
+  - Table `acces_parent_etudiant` + RPC `demander_acces_notes` / `mon_acces_notes` / `mes_demandes_acces` / `decider_acces` (migration 114). **Chantier consentement complet (A1→A3).**
+
+## [2.170.0] — migration 113
+- **Supérieur — Comptes étudiants (étape A1)** : l'étudiant majeur a désormais son **compte**, sur le modèle des parents. L'établissement génère un **code étudiant** (page **« Codes étudiants »**, Pédagogie/Supérieur), distribué par **WhatsApp** ; l'étudiant crée son compte, choisit « Je suis un étudiant » et saisit le code → un **espace étudiant** dédié s'ouvre. Socle du consentement d'accès parent (étapes A2 « demande & approbation » et A3 « cloisonnement des notes » à suivre).
+  - Rôle `etudiant`, `eleves.profil_id` / `code_acces` / `telephone`, RPC `lier_etudiant` + `generer_code_etudiant` (migration 113). Cloisonné au supérieur ; aucun impact sur les écoles.
+
+## [2.169.0] — migration 112
+- **Espace parent — pastilles « nouveau » par menu** : chaque tuile de l'enfant (Notes, Absences, Paiements…) affiche une **pastille** quand il y a du nouveau, alimentée par les notifications déjà générées (nouvelle note, absence, facture). La pastille s'efface à l'ouverture de la section. Les notifications portent désormais l'**élève concerné** et une **catégorie** (migration 112) pour un comptage précis par enfant.
+
+## [2.168.0] — migration 111
+- **Supérieur (LMD) — Délibérations & relevés (Phase 4)** : nouvelle page **« Délibérations & relevés »** (Pédagogie / Supérieur).
+  - **Arrêté des résultats** : fige (snapshot) les résultats calculés d'une cohorte (filière/niveau/semestre/session) en une **délibération** + un **relevé par étudiant** ; verrouillage possible.
+  - **Relevé de notes** imprimable (détail par UE, moyenne, crédits acquis/total, décision, mention) **avec QR d'authentification** — vérifiable sur la page publique `/verifier` (nouveau type `releve` dans `verifier_document`).
+  - **PV de délibération** imprimable (liste des décisions du jury).
+  - Tables `deliberations` + `releves` (additives, RLS). **Module Supérieur : phases 0 à 4 livrées.**
+
+## [2.167.0] — migration 110
+- **Supérieur (LMD) — Notes & moteur de calcul (Phase 3)** : nouvelle page **« Notes »** (espace Pédagogie, mode Supérieur).
+  - **Saisie** des notes par UE / ECUE, en **CC + examen**, par **session** (normale / rattrapage). Note finale = CC × pondération + Examen × pondération (réglable/école, défaut 40/60).
+  - **Résultats** calculés par le **moteur LMD** : moyenne ECUE→UE→semestre, **capitalisation** (UE ≥ 10 → crédits acquis), **compensation** (semestre ≥ 10 → tout le semestre validé), crédits acquis/total, **décision** (Admis / Admis par compensation / Ajourné) et **mention**.
+  - Moteur pur et **testé** (`test/lmd.test.mjs` : note finale, moyennes, capitalisation, compensation, mention). Table `notes_lmd` (additive, RLS).
+
+## [2.166.0] — migration 109
+- **Supérieur (LMD) — Inscriptions (Phase 2)** : nouvelle page **« Inscriptions »** (espace Pédagogie, mode Supérieur) pour l'**inscription administrative** (rattacher un étudiant — existant ou nouveau — à une filière + niveau, avec génération optionnelle de la **facture de droits** via le module Paiements) et l'**inscription pédagogique** (choix des **UE** du semestre, avec total de crédits). Filtres par filière/niveau, gestion du statut (active/suspendue).
+  - Tables `inscriptions_sup` et `inscriptions_ue` (additives, RLS). Réutilise `eleves`, `annees_scolaires` et la facturation existante.
+
+## [2.165.0] — migration 108
+- **Module « Supérieur » (LMD) — fondation** : nouveau **type d'établissement** (École / Enseignement supérieur), réglable dans Paramètres → Établissement. Quand il vaut « Supérieur », l'espace **Pédagogie bascule en mode LMD** : la page **« Filières & maquettes »** (Faculté → Département → Filière → Semestre, puis **UE / ECUE avec crédits et coefficients**, contrôle « /30 crédits ») remplace Niveaux & classes / Notes / Bulletins. Le reste (finances, communication, documents, RH) est identique.
+  - 100 % **additif et isolé** : nouvelles tables (`facultes`, `departements`, `filieres`, `semestres`, `ue`, `ecue`) avec RLS ; **aucun impact** sur les écoles existantes (type par défaut = `ecole`). Logique de crédits couverte par des tests unitaires (`test/lmd.test.mjs`).
+  - Première brique de la feuille de route LMD (phases 0-1). Suite : inscriptions pédagogiques, moteur de calcul (capitalisation/compensation), délibérations, relevés.
+
 ## [2.164.0] — migration 107
 - **Documents authentifiables par QR code** : chaque document officiel valide porte désormais un **QR code** en bas de page renvoyant vers une **page publique de vérification** (`/verifier`, accessible sans compte). En scannant, on confirme l'authenticité du document depuis le registre de l'école (établissement, bénéficiaire, référence, date, montant/mention…). Couvre : **factures & reçus de paiement**, **bulletins de notes** (côté gestion et côté parent), **bulletins de paie**, **certificats & attestations**, et un nouveau **reçu de dépense imprimable** (Comptabilité → Dépenses → « 🧾 reçu »).
   - Technique : RPC publique `verifier_document` (lecture seule, `security definer`, accès `anon`) — aucune écriture à l'impression, les documents historiques sont vérifiables sans reprise de données. Le QR encode le type + l'identifiant stable de l'enregistrement. QR généré côté client en SVG (net à l'impression, sans réseau).

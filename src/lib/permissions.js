@@ -23,6 +23,7 @@ export const LIBELLES_ROLES = {
   enseignant: "Enseignant",
   surveillant: "Surveillant",
   parent: "Parent",
+  etudiant: "Étudiant",
 };
 
 // Pour chaque page : rôles autorisés EN PLUS des rôles complets.
@@ -43,6 +44,13 @@ const ACCES = {
   emploi: ["direction", "enseignant"],
   fournitures: ["direction", "enseignant"],
   structure: ["direction"],
+
+  // --- Supérieur (LMD) : structure académique & maquettes (bascule par type) ---
+  filieres: ["direction"],
+  inscriptions_sup: ["direction", "comptable", "secretaire"],
+  notes_lmd: ["direction", "enseignant"],
+  deliberations_sup: ["direction", "comptable", "secretaire"],
+  codes_etudiants: ["direction", "comptable", "secretaire"],
 
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
@@ -93,6 +101,11 @@ export const PAGES = [
   { cle: "paiements", path: "/paiements" },
   { cle: "recouvrement", path: "/recouvrement" },
   { cle: "structure", path: "/structure" },
+  { cle: "filieres", path: "/filieres" },
+  { cle: "inscriptions_sup", path: "/inscriptions-sup" },
+  { cle: "notes_lmd", path: "/notes-lmd" },
+  { cle: "deliberations_sup", path: "/deliberations" },
+  { cle: "codes_etudiants", path: "/codes-etudiants" },
   { cle: "enseignants", path: "/enseignants" },
   { cle: "vie_scolaire", path: "/vie-scolaire" },
   { cle: "emploi", path: "/emploi-du-temps" },

@@ -8,6 +8,50 @@ export async function mesEnfants() {
   return data ?? [];
 }
 
+// Alertes « nouveau » non lues d'un enfant, comptées par catégorie
+// (note / absence / facture…). Sert aux pastilles par menu. Silencieux si erreur.
+export async function alertesEnfant(eleveId) {
+  const { data: u } = await supabase.auth.getUser();
+  const uid = u?.user?.id;
+  if (!uid || !eleveId) return {};
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("categorie")
+    .eq("destinataire_id", uid)
+    .eq("eleve_id", eleveId)
+    .eq("lu", false);
+  if (error) return {};
+  const c = {};
+  for (const n of data ?? []) { const k = n.categorie || "autre"; c[k] = (c[k] || 0) + 1; }
+  return c;
+}
+
+// Consentement (supérieur) : état de l'accès du parent aux notes d'un étudiant.
+// Renvoie { requiert, statut } — requiert=true si l'étudiant est au supérieur.
+export async function monAccesNotes(eleveId) {
+  const { data, error } = await supabase.rpc("mon_acces_notes", { p_eleve: eleveId });
+  if (error) return { requiert: false, statut: null };
+  const r = Array.isArray(data) ? data[0] : data;
+  return { requiert: !!r?.requiert, statut: r?.statut || null };
+}
+
+// Le parent demande l'accès aux notes (l'étudiant devra autoriser).
+export async function demanderAccesNotes(eleveId) {
+  const { data, error } = await supabase.rpc("demander_acces_notes", { p_eleve: eleveId });
+  if (error) throw error;
+  return data; // statut résultant
+}
+
+// Marque comme lues les alertes d'une catégorie pour un enfant (à l'ouverture
+// de la section correspondante) → la pastille disparaît.
+export async function marquerAlertesLues(eleveId, categorie) {
+  const { data: u } = await supabase.auth.getUser();
+  const uid = u?.user?.id;
+  if (!uid || !eleveId || !categorie) return;
+  await supabase.from("notifications").update({ lu: true })
+    .eq("destinataire_id", uid).eq("eleve_id", eleveId).eq("categorie", categorie).eq("lu", false);
+}
+
 // Cantine & transport de l'enfant (0 ou 1 abonnement).
 export async function enfantCantine(eleveId) {
   const { data, error } = await supabase.rpc("enfant_cantine", { p_eleve: eleveId });

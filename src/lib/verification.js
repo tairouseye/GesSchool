@@ -12,6 +12,7 @@ export const codeFacture = (id) => `facture~${id}`;         // facture + reçu d
 export const codePaie = (id) => `paie~${id}`;                // bulletin de paie
 export const codeDepense = (id) => `depense~${id}`;          // reçu de dépense
 export const codeDoc = (id) => `doc~${id}`;                  // certificat / attestation
+export const codeReleve = (id) => `releve~${id}`;            // relevé de notes (LMD)
 export const codeBulletinId = (id) => `bulletin~${id}`;      // bulletin (id connu — espace parent)
 export const codeBulletin = (eleveId, periodeId) => `bulletin~${eleveId}~${periodeId}`; // bulletin (élève+période — espace gestion)
 

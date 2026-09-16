@@ -4,7 +4,7 @@ import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
-import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable } from "@/lib/espaces.js";
+import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -81,7 +81,7 @@ export default function Layout() {
   // Menus d'un espace : uniquement les pages RÉELLEMENT ouvrables (rôle,
   // module actif, statut promoteur) — même critère que la garde de route,
   // pour ne jamais proposer un lien qui mènerait à un refus.
-  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs));
+  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole?.type_etablissement));
 
   // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un menu.
   const accessibles = espacesAccessibles(roles, estPromoteur).filter((e) => menusDe(e).length > 0);

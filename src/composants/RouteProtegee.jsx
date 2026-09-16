@@ -11,7 +11,7 @@ import { premiereRoute } from "@/lib/espaces.js";
 //  - rôle requis non détenu → page « accès refusé »
 // Garde de l'espace STAFF (admin/direction/enseignant…).
 export default function RouteProtegee({ children, role, exigeProfil = true }) {
-  const { estConnecte, aProfil, estParent, estSuspendu, aRole, chargement } = useAuth();
+  const { estConnecte, aProfil, estParent, estEtudiant, estSuspendu, aRole, chargement } = useAuth();
   const location = useLocation();
 
   if (chargement) return <Ecran chargement />;
@@ -25,6 +25,11 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
   // Un parent n'a rien à faire dans l'espace de gestion → espace parent.
   if (estParent) {
     return <Navigate to="/parent" replace />;
+  }
+
+  // Un étudiant (supérieur) → son espace dédié.
+  if (estEtudiant) {
+    return <Navigate to="/etudiant" replace />;
   }
 
   if (exigeProfil && !aProfil) {
@@ -104,6 +109,16 @@ export function RouteParent({ children }) {
   if (!estConnecte) return <Navigate to="/connexion" replace />;
   if (estSuspendu) return <EcranSuspendu />;
   if (!estParent) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
+  return children;
+}
+
+// Garde de l'ESPACE ÉTUDIANT (supérieur).
+export function RouteEtudiant({ children }) {
+  const { estConnecte, estEtudiant, estSuspendu, aProfil, chargement } = useAuth();
+  if (chargement) return <Ecran chargement />;
+  if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (estSuspendu) return <EcranSuspendu />;
+  if (!estEtudiant) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
   return children;
 }
 

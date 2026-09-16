@@ -1,11 +1,11 @@
 import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent, Garde, GardePromoteur, GardeSuper, EcranSansAcces } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, RouteEtudiant, Garde, GardePromoteur, GardeSuper, EcranSansAcces } from "@/composants/RouteProtegee.jsx";
 import { Feedback } from "@/composants/Feedback.jsx";
 import ErrorBoundary from "@/composants/ErrorBoundary.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
-import { premiereRoute, routeOuvrable } from "@/lib/espaces.js";
+import { premiereRoute, routeOuvrable, itemPourType } from "@/lib/espaces.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 
 // Coques + 1er écran : chargés d'emblée (points d'entrée du routeur).
@@ -29,6 +29,13 @@ const ParentCompte = lazy(() => import("@/pages/ParentCompte.jsx"));
 const Messagerie = lazy(() => import("@/pages/Messagerie.jsx"));
 const TableauDeBord = lazy(() => import("@/pages/TableauDeBord.jsx"));
 const Structure = lazy(() => import("@/pages/Structure.jsx"));
+const Filieres = lazy(() => import("@/pages/Filieres.jsx"));
+const InscriptionsSup = lazy(() => import("@/pages/InscriptionsSup.jsx"));
+const NotesLMD = lazy(() => import("@/pages/NotesLMD.jsx"));
+const Deliberations = lazy(() => import("@/pages/Deliberations.jsx"));
+const CodesEtudiants = lazy(() => import("@/pages/CodesEtudiants.jsx"));
+const EtudiantLayout = lazy(() => import("@/pages/EtudiantLayout.jsx"));
+const EtudiantAccueil = lazy(() => import("@/pages/EtudiantAccueil.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -77,17 +84,19 @@ function Rejoindre() {
 
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
-  const { roles, estPromoteur, modulesActifs } = useAuth();
+  const { roles, estPromoteur, modulesActifs, ecole } = useAuth();
+  const typeEtab = ecole?.type_etablissement;
   // Un enseignant « pur » arrive directement sur l'appel de sa classe — mais
-  // seulement si la page lui est réellement ouverte (module Vie scolaire actif).
-  const appel = { to: "/appel", cle: "appel" };
+  // seulement si la page lui est réellement ouverte (module Vie scolaire actif)
+  // et pertinente pour le type d'établissement (l'appel n'existe pas au supérieur).
+  const appel = { to: "/appel", cle: "appel", types: ["ecole"] };
   if (roles.includes("enseignant") && !estRoleComplet(roles) && !estPromoteur
-      && routeOuvrable(appel, roles, estPromoteur, modulesActifs)) {
+      && routeOuvrable(appel, roles, estPromoteur, modulesActifs) && itemPourType(appel, typeEtab)) {
     return <Navigate to="/appel" replace />;
   }
   // Sinon : première page RÉELLEMENT ouvrable. Si aucune, on l'annonce au lieu
   // de renvoyer vers un accueil que la garde refusera (boucle infinie).
-  const cible = premiereRoute(roles, estPromoteur, modulesActifs);
+  const cible = premiereRoute(roles, estPromoteur, modulesActifs, typeEtab);
   if (!cible) return <EcranSansAcces />;
   return <Navigate to={cible} replace />;
 }
@@ -168,6 +177,18 @@ export default function App() {
             <Route path="compte" element={<ParentCompte />} />
           </Route>
 
+          {/* Espace étudiant (supérieur) */}
+          <Route
+            path="/etudiant"
+            element={
+              <RouteEtudiant>
+                <EtudiantLayout />
+              </RouteEtudiant>
+            }
+          >
+            <Route index element={<EtudiantAccueil />} />
+          </Route>
+
           {/* Espace protégé (profil + école requis) avec shell */}
           <Route
             element={
@@ -185,6 +206,11 @@ export default function App() {
             <Route path="/pedagogie" element={<Garde cle="_pedagogie"><AccueilPedagogie /></Garde>} />
             <Route path="/gestion" element={<Garde cle="_gestion"><TableauDeBord /></Garde>} />
             <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
+            <Route path="/filieres" element={<Garde cle="filieres"><Filieres /></Garde>} />
+            <Route path="/inscriptions-sup" element={<Garde cle="inscriptions_sup"><InscriptionsSup /></Garde>} />
+            <Route path="/notes-lmd" element={<Garde cle="notes_lmd"><NotesLMD /></Garde>} />
+            <Route path="/deliberations" element={<Garde cle="deliberations_sup"><Deliberations /></Garde>} />
+            <Route path="/codes-etudiants" element={<Garde cle="codes_etudiants"><CodesEtudiants /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
