@@ -133,13 +133,14 @@ test("grouperItems : sections contiguës, entrées libres isolées, groupe solit
   assert.equal(g.reduce((n, s) => n + s.items.length, 0), 6);
 });
 
-test("Pédagogie : toutes ses pages métier sont rangées dans une section", () => {
-  const ped = P.espaceParId("pedagogie");
-  // Les utilitaires transverses et l'accueil restent volontairement libres.
-  const libres = ["_pedagogie", "membres", "signatures", "parametres"];
-  const orphelines = ped.items.filter((i) => !i.groupe && !libres.includes(i.cle));
-  assert.deepEqual(orphelines.map((i) => i.cle), [],
-    "toute page métier de Pédagogie doit porter un groupe");
+test("Pédagogie et Gestion : toutes leurs pages métier sont rangées en section", () => {
+  // Accueils et utilitaires transverses restent volontairement libres.
+  const libres = ["_pedagogie", "_gestion", "membres", "signatures", "parametres"];
+  for (const id of ["pedagogie", "gestion"]) {
+    const orphelines = P.espaceParId(id).items.filter((i) => !i.groupe && !libres.includes(i.cle));
+    assert.deepEqual(orphelines.map((i) => i.cle), [],
+      `toute page métier de ${id} doit porter un groupe`);
+  }
 });
 
 test("les groupes de menu sont contigus : jamais deux fois le même en-tête", () => {

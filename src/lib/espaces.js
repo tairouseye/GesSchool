@@ -33,15 +33,21 @@ export const ESPACES = [
     roles: ["comptable", "secretaire", "bibliothecaire"],
     items: [
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
-      { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves" },
-      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
-      { to: "/certificats", label: "Documents", icone: "🧾", cle: "certificats" },
-      { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes" },
-      { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements" },
-      { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement" },
-      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
-      { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine" },
-      { to: "/transport", label: "Transport", icone: "🚌", cle: "transport" },
+
+      // Scolarité
+      { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Scolarité" },
+      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Scolarité" },
+      { to: "/certificats", label: "Documents", icone: "🧾", cle: "certificats", groupe: "Scolarité" },
+      { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes", groupe: "Scolarité" },
+
+      // Finances
+      { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements", groupe: "Finances" },
+      { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement", groupe: "Finances" },
+      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite", groupe: "Finances" },
+
+      // Services aux familles
+      { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine", groupe: "Services" },
+      { to: "/transport", label: "Transport", icone: "🚌", cle: "transport", groupe: "Services" },
       // Communication — présente AUSSI en Pédagogie : la direction y a droit
       // (ACCES) et n'accède pas à Gestion. Une annonce peut être scolaire
       // (échéance de frais) comme pédagogique (report d'examen).

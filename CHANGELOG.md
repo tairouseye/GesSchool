@@ -5,6 +5,10 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.188.0] — aucune migration
+- **Gestion se replie à son tour en sections** : **Scolarité** (Élèves, Codes parents, Documents, Demandes), **Finances** (Paiements, Recouvrement, Comptabilité), **Services aux familles** (Cantine, Transport), plus Communication et Bibliothèque déjà groupées. Dix entrées traînaient en vrac au-dessus. Les deux grands espaces se lisent désormais de la même façon.
+- Le test « toute page métier porte un groupe » couvre maintenant **Pédagogie et Gestion** : ajouter une page en oubliant sa section fait échouer la suite.
+
 ## [2.187.2] — aucune migration
 - **Communication devient une section repliable dans Gestion** aussi. Annonces et Messagerie y figuraient depuis toujours, mais en entrées libres au milieu de la liste ; elles sont désormais présentées des deux côtés de la même façon. Elles restent dans **les deux** espaces à dessein : la direction en a le droit sans accéder à Gestion, et une annonce peut être administrative (échéance de frais) comme pédagogique (report d'examen).
 
