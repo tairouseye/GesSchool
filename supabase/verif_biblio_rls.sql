@@ -29,15 +29,33 @@ declare
   rang_obtenu int;
 begin
   -- --- Préparation (encore en superutilisateur) -----------------------
-  select e.ecole_id, e.profil_id, e.id into v_ecole, v_etudiant, v_eleve
-    from eleves e
-    join ecoles ec on ec.id = e.ecole_id
-   where e.profil_id is not null and ec.type_etablissement = 'superieur'
+  --  Ce qu'il faut : un MEMBRE de l'établissement SANS droits de gestion.
+  --  Peu importe qu'il soit étudiant ou enseignant — ce qui compte est que
+  --  `est_membre_ecole()` soit vrai et `_biblio_gestion()` faux. On prend un
+  --  étudiant en priorité, sinon n'importe quel membre simple.
+  select pr.ecole_id, pr.profil_id into v_ecole, v_etudiant
+    from profil_roles pr
+    join ecoles  ec on ec.id = pr.ecole_id
+    join profils p  on p.id  = pr.profil_id
+   where ec.type_etablissement = 'superieur'
+     and p.actif
+     -- Aucun rôle de gestion dans CET établissement, sinon le test ne
+     -- prouverait rien : la gestion a légitimement tous les droits.
+     and not exists (
+       select 1 from profil_roles g
+        where g.profil_id = pr.profil_id and g.ecole_id = pr.ecole_id
+          and g.role::text in ('admin_ecole', 'direction', 'bibliothecaire'))
+   order by case pr.role::text when 'etudiant' then 0 else 1 end
    limit 1;
 
   if v_etudiant is null then
-    raise exception 'Aucun étudiant avec un compte lié dans un établissement supérieur. Liez un compte étudiant, puis relancez.';
+    raise exception 'Aucun membre sans droits de gestion dans un établissement supérieur. '
+      'Invitez un enseignant, ou activez un compte étudiant (Codes étudiants), puis relancez.';
   end if;
+
+  -- Fiche élève éventuellement rattachée à ce compte (facultative).
+  select id into v_eleve from eleves
+   where profil_id = v_etudiant and ecole_id = v_ecole limit 1;
 
   select id into v_res from biblio_ressources where ecole_id = v_ecole limit 1;
   select id into v_autre from biblio_ressources where ecole_id <> v_ecole limit 1;
@@ -61,6 +79,17 @@ begin
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_etudiant, 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
+
+  -- Contrôle de validité du test lui-même : si ce compte a des droits de
+  -- gestion, tout passerait légitimement et les « OK » ne voudraient rien dire.
+  if _biblio_gestion(v_ecole) then
+    raise exception 'Le compte % a des droits de gestion sur la bibliothèque : '
+      'le test ne prouverait rien. Choisissez un membre simple.', v_etudiant;
+  end if;
+  if not est_membre_ecole(v_ecole) then
+    raise exception 'Le compte % n''est pas reconnu membre de l''établissement : '
+      'les refus viendraient de là, pas des correctifs.', v_etudiant;
+  end if;
 
   -- 1. Auto-validation de son dépôt (faille GRAVE d'origine)
   begin
