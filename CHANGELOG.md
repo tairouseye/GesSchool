@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.191.0] — aucune migration
+- **Pilotage → « Journal des actes »**, l'écran qui manquait à la phase 1. `restaurer_depuis_journal` exige `auth.uid()`, **NULL dans l'éditeur SQL de Supabase** : la fonction livrée en 2.190.0 n'avait donc **aucune porte d'entrée** — exactement le défaut que cet audit relève ailleurs. Le promoteur consulte désormais les modifications et suppressions, déplie le détail champ par champ (valeur avant en rouge, après en vert) et **restaure une suppression en un clic**.
+  - La confirmation rappelle explicitement que **seule la ligne revient**, pas les enregistrements partis en cascade.
+  - Pagination **serveur** dès la première version : ce journal grossit à chaque note modifiée, le charger entièrement aurait reproduit le défaut que la phase 2 doit corriger ailleurs.
+
 ## [2.190.0] — migration 135 · **phase 1b : réversibilité des suppressions**
 - **Le soft delete généralisé a été écarté, après examen.** Les neuf suppressions de données sensibles ne sont pas de même nature : **`notes_lmd` et `bulletin_lignes` ne détruisent rien, elles reconstruisent** (on efface les notes d'une UE avant de réécrire la saisie ; on vide un bulletin avant de le régénérer). Les passer en soft delete aurait cassé la saisie de notes et la génération des bulletins, et accumulé des lignes fantômes en conflit avec les index uniques. Par ailleurs, masquer une ligne par RLS ne la masque **pas** aux fonctions `SECURITY DEFINER` ni aux agrégats, qui s'exécutent comme propriétaire : une facture « supprimée » aurait continué de compter dans les totaux.
 - **La réversibilité est obtenue autrement** : la migration 134 conserve déjà la **ligne entière** à la suppression. Il ne manquait qu'un moyen de la rejouer — c'est `restaurer_depuis_journal(id)`, réservée au promoteur, avec liste blanche de tables (une fonction `SECURITY DEFINER` acceptant un nom de table libre serait une porte d'escalade), refus d'écraser une ligne recréée depuis, et traçage de la restauration elle-même.
