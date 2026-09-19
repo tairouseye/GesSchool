@@ -172,10 +172,17 @@ export default function Layout() {
       <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
           <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={40} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate font-display text-base font-bold leading-none">{ecole?.nom || "GesSchool"}</p>
             <p className="text-xs text-creme/60">{sigle}</p>
           </div>
+          {/* Retour à la grille de tuiles. Sur mobile ce bouton est dans la
+              barre du haut ; sur desktop la barre n'existe pas. */}
+          <button onClick={() => setTuiles((t) => !t)} aria-label="Menu des modules"
+            title="Modules de l'espace"
+            className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base transition ${
+              tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/70 hover:bg-navy-700"
+            }`}>▦</button>
         </div>
 
         {/* Sélecteur d'espace (si accès à plusieurs) */}
@@ -335,7 +342,7 @@ export default function Layout() {
               La piste contient une grille par espace ; elle suit le doigt puis
               se cale sur l'espace voisin au relâchement. */}
           {tuiles && (
-            <div ref={pisteRef} className="absolute inset-0 z-20 overflow-hidden bg-creme lg:hidden"
+            <div ref={pisteRef} className="absolute inset-0 z-20 overflow-hidden bg-creme"
               onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
               <div className="flex h-full"
                 style={{
@@ -347,9 +354,13 @@ export default function Layout() {
                   <div key={e.id} className="h-full shrink-0 overflow-auto p-4" style={{ width: larg || "100%" }}>
                     <p className="mb-1 font-display text-lg font-bold text-navy-900">{e.icone} {e.label}</p>
                     <p className="mb-4 text-xs text-navy-900/50">
-                      {accessibles.length > 1 ? "Glissez ← → pour changer d'espace · touchez un module." : "Touchez un module pour l'ouvrir."}
+                      {accessibles.length > 1 && (
+                        <span className="lg:hidden">Glissez ← → pour changer d&apos;espace · </span>
+                      )}
+                      <span className="lg:hidden">Touchez un module pour l&apos;ouvrir.</span>
+                      <span className="hidden lg:inline">Cliquez un module pour l&apos;ouvrir.</span>
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                       {menusVisibles(e).map((item) => (
                         <button key={item.to} onClick={() => ouvrirTuile(item.to)}
                           className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition active:scale-[.98]">

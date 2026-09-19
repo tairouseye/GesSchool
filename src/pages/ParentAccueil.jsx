@@ -4,6 +4,7 @@ import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { annoncesParent } from "@/lib/annonces.js";
 import { Carte, Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
+import { Icone } from "@/composants/Icones.jsx";
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";
@@ -86,6 +87,23 @@ export default function ParentAccueil() {
           ))}
         </div>
       )}
+
+      {/* Raccourcis en tuiles — mêmes gestes que dans l'espace enfant.
+          Ces trois destinations n'étaient que de petites icônes dans l'en-tête,
+          donc pratiquement invisibles sur téléphone. */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { to: "/parent/messages", cle: "messagerie", label: "Messages" },
+          { to: "/parent/notifications", cle: "annonces", label: "Alertes" },
+          { to: "/parent/compte", cle: "parametres", label: "Mon compte" },
+        ].map((t) => (
+          <Link key={t.to} to={t.to}
+            className="flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
+            <Icone name={t.cle} className="h-7 w-7 text-or-500" />
+            <span className="text-sm font-semibold text-creme">{t.label}</span>
+          </Link>
+        ))}
+      </div>
 
       {/* Annonces de l'école */}
       {annonces.length > 0 && (
