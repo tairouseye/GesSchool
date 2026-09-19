@@ -5,6 +5,23 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.178.0] — migrations 126 → 127 · **audit de sécurité du module Bibliothèque**
+Audit complet des migrations 115→125. Ce qui suit corrige ce qu'il a trouvé.
+
+**Vérifié et sain** : le cloisonnement des fichiers tient. `_biblio_peut_lire` impose `est_membre_ecole()` avant toute autre condition et les quatre policies Storage sont préfixées `bucket_id`. Un utilisateur de l'institution A ne peut pas lire un fichier de B, même en connaissant le chemin.
+
+- **🔴 Un étudiant pouvait auto-valider son mémoire.** Dans une policy `UPDATE`, `using` juge la ligne *avant* modification et `with check` la ligne *après* ; j'y contrôlais l'identité sans contrôler l'état. Le déposant pouvait donc passer son dépôt à `valide` ou `publie` — et tout ce qui est `publie` est visible de l'établissement entier. Un travail non relu s'affichait comme validé par la bibliothèque. Même trou à la création : un dépôt pouvait naître `publie`. Le déposant n'écrit plus que `brouillon` et `soumis`.
+- **🟠 La file d'attente des réservations ne fonctionnait pas.** Le rang était calculé côté client en lisant les réservations actives de la ressource — mais la RLS ne montre à l'usager **que les siennes**. Il lisait une file vide et repartait au rang 1 : tous les étudiants étaient premiers. On ne peut pas faire calculer une file par quelqu'un qui n'a pas le droit de la voir — le rang est désormais attribué **en base**, par trigger.
+- **🟠 Suggestions d'achat : auto-acceptation.** Le demandeur pouvait passer sa suggestion à `acceptee` et rédiger la « réponse de la bibliothèque ».
+- **🟡 Resquillage.** L'usager pouvait réécrire sa propre réservation, donc son rang. Il ne lui reste que l'annulation.
+- **🟡 Ciblage par rôle indifférent à l'établissement.** `_biblio_peut_lire` acceptait n'importe quel `profil_roles` sans vérifier l'école : un enseignant de B, simple membre de A, ouvrait un document de A ciblé « enseignants ».
+- **🟠 Import : les exemplaires pouvaient être attachés aux mauvaises notices.** Le rattachement supposait que `INSERT…RETURNING` rende les lignes dans l'ordre envoyé — vrai en pratique, jamais garanti. Sur un fichier de plusieurs milliers de lignes, un écart aurait corrompu l'import **sans le moindre signal**. L'alignement est maintenant vérifié, avec repli sur un appariement par (titre, ISBN).
+- **🟡 Intégrité multi-établissement** (migration 127) : rien n'imposait qu'une ligne référence une ressource de sa propre école. Remplacé par des **clés étrangères composites** `(id, ecole_id)`, qui rendent l'incohérence impossible à écrire. Le fichier contient une requête de contrôle à passer avant la migration.
+- **🟡 Fichiers orphelins** : supprimer une notice laissait ses documents dans le bucket ; un dépôt téléversait avant d'insérer sa ligne, sans reprise en cas d'échec. Les chemins sont relevés avant suppression, et un téléversement suivi d'une erreur est repris. Le fichier d'un dépôt **publié** est préservé : il est partagé avec la notice du catalogue.
+- **⚪ Journal d'activité** : la table, sa RLS et la fonction `journaliser` existaient depuis la Phase 1 sans **aucun appelant**. Prêts, retours et publications y sont désormais tracés — une piste d'audit ne se rattrape pas après coup. Lecture dans l'interface encore à faire.
+
+**Reste identifié, non corrigé** : pas de quota de téléversement pour les étudiants sous `depots/` ; les métadonnées d'un document `cible` restent visibles de tout membre (appliquer la règle sur la table créerait une récursion RLS — limite assumée, le fichier lui reste filtré).
+
 ## [2.177.0] — aucune migration
 - **La bibliothèque devient un espace à part entière**, au même niveau que Pilotage, Gestion, Pédagogie et RH & Paie. Ses cinq pages (Catalogue, Prêts & retours, Mémoires & thèses, Acquisitions, Inventaire) quittent **Pédagogie**, qui en comptait 19 en mode Supérieur et redescend à 14. Le SIGB est un métier distinct, avec son propre responsable : il méritait sa porte d'entrée.
 - **⚠️ Correctif — le rôle `bibliothecaire` ne pouvait naviguer nulle part.** Créé en migration 115 et doté de ses droits de page, il n'avait été rattaché à **aucun espace** : le menu restait vide et l'utilisateur tombait sur l'écran « sans accès ». Le défaut avait échappé au test de matrice, dont la prémisse est « *si* un rôle a un espace accessible, alors il a une page ouvrable » — une prémisse fausse ici, donc vraie par vacuité. Deux tests ciblés couvrent désormais ce rôle.

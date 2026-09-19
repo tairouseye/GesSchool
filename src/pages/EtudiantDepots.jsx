@@ -148,10 +148,14 @@ function ModaleDepot({ depot, dossier, profilId, onFermer, onEnregistre }) {
     if (!f.titre.trim()) { toast.erreur("Le titre est obligatoire."); return; }
     if (!dossier?.ecole_id) { toast.erreur("Dossier étudiant introuvable."); return; }
     setBusy(true);
+    let cheminEnvoye = null;   // à reprendre si l'écriture en base échoue
+    let ancienChemin = null;   // remplacé : à retirer une fois l'écriture faite
     try {
       let champsFichier = {};
       if (fichier) {
         const up = await api.televerserDepot(dossier.ecole_id, fichier);
+        cheminEnvoye = up.chemin;
+        ancienChemin = depot.fichier_chemin || null;
         champsFichier = { fichier_chemin: up.chemin, fichier_nom: up.nom, taille: up.taille };
       }
       const valeurs = {
@@ -169,9 +173,16 @@ function ModaleDepot({ depot, dossier, profilId, onFermer, onEnregistre }) {
       } else {
         await api.modifierDepot(depot.id, valeurs);
       }
+      // L'écriture a réussi : l'ancien fichier n'est plus référencé.
+      if (ancienChemin && ancienChemin !== cheminEnvoye) await api.retirerFichierDepot(ancienChemin);
       toast.succes(neuf ? "Dépôt créé." : "Dépôt mis à jour.");
       onEnregistre();
-    } catch (e2) { toast.erreur(e2); }
+    } catch (e2) {
+      // Échec après téléversement : on reprend le fichier pour ne pas
+      // abandonner un orphelin dans le bucket.
+      if (cheminEnvoye) await api.retirerFichierDepot(cheminEnvoye).catch(() => {});
+      toast.erreur(e2);
+    }
     finally { setBusy(false); }
   }
 

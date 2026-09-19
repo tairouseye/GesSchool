@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { urlSignee } from "@/lib/stockage.js";
 import {
-  calculerEcheance, verifierEmprunt, verifierRenouvellement, bornesPagination, rangSuivant,
+  calculerEcheance, verifierEmprunt, verifierRenouvellement, bornesPagination,
   calculerPenalite, joursRetard,
 } from "@/lib/biblio.regles.js";
 
@@ -115,9 +115,21 @@ export async function modifierRessource(id, r) {
   const { error } = await supabase.from("biblio_ressources").update(r).eq("id", id);
   if (error) throw error;
 }
+// Supprimer la notice efface ses documents en base par cascade, mais PAS les
+// fichiers du bucket : on relève les chemins AVANT de supprimer, sinon ils
+// deviennent introuvables et occupent le stockage indéfiniment.
 export async function supprimerRessource(id) {
+  const { data: n } = await supabase.from("biblio_numeriques")
+    .select("fichier_chemin").eq("ressource_id", id);
+  const { data: r } = await supabase.from("biblio_ressources")
+    .select("couverture_chemin").eq("id", id).maybeSingle();
+
   const { error } = await supabase.from("biblio_ressources").delete().eq("id", id);
   if (error) throw error;
+
+  const chemins = [...(n ?? []).map((x) => x.fichier_chemin), r?.couverture_chemin].filter(Boolean);
+  // Le nettoyage ne doit jamais faire échouer une suppression déjà effectuée.
+  if (chemins.length) await supabase.storage.from(BUCKET).remove(chemins);
 }
 
 // =====================================================================
@@ -271,6 +283,7 @@ export async function emprunter(ecoleId, { exemplaireId, profilId = null, eleveI
     agent_profil_id: agentId,
   }).select().single();
   if (error) throw error;
+  journaliser(ecoleId, "pret", "emprunt", data.id, { exemplaire_id: exemplaireId, role });
   return data;
 }
 
@@ -283,7 +296,10 @@ export async function rendre(empruntId, { ecoleId, emprunt, role } = {}) {
     .update({ statut: "rendu", date_retour: dateRetour }).eq("id", empruntId);
   if (error) throw error;
 
-  if (!ecoleId || !emprunt?.date_echeance) return null;
+  if (!ecoleId) return null;
+  journaliser(ecoleId, "retour", "emprunt", empruntId, { date_retour: dateRetour });
+
+  if (!emprunt?.date_echeance) return null;
   const jours = joursRetard(emprunt.date_echeance, dateRetour);
   if (jours <= 0) return null;
   const regles = await getRegles(ecoleId);
@@ -331,14 +347,38 @@ export async function importerNotices(ecoleId, notices, {
     // `quantite`, `cote` et `auteurs` ne sont pas des colonnes de la notice :
     // ils servent à fabriquer les exemplaires et les liaisons juste après.
     const payload = lot.map(({ quantite, cote, auteurs, ...n }) => ({ ecole_id: ecoleId, ...n, visible: true }));
-    const { data, error } = await supabase.from("biblio_ressources").insert(payload).select("id");
+    const { data, error } = await supabase.from("biblio_ressources")
+      .insert(payload).select("id, titre, isbn");
     if (error) throw error;
     crees += data?.length ?? 0;
 
+    // On rattache exemplaires et auteurs à la notice qui vient d'être créée.
+    // PostgreSQL rend les lignes dans l'ordre envoyé pour un INSERT multi-lignes,
+    // mais ce n'est pas une garantie formelle — et s'y fier en aveugle
+    // attacherait les exemplaires aux MAUVAISES notices sur un fichier de
+    // plusieurs milliers de lignes, sans le moindre signal d'erreur.
+    // On vérifie donc l'alignement, et on retombe sur un appariement par
+    // (titre, ISBN) au moindre écart.
+    const retour = data ?? [];
+    const aligne = retour.length === lot.length
+      && retour.every((r, i) => r.titre === lot[i].titre && (r.isbn ?? null) === (lot[i].isbn ?? null));
+    let sourceDe;
+    if (aligne) {
+      sourceDe = (_r, i) => lot[i];
+    } else {
+      const restants = new Map();
+      lot.forEach((n) => {
+        const k = `${n.titre} ${n.isbn ?? ""}`;
+        (restants.get(k) || restants.set(k, []).get(k)).push(n);
+      });
+      sourceDe = (r) => (restants.get(`${r.titre} ${r.isbn ?? ""}`) || []).shift() || null;
+    }
+
     const exs = [];
     const rel = [];
-    (data ?? []).forEach((r, i) => {
-      const src = lot[i];
+    retour.forEach((r, i) => {
+      const src = sourceDe(r, i);
+      if (!src) return;
       for (let k = 0; k < (src.quantite || 0); k++) {
         exs.push({ ecole_id: ecoleId, ressource_id: r.id, cote: src.cote || null, statut: "disponible", etat: "bon" });
       }
@@ -532,12 +572,12 @@ export async function mesEmprunts() {
 // =====================================================================
 //  RÉSERVATIONS
 // =====================================================================
+// Le RANG est attribué EN BASE (trigger, migration 126). Il ne peut pas
+// l'être ici : la RLS ne montre à l'usager que ses propres réservations, il
+// lisait donc toujours une file vide et repartait premier.
 export async function reserver(ecoleId, ressourceId, profilId) {
-  const { data: actives, error: eA } = await supabase.from("biblio_reservations")
-    .select("rang, statut").eq("ressource_id", ressourceId).in("statut", ["active", "disponible"]);
-  if (eA) throw eA;
   const { data, error } = await supabase.from("biblio_reservations").insert({
-    ecole_id: ecoleId, ressource_id: ressourceId, profil_id: profilId, rang: rangSuivant(actives ?? []),
+    ecole_id: ecoleId, ressource_id: ressourceId, profil_id: profilId,
   }).select().single();
   if (error) throw error;
   return data;
@@ -626,9 +666,14 @@ export async function retirerRegleAcces(id) {
   if (error) throw error;
 }
 
-// Journal (best-effort : ne bloque jamais l'action principale).
-export async function journaliser(ecoleId, profilId, action, cible_type, cible_id, details = null) {
+// Journal (best-effort : ne bloque JAMAIS l'action principale — perdre une
+// ligne de traçabilité est moins grave que refuser un prêt au guichet).
+// L'auteur est résolu ici : les appelants n'ont pas tous l'identité sous la main.
+export async function journaliser(ecoleId, action, cible_type, cible_id, details = null) {
   try {
-    await supabase.from("biblio_journal").insert({ ecole_id: ecoleId, profil_id: profilId, action, cible_type, cible_id, details });
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from("biblio_journal").insert({
+      ecole_id: ecoleId, profil_id: u?.user?.id || null, action, cible_type, cible_id, details,
+    });
   } catch { /* ignoré */ }
 }

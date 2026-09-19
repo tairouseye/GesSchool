@@ -85,6 +85,10 @@ export function calculerPenalite({ dateEcheance, dateRetour, regle } = {}) {
 }
 
 // Rang du prochain arrivant dans la file d'attente d'une ressource.
+// ⚠️ N'est PLUS utilisé pour créer une réservation : le rang est attribué en
+// base par trigger (migration 126), car la RLS empêche l'usager de voir la
+// file et le calcul côté client renvoyait toujours 1. Conservé pour l'affichage
+// et les simulations côté gestion, qui a bien la visibilité complète.
 export function rangSuivant(reservationsActives = []) {
   const rangs = reservationsActives
     .filter((r) => r && (r.statut === "active" || r.statut === "disponible"))

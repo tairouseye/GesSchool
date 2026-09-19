@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 import { urlSignee } from "@/lib/stockage.js";
 import { bornesPagination } from "@/lib/biblio.regles.js";
-import { BUCKET } from "@/lib/bibliotheque.js";
+import { BUCKET, journaliser } from "@/lib/bibliotheque.js";
 
 // GesSchool — Dépôt institutionnel : mémoires, thèses, rapports, PFE et
 // publications scientifiques, avec workflow de validation.
@@ -84,8 +84,20 @@ export async function modifierDepot(id, d) {
   if (error) throw error;
 }
 export async function supprimerDepot(id) {
+  // Relever le chemin AVANT la suppression, sinon le fichier reste dans le
+  // bucket sans plus aucune ligne qui le référence.
+  const { data } = await supabase.from("biblio_depots")
+    .select("fichier_chemin, statut, ressource_id").eq("id", id).maybeSingle();
+
   const { error } = await supabase.from("biblio_depots").delete().eq("id", id);
   if (error) throw error;
+
+  // Un dépôt publié partage son fichier avec le document numérique du
+  // catalogue : le supprimer casserait la notice publiée.
+  const partage = data?.statut === "publie" || data?.ressource_id;
+  if (data?.fichier_chemin && !partage) {
+    await supabase.storage.from(BUCKET).remove([data.fichier_chemin]);
+  }
 }
 
 // Le déposant soumet son dossier (il ne pourra plus le modifier ensuite).
@@ -109,6 +121,8 @@ export async function deciderDepot(id, statut, commentaire = null) {
 export async function publierDepot(id, acces = "institution") {
   const { data, error } = await supabase.rpc("publier_depot", { p_depot: id, p_acces: acces });
   if (error) throw error;
+  const { data: d } = await supabase.from("biblio_depots").select("ecole_id").eq("id", id).maybeSingle();
+  if (d?.ecole_id) journaliser(d.ecole_id, "publication", "depot", id, { ressource_id: data, acces });
   return data; // id de la notice créée
 }
 
@@ -123,6 +137,14 @@ export async function televerserDepot(ecoleId, file) {
   return { chemin, nom: file.name, taille: file.size };
 }
 export const lienDepot = (chemin) => urlSignee(BUCKET, chemin, 3600);
+
+// Le fichier est téléversé AVANT que la ligne existe (il faut son chemin pour
+// l'insérer). Si l'écriture en base échoue ensuite, l'objet resterait seul
+// dans le bucket : l'appelant nous le confie pour le reprendre.
+export async function retirerFichierDepot(chemin) {
+  if (!chemin) return;
+  await supabase.storage.from(BUCKET).remove([chemin]);
+}
 
 // --- Métadonnées académiques ------------------------------------------------
 export async function enregistrerThese(ecoleId, depotId, t) {
