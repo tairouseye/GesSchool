@@ -42,7 +42,7 @@ export default function EtudiantCarte() {
       )}
 
       {/* La carte, au format d'une carte bancaire (ratio 85,6 × 54 mm). */}
-      <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-700 text-creme shadow-lg ring-1 ring-navy-900/20">
+      <div className="zone-impression mx-auto w-full max-w-md overflow-hidden rounded-2xl bg-gradient-to-br from-navy-900 to-navy-700 text-creme shadow-lg ring-1 ring-navy-900/20">
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3">
           {d.logo_url
             ? <img src={d.logo_url} alt="" className="h-9 w-9 rounded-lg bg-white object-contain p-0.5" />

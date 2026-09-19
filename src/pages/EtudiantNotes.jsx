@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Carte, Alerte, EtatVide, Badge, SkeletonListe } from "@/composants/ui.jsx";
-import { mesNotes, mesReleves, grouperNotes } from "@/lib/etudiant.js";
+import { Bouton, Carte, Alerte, EtatVide, Badge, SkeletonListe, Modale } from "@/composants/ui.jsx";
+import ReleveImprimable from "@/composants/ReleveImprimable.jsx";
+import { mesNotes, mesReleves, grouperNotes, monDossier } from "@/lib/etudiant.js";
 import { noteFinale, moyenneUE, resultatUE, moyenneSemestre, mentionLMD } from "@/lib/lmd.js";
 
 const n2 = (v) => (v === null || v === undefined || v === "" ? "—" : Number(v).toFixed(2));
@@ -16,11 +17,14 @@ export default function EtudiantNotes() {
   const [onglet, setOnglet] = useState("notes");
   const [notes, setNotes] = useState(null);
   const [releves, setReleves] = useState(null);
+  const [dossier, setDossier] = useState(null);
+  const [aImprimer, setAImprimer] = useState(null);
   const [erreur, setErreur] = useState("");
 
   useEffect(() => {
     mesNotes().then((l) => setNotes(grouperNotes(l))).catch((e) => { setErreur(e.message); setNotes([]); });
     mesReleves().then(setReleves).catch((e) => { setErreur(e.message); setReleves([]); });
+    monDossier().then(setDossier).catch(() => {});
   }, []);
 
   return (
@@ -41,7 +45,28 @@ export default function EtudiantNotes() {
         ))}
       </div>
 
-      {onglet === "notes" ? <Notes semestres={notes} /> : <Releves liste={releves} />}
+      {onglet === "notes" ? <Notes semestres={notes} /> : <Releves liste={releves} onImprimer={setAImprimer} />}
+
+      {/* Le relevé officiel : même composant que celui du secrétariat. */}
+      <Modale ouvert={!!aImprimer} onFermer={() => setAImprimer(null)} titre="Relevé de notes" large>
+        {aImprimer && (
+          <>
+            <ReleveImprimable
+              ecole={{ nom: dossier?.ecole, sigle: dossier?.sigle, logo_url: dossier?.logo_url,
+                adresse: dossier?.adresse, ville: dossier?.ville, pays: dossier?.pays }}
+              etudiant={{ nom: `${dossier?.prenom || ""} ${dossier?.nom || ""}`.trim(),
+                matricule: dossier?.matricule }}
+              contexte={{ filiere: aImprimer.filiere, niveau: aImprimer.niveau,
+                semestre: aImprimer.semestre, session: aImprimer.session,
+                annee: aImprimer.annee, dateDelib: aImprimer.date_delib }}
+              releve={aImprimer} />
+            <div className="no-print mt-4 flex justify-end gap-2">
+              <Bouton variante="fantome" onClick={() => setAImprimer(null)}>Fermer</Bouton>
+              <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+            </div>
+          </>
+        )}
+      </Modale>
     </div>
   );
 }
@@ -134,7 +159,7 @@ function Notes({ semestres }) {
   );
 }
 
-function Releves({ liste }) {
+function Releves({ liste, onImprimer }) {
   if (liste === null) return <SkeletonListe lignes={3} />;
   if (liste.length === 0) {
     return (
@@ -164,6 +189,7 @@ function Releves({ liste }) {
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Bouton variante="fantome" onClick={() => onImprimer(r)}>📄 Relevé officiel</Bouton>
             {r.decision && (
               <Badge ton={/admis/i.test(r.decision) ? "success" : "danger"}>{r.decision}</Badge>
             )}

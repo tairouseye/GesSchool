@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.184.0] — migration 132
+- **L'étudiant édite lui-même son relevé de notes officiel** : en-tête de l'établissement (logo, adresse, ville), identité, tableau des UE avec crédits et résultat, moyenne, décision, mention, emplacement de signature, et **QR d'authentification**.
+  - Le composant existait déjà, mais **enfermé dans `Deliberations.jsx`**, donc hors de portée de l'étudiant. Il est **extrait dans `composants/ReleveImprimable.jsx`** et partagé : le relevé imprimé par l'étudiant est rigoureusement identique à celui du secrétariat. Écrire un second format aurait garanti la divergence.
+  - `mon_dossier_etudiant()` renvoie désormais l'adresse, la ville et le pays (migration 132) : sans eux, l'en-tête et la mention « Fait à … » restaient vides côté étudiant, `useAuth().ecole` étant NULL pour lui.
+- **⚠️ Correctif — la carte d'étudiant s'imprimait en page blanche.** La feuille de style masque tout sauf `.zone-impression` à l'impression ; la carte, livrée en 2.183.0, n'y était pas. Le bouton 🖨 ne sortait rien.
+
 ## [2.183.1] — aucune migration
 - **Annonces : cible « Étudiants » ajoutée.** Il n'en existait aucune — une université ne pouvait atteindre ses étudiants qu'en visant « Toute l'école ». La RPC `mes_annonces()` l'acceptait déjà ; seule l'option manquait au formulaire de publication.
 
