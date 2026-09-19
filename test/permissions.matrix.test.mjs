@@ -61,6 +61,45 @@ test("aucun couplage cassé : une page vendue a son infrastructure active", () =
   }
 });
 
+// Le bibliothécaire est à part : son espace n'existe que si l'établissement a
+// souscrit le module Bibliothèque (vendu en option, hors formules). Il n'a donc
+// pas sa place dans ROLES ci-dessus, qui décrit les rôles présents partout.
+test("bibliothécaire : espace ouvrable avec le module, dead-end explicite sans lui", () => {
+  const roles = ["bibliothecaire"];
+  const esp = P.espacesAccessibles(roles, false);
+  assert.deepEqual(esp.map((e) => e.id), ["bibliotheque"],
+    "le bibliothécaire doit avoir exactement l'espace Bibliothèque (il n'en avait AUCUN avant)");
+
+  // Module actif + établissement supérieur → il atterrit sur le catalogue.
+  assert.equal(P.premiereRoute(roles, false, ["bibliotheque"], "superieur"), "/bibliotheque");
+
+  // Module non souscrit → aucune page. `premiereRoute` renvoie null, ce que
+  // l'appelant traduit par un écran « sans accès » explicite, jamais par une
+  // boucle de redirection. C'est une erreur de configuration (avoir nommé un
+  // bibliothécaire sans acheter le module), pas un bug.
+  assert.equal(P.premiereRoute(roles, false, ["scolarite"], "superieur"), null);
+
+  // Même avec le module, une école (non supérieure) ne lui ouvre rien : toutes
+  // les pages biblio sont gatées `types:["superieur"]`.
+  assert.equal(P.premiereRoute(roles, false, ["bibliotheque"], "ecole"), null);
+});
+
+test("les pages biblio ont quitté Pédagogie pour leur espace dédié", () => {
+  const ped = P.espaceParId("pedagogie");
+  const bib = P.espaceParId("bibliotheque");
+  assert.ok(bib, "l'espace Bibliothèque doit exister");
+  for (const cle of ["bibliotheque", "biblio_circulation", "biblio_depots",
+                     "biblio_acquisitions", "biblio_inventaire"]) {
+    assert.ok(bib.items.some((i) => i.cle === cle), `${cle} doit être dans l'espace Bibliothèque`);
+    assert.ok(!ped.items.some((i) => i.cle === cle), `${cle} ne doit plus être dans Pédagogie`);
+  }
+  // `direction` n'est pas un rôle complet : sans cette ligne, elle perdrait
+  // l'accès au menu Bibliothèque en le sortant de Pédagogie.
+  assert.ok(bib.roles.includes("direction"), "direction doit garder l'accès à l'espace");
+  assert.ok(P.premiereRoute(["direction"], false, ["bibliotheque", "scolarite"], "superieur"),
+    "direction doit conserver au moins une page ouvrable");
+});
+
 test("les formules empilent bien leurs modules (Confort ⊃ Essentiel, etc.)", () => {
   const ess = new Set(P.modulesDeFormule("essentiel"));
   const conf = new Set(P.modulesDeFormule("confort"));

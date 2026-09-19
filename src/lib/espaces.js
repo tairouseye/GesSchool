@@ -70,11 +70,6 @@ export const ESPACES = [
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"] },
       { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"] },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"] },
-      { to: "/bibliotheque", label: "Bibliothèque", icone: "📚", cle: "bibliotheque", types: ["superieur"] },
-      { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"] },
-      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "🎓", cle: "biblio_depots", types: ["superieur"] },
-      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"] },
-      { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"] },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"] },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"] },
@@ -86,6 +81,31 @@ export const ESPACES = [
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
+    ],
+  },
+  {
+    // Espace à part entière plutôt que cinq entrées noyées dans Pédagogie :
+    // le SIGB est un métier distinct, avec son propre responsable.
+    //
+    // ⚠️ `direction` doit figurer ici : ce n'est PAS un rôle complet
+    // (ROLES_COMPLETS = super_admin, admin_ecole), il perdrait donc l'accès.
+    // Les rôles listés reprennent l'union de ceux autorisés sur les pages
+    // biblio dans ACCES ; chaque page reste filtrée individuellement, si bien
+    // qu'un secrétaire ne voit que le catalogue.
+    //
+    // Toutes les entrées étant `types:["superieur"]`, l'espace disparaît de
+    // lui-même pour une école : Layout écarte les espaces sans item visible.
+    id: "bibliotheque",
+    label: "Bibliothèque",
+    icone: "📚",
+    accueil: "/bibliotheque",
+    roles: ["bibliothecaire", "direction", "enseignant", "secretaire"],
+    items: [
+      { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], exact: true },
+      { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"] },
+      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "🎓", cle: "biblio_depots", types: ["superieur"] },
+      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"] },
+      { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"] },
     ],
   },
   {
