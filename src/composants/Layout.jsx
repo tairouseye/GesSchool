@@ -215,17 +215,10 @@ export default function Layout() {
       <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
           <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={40} />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <p className="truncate font-display text-base font-bold leading-none">{ecole?.nom || "GesSchool"}</p>
             <p className="text-xs text-creme/60">{sigle}</p>
           </div>
-          {/* Retour à la grille de tuiles. Sur mobile ce bouton est dans la
-              barre du haut ; sur desktop la barre n'existe pas. */}
-          <button onClick={() => setTuiles((t) => !t)} aria-label="Menu des modules"
-            title="Modules de l'espace"
-            className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base transition ${
-              tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/70 hover:bg-navy-700"
-            }`}>▦</button>
         </div>
 
         {/* Sélecteur d'espace (si accès à plusieurs) */}
@@ -391,7 +384,7 @@ export default function Layout() {
               La piste contient une grille par espace ; elle suit le doigt puis
               se cale sur l'espace voisin au relâchement. */}
           {tuiles && (
-            <div ref={pisteRef} className="absolute inset-0 z-20 overflow-hidden bg-creme"
+            <div ref={pisteRef} className="absolute inset-0 z-20 overflow-hidden bg-creme lg:hidden"
               onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
               <div className="flex h-full"
                 style={{

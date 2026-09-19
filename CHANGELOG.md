@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.186.1] — aucune migration
+- **Retour en arrière : la grille de tuiles redevient propre au mobile.** Exposée sur ordinateur en 2.181.0, elle recouvrait toute la zone de contenu au chargement — ce n'est pas ce qu'on attend d'un menu sur grand écran, où la barre latérale suffit et laisse la page visible. Le bouton **▦** ajouté à la barre latérale n'a plus d'objet et disparaît. Les sections repliables (2.186.0), elles, restent : c'est là qu'était le vrai besoin.
+
 ## [2.186.0] — aucune migration
 - **Pédagogie se replie en sections.** Ses 25 entrées — six fois plus que RH & Paie — formaient une liste illisible. Elles sont désormais rangées en cinq sections repliables : **Au quotidien**, **Élèves & structure**, **Évaluation**, **Vie scolaire**, **Communication**. L'accueil et les transverses (Membres, À signer, Paramètres) restent hors section.
   - Le regroupement s'applique **aussi à la grille de tuiles**, pour que la barre latérale et les tuiles racontent la même chose.
