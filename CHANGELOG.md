@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.192.0] — aucune migration · **phase 2 : pagination, page Élèves**
+- **La page Élèves charge désormais 25 élèves à la fois**, au lieu de la table entière. Recherche, filtre de classe et filtre de statut s'exécutent **en base** — les appliquer après coup n'aurait filtré que la page affichée.
+- Le second chargement complet de `inscriptions` disparaît : l'inscription de l'année est embarquée dans la même requête. La carte `inscriptions[eleve.id]` est reconstruite depuis la page, ce qui laisse tout le rendu existant inchangé.
+- **La restriction « enseignant »** part au serveur elle aussi : un enseignant ne voit que ses classes, filtrées en base et non après coup.
+- **⚠️ Piège évité — la feuille de présence imprimable.** Elle liste tous les élèves du filtre ; paginer naïvement n'en aurait imprimé que 25, en silence, sur un usage réel de Tut'Tank. Elle charge maintenant un **lot complet borné** à son ouverture, et **avertit** si le plafond de 1000 l'a tronquée.
+- Recherche **anti-rebond** (300 ms) : sans cela chaque frappe déclenchait une requête. Tout changement de filtre ramène en page 1.
+- `bornesPagination` / `nbPages` quittent `biblio.regles.js` pour un module partagé `pagination.js` — elles n'avaient rien de bibliothécaire et deviennent le socle des pages suivantes. `biblio.regles.js` les réexporte, aucun import existant n'est cassé.
+- Formes de requête **vérifiées sur la base réelle** avant d'écrire le code (jointure interne, filtre de classe, recherche, et le cas retors des non-inscrits par jointure gauche bornée à l'année).
+
 ## [2.191.0] — aucune migration
 - **Pilotage → « Journal des actes »**, l'écran qui manquait à la phase 1. `restaurer_depuis_journal` exige `auth.uid()`, **NULL dans l'éditeur SQL de Supabase** : la fonction livrée en 2.190.0 n'avait donc **aucune porte d'entrée** — exactement le défaut que cet audit relève ailleurs. Le promoteur consulte désormais les modifications et suppressions, déplie le détail champ par champ (valeur avant en rouge, après en vert) et **restaure une suppression en un clic**.
   - La confirmation rappelle explicitement que **seule la ligne revient**, pas les enregistrements partis en cascade.

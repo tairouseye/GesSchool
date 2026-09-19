@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
@@ -9,6 +9,7 @@ import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.j
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { peutEditerEleves, voitTousEleves } from "@/lib/permissions.js";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
+import { nbPages } from "@/lib/pagination.js";
 import Photo from "@/composants/Photo.jsx";
 import { urlsSignees } from "@/lib/stockage.js";
 
@@ -27,10 +28,14 @@ export default function Eleves() {
   const [classes, setClasses] = useState([]);
   const [champsPerso, setChampsPerso] = useState([]);
   const [annee, setAnnee] = useState(null);
-  const [recherche, setRecherche] = useState("");
+  const [saisie, setSaisie] = useState("");        // ce que l'utilisateur tape
+  const [recherche, setRecherche] = useState("");  // ce qui part au serveur
   const [filtreClasse, setFiltreClasse] = useState("");
   const [filtreStatut, setFiltreStatut] = useState("");
   const [presenceOuverte, setPresenceOuverte] = useState(false);
+  const [lotPresence, setLotPresence] = useState(null); // { lignes, total, complet }
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
@@ -41,51 +46,65 @@ export default function Eleves() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [els, insc, cls, champs] = await Promise.all([
-        api.getEleves(ecoleId),
-        api.getInscriptionsParEleve(ecoleId, an?.id),
-        getClasses(ecoleId, an?.id),
-        getChampsEleve(ecoleId),
-      ]);
-      // Enseignant « simple » : restreint aux élèves de ses propres classes.
-      let elevesVus = els, classesVues = cls;
+
+      // Enseignant « simple » : restreint à ses propres classes. Le filtre
+      // part au SERVEUR (`classesAutorisees`) — le faire après coup ne
+      // filtrerait que la page affichée.
+      let classesAutorisees = null, classesVues = null;
       if (!vueGlobale) {
         const ens = await getMonEnseignant(ecoleId, profil?.id, profil?.email);
         const mesCls = ens ? await getMesClasses(ecoleId, an?.id, ens.id) : [];
-        const ids = new Set(mesCls.map((c) => c.id));
-        elevesVus = els.filter((e) => { const i = insc[e.id]; return i && ids.has(i.classe_id); });
         classesVues = mesCls;
+        classesAutorisees = mesCls.map((c) => c.id);
+        if (classesAutorisees.length === 0) classesAutorisees = ["00000000-0000-0000-0000-000000000000"];
       }
-      // Préchargement des photos en UN seul appel (supprime le N+1 d'URLs signées).
-      await urlsSignees("eleves", elevesVus.map((e) => e.photo_url).filter(Boolean)).catch(() => {});
-      setEleves(elevesVus);
-      setInscriptions(insc);
-      setClasses(classesVues);
+
+      const critere = {
+        anneeId: an?.id, q: recherche, classeId: filtreClasse, statut: filtreStatut,
+        classesAutorisees, page, taille: 25,
+      };
+      const [res, cls, champs] = await Promise.all([
+        api.getEleves(ecoleId, critere),
+        classesVues ? Promise.resolve(classesVues) : getClasses(ecoleId, an?.id),
+        getChampsEleve(ecoleId),
+      ]);
+
+      // La carte `inscriptions` est bâtie depuis la PAGE affichée : tout le
+      // rendu existant (`inscriptions[e.id]`) continue de fonctionner sans
+      // être réécrit, et le second chargement complet de la table disparaît.
+      const carte = {};
+      for (const e of res.lignes) {
+        const i = Array.isArray(e.inscriptions) ? e.inscriptions[0] : e.inscriptions;
+        if (i) carte[e.id] = i;
+      }
+
+      await urlsSignees("eleves", res.lignes.map((e) => e.photo_url).filter(Boolean)).catch(() => {});
+      setEleves(res.lignes);
+      setTotal(res.total);
+      setInscriptions(carte);
+      setClasses(cls);
       setChampsPerso(champs);
     } catch (e) {
       setErreur(e.message);
     } finally {
       setChargement(false);
     }
-  }, [ecoleId, vueGlobale, profil]);
+  }, [ecoleId, vueGlobale, profil, recherche, filtreClasse, filtreStatut, page]);
 
   useEffect(() => {
     recharger();
   }, [recharger]);
 
-  const filtres = useMemo(() => eleves.filter((e) => {
-    const q = recherche.toLowerCase();
-    const insc = inscriptions[e.id];
-    const okRecherche =
-      !q ||
-      `${e.prenom} ${e.nom}`.toLowerCase().includes(q) ||
-      (e.matricule || "").toLowerCase().includes(q);
-    const okClasse = !filtreClasse || insc?.classe_id === filtreClasse;
-    const okStatut =
-      !filtreStatut ||
-      (filtreStatut === "non_inscrit" ? !insc : insc?.statut === filtreStatut);
-    return okRecherche && okClasse && okStatut;
-  }), [eleves, inscriptions, recherche, filtreClasse, filtreStatut]);
+  // La recherche part au serveur : sans anti-rebond, chaque frappe
+  // déclencherait une requête. 300 ms after la dernière touche.
+  useEffect(() => {
+    const t = setTimeout(() => { setRecherche(saisie); setPage(0); }, 300);
+    return () => clearTimeout(t);
+  }, [saisie]);
+
+  // Plus de filtrage client : le serveur a déjà appliqué recherche, classe
+  // et statut. Filtrer ici ne porterait que sur les 25 lignes affichées.
+  const filtres = eleves;
 
   const idsFiltres = filtres.map((e) => e.id);
   const tousCoches = idsFiltres.length > 0 && idsFiltres.every((id) => selection.has(id));
@@ -93,6 +112,27 @@ export default function Eleves() {
     setSelection((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleTous = () =>
     setSelection(() => (tousCoches ? new Set() : new Set(idsFiltres)));
+
+  // La feuille de présence imprime TOUS les élèves du filtre courant, pas
+  // les 25 affichés : imprimer une liste tronquée sans le dire serait pire
+  // que ne pas l'imprimer. Le lot est borné et signale s'il a été coupé.
+  async function ouvrirPresence() {
+    setPresenceOuverte(true);
+    setLotPresence(null);
+    try {
+      const an = annee;
+      let classesAutorisees = null;
+      if (!vueGlobale) {
+        const ens = await getMonEnseignant(ecoleId, profil?.id, profil?.email);
+        const mesCls = ens ? await getMesClasses(ecoleId, an?.id, ens.id) : [];
+        classesAutorisees = mesCls.map((c) => c.id);
+        if (classesAutorisees.length === 0) classesAutorisees = ["00000000-0000-0000-0000-000000000000"];
+      }
+      setLotPresence(await api.getElevesLot(ecoleId, {
+        anneeId: an?.id, q: recherche, classeId: filtreClasse, statut: filtreStatut, classesAutorisees,
+      }));
+    } catch (e) { toast.erreur(e); setPresenceOuverte(false); }
+  }
 
   async function supprimerUn(e) {
     const ok = await confirmer({
@@ -150,14 +190,14 @@ export default function Eleves() {
         <Carte className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 border-b border-navy-900/10 p-4">
             <input
-              value={recherche}
-              onChange={(e) => setRecherche(e.target.value)}
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
               placeholder={`Rechercher un ${L.s}, un matricule…`}
               className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
             />
             <select
               value={filtreClasse}
-              onChange={(e) => setFiltreClasse(e.target.value)}
+              onChange={(e) => { setFiltreClasse(e.target.value); setPage(0); }}
               className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
             >
               <option value="">Toutes les classes</option>
@@ -167,7 +207,7 @@ export default function Eleves() {
             </select>
             <select
               value={filtreStatut}
-              onChange={(e) => setFiltreStatut(e.target.value)}
+              onChange={(e) => { setFiltreStatut(e.target.value); setPage(0); }}
               className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
             >
               <option value="">Tous les statuts</option>
@@ -177,7 +217,7 @@ export default function Eleves() {
               <option value="abandon">Abandon</option>
               <option value="non_inscrit">Non inscrit</option>
             </select>
-            <Bouton variante="fantome" onClick={() => setPresenceOuverte(true)} disabled={filtres.length === 0}>
+            <Bouton variante="fantome" onClick={ouvrirPresence} disabled={filtres.length === 0}>
               🖨️ Feuille de présence
             </Bouton>
           </div>
@@ -286,6 +326,23 @@ export default function Eleves() {
               </tbody>
             </table>
           )}
+
+          {/* Pagination SERVEUR. Le total vient du `count: exact` de la
+              requête, pas de la longueur de la page. */}
+          {total > 25 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 px-4 py-3 text-sm">
+              <span className="text-navy-900/50">
+                {page * 25 + 1}–{Math.min((page + 1) * 25, total)} sur {total} {L.p}
+              </span>
+              <div className="flex items-center gap-3">
+                <Bouton variante="fantome" onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}>← Précédent</Bouton>
+                <span className="text-navy-900/60">Page {page + 1} / {nbPages(total, 25)}</span>
+                <Bouton variante="fantome" onClick={() => setPage((p) => Math.min(nbPages(total, 25) - 1, p + 1))}
+                  disabled={page >= nbPages(total, 25) - 1}>Suivant →</Bouton>
+              </div>
+            </div>
+          )}
         </Carte>
       </div>
 
@@ -339,7 +396,7 @@ export default function Eleves() {
               </tr>
             </thead>
             <tbody>
-              {filtres.map((e, i) => (
+              {(lotPresence?.lignes || []).map((e, i) => (
                 <tr key={e.id}>
                   <td className="border border-navy-900/20 px-1 py-1.5 text-center">{i + 1}</td>
                   <td className="border border-navy-900/20 px-2 py-1.5 font-medium">{e.nom} {e.prenom}</td>
@@ -348,7 +405,12 @@ export default function Eleves() {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-[10px] text-navy-900/40">{filtres.length} {L.p} · Cochez les présences par jour dans les colonnes numérotées.</p>
+          {lotPresence && !lotPresence.complet && (
+            <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-[10px] text-amber-800">
+              Liste tronquée : seuls les 1000 premiers sont imprimés. Affinez le filtre par classe.
+            </p>
+          )}
+          <p className="mt-2 text-[10px] text-navy-900/40">{lotPresence ? lotPresence.total : "…"} {L.p} · Cochez les présences par jour dans les colonnes numérotées.</p>
           <div className="mt-8 text-right text-sm">L'enseignant(e) / Le surveillant<br /><span className="text-navy-900/30">_____________________</span></div>
         </div>
         <div className="no-print mt-4 flex justify-end">

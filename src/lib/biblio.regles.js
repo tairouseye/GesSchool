@@ -97,15 +97,7 @@ export function rangSuivant(reservationsActives = []) {
 }
 
 // Bornes pour `.range()` de Supabase (pagination serveur).
-export function bornesPagination(page = 0, taille = 20) {
-  const p = Math.max(0, Number(page) || 0);
-  const t = Math.min(200, Math.max(1, Number(taille) || 20)); // borne dure : jamais de requête illimitée
-  const debut = p * t;
-  return { debut, fin: debut + t - 1, taille: t, page: p };
-}
-
-// Nombre total de pages pour un total d'éléments donné.
-export function nbPages(total, taille = 20) {
-  const t = Math.max(1, Number(taille) || 20);
-  return Math.max(1, Math.ceil((Number(total) || 0) / t));
-}
+// Pagination : l'implémentation a déménagé dans `pagination.js`, devenu le
+// socle commun des pages qui paginent. Réexportée ici pour ne casser aucun
+// import existant.
+export { bornesPagination, nbPages } from "@/lib/pagination.js";

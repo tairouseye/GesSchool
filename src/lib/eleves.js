@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { bornesPagination, PLAFOND_LOT } from "@/lib/pagination.js";
 
 // GesSchool — couche d'accès « élèves & inscriptions ».
 // Écritures avec ecole_id (RLS = ecole_courante()).
@@ -102,15 +103,57 @@ export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle, c
   return { crees, ignores, inscrits, tuteurs };
 }
 
-export async function getEleves(ecoleId) {
-  const { data, error } = await supabase
+// Liste des élèves — PAGINÉE ET FILTRÉE CÔTÉ SERVEUR.
+//
+// L'inscription de l'année est embarquée dans la même requête (`!left`),
+// ce qui supprime au passage un second chargement complet de la table
+// `inscriptions`. Les filtres classe et statut portent sur cette inscription :
+// ils DOIVENT donc s'exécuter en base, sinon filtrer sur une page ne
+// filtrerait que 25 lignes sur 10 000.
+//
+// `statut = "non_inscrit"` est le cas retors : il faut une jointure GAUCHE
+// bornée à l'année, puis tester l'absence. Vérifié sur la base réelle —
+// avec une année sans inscription, les 96 élèves ressortent bien.
+const SEL_ELEVE = "*, inscriptions!{J}(id, classe_id, statut)";
+
+function requeteEleves(ecoleId, { anneeId, q, classeId, statut, classesAutorisees } = {}) {
+  const nonInscrit = statut === "non_inscrit";
+  // Jointure interne dès qu'un critère porte sur l'inscription : sans elle,
+  // les élèves sans inscription remonteraient malgré le filtre.
+  const interne = !nonInscrit && (classeId || (statut && statut !== "non_inscrit") || classesAutorisees);
+  let req = supabase
     .from("eleves")
-    .select("*")
-    .eq("ecole_id", ecoleId)
-    .order("nom")
-    .order("prenom");
+    .select(SEL_ELEVE.replace("{J}", interne ? "inner" : "left"), { count: "exact" })
+    .eq("ecole_id", ecoleId);
+
+  if (anneeId) req = req.eq("inscriptions.annee_id", anneeId);
+  if (nonInscrit) req = req.is("inscriptions", null);
+  if (classeId) req = req.eq("inscriptions.classe_id", classeId);
+  if (statut && !nonInscrit) req = req.eq("inscriptions.statut", statut);
+  if (classesAutorisees) req = req.in("inscriptions.classe_id", classesAutorisees);
+  if ((q || "").trim()) {
+    const m = q.trim().replace(/[%,()]/g, "");   // caractères réservés du filtre PostgREST
+    req = req.or(`prenom.ilike.*${m}*,nom.ilike.*${m}*,matricule.ilike.*${m}*`);
+  }
+  return req.order("nom").order("prenom");
+}
+
+export async function getEleves(ecoleId, options = {}) {
+  const { page = 0, taille = 25 } = options;
+  const { debut, fin } = bornesPagination(page, taille);
+  const { data, error, count } = await requeteEleves(ecoleId, options).range(debut, fin);
   if (error) throw error;
-  return data ?? [];
+  return { lignes: data ?? [], total: count ?? 0 };
+}
+
+// Lot complet pour la feuille de présence imprimable et les envois en masse.
+// Borné : on ne charge pas tout, mais assez pour une classe ou un niveau.
+// `complet` dit à l'appelant si le plafond a tronqué le résultat, afin qu'il
+// puisse le signaler au lieu d'imprimer une liste incomplète en silence.
+export async function getElevesLot(ecoleId, options = {}) {
+  const { data, error, count } = await requeteEleves(ecoleId, options).range(0, PLAFOND_LOT - 1);
+  if (error) throw error;
+  return { lignes: data ?? [], total: count ?? 0, complet: (count ?? 0) <= PLAFOND_LOT };
 }
 
 export async function getEleve(id) {
