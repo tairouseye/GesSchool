@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.201.0] — migration **143** · supprimer ou annuler une facture
+- **Question de l'utilisateur : une facture générée ne peut pas être supprimée ?** Exact, et c'était un manque : `supprimerFacture()` existait dans la couche données depuis le début, **aucune page ne l'appelait**. Même défaut que `journaliser()` et `creerAuteur()` en bibliothèque — une fonction livrée sans porte d'entrée.
+- **Mais « ajouter un bouton Supprimer » aurait été la mauvaise réponse.** `paiements.facture_id` est en `on delete cascade` : effacer une facture réglée aurait effacé **ses encaissements avec elle**, de l'argent disparaissant des livres. Et `factures.numero` est une numérotation séquentielle : on n'efface pas une pièce numérotée, on l'annule.
+- **Deux actes distincts, désormais tous deux accessibles** au bas de la fiche facture :
+  - **Supprimer** — proposé uniquement si la facture n'a **aucun encaissement**. La base refuse le reste, avec un message nommant le nombre et le montant en jeu. Le Journal (mig. 134) en garde la ligne complète : l'acte reste restaurable.
+  - **Annuler** — la voie normale pour une facture déjà réglée, ou dont le numéro doit rester dans la série. La facture reste visible et vérifiable, mais sort du recouvrement, des relances et du tableau de bord. **Rétablir** défait l'annulation.
+- Le statut `annulee` existait dans l'enum depuis la migration 001 et était **déjà honoré** par les relances (019), le recouvrement et la comptabilité (096, 098). Personne ne le posait jamais.
+- **Corrigé au passage** : `tableau_bord_finances` (mig. 137, la mienne) sommait toutes les factures sans regarder leur statut — une facture annulée y serait restée comptée et aurait creusé un impayé fantôme dans le taux de recouvrement.
+- Choix technique : la garde est dans une **RPC**, pas dans un déclencheur sur la table. Un déclencheur se serait aussi déclenché sur la cascade venant de `eleves` et aurait bloqué la suppression d'un élève — un effet de bord que personne n'a demandé.
+
 ## [2.200.1] — aucune migration · 🔴 la colonne « Élève » de Paiements était vide
 - **Signalé par l'utilisateur** : la liste des factures n'affichait que des numéros, sans nom d'élève. **Ce n'était pas normal — régression introduite par moi** avec la pagination des factures (migration 136, v2.193).
 - **Cause.** La RPC `factures_paginees` renvoie l'élève **à plat** (`prenom`, `nom`, `matricule`), parce qu'elle applique `to_jsonb()` à une jointure. Tout le reste de l'application le lit sous `eleves: { … }` — c'est ce que font `getFacture`, `getDeclarations` et `getTransactions`. Le composant lisait donc `f.eleves?.prenom` sur un objet qui n'existait plus. **Rien ne plantait : la colonne était simplement blanche.** Exactement le même défaut que le changement de forme de `getEleves` en v2.192 — un contrat de données modifié sans recenser ses lecteurs.

@@ -13,7 +13,7 @@ import { getEleves } from "@/lib/eleves.js";
 import { nbPages } from "@/lib/pagination.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
-import { useToast } from "@/composants/Feedback.jsx";
+import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -593,6 +593,7 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais
 
 function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateur, onChange, ecoleStyle, identite = {}, mobile = {} }) {
   const toast = useToast();
+  const confirmer = useConfirm();
   const [facture, setFacture] = useState(null);
   const [pay, setPay] = useState({ montant: "", mode: "wave", reference: "", date_paiement: "", compte_id: "" });
   const [comptes, setComptes] = useState([]);
@@ -627,6 +628,33 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
   if (!factureId) return null;
   const reste = facture ? (Number(facture.montant_total) || 0) - (Number(facture.montant_paye) || 0) : 0;
   const s = facture ? (api.STATUTS[facture.statut] || api.STATUTS.emise) : null;
+
+  async function annuler() {
+    if (!(await confirmer({
+      titre: "Annuler la facture",
+      message: `La facture ${facture.numero} sortira du recouvrement, des relances et du tableau de bord. Elle restera visible et son numéro restera dans la série. Continuer ?`,
+      confirmer: "Annuler la facture",
+    }))) return;
+    try { await api.annulerFacture(facture.id); toast.succes("Facture annulée."); await recharger(); onChange(); }
+    catch (e) { toast.erreur(e); }
+  }
+
+  async function retablir() {
+    try {
+      await api.retablirFacture(facture.id, facture.montant_paye, facture.montant_total);
+      toast.succes("Facture rétablie."); await recharger(); onChange();
+    } catch (e) { toast.erreur(e); }
+  }
+
+  async function supprimer() {
+    if (!(await confirmer({
+      titre: "Supprimer la facture",
+      message: `La facture ${facture.numero} sera retirée définitivement. Son numéro laissera un trou dans la série. Le Journal en gardera la trace et permettra de la restaurer.`,
+      confirmer: "Supprimer",
+    }))) return;
+    try { await api.supprimerFacture(facture.id); toast.succes("Facture supprimée."); onChange(); onFermer(); }
+    catch (e) { toast.erreur(e); }
+  }
 
   async function encaisser(e) {
     e.preventDefault();
@@ -818,6 +846,30 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                 )}
               </form>
             )}
+
+            {/* Retirer une facture émise par erreur. Deux actes bien
+                distincts : on SUPPRIME ce qui n'a rien encaissé, on ANNULE
+                ce qui a été réglé — sinon l'argent disparaîtrait des livres
+                avec la facture (`paiements` est en cascade). */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 pt-4">
+              <p className="text-xs text-navy-900/45">
+                {facture.statut === "annulee"
+                  ? "Facture annulée : exclue du recouvrement, des relances et du tableau de bord."
+                  : facture.paiements.length > 0
+                    ? `${facture.paiements.length} encaissement(s) enregistré(s) : cette facture ne peut plus être supprimée.`
+                    : "Aucun encaissement : cette facture peut encore être supprimée."}
+              </p>
+              <div className="flex gap-2">
+                {facture.statut === "annulee" ? (
+                  <Bouton variante="fantome" onClick={retablir}>Rétablir</Bouton>
+                ) : (
+                  <Bouton variante="fantome" onClick={annuler}>Annuler la facture</Bouton>
+                )}
+                {facture.paiements.length === 0 && (
+                  <Bouton variante="danger" onClick={supprimer}>Supprimer</Bouton>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

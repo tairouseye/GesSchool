@@ -157,8 +157,28 @@ export async function getResumePaiementEleve(ecoleId, eleveId, anneeId) {
   return { total, paye, solde: total - paye, nb: (data ?? []).length };
 }
 
+// Suppression définitive — refusée par la base dès qu'un encaissement existe
+// (mig. 143). Le journal (mig. 134) garde la ligne complète : l'acte est
+// restaurable depuis Pilotage → Journal.
 export async function supprimerFacture(id) {
-  const { error } = await supabase.from("factures").delete().eq("id", id);
+  const { error } = await supabase.rpc("supprimer_facture", { p_facture: id });
+  if (error) throw error;
+}
+
+// Annulation — la voie normale pour une facture déjà réglée, ou dont le
+// numéro doit rester dans la série. Elle sort du recouvrement, des relances
+// et du tableau de bord, mais reste visible et vérifiable.
+export async function annulerFacture(id) {
+  const { error } = await supabase.from("factures").update({ statut: "annulee" }).eq("id", id);
+  if (error) throw error;
+}
+
+// Remet une facture annulée en circulation (erreur d'annulation). Le statut
+// réel est recalculé par le déclencheur dès le prochain encaissement.
+export async function retablirFacture(id, montantPaye = 0, montantTotal = 0) {
+  const statut = Number(montantPaye) <= 0 ? "emise"
+    : Number(montantPaye) >= Number(montantTotal) ? "payee" : "partiellement_payee";
+  const { error } = await supabase.from("factures").update({ statut }).eq("id", id);
   if (error) throw error;
 }
 
