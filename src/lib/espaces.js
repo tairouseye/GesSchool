@@ -71,10 +71,18 @@ export const ESPACES = [
       { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"] },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"] },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
+      // La direction a le droit d'annoncer et d'écrire aux familles (ACCES),
+      // mais ces deux pages ne vivaient que dans Gestion — espace auquel elle
+      // n'a pas accès. Le droit existait sans porte d'entrée.
+      { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
+      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"] },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"] },
       { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"] },
-      { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi" },
+      // Gaté « école » : il n'existe pas encore d'emploi du temps LMD
+      // (`emplois_du_temps.classe_id` est NOT NULL, or le supérieur n'a pas de
+      // classes). Proposer la page au supérieur mènerait à un écran inutilisable.
+      { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi", types: ["ecole"] },
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"] },
       { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"] },
       { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"] },

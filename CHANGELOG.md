@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.185.0] — aucune migration · **revue de la structure des menus**
+Revue des cinq espaces et de leurs sous-menus, croisée avec les droits (`ACCES`). Trois incohérences corrigées.
+
+- **⚠️ La direction avait le droit de publier des annonces et d'écrire aux familles, sans aucune porte d'entrée.** `annonces` et `messagerie` lui sont ouverts par `ACCES`, mais ces deux pages ne vivaient que dans l'espace **Gestion** — réservé aux rôles `comptable` et `secretaire`, auxquels la direction n'appartient pas (elle n'est pas un rôle complet). Un droit sans menu est un droit inexistant : les deux entrées rejoignent **Pédagogie**.
+- **⚠️ « Emploi du temps » menait à une page inutilisable au supérieur.** `emplois_du_temps.classe_id` est `NOT NULL` et l'université n'a pas de classes : aucun emploi du temps LMD n'existe. L'entrée est désormais gatée `types:["ecole"]` — à rouvrir le jour où le modèle LMD sera fait.
+- **⚠️ Les demandes de documents déposées par un étudiant s'affichaient sans demandeur.** L'écran du personnel n'affichait que le tuteur ; une demande étudiante (sans tuteur) donnait « Demandé par · <date> ». Corrigé en « Demandé par l'étudiant lui-même ». Les demandes remontaient bien, seul l'affichage était muet.
+
 ## [2.184.0] — migration 132
 - **L'étudiant édite lui-même son relevé de notes officiel** : en-tête de l'établissement (logo, adresse, ville), identité, tableau des UE avec crédits et résultat, moyenne, décision, mention, emplacement de signature, et **QR d'authentification**.
   - Le composant existait déjà, mais **enfermé dans `Deliberations.jsx`**, donc hors de portée de l'étudiant. Il est **extrait dans `composants/ReleveImprimable.jsx`** et partagé : le relevé imprimé par l'étudiant est rigoureusement identique à celui du secrétariat. Écrire un second format aurait garanti la divergence.

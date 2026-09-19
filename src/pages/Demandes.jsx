@@ -70,7 +70,9 @@ function LigneDemande({ d, onTraite }) {
             {d.eleves?.prenom} {d.eleves?.nom} <span className="font-mono text-xs text-navy-900/40">{d.eleves?.matricule}</span>
           </p>
           <p className="text-xs text-navy-900/50">
-            Demandé par {d.tuteurs?.prenom} {d.tuteurs?.nom}{d.tuteurs?.telephone ? ` · ${d.tuteurs.telephone}` : ""} · {fmt(d.created_at)}
+            Demandé par {d.tuteurs
+              ? `${d.tuteurs.prenom || ""} ${d.tuteurs.nom || ""}${d.tuteurs.telephone ? ` · ${d.tuteurs.telephone}` : ""}`.trim()
+              : "l'étudiant lui-même"} · {fmt(d.created_at)}
           </p>
           {d.message && <p className="mt-2 whitespace-pre-wrap text-sm text-navy-900/70">« {d.message} »</p>}
         </div>
