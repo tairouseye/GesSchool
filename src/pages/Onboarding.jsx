@@ -20,7 +20,7 @@ export default function Onboarding() {
 
   // Données du formulaire
   const [f, setF] = useState({
-    nom: "", sigle: "", type_etablissement: "Privé",
+    nom: "", sigle: "", type_etablissement: "ecole",
     pays: "Sénégal", ville: "",
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227",
     logoFile: null, cachetFile: null,
@@ -107,9 +107,14 @@ export default function Onboarding() {
                        onChange={(e) => maj("sigle", e.target.value.toUpperCase())} placeholder="ICAD" />
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
+                  {/* Ce champ alimente `ecoles.type_etablissement`, qui pilote
+                      la bascule pédagogique école / LMD. Il proposait naguère
+                      le statut juridique (Privé, Public…) : les écoles créées
+                      ainsi perdaient onze entrées de menu (cf. migration 141). */}
                   <select value={f.type_etablissement} onChange={(e) => maj("type_etablissement", e.target.value)}
                           className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-                    <option>Privé</option><option>Public</option><option>Confessionnel</option><option>Franco-arabe</option>
+                    <option value="ecole">École (préscolaire, primaire, secondaire)</option>
+                    <option value="superieur">Enseignement supérieur (LMD)</option>
                   </select>
                 </label>
               </div>

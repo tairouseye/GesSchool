@@ -190,9 +190,24 @@ export function routeOuvrable(item, roles, estPromoteur, modulesActifs) {
 
 // L'item est-il pertinent pour ce TYPE d'établissement ? (bascule école ↔ supérieur)
 // Un item sans `types` s'affiche partout ; sinon il faut que le type courant y figure.
+// ⚠️ `ecoles.type_etablissement` porte DEUX significations successives : la
+// migration 001 y stockait le statut juridique (« Privé », « Public »,
+// « Confessionnel »), la 108 en a fait la bascule école / supérieur. Son
+// `add column if not exists` n'a donc RIEN appliqué — ni le défaut, ni la
+// contrainte — et les écoles créées par l'onboarding sont restées à « Privé ».
+// Résultat : `["ecole"].includes("Privé")` était faux et SIX écoles sur sept
+// perdaient Appel, Notes, Bulletins, Emploi du temps… de leur menu.
+//
+// Le type est binaire partout ailleurs (`lexique.js`, `libItem`, le défaut du
+// contexte d'authentification). On l'aligne ici : tout ce qui n'est pas
+// « superieur » est une école.
+export function normaliserType(typeEtab) {
+  return typeEtab === "superieur" ? "superieur" : "ecole";
+}
+
 export function itemPourType(item, typeEtab) {
   if (!item.types) return true;
-  return item.types.includes(typeEtab || "ecole");
+  return item.types.includes(normaliserType(typeEtab));
 }
 
 // Première page réellement accessible, tous espaces confondus.

@@ -153,3 +153,36 @@ test("les groupes de menu sont contigus : jamais deux fois le même en-tête", (
     }
   }
 });
+
+// ⚠️ Régression mesurée en production le 19/09/2026 : `ecoles.type_etablissement`
+// contenait le STATUT JURIDIQUE (« Privé », « Collège »…) hérité de la migration
+// 001, parce que le `add column if not exists` de la 108 n'avait rien appliqué.
+// Six écoles sur sept perdaient onze entrées de menu. Le type doit être traité
+// comme binaire : tout ce qui n'est pas « superieur » est une école.
+test("une valeur héritée de type_etablissement n'ampute pas le menu d'une école", async () => {
+  const { ESPACES, itemPourType, normaliserType } = await chargerPermissions();
+
+  assert.equal(normaliserType("Privé"), "ecole");
+  assert.equal(normaliserType("Collège"), "ecole");
+  assert.equal(normaliserType(null), "ecole");
+  assert.equal(normaliserType(undefined), "ecole");
+  assert.equal(normaliserType("superieur"), "superieur");
+
+  const pedagogie = ESPACES.find((e) => e.id === "pedagogie");
+  const itemsEcole = pedagogie.items.filter((i) => i.types && i.types.includes("ecole"));
+  assert.ok(itemsEcole.length >= 8, "l'espace Pédagogie doit bien contenir des pages gatées « école »");
+
+  for (const ancien of ["Privé", "Public", "Confessionnel", "Franco-arabe", "Collège", null]) {
+    for (const it of itemsEcole) {
+      assert.equal(itemPourType(it, ancien), true,
+        `« ${it.label} » doit rester visible pour une école dont le type vaut ${JSON.stringify(ancien)}`);
+    }
+  }
+
+  // Et la bascule doit continuer de fonctionner dans l'autre sens.
+  const itemsSup = pedagogie.items.filter((i) => i.types && i.types.includes("superieur"));
+  for (const it of itemsSup) {
+    assert.equal(itemPourType(it, "Privé"), false, `« ${it.label} » ne doit PAS apparaître dans une école`);
+    assert.equal(itemPourType(it, "superieur"), true);
+  }
+});
