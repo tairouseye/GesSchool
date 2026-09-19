@@ -11,6 +11,15 @@ export async function lierEtudiant(code) {
   return data;
 }
 
+// Dossier de l'étudiant connecté : école + cursus.
+// Indispensable côté client : `profils.ecole_id` est NULL pour un étudiant,
+// donc useAuth().ecoleId vaut null — c'est cette RPC qui donne l'école.
+export async function monDossier() {
+  const { data, error } = await supabase.rpc("mon_dossier_etudiant");
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] || null : data || null;
+}
+
 // Demandes d'accès de mes parents (à approuver / refuser).
 export async function mesDemandesAcces() {
   const { data, error } = await supabase.rpc("mes_demandes_acces");

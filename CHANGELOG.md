@@ -5,6 +5,19 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.173.0] — migrations 115 → 120
+- **⚠️ Correctif bloquant — comptes étudiants** : le rôle `'etudiant'` était **absent de l'enum `role_systeme`** alors que `lier_etudiant` (113) l'insère : **aucun étudiant ne pouvait activer son compte** (l'erreur ne survenait qu'à l'exécution, la migration 113 ayant été acceptée). Ajouté, avec le rôle **`bibliothecaire`** (migration 115, isolée).
+- **Helper générique `est_membre_ecole()`** (migration 116) : détermine l'appartenance à un établissement via `profil_roles`, **fail-closed**. Indispensable car `profils.ecole_id` est NULL pour les **étudiants et les parents** (donc `ecole_courante()` aussi). Réutilisable par tout module ouvert aux étudiants. + index manquants sur `eleves.profil_id` / `code_acces`.
+- **Module Bibliothèque universitaire — socle (Phase 1)** : nouvelle page **« Bibliothèque »** (Pédagogie, mode Supérieur).
+  - **Catalogue** avec **recherche plein texte et pagination côté serveur** (index GIN) — une première dans le projet : le catalogue peut atteindre des centaines de milliers de notices sans jamais être chargé entièrement.
+  - Séparation **notice / exemplaire physique / document numérique** ; auteurs, bibliothèques et localisations (salle → rayon → étagère) ; codes-barres, cotes, états et statuts.
+  - **Documents numériques** dans un **bucket privé**, lus par URL signée. La **règle d'accès de chaque document est appliquée dans la policy Storage** (institution / ciblé filière-niveau-rôle / restreint) : impossible d'y accéder depuis une autre institution, même en connaissant le chemin.
+  - **Circulation en base** (prêts, retours, renouvellements, réservations avec file d'attente, règles configurables par rôle, pénalités désactivables, favoris, journal), avec synchronisation automatique du statut des exemplaires par trigger.
+  - **Poste de circulation** (« Prêts & retours ») : prêt en 2 étapes (emprunteur puis code-barres, validés à la touche Entrée pour un lecteur de codes-barres), retour rapide, renouvellement, liste des emprunts en cours avec mise en évidence des retards, et écran de **règles de prêt configurables par profil** (quota, durée, renouvellements, pénalités désactivables).
+  - **Espace étudiant — Bibliothèque** : catalogue consultable, *Mes emprunts*, *Mes réservations*, *Mes favoris*, consultation des documents autorisés. L'espace étudiant reçoit enfin une **navigation** (il n'en avait aucune). Nouvelle RPC `mon_dossier_etudiant()` (migration 120) qui résout l'établissement et le cursus de l'étudiant — nécessaire puisque `profils.ecole_id` est NULL pour lui.
+  - Recherche d'emprunteur **bornée côté serveur** (jamais de chargement complet des étudiants).
+  - Rôle **bibliothécaire** et modules commerciaux **Bibliothèque** / **Bibliothèque numérique** (activables à la carte). Règles de circulation **testées unitairement** (`test/bibliotheque.test.mjs`).
+
 ## [2.172.0]
 - **Supérieur — vocabulaire « étudiant »** : en mode Supérieur, le terme « élève » devient « **étudiant** » (helper `lexique.js` selon `type_etablissement`). Première passe sur les écrans les plus visibles : **menu** (Élèves → Étudiants), **page Élèves** (titre, boutons, colonnes, import, création, suppression) et **fiche**. Les autres pages (documents, finances…) suivront. À l'école : inchangé.
 

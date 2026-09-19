@@ -24,6 +24,7 @@ export const LIBELLES_ROLES = {
   surveillant: "Surveillant",
   parent: "Parent",
   etudiant: "Étudiant",
+  bibliothecaire: "Bibliothécaire",
 };
 
 // Pour chaque page : rôles autorisés EN PLUS des rôles complets.
@@ -51,6 +52,10 @@ const ACCES = {
   notes_lmd: ["direction", "enseignant"],
   deliberations_sup: ["direction", "comptable", "secretaire"],
   codes_etudiants: ["direction", "comptable", "secretaire"],
+
+  // --- Bibliothèque universitaire (module payant, réservé au supérieur) ---
+  bibliotheque: ["direction", "bibliothecaire", "enseignant", "secretaire"],
+  biblio_circulation: ["direction", "bibliothecaire"],
 
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
@@ -106,6 +111,8 @@ export const PAGES = [
   { cle: "notes_lmd", path: "/notes-lmd" },
   { cle: "deliberations_sup", path: "/deliberations" },
   { cle: "codes_etudiants", path: "/codes-etudiants" },
+  { cle: "bibliotheque", path: "/bibliotheque" },
+  { cle: "biblio_circulation", path: "/biblio-circulation" },
   { cle: "enseignants", path: "/enseignants" },
   { cle: "vie_scolaire", path: "/vie-scolaire" },
   { cle: "emploi", path: "/emploi-du-temps" },
@@ -180,9 +187,9 @@ export function voitTousEleves(roles) {
 
 // --- Matrice de délégation : quels rôles chaque rôle peut inviter/gérer ---
 export const ROLES_INVITABLES = {
-  super_admin: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent"],
-  admin_ecole: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent"],
-  direction: ["enseignant", "surveillant", "parent"],
+  super_admin: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent", "bibliothecaire"],
+  admin_ecole: ["direction", "rh", "comptable", "secretaire", "enseignant", "surveillant", "parent", "bibliothecaire"],
+  direction: ["enseignant", "surveillant", "parent", "bibliothecaire"],
   rh: ["secretaire"],
   comptable: ["secretaire"],
 };

@@ -70,6 +70,8 @@ export const ESPACES = [
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"] },
       { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"] },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"] },
+      { to: "/bibliotheque", label: "Bibliothèque", icone: "📚", cle: "bibliotheque", types: ["superieur"] },
+      { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"] },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
       { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"] },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"] },

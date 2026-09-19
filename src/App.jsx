@@ -34,8 +34,11 @@ const InscriptionsSup = lazy(() => import("@/pages/InscriptionsSup.jsx"));
 const NotesLMD = lazy(() => import("@/pages/NotesLMD.jsx"));
 const Deliberations = lazy(() => import("@/pages/Deliberations.jsx"));
 const CodesEtudiants = lazy(() => import("@/pages/CodesEtudiants.jsx"));
+const Bibliotheque = lazy(() => import("@/pages/Bibliotheque.jsx"));
+const BiblioCirculation = lazy(() => import("@/pages/BiblioCirculation.jsx"));
 const EtudiantLayout = lazy(() => import("@/pages/EtudiantLayout.jsx"));
 const EtudiantAccueil = lazy(() => import("@/pages/EtudiantAccueil.jsx"));
+const EtudiantBibliotheque = lazy(() => import("@/pages/EtudiantBibliotheque.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -187,6 +190,7 @@ export default function App() {
             }
           >
             <Route index element={<EtudiantAccueil />} />
+            <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}
@@ -211,6 +215,8 @@ export default function App() {
             <Route path="/notes-lmd" element={<Garde cle="notes_lmd"><NotesLMD /></Garde>} />
             <Route path="/deliberations" element={<Garde cle="deliberations_sup"><Deliberations /></Garde>} />
             <Route path="/codes-etudiants" element={<Garde cle="codes_etudiants"><CodesEtudiants /></Garde>} />
+            <Route path="/bibliotheque" element={<Garde cle="bibliotheque"><Bibliotheque /></Garde>} />
+            <Route path="/biblio-circulation" element={<Garde cle="biblio_circulation"><BiblioCirculation /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />

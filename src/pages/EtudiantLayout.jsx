@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, NavLink } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
@@ -24,6 +24,20 @@ export default function EtudiantLayout() {
           </button>
         </div>
       </header>
+      {/* Navigation de l'espace étudiant */}
+      <nav className="flex gap-1 overflow-x-auto border-b border-navy-900/10 bg-white px-4 py-2">
+        {[["/etudiant", "Accueil", true], ["/etudiant/bibliotheque", "Bibliothèque", false]].map(([to, label, exact]) => (
+          <NavLink key={to} to={to} end={exact}
+            className={({ isActive }) =>
+              `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                isActive ? "bg-navy-900 text-creme" : "text-navy-900/70 hover:bg-creme"
+              }`
+            }>
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
       <main className="mx-auto max-w-3xl space-y-4 p-6">
         <Suspense fallback={<ChargementPage />}>
           <Outlet />
