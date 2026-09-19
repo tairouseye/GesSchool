@@ -12,6 +12,8 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 - **L'étudiant voit sa semaine** (`/etudiant/emploi`, tuile sur son accueil), le jour courant mis en avant. Les séances passent par le RPC `mon_emploi_sup` : les tables de la maquette lui sont fermées, c'est la fonction qui résout son inscription (filière + niveau + année).
 - Détails qui comptent : une séance dont l'heure de fin précède le début est **refusée en base** (contrainte), pas affichée à l'envers ; le RPC teste l'inscription par `exists` et non par une jointure, sinon un étudiant réinscrit dans la même filière verrait chaque cours en double.
 - Six tests unitaires sur le regroupement par jour et la détection des chevauchements (dont le cas « bord à bord », qui n'est **pas** un conflit).
+- **Corrigé sur données réelles** : l'étudiant de L1 recevait S1 **et** S2 dans la même semaine, puisque les deux semestres portent le niveau L1. Deux cours du lundi matin, un par semestre, se lisaient comme un conflit d'horaire inexistant. La page propose désormais un **sélecteur de semestre** ; les chevauchements se calculent à l'intérieur du semestre affiché.
+- Emploi du temps de démonstration posé sur l'UCAD (L1 Maths, 11 séances au S1 et 6 au S2).
 
 ## [2.195.0] — aucune migration
 - **Le sélecteur d'élève est étendu** à Cantine, Transport et Inscriptions (supérieur), en plus de Documents. Ces pages construisaient un menu déroulant d'un `<option>` par élève.

@@ -12,6 +12,7 @@ const AUJOURDHUI = () => {
 // sont fermées à l'étudiant, c'est la fonction qui résout son inscription.
 export default function EtudiantEmploi() {
   const [seances, setSeances] = useState(null);
+  const [semestre, setSemestre] = useState("");
   const [erreur, setErreur] = useState("");
 
   useEffect(() => {
@@ -20,8 +21,22 @@ export default function EtudiantEmploi() {
       .catch((e) => { setErreur(e.message); setSeances([]); });
   }, []);
 
-  const jours = useMemo(() => parJour(seances || []), [seances]);
-  const conflits = useMemo(() => chevauchements(seances || []), [seances]);
+  // Le RPC renvoie TOUS les semestres du niveau de l'étudiant (L1 = S1 + S2).
+  // Les afficher dans la même semaine serait faux : les semestres se suivent,
+  // ils ne se superposent pas — et deux cours du lundi matin, un par semestre,
+  // se liraient comme un conflit d'horaire qui n'existe pas.
+  const semestres = useMemo(
+    () => [...new Set((seances || []).map((s) => s.semestre).filter(Boolean))].sort(),
+    [seances]
+  );
+  const actif = semestre && semestres.includes(semestre) ? semestre : semestres[0] || "";
+
+  const visibles = useMemo(
+    () => (seances || []).filter((s) => !actif || s.semestre === actif),
+    [seances, actif]
+  );
+  const jours = useMemo(() => parJour(visibles), [visibles]);
+  const conflits = useMemo(() => chevauchements(visibles), [visibles]);
   const jourCourant = AUJOURDHUI();
 
   return (
@@ -32,6 +47,20 @@ export default function EtudiantEmploi() {
       </div>
 
       <Alerte ton="erreur">{erreur}</Alerte>
+
+      {semestres.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {semestres.map((s) => (
+            <button key={s} type="button" onClick={() => setSemestre(s)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                s === actif
+                  ? "bg-navy-900 text-creme"
+                  : "border border-navy-900/15 bg-white text-navy-900/60 hover:text-navy-900"}`}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {conflits.size > 0 && (
         <Alerte ton="or">
@@ -70,7 +99,10 @@ export default function EtudiantEmploi() {
                       {s.ecue_intitule || s.ue_intitule || "Séance"}
                     </p>
                     <p className="text-xs text-navy-900/55">
-                      {[s.enseignant, s.salle ? `salle ${s.salle}` : null, s.semestre]
+                      {/* Le semestre n'est répété ici que s'il n'y a pas de
+                          sélecteur au-dessus pour le rappeler. */}
+                      {[s.enseignant, s.salle ? `salle ${s.salle}` : null,
+                        semestres.length > 1 ? null : s.semestre]
                         .filter(Boolean).join(" · ") || "Lieu à préciser"}
                     </p>
                   </div>
