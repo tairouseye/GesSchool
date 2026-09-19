@@ -186,9 +186,14 @@ export function filtreTexte(liste, q, champs) {
   return liste.filter((it) => champs.some((f) => t(typeof f === "function" ? f(it) : it[f]).includes(r)));
 }
 
-export function Carte({ children, className = "" }) {
+// Les attributs restants sont transmis au conteneur (id, aria-*, onClick…) :
+// sans cela, une ancre ou un libellé d'accessibilité posé sur une Carte était
+// silencieusement perdu.
+export function Carte({ children, className = "", ...props }) {
   return (
-    <div className={`rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`}>{children}</div>
+    <div className={`rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`} {...props}>
+      {children}
+    </div>
   );
 }
 

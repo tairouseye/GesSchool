@@ -1,11 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
+import { Icone } from "@/composants/Icones.jsx";
 import { mesDemandesAcces, deciderAcces } from "@/lib/etudiant.js";
 
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé", revoque: "Révoqué" };
+
+// Menu principal en tuiles — même traitement que l'espace parent
+// (navy sombre, icône dorée), pour que les deux espaces se ressemblent.
+const TUILES = [
+  { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
+  { to: "/etudiant/bibliotheque", cle: "bibliotheque", label: "Bibliothèque" },
+  { to: "/etudiant/depots", cle: "biblio_depots", label: "Mon dépôt" },
+];
 
 // Accueil étudiant : gestion du consentement d'accès parent aux notes.
 export default function EtudiantAccueil() {
@@ -41,7 +51,34 @@ export default function EtudiantAccueil() {
         <p className="mt-1 text-sm text-creme/70">Bienvenue dans votre espace GesSchool.</p>
       </div>
 
-      <Carte className="p-6">
+      {/* Menu en tuiles */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {TUILES.map((t) => (
+          <Link
+            key={t.to}
+            to={t.to}
+            className="group relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]"
+          >
+            <Icone name={t.cle} className="h-7 w-7 text-or-500" />
+            <span className="text-sm font-semibold text-creme">{t.label}</span>
+          </Link>
+        ))}
+
+        {/* Demandes parentales en attente : la décision est ci-dessous, mais
+            elle doit se voir dès l'accueil — sinon personne n'y répond. */}
+        {enAttente.length > 0 && (
+          <a href="#consentement"
+            className="relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border border-or-500/40 bg-or-500/10 p-4 text-left shadow-md transition hover:bg-or-500/15 active:scale-[.98]">
+            <Icone name="documents" className="h-7 w-7 text-or-600" />
+            <span className="text-sm font-semibold text-navy-900">Demandes d&apos;accès</span>
+            <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
+              {enAttente.length}
+            </span>
+          </a>
+        )}
+      </div>
+
+      <Carte id="consentement" className="p-6">
         <h2 className="font-display text-lg font-semibold text-navy-900">Accès de mes parents à mes notes</h2>
         <p className="mt-1 text-sm text-navy-900/60">
           En tant qu'étudiant majeur, <b>vous contrôlez</b> qui peut consulter vos notes. Autorisez ou refusez chaque demande ; vous pouvez révoquer un accès à tout moment.

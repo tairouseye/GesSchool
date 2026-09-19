@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.180.0] — aucune migration
+- **Espace étudiant : menu en tuiles.** L'accueil présente désormais *Mes résultats*, *Bibliothèque* et *Mon dépôt* en grandes tuiles tactiles (navy sombre, icône dorée), reprenant exactement le traitement de l'espace parent pour que les deux se ressemblent. La barre de navigation reste en haut : elle sert une fois qu'on est entré dans une section, là où les tuiles ne sont plus visibles.
+- Une **tuile d'alerte** apparaît quand des demandes d'accès parentales attendent une réponse, avec leur nombre en pastille. La décision se prenait plus bas dans la page : sans rappel en haut, personne n'y répondait.
+- `Carte` transmet désormais les attributs restants (`id`, `aria-*`, `onClick`…) à son conteneur. Ils étaient silencieusement perdus — une ancre ou un libellé d'accessibilité posé sur une Carte n'avait aucun effet.
+
 ## [2.179.0] — migration 129
 - **⚠️ Un étudiant ne pouvait pas voir ses propres notes.** `notes_lmd`, `deliberations` et `releves` se lisent avec `ecole_id = ecole_courante()` — or `profils.ecole_id` est NULL pour un étudiant, donc `ecole_courante()` aussi. Il n'existait **aucun chemin de lecture** vers ses résultats : l'espace étudiant se limitait à la bibliothèque, alors que c'est la première chose qu'on vient y chercher.
 - **Espace étudiant — « Mes résultats »** : notes par semestre et par UE (détail CC / examen / note finale par ECUE, crédits acquis, moyenne et mention indicatives), et **relevés officiels** avec décision, mention et détail des UE.
