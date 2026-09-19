@@ -50,6 +50,7 @@ const EtudiantDocuments = lazy(() => import("@/pages/EtudiantDocuments.jsx"));
 const EtudiantActualites = lazy(() => import("@/pages/EtudiantActualites.jsx"));
 const EtudiantCarte = lazy(() => import("@/pages/EtudiantCarte.jsx"));
 const EtudiantEmploi = lazy(() => import("@/pages/EtudiantEmploi.jsx"));
+const EtudiantMessagerie = lazy(() => import("@/pages/EtudiantMessagerie.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -205,6 +206,7 @@ export default function App() {
             <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
             <Route path="notes" element={<EtudiantNotes />} />
             <Route path="emploi" element={<EtudiantEmploi />} />
+            <Route path="messagerie" element={<EtudiantMessagerie />} />
             <Route path="scolarite" element={<EtudiantScolarite />} />
             <Route path="documents" element={<EtudiantDocuments />} />
             <Route path="actualites" element={<EtudiantActualites />} />

@@ -131,6 +131,24 @@ export async function mesAnnonces() {
   return data ?? [];
 }
 
+// --- Messagerie avec la scolarité (migration 139) ---------------------------
+// Un étudiant a un seul dossier, donc un seul fil : aucun identifiant à
+// passer, donc rien à falsifier. `_eleve_courant()` résout le reste.
+export async function maConversation() {
+  const { data, error } = await supabase.rpc("ma_conversation");
+  if (error) throw error;
+  return data ?? [];
+}
+export async function envoyerMessage(contenu) {
+  const { error } = await supabase.rpc("etudiant_envoyer", { p_contenu: contenu });
+  if (error) throw error;
+}
+export async function mesMessagesNonLus() {
+  const { data, error } = await supabase.rpc("mes_messages_non_lus_etudiant");
+  if (error) throw error;
+  return Number(data) || 0;
+}
+
 // --- Notifications ----------------------------------------------------------
 // Lecture directe : la policy `destinataire_id = auth.uid()` (mig. 013) suffit,
 // aucune RPC n'est nécessaire. Seule l'ÉMISSION manquait (mig. 130).

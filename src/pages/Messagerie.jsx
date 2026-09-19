@@ -5,71 +5,132 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte, Bouton } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/messagerie.js";
-import { getEleves, getTuteursEleve } from "@/lib/eleves.js";
+import { getEleves, getTuteursEleve, chercherEleves } from "@/lib/eleves.js";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 
 export default function Messagerie() {
-  const { ecoleId, utilisateur } = useAuth();
+  const { ecoleId, utilisateur, typeEtablissement } = useAuth();
+  const sup = typeEtablissement === "superieur";
   const toast = useToast();
+
+  // Au supérieur, l'étudiant est majeur et écrit lui-même : c'est l'onglet
+  // par défaut. Les parents restent joignables, mais ce n'est plus le canal
+  // principal. À l'école, aucun onglet : la page ne change pas.
+  const [onglet, setOnglet] = useState(sup ? "etudiants" : "parents");
+  useEffect(() => { setOnglet(sup ? "etudiants" : "parents"); }, [sup]);
+
+  const [erreur, setErreur] = useState("");
+  const [texte, setTexte] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+
+  // --- Fils PARENTS (existant) ---
   const [convs, setConvs] = useState([]);
   const [eleves, setEleves] = useState([]);
   const [recherche, setRecherche] = useState("");
-  const [choixParents, setChoixParents] = useState(null); // { eleve, parents } quand un élève a plusieurs parents
+  const [choixParents, setChoixParents] = useState(null); // { eleve, parents } si plusieurs
   const [tuteurId, setTuteurId] = useState(null);
-  const [selInfo, setSelInfo] = useState(null); // { nom, eleve } du parent ouvert via recherche
+  const [selInfo, setSelInfo] = useState(null);
+
+  // --- Fils ÉTUDIANTS (migration 139) ---
+  const [convsEt, setConvsEt] = useState([]);
+  const [rechercheEt, setRechercheEt] = useState("");
+  const [resultatsEt, setResultatsEt] = useState([]);
+  const [eleveId, setEleveId] = useState(null);
+  const [selEleve, setSelEleve] = useState(null);
+
   const [messages, setMessages] = useState([]);
-  const [texte, setTexte] = useState("");
-  const [erreur, setErreur] = useState("");
-  const [envoi, setEnvoi] = useState(false);
 
   const rechargerConvs = useCallback(async () => {
     try { setConvs(await api.getConversations()); }
     catch (e) { setErreur(e.message); }
   }, []);
+  const rechargerConvsEt = useCallback(async () => {
+    if (!sup) return;
+    try { setConvsEt(await api.getConversationsEtudiants()); }
+    catch (e) { setErreur(e.message); }
+  }, [sup]);
 
   useEffect(() => { rechargerConvs(); }, [rechargerConvs]);
+  useEffect(() => { rechargerConvsEt(); }, [rechargerConvsEt]);
   useEffect(() => { getEleves(ecoleId).then(setEleves).catch((e) => setErreur(e.message)); }, [ecoleId]);
+
+  // Recherche d'étudiant CÔTÉ SERVEUR (au plus 8 résultats) : la liste
+  // complète chargée pour l'onglet parent ne passerait pas à l'échelle.
+  useEffect(() => {
+    const q = rechercheEt.trim();
+    if (q.length < 2) { setResultatsEt([]); return undefined; }
+    let vivant = true;
+    const t = setTimeout(async () => {
+      try {
+        const r = await chercherEleves(ecoleId, q, { limite: 8 });
+        if (vivant) setResultatsEt(r);
+      } catch { if (vivant) setResultatsEt([]); }
+    }, 250);
+    return () => { vivant = false; clearTimeout(t); };
+  }, [ecoleId, rechercheEt]);
 
   // Lien profond depuis la fiche élève : /messagerie?tuteur=…&nom=…
   const [params] = useSearchParams();
   useEffect(() => {
     const t = params.get("tuteur");
-    if (t) ouvrir(t, params.get("nom") || "Parent", params.get("eleve") || undefined);
+    if (t) { setOnglet("parents"); ouvrir(t, params.get("nom") || "Parent", params.get("eleve") || undefined); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const chargerThread = useCallback(async () => {
-    if (!tuteurId) { setMessages([]); return; }
-    try { setMessages(await api.getThread(tuteurId)); }
-    catch (e) { setErreur(e.message); }
-  }, [tuteurId]);
-
+    try {
+      if (onglet === "etudiants") setMessages(eleveId ? await api.getThreadEtudiant(eleveId) : []);
+      else setMessages(tuteurId ? await api.getThread(tuteurId) : []);
+    } catch (e) { setErreur(e.message); }
+  }, [onglet, tuteurId, eleveId]);
   useEffect(() => { chargerThread(); }, [chargerThread]);
 
   async function envoyer(e) {
     e.preventDefault();
-    if (!texte.trim() || !tuteurId) return;
+    const t = texte.trim();
+    if (!t) return;
     setEnvoi(true);
     try {
-      await api.envoyerEcole(ecoleId, tuteurId, texte, utilisateur?.id);
+      if (onglet === "etudiants") {
+        if (!eleveId) return;
+        await api.envoyerEcoleEtudiant(ecoleId, eleveId, t, utilisateur?.id);
+      } else {
+        if (!tuteurId) return;
+        await api.envoyerEcole(ecoleId, tuteurId, t, utilisateur?.id);
+      }
       setTexte("");
       await chargerThread();
-      await rechargerConvs();
-    } catch (er) { setErreur(er.message); toast.erreur(er.message); }
+      await (onglet === "etudiants" ? rechargerConvsEt() : rechargerConvs());
+    } catch (er) { setErreur(er.message); toast.erreur(er); }
     finally { setEnvoi(false); }
   }
 
-  // Ouvre le fil d'un parent (par son tuteur_id).
   function ouvrir(tid, nom, eleveNom) {
     setTuteurId(tid);
     setSelInfo(nom ? { nom, eleve: eleveNom } : null);
     setRecherche("");
     setChoixParents(null);
   }
+  function ouvrirEtudiant(el) {
+    setEleveId(el.id ?? el.eleve_id);
+    setSelEleve(el);
+    setRechercheEt("");
+    setResultatsEt([]);
+  }
+  function changerOnglet(o) {
+    setOnglet(o);
+    setTexte("");
+    setErreur("");
+  }
 
-  // Sélectionne un élève → retrouve ses parents avec compte.
+  // --- Onglet parents : recherche en mémoire (liste déjà chargée) ---
+  const q = recherche.trim().toLowerCase();
+  const resultats = q
+    ? eleves.filter((e) => `${e.prenom} ${e.nom} ${e.matricule || ""}`.toLowerCase().includes(q)).slice(0, 30)
+    : [];
+
   async function choisirEleve(el) {
     try {
       const liens = await getTuteursEleve(el.id);
@@ -80,31 +141,98 @@ export default function Messagerie() {
     } catch (e) { toast.erreur(e.message); }
   }
 
-  const q = recherche.trim().toLowerCase();
-  const resultats = q
-    ? eleves.filter((e) => `${e.prenom} ${e.nom} ${e.matricule || ""}`.toLowerCase().includes(q)).slice(0, 30)
-    : [];
+  const etudiants = onglet === "etudiants";
   const conv = convs.find((c) => c.tuteur_id === tuteurId);
-  const titreFil = conv?.parent || selInfo?.nom || "Parent";
+  const convEt = convsEt.find((c) => c.eleve_id === eleveId);
+  const ouvert = etudiants ? eleveId : tuteurId;
+  const titreFil = etudiants
+    ? (convEt?.etudiant || (selEleve ? `${selEleve.prenom} ${selEleve.nom}` : "Étudiant"))
+    : (conv?.parent || selInfo?.nom || "Parent");
+  const sousTitreFil = etudiants
+    ? (convEt?.matricule || selEleve?.matricule || null)
+    : (selInfo?.eleve ? `Parent de ${selInfo.eleve}` : conv?.telephone || null);
 
   return (
     <>
-      <EnTete titre="Messagerie" sousTitre="Échanges avec les parents" />
-      <div className="p-8">
+      <EnTete
+        titre="Messagerie"
+        sousTitre={sup ? "Échanges avec les étudiants et les familles" : "Échanges avec les parents"}
+      />
+      <div className="p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
+
+        {sup && (
+          <div className="mb-4 flex gap-2">
+            {[["etudiants", "Étudiants"], ["parents", "Parents"]].map(([v, l]) => (
+              <button key={v} type="button" onClick={() => changerOnglet(v)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  onglet === v ? "bg-navy-900 text-creme"
+                               : "border border-navy-900/15 bg-white text-navy-900/60 hover:text-navy-900"}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Panneau de gauche : recherche d'élève OU conversations */}
+          {/* Panneau de gauche */}
           <Carte className="flex max-h-[62vh] flex-col overflow-hidden lg:col-span-1">
             <div className="border-b border-navy-900/10 p-3">
               <input
-                value={recherche}
-                onChange={(e) => { setRecherche(e.target.value); setChoixParents(null); }}
-                placeholder="🔍 Rechercher un élève…"
+                value={etudiants ? rechercheEt : recherche}
+                onChange={(e) => {
+                  if (etudiants) setRechercheEt(e.target.value);
+                  else { setRecherche(e.target.value); setChoixParents(null); }
+                }}
+                placeholder={etudiants ? "🔍 Rechercher un étudiant…" : "🔍 Rechercher un élève…"}
                 className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
               />
             </div>
 
-            {choixParents ? (
+            {etudiants ? (
+              rechercheEt.trim().length >= 2 ? (
+                <ul className="overflow-y-auto">
+                  {resultatsEt.length === 0 ? (
+                    <li className="p-6 text-sm text-navy-900/40">Aucun étudiant trouvé.</li>
+                  ) : resultatsEt.map((el) => (
+                    <li key={el.id}>
+                      <button onClick={() => ouvrirEtudiant(el)}
+                        className="flex w-full items-center justify-between gap-2 border-b border-navy-900/5 px-4 py-3 text-left hover:bg-creme/60">
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-navy-900">{el.prenom} {el.nom}</span>
+                          <span className="block truncate font-mono text-xs text-navy-900/50">
+                            {el.matricule || "—"}{el.profil_id ? "" : " · sans compte"}
+                          </span>
+                        </span>
+                        <span className="text-navy-900/30">›</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="overflow-y-auto">
+                  <li className="px-4 py-2 text-[11px] uppercase tracking-wide text-navy-900/40">Conversations</li>
+                  {convsEt.length === 0 ? (
+                    <li className="px-4 pb-4 text-sm text-navy-900/40">
+                      Aucune conversation. Recherchez un étudiant ci-dessus pour lui écrire.
+                    </li>
+                  ) : convsEt.map((c) => (
+                    <li key={c.eleve_id}>
+                      <button onClick={() => ouvrirEtudiant(c)}
+                        className={`flex w-full items-start justify-between gap-2 border-b border-navy-900/5 px-4 py-3 text-left hover:bg-creme/60 ${c.eleve_id === eleveId ? "bg-creme" : ""}`}>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-navy-900">{c.etudiant}</span>
+                          <span className="block truncate text-xs text-navy-900/50">{c.dernier || "—"}</span>
+                        </span>
+                        {c.non_lus > 0 && (
+                          <span className="mt-1 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">{c.non_lus}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : choixParents ? (
               /* Un élève a plusieurs parents → choisir lequel */
               <div className="overflow-y-auto">
                 <button onClick={() => setChoixParents(null)} className="px-4 py-2 text-xs text-navy-700 hover:text-or-500">← Retour</button>
@@ -167,16 +295,23 @@ export default function Messagerie() {
 
           {/* Fil */}
           <Carte className="flex h-[62vh] flex-col p-0 lg:col-span-2">
-            {!tuteurId ? (
+            {!ouvert ? (
               <p className="grid flex-1 place-items-center px-6 text-center text-sm text-navy-900/40">
-                Recherchez un élève pour écrire à son parent, ou choisissez une conversation.
+                {etudiants
+                  ? "Recherchez un étudiant pour lui écrire, ou choisissez une conversation."
+                  : "Recherchez un élève pour écrire à son parent, ou choisissez une conversation."}
               </p>
             ) : (
               <>
                 <div className="border-b border-navy-900/10 px-5 py-3">
                   <p className="font-display font-semibold text-navy-900">{titreFil}</p>
-                  {(conv?.telephone || selInfo?.eleve) && (
-                    <p className="text-xs text-navy-900/50">{selInfo?.eleve ? `Parent de ${selInfo.eleve}` : conv?.telephone}</p>
+                  {sousTitreFil && <p className="text-xs text-navy-900/50">{sousTitreFil}</p>}
+                  {/* Écrire à un étudiant sans compte revient à parler à un mur :
+                      le message est enregistré, mais personne ne le lira. */}
+                  {etudiants && selEleve && !selEleve.profil_id && !convEt && (
+                    <p className="mt-1 text-xs text-or-600">
+                      Cet étudiant n&apos;a pas encore activé son compte : il ne verra pas ce message.
+                    </p>
                   )}
                 </div>
                 <div className="flex-1 space-y-2 overflow-y-auto p-5">
@@ -198,7 +333,7 @@ export default function Messagerie() {
                     value={texte}
                     onChange={(e) => setTexte(e.target.value)}
                     placeholder="Votre message…"
-                    className="flex-1 rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
+                    className="min-w-0 flex-1 rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
                   />
                   <Bouton type="submit" disabled={envoi || !texte.trim()}>Envoyer</Bouton>
                 </form>

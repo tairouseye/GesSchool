@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.197.0] — migration **139** · messagerie étudiante (+ un correctif de sécurité)
+- 🔴 **Faille trouvée en chemin, corrigée ici.** `ecole_conversations()` (mig. 014) est `SECURITY DEFINER` et n'était gardée que par `ecole_courante()`. La migration 133 avait fermé la **table** `messages` aux enseignants — mais pas cette fonction, qui leur renvoyait le dernier message de **chaque** conversation parent. Le durcissement de la 133 était donc contournable par un simple appel RPC. Même garde-fou posé sur les deux fonctions (admin / direction / comptable / secrétaire).
+- **L'étudiant peut écrire à sa scolarité** (`/etudiant/messagerie`, tuile sur son accueil avec pastille de messages non lus). Au supérieur il est majeur, paie lui-même et fait ses démarches seul : le faire passer par ses parents pour poser une question était la même incohérence que celle corrigée en v2.19x pour ses factures.
+- **La table est étendue, pas dupliquée** : `eleve_id` rejoint `tuteur_id` dans `messages`, avec la contrainte « exactement un des deux » — même patron que l'emprunteur de `biblio_emprunts`. Un fil reste un fil ; une seconde table aurait dupliqué les RPC, la RLS et l'écran.
+- **Côté établissement**, la page Messagerie prend deux onglets **Étudiants / Parents** au supérieur. À l'école, elle ne change pas. La recherche d'étudiant se fait **côté serveur** (8 résultats), et la liste des conversations ne contient que les fils réellement ouverts — dérouler 10 000 inscrits n'aurait été ni utilisable ni supportable.
+- Un message de l'établissement **crée une notification** pour l'étudiant : une réponse qu'on ne voit pas est une réponse perdue. Le déclencheur sort immédiatement sur un fil parent — notifier aussi les parents changerait le comportement d'utilisateurs réels (le push est branché, mig. 066), c'est une décision à part.
+- Détail qui compte : écrire à un étudiant **sans compte activé** est signalé dans l'en-tête du fil — le message part, mais personne ne le lira.
+
 ## [2.196.0] — migration **138** · phase 3 : emploi du temps du supérieur
 - **L'université avait perdu son emploi du temps.** La page existante planifie par **classe** (`emplois_du_temps.classe_id` est `NOT NULL`) ; le supérieur n'a pas de classes, l'entrée de menu y avait donc été masquée en v2.185.0. Le besoin restait entier.
 - **Nouveau modèle `emplois_sup`** (migration 138) : la séance se rattache à une **filière**, un **semestre** et une **UE** (ou un ECUE), avec son type — **CM / TD / TP** —, son jour, ses horaires, sa salle et son enseignant. C'est la maille réelle d'une université.

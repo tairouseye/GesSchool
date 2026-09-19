@@ -4,7 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
-import { mesDemandesAcces, deciderAcces } from "@/lib/etudiant.js";
+import { mesDemandesAcces, deciderAcces, mesMessagesNonLus } from "@/lib/etudiant.js";
 
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé", revoque: "Révoqué" };
@@ -14,6 +14,7 @@ const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé"
 const TUILES = [
   { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
   { to: "/etudiant/emploi", cle: "emploi_sup", label: "Emploi du temps" },
+  { to: "/etudiant/messagerie", cle: "messagerie", label: "Messagerie" },
   { to: "/etudiant/scolarite", cle: "paiements", label: "Ma scolarité" },
   { to: "/etudiant/documents", cle: "certificats", label: "Mes documents" },
   { to: "/etudiant/actualites", cle: "annonces", label: "Actualités" },
@@ -28,8 +29,13 @@ export default function EtudiantAccueil() {
   const toast = useToast();
   const confirmer = useConfirm();
   const [demandes, setDemandes] = useState([]);
+  const [nonLus, setNonLus] = useState(0);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
+
+  // Une réponse de la scolarité qu'on ne voit pas est une réponse perdue :
+  // la pastille est le seul rappel, l'étudiant n'ouvre pas la page à vide.
+  useEffect(() => { mesMessagesNonLus().then(setNonLus).catch(() => {}); }, []);
 
   const recharger = useCallback(async () => {
     setChargement(true); setErreur("");
@@ -66,6 +72,11 @@ export default function EtudiantAccueil() {
           >
             <Icone name={t.cle} className="h-7 w-7 text-or-500" />
             <span className="text-sm font-semibold text-creme">{t.label}</span>
+            {t.cle === "messagerie" && nonLus > 0 && (
+              <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
+                {nonLus}
+              </span>
+            )}
           </Link>
         ))}
 
