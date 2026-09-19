@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.181.1] — aucune migration
+- **Espace étudiant : la barre de navigation disparaît.** Elle répétait mot pour mot les tuiles affichées juste en dessous. Le menu, ce sont désormais les tuiles. Comme elles ne sont visibles que sur l'accueil, un lien **« ← Accueil »** apparaît dès qu'on entre dans une section — sans lui on resterait enfermé dans la page ouverte.
+
 ## [2.181.0] — aucune migration
 - **Tuiles partout, dans les trois espaces.** Suite du passage en tuiles, étendu au personnel et aux parents.
 - **Personnel** : la grille de tuiles existait déjà, mais **uniquement sur mobile** (`lg:hidden`) — sur ordinateur, seul le menu latéral était disponible. Elle s'affiche désormais aussi sur grand écran, sur 3 à 4 colonnes, et se rappelle par un bouton **▦** ajouté dans l'en-tête de la barre latérale (il n'existait que dans la barre du haut, elle-même réservée au mobile). La barre latérale reste en place : la grille ne recouvre que la zone de contenu.
