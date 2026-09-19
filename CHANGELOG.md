@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.195.0] — aucune migration
+- **Le sélecteur d'élève est étendu** à Cantine, Transport et Inscriptions (supérieur), en plus de Documents. Ces pages construisaient un menu déroulant d'un `<option>` par élève.
+- **Le composant lit désormais l'établissement dans le contexte** au lieu de l'exiger en propriété. Sans ce changement, les trois conversions auraient **planté à l'ouverture** : ces sélecteurs vivent dans des modales, composants séparés où `ecoleId` n'est pas en portée. Le build ne détecte pas ce genre d'erreur — c'est la deuxième fois aujourd'hui qu'un identifiant manquant passe la compilation.
+- `exclure` est lu **par référence** et non mis en dépendance d'effet : Cantine et Transport lui passent un `Set` reconstruit à chaque rendu, ce qui aurait relancé la recherche en boucle.
+- **Non traité, volontairement** : ces pages continuent de charger la liste complète des élèves (plafonnée à 1000) pour d'autres usages. Le menu déroulant n'en dépend plus, mais retirer ces chargements suppose de vérifier chaque consommateur — un travail distinct.
+- Vie scolaire n'est pas concernée : sa boucle sur les élèves est une grille d'appel bornée par la classe, pas un sélecteur.
+
 ## [2.194.0] — aucune migration · **fin de la phase 2**
 - **Correction du diagnostic de l'audit.** Les 137 requêtes « non bornées » était une mesure **statique** qui surestimait le problème : `getSalaires` est filtré par période, le cumul d'IR par année et par employé, les notes de bulletin par les évaluations d'une classe. Ces requêtes ont une **borne métier naturelle** et n'avaient pas besoin d'être paginées. RH et Bulletins sortent donc du chantier.
 - **Le vrai goulot restant était ailleurs** : six pages rendaient **un `<option>` par élève** dans un menu déroulant (Cantine, Transport, Messagerie, Documents, Vie scolaire, Inscriptions). Indolore à 96 élèves, impraticable à 10 000 — autant de nœuds dans le DOM, et une liste qu'on ne peut pas parcourir.

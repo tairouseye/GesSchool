@@ -153,7 +153,7 @@ export default function Certificats() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Pas de <label> englobant : le sélecteur pose le sien, et des
                 labels imbriqués détourneraient le clic sur les résultats. */}
-            <SelecteurEleve ecoleId={ecoleId} value={eleveId}
+            <SelecteurEleve value={eleveId}
               onChange={(id) => setEleveId(id)} label="Élève" />
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type de document</span>

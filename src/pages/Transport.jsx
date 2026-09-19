@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
+import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { facturerAbonnements } from "@/lib/paiements.js";
 import * as api from "@/lib/transport.js";
@@ -247,7 +248,6 @@ function ModaleAbonne({ ouvert, abo, eleves, abonnes, circuits, classe, devise, 
   }, [abo, ouvert, circuits]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const dejaAbo = new Set(abonnes.filter((a) => a.id !== abo?.id).map((a) => a.eleve_id));
-  const dispo = eleves.filter((e) => !dejaAbo.has(e.id));
   const arrets = circuits.find((c) => c.id === f.circuit_id)?.arrets || [];
 
   return (
@@ -256,13 +256,8 @@ function ModaleAbonne({ ouvert, abo, eleves, abonnes, circuits, classe, devise, 
         {abo?.id ? (
           <p className="text-sm font-medium text-navy-900">{abo.eleves?.prenom} {abo.eleves?.nom} <span className="text-navy-900/50">· {classe(abo.eleve_id)}</span></p>
         ) : (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élève *</span>
-            <select value={f.eleve_id} onChange={(e) => maj("eleve_id", e.target.value)} required className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-              <option value="">— Choisir —</option>
-              {dispo.map((e) => <option key={e.id} value={e.id}>{e.prenom} {e.nom} — {e.matricule || classe(e.id)}</option>)}
-            </select>
-          </label>
+          <SelecteurEleve value={f.eleve_id}
+            onChange={(id) => maj("eleve_id", id)} exclure={dejaAbo} label="Élève *" />
         )}
         <div className="grid grid-cols-2 gap-4">
           <label className="block">

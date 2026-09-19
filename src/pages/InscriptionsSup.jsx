@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/superieur.js";
 import { getEleves, creerEleve } from "@/lib/eleves.js";
+import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { creerFacture } from "@/lib/paiements.js";
 import { totalCredits } from "@/lib/lmd.js";
@@ -56,14 +57,8 @@ function ModaleIA({ ouvert, onFermer, filieres, eleves, filiereDefaut, niveauDef
             </label>
           </div>
         ) : (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Étudiant *</span>
-            <select value={eleveId} onChange={(e) => setEleveId(e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-              <option value="">— Choisir —</option>
-              {eleves.map((e) => <option key={e.id} value={e.id}>{e.nom} {e.prenom}{e.matricule ? ` — ${e.matricule}` : ""}</option>)}
-            </select>
-          </label>
+          <SelecteurEleve value={eleveId}
+            onChange={(id) => setEleveId(id)} label="Étudiant *" />
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

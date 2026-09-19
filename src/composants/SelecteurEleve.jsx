@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/contextes/AuthContext.jsx";
 import { chercherEleves } from "@/lib/eleves.js";
 
 // Sélecteur d'élève cherchant CÔTÉ SERVEUR.
@@ -11,13 +12,25 @@ import { chercherEleves } from "@/lib/eleves.js";
 // `exclure` permet d'écarter des élèves déjà traités (déjà abonnés à la
 // cantine, déjà inscrits…) sans que l'appelant ait à charger toute la liste.
 export default function SelecteurEleve({
-  ecoleId, anneeId = null, value = "", onChange,
+  ecoleId: ecoleIdProp = null, anneeId = null, value = "", onChange,
   exclure = null, label = "Élève", placeholder = "Nom, prénom ou matricule…", requis = false,
 }) {
+  // L'établissement est lu dans le contexte, pas exigé de l'appelant : ces
+  // sélecteurs vivent souvent dans des modales où `ecoleId` n'est pas en
+  // portée. Le prop reste possible pour les rares cas particuliers.
+  const { ecoleId: ecoleIdCtx } = useAuth();
+  const ecoleId = ecoleIdProp || ecoleIdCtx;
+
   const [saisie, setSaisie] = useState("");
   const [resultats, setResultats] = useState([]);
   const [choisi, setChoisi] = useState(null);
   const [cherche, setCherche] = useState(false);
+
+  // `exclure` est un Set que l'appelant reconstruit souvent à chaque rendu.
+  // Le mettre en dépendance d'effet relancerait la recherche en boucle : on
+  // le lit par référence au moment de filtrer.
+  const exclureRef = useRef(exclure);
+  exclureRef.current = exclure;
 
   // L'appelant peut réinitialiser la sélection (fermeture de modale) :
   // le composant doit suivre, sinon il afficherait un élève déjà validé.
@@ -31,12 +44,13 @@ export default function SelecteurEleve({
     const t = setTimeout(async () => {
       try {
         const r = await chercherEleves(ecoleId, q, { anneeId, limite: 8 });
-        if (vivant) setResultats(exclure ? r.filter((e) => !exclure.has(e.id)) : r);
+        const ex = exclureRef.current;
+        if (vivant) setResultats(ex ? r.filter((e) => !ex.has(e.id)) : r);
       } catch { if (vivant) setResultats([]); }
       finally { if (vivant) setCherche(false); }
     }, 250);
     return () => { vivant = false; clearTimeout(t); };
-  }, [ecoleId, anneeId, saisie, choisi, exclure]);
+  }, [ecoleId, anneeId, saisie, choisi]);
 
   function selectionner(e) {
     setChoisi(e);
