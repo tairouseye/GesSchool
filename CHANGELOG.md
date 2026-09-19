@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.193.0] — migration 137 · **phase 2 : tableau de bord**
+- **Les agrégats financiers du tableau de bord passent en base.** La page faisait déjà bien deux choses sur quatre — l'effectif par un `count` sans transfert de lignes, la moyenne des notes par RPC. Mais elle rapatriait **toutes les factures de l'année et tous les paiements de six mois**… pour n'en faire que des sommes. À 10 000 élèves, plusieurs dizaines de milliers de lignes traversaient le réseau à chaque ouverture d'une page qui n'affiche que trois chiffres et un histogramme.
+- L'histogramme mensuel est construit par `generate_series` : les **mois sans paiement** restent présents à zéro. Un graphique qui saute les mois vides donne une lecture fausse de la saisonnalité.
+- Index `(ecole_id, date_paiement)` sur `paiements` : sans lui, le découpage mensuel parcourait toute la table à chaque ouverture.
+
 ## [2.192.1] — migration 136 · **phase 2 : page Paiements, et correctif d'une régression**
 - **🔴 Correctif — `getEleves` avait changé de forme en 2.192.0** et renvoyait `{lignes, total}` au lieu d'un tableau. **Sept pages** l'utilisent pour alimenter leurs sélecteurs d'élèves — Cantine, Certificats, Inscriptions, Messagerie, Paiements, Transport, Vie scolaire — et se seraient toutes cassées en silence : JavaScript ne vérifie pas les formes d'objet, et le build passait. Le contrat d'origine est restauré ; la liste paginée porte désormais un nom distinct, `getElevesPage`.
 - **La page Paiements est paginée** (25 factures), recherche comprise.

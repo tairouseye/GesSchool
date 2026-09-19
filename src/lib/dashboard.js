@@ -6,45 +6,34 @@ const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "
 
 export async function getStats(ecoleId, anneeId) {
   const now = new Date();
-  const debut = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const debutStr = debut.toISOString().slice(0, 10);
 
-  // Requêtes indépendantes exécutées EN PARALLÈLE (au lieu d'en série).
-  const [effRes, facturesRes, paiementsRes, notesRes] = await Promise.all([
+  // Requêtes indépendantes exécutées EN PARALLÈLE.
+  // Les trois premières ne rapatrient AUCUNE ligne : un `count` sans corps,
+  // et deux agrégats calculés en base (migration 137 pour les finances).
+  // Auparavant, toutes les factures de l'année et tous les paiements de six
+  // mois traversaient le réseau pour produire trois nombres.
+  const [effRes, finRes, notesRes] = await Promise.all([
     anneeId
       ? supabase.from("inscriptions").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", anneeId)
       : Promise.resolve({ count: 0 }),
-    anneeId
-      ? supabase.from("factures").select("montant_total, montant_paye").eq("ecole_id", ecoleId).eq("annee_id", anneeId)
-      : Promise.resolve({ data: [] }),
-    supabase.from("paiements").select("montant, date_paiement").eq("ecole_id", ecoleId).gte("date_paiement", debutStr),
+    supabase.rpc("tableau_bord_finances", { p_ecole: ecoleId, p_annee: anneeId ?? null, p_mois: 6 }),
     supabase.rpc("moyenne_notes_ecole", { p_ecole: ecoleId, p_annee: anneeId }),
   ]);
 
-  // Effectif (inscriptions de l'année courante)
   const effectif = effRes.count ?? 0;
 
-  // Facturé vs encaissé (année courante) → taux de recouvrement
-  let totalFacture = 0, totalPaye = 0;
-  for (const f of facturesRes.data ?? []) {
-    totalFacture += Number(f.montant_total) || 0;
-    totalPaye += Number(f.montant_paye) || 0;
-  }
+  const fin = finRes.data || {};
+  const totalFacture = Number(fin.facture) || 0;
+  const totalPaye = Number(fin.paye) || 0;
   const tauxRecouvrement = totalFacture > 0 ? (totalPaye / totalFacture) * 100 : 0;
 
-  // Encaissements des 6 derniers mois (par mois) + mois courant
-  const paiements = paiementsRes.data;
-  const serie = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    serie.push({ cle: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, mois: MOIS[d.getMonth()], montant: 0 });
-  }
-  const indexParCle = Object.fromEntries(serie.map((s, i) => [s.cle, i]));
-  for (const p of paiements ?? []) {
-    const cle = (p.date_paiement || "").slice(0, 7);
-    if (cle in indexParCle) serie[indexParCle[cle]].montant += Number(p.montant) || 0;
-  }
-  const encaisseMois = serie[serie.length - 1].montant;
+  // La base renvoie { cle: "AAAA-MM", montant }, mois vides compris ; il ne
+  // reste qu'à poser le libellé lisible.
+  const serie = (fin.serie || []).map((p) => {
+    const mois = Number(String(p.cle).slice(5, 7)) - 1;
+    return { cle: p.cle, mois: MOIS[mois] || "", montant: Number(p.montant) || 0 };
+  });
+  const encaisseMois = serie.length ? serie[serie.length - 1].montant : 0;
 
   // Moyenne des notes de l'établissement (calculée côté Postgres, cf. RPC
   // moyenne_notes_ecole) → seulement 1 ligne renvoyée au lieu de toutes les notes.
