@@ -22,6 +22,12 @@
 --  Prérequis : migrations 111 et 120.
 -- =====================================================================
 
+--  ⚠️ `create or replace` REFUSE de changer le type de retour d'une fonction
+--  `returns table(...)` : « cannot change return type of existing function ».
+--  Il faut la supprimer d'abord. Aucune vue ni fonction ne s'appuie dessus,
+--  la suppression est donc sans effet de bord.
+drop function if exists public.mon_dossier_etudiant();
+
 create or replace function public.mon_dossier_etudiant()
 returns table(
   eleve_id   uuid,
