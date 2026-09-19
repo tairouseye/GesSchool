@@ -79,3 +79,73 @@ export function grouperNotes(lignes = []) {
     .sort((a, b) => a.ordre - b.ordre)
     .map((s) => ({ ...s, ues: [...s.ues.values()] }));
 }
+
+// --- Scolarité & paiements --------------------------------------------------
+export async function mesFactures() {
+  const { data, error } = await supabase.rpc("mes_factures");
+  if (error) throw error;
+  return data ?? [];
+}
+export async function mesDeclarations() {
+  const { data, error } = await supabase.rpc("mes_declarations_paiement");
+  if (error) throw error;
+  return data ?? [];
+}
+export async function declarerMonPaiement(factureId, montant, mode, reference) {
+  const { error } = await supabase.rpc("declarer_mon_paiement", {
+    p_facture: factureId, p_montant: montant, p_mode: mode, p_reference: reference || null,
+  });
+  if (error) throw error;
+}
+export async function mesInfosPaiement() {
+  const { data, error } = await supabase.rpc("mes_infos_paiement");
+  if (error) throw error;
+  return data || {};
+}
+
+// --- Documents administratifs -----------------------------------------------
+export const TYPES_DOCUMENT = [
+  ["scolarite", "Certificat de scolarité"],
+  ["inscription", "Attestation d'inscription"],
+  ["frequentation", "Attestation de fréquentation"],
+  ["bulletin", "Duplicata de relevé"],
+  ["autre", "Autre demande"],
+];
+export async function demanderMonDocument(type, message) {
+  const { data, error } = await supabase.rpc("demander_mon_document", {
+    p_type: type, p_message: message || null,
+  });
+  if (error) throw error;
+  return data;
+}
+export async function mesDemandesDocuments() {
+  const { data, error } = await supabase.rpc("mes_demandes_documents");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Annonces ---------------------------------------------------------------
+export async function mesAnnonces() {
+  const { data, error } = await supabase.rpc("mes_annonces");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// --- Notifications ----------------------------------------------------------
+// Lecture directe : la policy `destinataire_id = auth.uid()` (mig. 013) suffit,
+// aucune RPC n'est nécessaire. Seule l'ÉMISSION manquait (mig. 130).
+export async function mesNotifications(limite = 50) {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u?.user?.id) return [];
+  const { data, error } = await supabase.from("notifications")
+    .select("id, titre, message, lu, created_at")
+    .eq("destinataire_id", u.user.id)
+    .order("created_at", { ascending: false }).limit(limite);
+  if (error) throw error;
+  return data ?? [];
+}
+export async function marquerNotificationsLues(ids = []) {
+  if (!ids.length) return;
+  const { error } = await supabase.from("notifications").update({ lu: true }).in("id", ids);
+  if (error) throw error;
+}

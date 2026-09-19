@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.182.0] — migration 130 · **l'espace étudiant devient un vrai portail**
+Audit de l'espace étudiant : il ne comptait que 4 entrées. Constat de fond — un parent dispose de **26 RPC**, et **aucune n'est réutilisable** par un étudiant, toutes étant gardées par `_parent_possede()` ou une jointure sur `tuteurs`. La donnée existait donc déjà partout ; c'est le chemin d'accès qui manquait.
+
+- **Ma scolarité** : factures, reste dû, et **déclaration de paiement mobile par l'étudiant lui-même**. Un étudiant est majeur et paie sa scolarité — le faire passer par un tuteur pour voir sa facture était une incohérence du modèle. Les coordonnées de paiement de l'établissement s'affichent dans le formulaire, et la déclaration reste soumise à la validation de la comptabilité.
+- **Mes documents** : demande de certificat de scolarité, attestation d'inscription ou de fréquentation, duplicata de relevé, avec suivi du statut et réponse du secrétariat. C'est la principale raison des files d'attente au secrétariat d'une université. Plafonné à 5 demandes en cours, pour éviter le flood.
+- **Actualités** : notifications personnelles et annonces de l'établissement. La table `notifications` et sa policy (`destinataire_id = auth.uid()`) fonctionnaient déjà pour un étudiant — **seule l'émission manquait**, `_notifier_parents` ne visant que les tuteurs. Trois déclencheurs ajoutés : nouvelle facture, relevé validé par le jury, décision sur un dépôt.
+- L'accueil passe de 3 à 6 tuiles.
+
+**Non traités, faute de modèle de données** — ce sont des chantiers, pas des ajouts : l'**emploi du temps** (`emplois_du_temps.classe_id` est NOT NULL ; il n'existe aucune notion d'emploi du temps LMD par filière/semestre) et la **messagerie** (`messages.tuteur_id` est NOT NULL, la messagerie est arrimée aux tuteurs, et la partie personnel devrait aussi évoluer).
+
 ## [2.181.1] — aucune migration
 - **Espace étudiant : la barre de navigation disparaît.** Elle répétait mot pour mot les tuiles affichées juste en dessous. Le menu, ce sont désormais les tuiles. Comme elles ne sont visibles que sur l'accueil, un lien **« ← Accueil »** apparaît dès qu'on entre dans une section — sans lui on resterait enfermé dans la page ouverte.
 

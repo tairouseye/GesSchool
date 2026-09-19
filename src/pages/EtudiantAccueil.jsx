@@ -13,6 +13,9 @@ const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé"
 // (navy sombre, icône dorée), pour que les deux espaces se ressemblent.
 const TUILES = [
   { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
+  { to: "/etudiant/scolarite", cle: "paiements", label: "Ma scolarité" },
+  { to: "/etudiant/documents", cle: "certificats", label: "Mes documents" },
+  { to: "/etudiant/actualites", cle: "annonces", label: "Actualités" },
   { to: "/etudiant/bibliotheque", cle: "bibliotheque", label: "Bibliothèque" },
   { to: "/etudiant/depots", cle: "biblio_depots", label: "Mon dépôt" },
 ];
