@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.190.0] — migration 135 · **phase 1b : réversibilité des suppressions**
+- **Le soft delete généralisé a été écarté, après examen.** Les neuf suppressions de données sensibles ne sont pas de même nature : **`notes_lmd` et `bulletin_lignes` ne détruisent rien, elles reconstruisent** (on efface les notes d'une UE avant de réécrire la saisie ; on vide un bulletin avant de le régénérer). Les passer en soft delete aurait cassé la saisie de notes et la génération des bulletins, et accumulé des lignes fantômes en conflit avec les index uniques. Par ailleurs, masquer une ligne par RLS ne la masque **pas** aux fonctions `SECURITY DEFINER` ni aux agrégats, qui s'exécutent comme propriétaire : une facture « supprimée » aurait continué de compter dans les totaux.
+- **La réversibilité est obtenue autrement** : la migration 134 conserve déjà la **ligne entière** à la suppression. Il ne manquait qu'un moyen de la rejouer — c'est `restaurer_depuis_journal(id)`, réservée au promoteur, avec liste blanche de tables (une fonction `SECURITY DEFINER` acceptant un nom de table libre serait une porte d'escalade), refus d'écraser une ligne recréée depuis, et traçage de la restauration elle-même.
+- **⚠️ Limite documentée** : la fonction restaure **une ligne, pas une cascade**. Supprimer un élève efface aussi inscriptions, notes et factures ; celles qui portent un trigger sont récupérables une à une, les autres (liens tuteurs, pièces jointes, absences) sont perdues. **La suppression d'un élève reste l'acte le plus destructeur de l'application** — c'est le seul endroit où un vrai soft delete resterait justifié.
+
 ## [2.189.0] — migrations 133 → 134 · **suites de l'audit global, phases 0 et 1a**
 Aucun fichier applicatif modifié : ces deux migrations ne touchent que la base.
 
