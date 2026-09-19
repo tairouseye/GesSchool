@@ -43,6 +43,7 @@ const EtudiantLayout = lazy(() => import("@/pages/EtudiantLayout.jsx"));
 const EtudiantAccueil = lazy(() => import("@/pages/EtudiantAccueil.jsx"));
 const EtudiantBibliotheque = lazy(() => import("@/pages/EtudiantBibliotheque.jsx"));
 const EtudiantDepots = lazy(() => import("@/pages/EtudiantDepots.jsx"));
+const EtudiantNotes = lazy(() => import("@/pages/EtudiantNotes.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -195,6 +196,7 @@ export default function App() {
           >
             <Route index element={<EtudiantAccueil />} />
             <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
+            <Route path="notes" element={<EtudiantNotes />} />
             <Route path="depots" element={<EtudiantDepots />} />
           </Route>
 

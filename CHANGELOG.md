@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.179.0] — migration 129
+- **⚠️ Un étudiant ne pouvait pas voir ses propres notes.** `notes_lmd`, `deliberations` et `releves` se lisent avec `ecole_id = ecole_courante()` — or `profils.ecole_id` est NULL pour un étudiant, donc `ecole_courante()` aussi. Il n'existait **aucun chemin de lecture** vers ses résultats : l'espace étudiant se limitait à la bibliothèque, alors que c'est la première chose qu'on vient y chercher.
+- **Espace étudiant — « Mes résultats »** : notes par semestre et par UE (détail CC / examen / note finale par ECUE, crédits acquis, moyenne et mention indicatives), et **relevés officiels** avec décision, mention et détail des UE.
+  - Passage par deux **RPC** (`mes_notes_lmd`, `mes_releves`) plutôt que par de nouvelles policies : un relevé lisible exige aussi `ue`, `ecue`, `semestres` et `filieres`, toutes fermées de la même façon. Ouvrir cinq tables de plus aurait élargi la surface bien au-delà du besoin.
+  - **Deux régimes de publication distincts**, assumés : les **notes** sont visibles dès la saisie — l'étudiant est le sujet de la donnée, et attendre la délibération rendrait l'espace inutile pendant tout le semestre ; les **relevés** ne le sont qu'une fois `valide`, un relevé non validé étant un document de travail du jury. Les moyennes affichées côté notes sont explicitement marquées **indicatives**.
+
 ## [2.178.0] — migrations 126 → 127 · **audit de sécurité du module Bibliothèque**
 Audit complet des migrations 115→125. Ce qui suit corrige ce qu'il a trouvé.
 

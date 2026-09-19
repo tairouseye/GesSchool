@@ -28,6 +28,7 @@ export default function EtudiantLayout() {
       <nav className="flex gap-1 overflow-x-auto border-b border-navy-900/10 bg-white px-4 py-2">
         {[
           ["/etudiant", "Accueil", true],
+          ["/etudiant/notes", "Mes résultats", false],
           ["/etudiant/bibliotheque", "Bibliothèque", false],
           ["/etudiant/depots", "Mon dépôt", false],
         ].map(([to, label, exact]) => (
