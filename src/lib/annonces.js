@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase.js";
 export const CIBLES = [
   ["tous", "Toute l'école"],
   ["parents", "Parents"],
+  ["etudiants", "Étudiants"],
   ["enseignants", "Enseignants"],
   ["classe", "Une classe"],
 ];

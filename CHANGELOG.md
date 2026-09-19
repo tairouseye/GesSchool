@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.183.1] — aucune migration
+- **Annonces : cible « Étudiants » ajoutée.** Il n'en existait aucune — une université ne pouvait atteindre ses étudiants qu'en visant « Toute l'école ». La RPC `mes_annonces()` l'acceptait déjà ; seule l'option manquait au formulaire de publication.
+
 ## [2.183.0] — migration 131
 - **Carte d'étudiant vérifiable par QR.** L'étudiant l'affiche sur son téléphone ou l'imprime ; le QR renvoie vers la page publique de vérification, comme les factures, bulletins et relevés. La branche `etu` **ne répond que si l'inscription est ACTIVE** : une carte périmée ou un étudiant radié se signalent d'eux-mêmes — c'est tout l'intérêt d'un contrôle à l'entrée d'un campus ou d'une bibliothèque. Elle n'expose que ce qui figure déjà sur une carte physique : nom, matricule, filière, établissement.
   - `verifier_document()` a dû être **reproduite en entier** (`create or replace` remplace tout le corps) ; les six branches existantes sont conservées à l'identique, ce qu'un contrôle automatique a vérifié avant livraison.

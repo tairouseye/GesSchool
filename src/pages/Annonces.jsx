@@ -12,6 +12,7 @@ const fmtDate = (d) =>
 const TONS_CIBLE = {
   tous: "bg-navy-900/5 text-navy-900/60",
   parents: "bg-or-500/15 text-or-600",
+  etudiants: "bg-violet-500/10 text-violet-700",
   enseignants: "bg-emerald-500/10 text-emerald-700",
   classe: "bg-sky-500/10 text-sky-700",
 };
