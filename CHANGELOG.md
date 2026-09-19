@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.186.0] — aucune migration
+- **Pédagogie se replie en sections.** Ses 25 entrées — six fois plus que RH & Paie — formaient une liste illisible. Elles sont désormais rangées en cinq sections repliables : **Au quotidien**, **Élèves & structure**, **Évaluation**, **Vie scolaire**, **Communication**. L'accueil et les transverses (Membres, À signer, Paramètres) restent hors section.
+  - Le regroupement s'applique **aussi à la grille de tuiles**, pour que la barre latérale et les tuiles racontent la même chose.
+  - Une section **s'ouvre d'office quand la page courante s'y trouve** : on ne cache jamais à l'utilisateur où il est. Sinon son état est mémorisé, le menu se retrouve comme on l'a laissé.
+  - Repliée, une section affiche en pastille le total des compteurs qu'elle contient — un document à signer ne disparaît pas parce qu'on a fermé sa section.
+  - Les entrées ont dû être **réordonnées** : l'ordre de déclaration fragmentait « Évaluation » et « Élèves & structure » en deux morceaux chacun, ce qui aurait affiché le même en-tête deux fois. Un test vérifie désormais la contiguïté des groupes, pour les deux types d'établissement.
+
 ## [2.185.0] — aucune migration · **revue de la structure des menus**
 Revue des cinq espaces et de leurs sous-menus, croisée avec les droits (`ACCES`). Trois incohérences corrigées.
 

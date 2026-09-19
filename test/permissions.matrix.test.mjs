@@ -107,3 +107,38 @@ test("les formules empilent bien leurs modules (Confort ⊃ Essentiel, etc.)", (
   for (const m of ess) assert.ok(conf.has(m), `Confort doit contenir ${m}`);
   for (const m of conf) assert.ok(tout.has(m), `Premium doit contenir ${m}`);
 });
+
+test("grouperItems : sections contiguës, entrées libres isolées, groupe solitaire déplié", () => {
+  const g = P.grouperItems([
+    { cle: "accueil" },                       // libre → isolée
+    { cle: "a", groupe: "Éval" },
+    { cle: "b", groupe: "Éval" },
+    { cle: "c", groupe: "Vie" },              // seule de son groupe → dépliée
+    { cle: "d", groupe: "Éval" },             // NON contigu → nouvelle section, donc seule → dépliée
+    { cle: "membres" },                       // libre → isolée
+  ]);
+  assert.deepEqual(g.map((s) => [s.groupe, s.items.length]),
+    [[null, 1], ["Éval", 2], [null, 1], [null, 1], [null, 1]]);
+  // Aucune entrée perdue ni dupliquée.
+  assert.equal(g.reduce((n, s) => n + s.items.length, 0), 6);
+});
+
+test("Pédagogie : toutes ses pages métier sont rangées dans une section", () => {
+  const ped = P.espaceParId("pedagogie");
+  // Les utilitaires transverses et l'accueil restent volontairement libres.
+  const libres = ["_pedagogie", "membres", "signatures", "parametres"];
+  const orphelines = ped.items.filter((i) => !i.groupe && !libres.includes(i.cle));
+  assert.deepEqual(orphelines.map((i) => i.cle), [],
+    "toute page métier de Pédagogie doit porter un groupe");
+});
+
+test("les groupes de menu sont contigus : jamais deux fois le même en-tête", () => {
+  for (const esp of P.ESPACES) {
+    for (const type of ["ecole", "superieur"]) {
+      const visibles = esp.items.filter((i) => P.itemPourType(i, type));
+      const titres = P.grouperItems(visibles).map((s) => s.groupe).filter(Boolean);
+      assert.deepEqual([...new Set(titres)], titres,
+        `${esp.id} @ ${type} : en-tête de section répété (ordre de déclaration fragmenté) — ${titres}`);
+    }
+  }
+});

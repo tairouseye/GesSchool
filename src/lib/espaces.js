@@ -59,33 +59,43 @@ export const ESPACES = [
     // La branche académique bascule ainsi entre « école » et « supérieur » (LMD).
     items: [
       { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
-      { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"] },
-      { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"] },
-      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"] },
-      { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves" },
-      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents" },
-      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"] },
-      { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"] },
-      { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"] },
-      { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"] },
-      { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"] },
-      { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"] },
-      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants" },
-      // La direction a le droit d'annoncer et d'écrire aux familles (ACCES),
-      // mais ces deux pages ne vivaient que dans Gestion — espace auquel elle
-      // n'a pas accès. Le droit existait sans porte d'entrée.
-      { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
-      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
-      { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"] },
-      { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"] },
-      { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"] },
+
+      // Au quotidien
+      { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
       // Gaté « école » : il n'existe pas encore d'emploi du temps LMD
       // (`emplois_du_temps.classe_id` est NOT NULL, or le supérieur n'a pas de
       // classes). Proposer la page au supérieur mènerait à un écran inutilisable.
-      { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi", types: ["ecole"] },
-      { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"] },
-      { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"] },
-      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"] },
+      { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi", types: ["ecole"], groupe: "Au quotidien" },
+
+      // Élèves & structure
+      { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
+      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Élèves & structure" },
+      { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Élèves & structure" },
+      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure" },
+      { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"], groupe: "Élèves & structure" },
+      { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"], groupe: "Élèves & structure" },
+      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Élèves & structure" },
+
+      // Évaluation
+      { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"], groupe: "Évaluation" },
+      { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"], groupe: "Évaluation" },
+      { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"], groupe: "Évaluation" },
+      { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"], groupe: "Évaluation" },
+      { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"], groupe: "Évaluation" },
+
+      // Vie scolaire
+      { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
+      { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"], groupe: "Vie scolaire" },
+      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Vie scolaire" },
+
+      // Communication — la direction y a droit (ACCES) mais ces pages ne
+      // vivaient que dans Gestion, espace auquel elle n'accède pas.
+      { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces", groupe: "Communication" },
+      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie", groupe: "Communication" },
+
+      // Transverses : volontairement hors section, en pied de menu.
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
@@ -195,3 +205,19 @@ export function premiereRoute(roles, estPromoteur, modulesActifs, typeEtab) {
 }
 
 export { ROLES_COMPLETS };
+
+// Regroupe des entrées par `groupe`, en préservant l'ordre de déclaration.
+// Les entrées sans groupe restent isolées, en tête (accueil) ou en pied
+// (Membres, À signer, Paramètres) — elles ne se replient pas.
+// Renvoie [{ groupe: string|null, items: [] }].
+export function grouperItems(items = []) {
+  const out = [];
+  for (const it of items) {
+    const g = it.groupe || null;
+    const dernier = out[out.length - 1];
+    if (g && dernier && dernier.groupe === g) dernier.items.push(it);
+    else out.push({ groupe: g, items: [it] });
+  }
+  // Un groupe réduit à une seule entrée n'a pas d'intérêt : on le déplie.
+  return out.map((s) => (s.groupe && s.items.length === 1 ? { groupe: null, items: s.items } : s));
+}

@@ -4,7 +4,7 @@ import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
-import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType } from "@/lib/espaces.js";
+import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType, grouperItems } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -27,6 +27,49 @@ function LogoEcole({ logoUrl, sigle, size }) {
     );
   }
   return <Cachet size={size} sigle={sigle} className="text-or-500" />;
+}
+
+// Section repliable de la barre latérale. Pédagogie porte une vingtaine
+// d'entrées : sans regroupement, la liste devient illisible.
+//
+// Elle s'ouvre d'office si la page courante s'y trouve — on ne cache jamais
+// à l'utilisateur où il est. L'état est mémorisé par titre, pour que le menu
+// se retrouve tel qu'on l'a laissé d'une visite à l'autre.
+function Section({ titre, actif, pastilles = 0, children }) {
+  const cle = `menu_sec_${titre}`;
+  const [ouvert, setOuvert] = useState(() => {
+    if (!titre) return true;
+    try { const v = localStorage.getItem(cle); if (v !== null) return v === "1"; } catch { /* ignoré */ }
+    return true;
+  });
+
+  // Naviguer vers une page d'une section fermée doit la rouvrir.
+  useEffect(() => { if (actif) setOuvert(true); }, [actif]);
+
+  if (!titre) return children;
+
+  const basculer = () => {
+    setOuvert((o) => {
+      try { localStorage.setItem(cle, o ? "0" : "1"); } catch { /* ignoré */ }
+      return !o;
+    });
+  };
+
+  return (
+    <div className="pt-1">
+      <button onClick={basculer} aria-expanded={ouvert}
+        className="flex w-full items-center gap-2 rounded-lg px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-creme/40 transition hover:text-creme/70">
+        <span className={`inline-block transition-transform ${ouvert ? "rotate-90" : ""}`}>›</span>
+        <span className="truncate">{titre}</span>
+        {!ouvert && pastilles > 0 && (
+          <span className="ml-auto grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
+            {pastilles}
+          </span>
+        )}
+      </button>
+      {ouvert && <div className="space-y-1">{children}</div>}
+    </div>
+  );
 }
 
 // GesSchool — shell applicatif responsive, organisé par ESPACES d'usage.
@@ -213,7 +256,11 @@ export default function Layout() {
         )}
 
         <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3" data-tour="menu">
-          {items.map((item) => (
+          {grouperItems(items).map((sec, si) => (
+            <Section key={sec.groupe || `libre-${si}`} titre={sec.groupe}
+              actif={sec.items.some((x) => x.to === location.pathname)}
+              pastilles={sec.items.reduce((n, x) => n + pastille(x.cle), 0)}>
+          {sec.items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -241,6 +288,8 @@ export default function Layout() {
                 </>
               )}
             </NavLink>
+          ))}
+            </Section>
           ))}
         </nav>
 
@@ -360,8 +409,13 @@ export default function Layout() {
                       <span className="lg:hidden">Touchez un module pour l&apos;ouvrir.</span>
                       <span className="hidden lg:inline">Cliquez un module pour l&apos;ouvrir.</span>
                     </p>
+                    {grouperItems(menusVisibles(e)).map((sec, si) => (
+                    <div key={sec.groupe || `g${si}`} className={si ? "mt-5" : ""}>
+                    {sec.groupe && (
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-navy-900/40">{sec.groupe}</p>
+                    )}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                      {menusVisibles(e).map((item) => (
+                      {sec.items.map((item) => (
                         <button key={item.to} onClick={() => ouvrirTuile(item.to)}
                           className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition active:scale-[.98]">
                           <Icone name={item.cle} className="h-7 w-7 text-or-500" />
@@ -374,6 +428,8 @@ export default function Layout() {
                         </button>
                       ))}
                     </div>
+                    </div>
+                    ))}
                   </div>
                 ))}
               </div>

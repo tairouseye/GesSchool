@@ -24,7 +24,7 @@ export async function chargerPermissions() {
     'export * from "@/lib/permissions.js";',
     'export * from "@/lib/modules.js";',
     'export * from "@/lib/formules.js";',
-    'export { ESPACES, espacesAccessibles, espaceParDefaut, espaceParId, premiereRoute, routeOuvrable, itemPourType } from "@/lib/espaces.js";',
+    'export { ESPACES, espacesAccessibles, espaceParDefaut, espaceParId, premiereRoute, routeOuvrable, itemPourType, grouperItems } from "@/lib/espaces.js";',
   ].join("\n"));
   const sortie = join(dir, "bundle.mjs");
   await build({
