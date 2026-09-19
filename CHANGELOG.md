@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.200.1] — aucune migration · 🔴 la colonne « Élève » de Paiements était vide
+- **Signalé par l'utilisateur** : la liste des factures n'affichait que des numéros, sans nom d'élève. **Ce n'était pas normal — régression introduite par moi** avec la pagination des factures (migration 136, v2.193).
+- **Cause.** La RPC `factures_paginees` renvoie l'élève **à plat** (`prenom`, `nom`, `matricule`), parce qu'elle applique `to_jsonb()` à une jointure. Tout le reste de l'application le lit sous `eleves: { … }` — c'est ce que font `getFacture`, `getDeclarations` et `getTransactions`. Le composant lisait donc `f.eleves?.prenom` sur un objet qui n'existait plus. **Rien ne plantait : la colonne était simplement blanche.** Exactement le même défaut que le changement de forme de `getEleves` en v2.192 — un contrat de données modifié sans recenser ses lecteurs.
+- **Correctif à la frontière** : `getFactures` replie l'élève sous `eleves`, plutôt que d'aller retoucher chaque affichage. Tout futur appelant retrouve la forme attendue. Une facture sans élève rattaché donne `eleves = null` et non un objet de champs vides — sinon l'écran afficherait « null null ».
+- **Le matricule s'affiche** désormais à côté du nom : les homonymes sont fréquents dans une école, et ouvrir la mauvaise facture se paie cher.
+- **3 tests** verrouillent ce contrat sans toucher au réseau. Vérifié aussi en session d'administration réelle : la RPC renvoie bien les champs à plat, c'était donc bien côté client.
+
 ## [2.200.0] — migration **142** · le parent imprime sa facture et ses reçus
 - **Le parent peut éditer lui-même sa facture** depuis l'espace parent (onglet Paiements, bouton « 🧾 Facture »), au même format carnet que le secrétariat, et **un reçu par encaissement**. Jusqu'ici il devait le réclamer à l'école.
 - **Pourquoi une migration.** `enfant_factures` (mig. 004) ne renvoie que l'en-tête : numéro, dates, totaux, statut. De quoi dresser une liste, pas de quoi produire un document — il manquait **les lignes de la facture**, les encaissements, et l'identité de l'établissement. Et le parent n'a accès à aucune de ces tables : `factures` et `paiements` lui sont fermées depuis la migration 133, et son `profils.ecole_id` est NULL de toute façon.

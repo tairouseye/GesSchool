@@ -70,13 +70,28 @@ export async function supprimerFrais(id) {
 //
 // Renvoie { lignes, total } — le total vient d'un COUNT sur le même filtre,
 // sans quoi le nombre de pages serait faux.
+// ⚠️ CONTRAT : chaque ligne porte l'élève sous `eleves: { prenom, nom,
+// matricule }`, comme `getFacture`, `getDeclarations` et `getTransactions`.
+//
+// La RPC `factures_paginees` (mig. 136) renvoie ces trois champs À PLAT, parce
+// qu'elle fait `to_jsonb()` sur une jointure. En basculant la liste sur cette
+// RPC, la colonne « Élève » de l'écran Paiements s'est vidée en silence : le
+// composant lisait `f.eleves?.prenom`, qui n'existait plus. Rien ne plantait,
+// la colonne était simplement blanche.
+//
+// On remet donc la forme attendue ici, à la frontière, plutôt que d'aller
+// corriger chaque affichage — et tout futur appelant la retrouvera.
 export async function getFactures(ecoleId, { anneeId = null, q = null, statut = null, page = 0, taille = 25 } = {}) {
   const { data, error } = await supabase.rpc("factures_paginees", {
     p_ecole: ecoleId, p_annee: anneeId, p_q: q || null,
     p_statut: statut || null, p_page: page, p_taille: taille,
   });
   if (error) throw error;
-  return { lignes: data?.lignes ?? [], total: data?.total ?? 0 };
+  const lignes = (data?.lignes ?? []).map(({ prenom, nom, matricule, ...f }) => ({
+    ...f,
+    eleves: (prenom || nom || matricule) ? { prenom, nom, matricule } : null,
+  }));
+  return { lignes, total: data?.total ?? 0 };
 }
 
 export async function getFacture(id) {

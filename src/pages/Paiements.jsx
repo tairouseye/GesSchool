@@ -147,7 +147,14 @@ export default function Paiements() {
                     return (
                       <tr key={f.id} onClick={() => setFactureId(f.id)} className="cursor-pointer border-t border-navy-900/5 hover:bg-creme/60">
                         <td className="px-6 py-3 font-mono text-xs text-navy-900/70">{f.numero}</td>
-                        <td className="px-6 py-3 font-medium text-navy-900">{f.eleves?.prenom} {f.eleves?.nom}</td>
+                        <td className="px-6 py-3 font-medium text-navy-900">
+                          {f.eleves ? `${f.eleves.prenom || ""} ${f.eleves.nom || ""}`.trim() : "—"}
+                          {/* Les homonymes sont fréquents dans une école :
+                              le matricule évite d'ouvrir la mauvaise facture. */}
+                          {f.eleves?.matricule && (
+                            <span className="ml-2 font-mono text-xs font-normal text-navy-900/45">{f.eleves.matricule}</span>
+                          )}
+                        </td>
                         <td className="px-6 py-3 font-mono text-xs">{f.date_echeance || "—"}</td>
                         <td className="px-6 py-3 text-right font-mono">{fmt(f.montant_total)}</td>
                         <td className="px-6 py-3 text-right font-mono">{fmt(f.montant_paye)}</td>
