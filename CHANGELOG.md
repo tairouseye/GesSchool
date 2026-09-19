@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.199.0] — aucune migration · facture et reçu « carnet d'établissement » (écoles)
+- **Facture et reçu redessinés** sur le modèle des carnets qu'utilisent réellement les écoles sénégalaises : cadre de couleur, bandeau de tableau, lignes alternées, montant en toutes lettres, bloc « Modes de paiement », pied de page légal. **La palette n'est pas figée** : elle vient de `couleur_primaire` / `couleur_secondaire`, pour que chaque école reconnaisse son propre imprimé. Facture et reçu échangent cadre et bandeau — on les distingue de loin, comme sur les carnets.
+- **Ce sont désormais deux pièces distinctes**, et non plus un seul bloc « Reçu / Facture ». La facture dit ce qui est dû et porte les moyens de paiement ; le reçu atteste un encaissement précis, avec « Paiement effectué par », le mode, la référence et la signature. Un bouton par encaissement dans la fiche facture.
+- **Nouveau : le montant en toutes lettres** (`montantEnLettres`), mention d'usage constant en zone OHADA qui rend un chiffre infalsifiable. Elle n'existait nulle part dans l'application. Module pur, **14 tests** sur les pièges du français — et l'un d'eux a trouvé une vraie faute dans ma première version : « cent » et « vingt » gardent leur *s* devant **million** (un nom) mais le perdent devant **mille**. On écrit *deux cents millions* et *deux cent mille*.
+- **L'impression conserve les aplats.** Sans `print-color-adjust: exact`, les navigateurs suppriment les fonds « pour économiser l'encre » : il ne serait resté qu'un tableau nu. Ajout aussi d'un `@page` A4.
+- **Mentions légales configurables** (RCCM, NINEA, forme juridique, ordre des chèques, banque et compte) dans Paiements → onglet **Paiement mobile**, à côté des numéros mobile money : les deux alimentent les mêmes imprimés. Stockées dans `parametres`, aucune migration nécessaire. Laissées vides, elles n'apparaissent simplement pas.
+- ⚠️ **Réservé aux écoles.** Le carnet de caisse coloré est un usage du primaire et du secondaire ; une université continue d'émettre le document sobre.
+- **Pas encore** : l'espace parent affiche toujours l'ancienne présentation de facture — il lit les données par une RPC de forme différente, à reprendre séparément.
+
 ## [2.198.0] — migration **140** · admissions & candidatures en ligne
 - **Une université ne pouvait recruter qu'en saisissant elle-même chaque dossier** : `inscriptions_sup` suppose un `eleve` qui existe déjà. Tout ce qui précède l'inscription — dépôt, examen, décision — se passait hors de l'application, et la donnée était retapée à l'arrivée.
 - **Le candidat postule SANS COMPTE**, sur une page publique `/candidature?ecole=…` : exiger une inscription avant même de pouvoir candidater est le premier point d'abandon d'un portail d'admission. Le dépôt passe par des RPC accordées à `anon` (précédent : `verifier_document`) ; les tables, elles, restent fermées — `anon` n'a aucun accès direct.

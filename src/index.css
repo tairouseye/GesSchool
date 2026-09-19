@@ -139,4 +139,24 @@
   .no-print {
     display: none !important;
   }
+
+  /* Les documents de caisse (facture / reçu) tiennent leur lisibilité de
+     leurs aplats : cadre coloré, bandeau de tableau, lignes alternées. Sans
+     cette instruction, les navigateurs les suppriment à l'impression « pour
+     économiser l'encre » et il ne reste qu'un tableau nu. */
+  .document-caisse,
+  .document-caisse * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Le cadre de couleur doit toucher le bord du document, pas flotter à
+     24 px de marge comme un bulletin. */
+  .zone-impression.document-caisse {
+    padding: 0;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
 }

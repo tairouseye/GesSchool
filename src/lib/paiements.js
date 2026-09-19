@@ -317,6 +317,30 @@ export async function setPaiementMobile(ecoleId, infos) {
   if (error) throw error;
 }
 
+// Mentions légales du pied de page des documents de caisse : RCCM, NINEA,
+// ordre des chèques, coordonnées bancaires. Absentes de la table `ecoles`,
+// elles vivent dans `parametres` — `est_gestion()` peut déjà y écrire, aucune
+// migration n'est nécessaire.
+export const CLE_IDENTITE = "identite_legale";
+
+export async function getIdentiteLegale(ecoleId) {
+  const { data, error } = await supabase
+    .from("parametres")
+    .select("valeur")
+    .eq("ecole_id", ecoleId)
+    .eq("cle", CLE_IDENTITE)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.valeur || {};
+}
+
+export async function setIdentiteLegale(ecoleId, infos) {
+  const { error } = await supabase
+    .from("parametres")
+    .upsert({ ecole_id: ecoleId, cle: CLE_IDENTITE, valeur: infos }, { onConflict: "ecole_id,cle" });
+  if (error) throw error;
+}
+
 // Déclarations de paiement (staff).
 export async function getDeclarations(ecoleId, statut = "en_attente") {
   let q = supabase

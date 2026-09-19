@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
+import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import * as api from "@/lib/paiements.js";
 import { codeFacture } from "@/lib/verification.js";
 import { GESPRO } from "@/lib/gespro.js";
@@ -17,7 +18,7 @@ import { useToast } from "@/composants/Feedback.jsx";
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
 export default function Paiements() {
-  const { ecoleId, ecole, utilisateur } = useAuth();
+  const { ecoleId, ecole, utilisateur, typeEtablissement } = useAuth();
   const toast = useToast();
   const devise = ecole?.devise || "XOF";
   const [onglet, setOnglet] = useState("factures");
@@ -30,6 +31,7 @@ export default function Paiements() {
   const [inscrits, setInscrits] = useState([]);
   const [declarations, setDeclarations] = useState([]);
   const [mobileInfos, setMobileInfos] = useState({});
+  const [identite, setIdentite] = useState({});
   const [recherche, setRecherche] = useState("");
   const [erreur, setErreur] = useState("");
   const [modaleNouvelle, setModaleNouvelle] = useState(false);
@@ -51,7 +53,7 @@ export default function Paiements() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [fac, fr, els, niv, cyc, ins, decl, mob] = await Promise.all([
+      const [fac, fr, els, niv, cyc, ins, decl, mob, idl] = await Promise.all([
         api.getFactures(ecoleId, { anneeId: an?.id, q: recherche, page: pageFac, taille: 25 }),
         api.getFrais(ecoleId, an?.id),
         getEleves(ecoleId),
@@ -60,6 +62,7 @@ export default function Paiements() {
         api.getInscritsAvecNiveau(ecoleId, an?.id),
         api.getDeclarations(ecoleId, "en_attente"),
         api.getPaiementMobile(ecoleId),
+        api.getIdentiteLegale(ecoleId),
       ]);
       setFactures(fac.lignes);
       setTotalFac(fac.total);
@@ -70,6 +73,7 @@ export default function Paiements() {
       setInscrits(ins);
       setDeclarations(decl);
       setMobileInfos(mob);
+      setIdentite(idl);
     } catch (e) {
       setErreur(e.message);
     }
@@ -181,8 +185,9 @@ export default function Paiements() {
           <PanneauEnLigne ecoleId={ecoleId} devise={devise} onErreur={setErreur} />
         ) : onglet === "mobile" ? (
           <PanneauMobile
-            infos={mobileInfos}
+            infos={mobileInfos} identite={identite} ecoleStyle={typeEtablissement !== "superieur"}
             onSave={(v) => wrap(() => api.setPaiementMobile(ecoleId, v), "Numéros enregistrés.")}
+            onSaveIdentite={(v) => wrap(() => api.setIdentiteLegale(ecoleId, v), "Mentions enregistrées.")}
           />
         ) : (
           <PanneauFrais
@@ -212,6 +217,10 @@ export default function Paiements() {
         factureId={factureId}
         onFermer={() => setFactureId(null)}
         ecoleId={ecoleId} ecole={ecole} devise={devise} utilisateur={utilisateur}
+        identite={identite} mobile={mobileInfos}
+        // Le carnet de caisse coloré est un usage du primaire et du
+        // secondaire. Une université émet un document sobre.
+        ecoleStyle={typeEtablissement !== "superieur"}
         onChange={recharger}
       />
     </>
@@ -436,26 +445,59 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   );
 }
 
-function PanneauMobile({ infos, onSave }) {
+// Coordonnées de règlement ET mentions légales du pied de facture : les deux
+// alimentent les mêmes imprimés, elles se saisissent au même endroit. Les
+// éclater entre cette page et Paramètres obligerait la caisse à chercher.
+function PanneauMobile({ infos, identite, onSave, onSaveIdentite, ecoleStyle }) {
   const [f, setF] = useState({ wave: "", orange_money: "", free_money: "" });
+  const [id, setId] = useState({ forme_juridique: "", rccm: "", ninea: "", cheque_ordre: "", banque_nom: "", banque_compte: "" });
   useEffect(() => { setF({ wave: infos.wave || "", orange_money: infos.orange_money || "", free_money: infos.free_money || "" }); }, [infos]);
+  useEffect(() => { setId((s) => ({ ...s, ...(identite || {}) })); }, [identite]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const majId = (k) => (e) => setId((s) => ({ ...s, [k]: e.target.value }));
   return (
-    <Carte className="max-w-xl p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Coordonnées de paiement mobile</h3>
-      <p className="mb-4 text-xs text-navy-900/40">
-        Numéros affichés aux parents pour régler les factures. Ils paient depuis leur appli mobile money,
-        déclarent le paiement, puis vous validez dans l'onglet « Déclarations ».
-      </p>
-      <div className="space-y-3">
-        {api.MODES_MOBILE.map(([k, label]) => (
-          <Champ key={k} label={label} value={f[k]} onChange={(e) => maj(k, e.target.value)} placeholder="77 123 45 67" />
-        ))}
-      </div>
-      <div className="mt-4 flex justify-end">
-        <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
-      </div>
-    </Carte>
+    <div className="max-w-xl space-y-5">
+      <Carte className="p-6">
+        <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Coordonnées de paiement mobile</h3>
+        <p className="mb-4 text-xs text-navy-900/40">
+          Numéros affichés aux parents pour régler les factures. Ils paient depuis leur appli mobile money,
+          déclarent le paiement, puis vous validez dans l'onglet « Déclarations ».
+        </p>
+        <div className="space-y-3">
+          {api.MODES_MOBILE.map(([k, label]) => (
+            <Champ key={k} label={label} value={f[k]} onChange={(e) => maj(k, e.target.value)} placeholder="77 123 45 67" />
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
+        </div>
+      </Carte>
+
+      {ecoleStyle && (
+        <Carte className="p-6">
+          <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Mentions des factures et reçus</h3>
+          <p className="mb-4 text-xs text-navy-900/40">
+            Ce qui s'imprime en pied de page et dans le bloc « Modes de paiement ».
+            Laissés vides, ces champs n'apparaissent simplement pas.
+          </p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Champ label="Forme juridique" value={id.forme_juridique} onChange={majId("forme_juridique")} placeholder="SARL" />
+              <Champ label="RCCM" value={id.rccm} onChange={majId("rccm")} placeholder="SNDKR2021B4393" />
+              <Champ label="NINEA" value={id.ninea} onChange={majId("ninea")} placeholder="008361040" />
+            </div>
+            <Champ label="Chèque à l'ordre de" value={id.cheque_ordre} onChange={majId("cheque_ordre")} placeholder="TUT'TANK SARL" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Champ label="Banque" value={id.banque_nom} onChange={majId("banque_nom")} placeholder="CORIS BANK" />
+              <Champ label="N° de compte / IBAN" value={id.banque_compte} onChange={majId("banque_compte")} />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Bouton onClick={() => onSaveIdentite(id)}>Enregistrer</Bouton>
+          </div>
+        </Carte>
+      )}
+    </div>
   );
 }
 
@@ -542,12 +584,15 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais
   );
 }
 
-function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateur, onChange }) {
+function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateur, onChange, ecoleStyle, identite = {}, mobile = {} }) {
   const toast = useToast();
   const [facture, setFacture] = useState(null);
   const [pay, setPay] = useState({ montant: "", mode: "wave", reference: "", date_paiement: "", compte_id: "" });
   const [comptes, setComptes] = useState([]);
   const [erreur, setErreur] = useState("");
+  // Quelle pièce est à l'écran — et donc quelle pièce s'imprime. Facture et
+  // reçu sont deux actes distincts : ce qui est dû, ce qui a été encaissé.
+  const [apercu, setApercu] = useState({ type: "facture", paiement: null });
 
   const recharger = useCallback(async () => {
     if (!factureId) { setFacture(null); return; }
@@ -597,7 +642,64 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
         <div className="space-y-5">
           <Alerte ton="erreur">{erreur}</Alerte>
 
-          {/* Reçu imprimable */}
+          {/* Pièce imprimable — mise en page « établissement » dans les
+              écoles, document sobre dans le supérieur (choix assumé : le
+              carnet de caisse coloré est un usage du primaire/secondaire). */}
+          {ecoleStyle ? (
+            <>
+              {facture.paiements.length > 0 && (
+                <div className="no-print flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-navy-900/45">Pièce :</span>
+                  <button type="button" onClick={() => setApercu({ type: "facture", paiement: null })}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${apercu.type === "facture" ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900/60 hover:text-navy-900"}`}>
+                    Facture
+                  </button>
+                  {facture.paiements.map((p, i) => (
+                    <button key={p.id} type="button" onClick={() => setApercu({ type: "recu", paiement: p })}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${apercu.paiement?.id === p.id ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900/60 hover:text-navy-900"}`}>
+                      Reçu {i + 1} · {fmt(p.montant)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <DocumentCaisse
+                type={apercu.type}
+                ecole={ecole}
+                identite={identite}
+                mobile={mobile}
+                numero={apercu.type === "recu"
+                  ? `${facture.numero}-R${facture.paiements.findIndex((x) => x.id === apercu.paiement?.id) + 1}`
+                  : facture.numero}
+                date={apercu.type === "recu" ? apercu.paiement?.date_paiement : facture.date_emission}
+                objet={facture.notes || "Frais de scolarité"}
+                destinataire={[`${facture.eleves?.prenom || ""} ${facture.eleves?.nom || ""}`.trim(),
+                               facture.eleves?.matricule].filter(Boolean).join(" · ")}
+                lignes={apercu.type === "recu"
+                  ? [{ id: apercu.paiement?.id, libelle: `Règlement sur facture ${facture.numero}`, quantite: 1,
+                       prix_unitaire: apercu.paiement?.montant, montant: apercu.paiement?.montant }]
+                  : facture.facture_lignes}
+                total={apercu.type === "recu" ? apercu.paiement?.montant : facture.montant_total}
+                paiement={apercu.type === "recu" ? {
+                  mode: (api.MODES.find((m) => m[0] === apercu.paiement?.mode) || [])[1] || apercu.paiement?.mode,
+                  reference: apercu.paiement?.reference,
+                  payeur: `${facture.eleves?.prenom || ""} ${facture.eleves?.nom || ""}`.trim(),
+                } : null}
+                codeVerification={codeFacture(facture.id)}
+              />
+
+              {/* Ce que la facture ne dit pas : où en est le règlement. */}
+              <div className="no-print flex justify-end">
+                <div className="w-64 space-y-1 text-sm">
+                  <Ligne l="Total" v={`${fmt(facture.montant_total)} ${devise}`} />
+                  <Ligne l="Payé" v={`${fmt(facture.montant_paye)} ${devise}`} />
+                  <div className="flex justify-between border-t border-navy-900/15 pt-1 font-semibold">
+                    <span>Reste</span><span className="font-mono">{fmt(reste)} {devise}</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
           <div className="zone-impression rounded-xl border border-navy-900/10 bg-white p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -648,12 +750,15 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
               </p>
             )}
           </div>
+          )}
 
           {/* Statut + encaissements (non imprimé) */}
           <div className="no-print space-y-4">
             <div className="flex items-center justify-between">
               <Pastille ton={s.ton}>{s.label}</Pastille>
-              <Bouton variante="fantome" onClick={() => window.print()}>Imprimer le reçu</Bouton>
+              <Bouton variante="fantome" onClick={() => window.print()}>
+                {ecoleStyle && apercu.type === "recu" ? "Imprimer le reçu" : ecoleStyle ? "Imprimer la facture" : "Imprimer le reçu"}
+              </Bouton>
             </div>
 
             {facture.paiements.length > 0 && (
