@@ -42,8 +42,11 @@ export const ESPACES = [
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite" },
       { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine" },
       { to: "/transport", label: "Transport", icone: "🚌", cle: "transport" },
-      { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
-      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
+      // Communication — présente AUSSI en Pédagogie : la direction y a droit
+      // (ACCES) et n'accède pas à Gestion. Une annonce peut être scolaire
+      // (échéance de frais) comme pédagogique (report d'examen).
+      { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces", groupe: "Communication" },
+      { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie", groupe: "Communication" },
       // Bibliothèque — versant achats et patrimoine : les acquisitions
       // portent prix et fournisseurs, l'inventaire compte des biens. Le
       // catalogue est repris ici pour que le secrétariat puisse chercher.

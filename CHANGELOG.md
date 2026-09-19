@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.187.2] — aucune migration
+- **Communication devient une section repliable dans Gestion** aussi. Annonces et Messagerie y figuraient depuis toujours, mais en entrées libres au milieu de la liste ; elles sont désormais présentées des deux côtés de la même façon. Elles restent dans **les deux** espaces à dessein : la direction en a le droit sans accéder à Gestion, et une annonce peut être administrative (échéance de frais) comme pédagogique (report d'examen).
+
 ## [2.187.1] — aucune migration
 - **Les entrées d'une section repliable sont décalées** vers la droite et soulignées d'un filet vertical. Elles s'alignaient exactement sur les entrées de premier niveau : rien ne distinguait un sous-menu d'un menu, il fallait relire les intitulés pour comprendre la hiérarchie.
 
