@@ -30,7 +30,7 @@ export const ESPACES = [
     label: "Gestion",
     icone: "💼",
     accueil: "/gestion",
-    roles: ["comptable", "secretaire"], // comptable = responsable ; secretaire = opérationnel
+    roles: ["comptable", "secretaire", "bibliothecaire"],
     items: [
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
       { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves" },
@@ -44,6 +44,13 @@ export const ESPACES = [
       { to: "/transport", label: "Transport", icone: "🚌", cle: "transport" },
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie" },
+      // Bibliothèque — versant achats et patrimoine : les acquisitions
+      // portent prix et fournisseurs, l'inventaire compte des biens. Le
+      // catalogue est repris ici pour que le secrétariat puisse chercher.
+      { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"], groupe: "Bibliothèque" },
+
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
@@ -54,7 +61,9 @@ export const ESPACES = [
     label: "Pédagogie",
     icone: "🎓",
     accueil: "/pedagogie",
-    roles: ["direction", "enseignant", "surveillant"], // direction = responsable pédagogique
+    // `bibliothecaire` doit figurer ici : sans espace, ce rôle ne peut
+    // naviguer nulle part (défaut déjà rencontré à sa création).
+    roles: ["direction", "enseignant", "surveillant", "bibliothecaire"],
     // `types` = types d'établissement où l'item s'affiche ; absent = tous.
     // La branche académique bascule ainsi entre « école » et « supérieur » (LMD).
     items: [
@@ -85,6 +94,12 @@ export const ESPACES = [
       { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"], groupe: "Évaluation" },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"], groupe: "Évaluation" },
 
+      // Bibliothèque — versant pédagogique : ce qui se consulte, se prête
+      // et se publie. Le versant achats/patrimoine est dans Gestion.
+      { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "🎓", cle: "biblio_depots", types: ["superieur"], groupe: "Bibliothèque" },
+
       // Vie scolaire
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
       { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"], groupe: "Vie scolaire" },
@@ -99,31 +114,6 @@ export const ESPACES = [
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
-    ],
-  },
-  {
-    // Espace à part entière plutôt que cinq entrées noyées dans Pédagogie :
-    // le SIGB est un métier distinct, avec son propre responsable.
-    //
-    // ⚠️ `direction` doit figurer ici : ce n'est PAS un rôle complet
-    // (ROLES_COMPLETS = super_admin, admin_ecole), il perdrait donc l'accès.
-    // Les rôles listés reprennent l'union de ceux autorisés sur les pages
-    // biblio dans ACCES ; chaque page reste filtrée individuellement, si bien
-    // qu'un secrétaire ne voit que le catalogue.
-    //
-    // Toutes les entrées étant `types:["superieur"]`, l'espace disparaît de
-    // lui-même pour une école : Layout écarte les espaces sans item visible.
-    id: "bibliotheque",
-    label: "Bibliothèque",
-    icone: "📚",
-    accueil: "/bibliotheque",
-    roles: ["bibliothecaire", "direction", "enseignant", "secretaire"],
-    items: [
-      { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], exact: true },
-      { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"] },
-      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "🎓", cle: "biblio_depots", types: ["superieur"] },
-      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"] },
-      { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"] },
     ],
   },
   {

@@ -64,40 +64,50 @@ test("aucun couplage cassé : une page vendue a son infrastructure active", () =
 // Le bibliothécaire est à part : son espace n'existe que si l'établissement a
 // souscrit le module Bibliothèque (vendu en option, hors formules). Il n'a donc
 // pas sa place dans ROLES ci-dessus, qui décrit les rôles présents partout.
-test("bibliothécaire : espace ouvrable avec le module, dead-end explicite sans lui", () => {
+test("bibliothécaire : les pages biblio ne s''ouvrent qu''avec le module, et qu''au supérieur", () => {
   const roles = ["bibliothecaire"];
   const esp = P.espacesAccessibles(roles, false);
-  assert.deepEqual(esp.map((e) => e.id), ["bibliotheque"],
-    "le bibliothécaire doit avoir exactement l'espace Bibliothèque (il n'en avait AUCUN avant)");
+  assert.deepEqual(esp.map((e) => e.id), ["gestion", "pedagogie"],
+    "le bibliothécaire emprunte les deux espaces où vit la bibliothèque (il n'en avait AUCUN avant)");
 
   // Module actif + établissement supérieur → il atterrit sur le catalogue.
   assert.equal(P.premiereRoute(roles, false, ["bibliotheque"], "superieur"), "/bibliotheque");
 
-  // Module non souscrit → aucune page. `premiereRoute` renvoie null, ce que
-  // l'appelant traduit par un écran « sans accès » explicite, jamais par une
-  // boucle de redirection. C'est une erreur de configuration (avoir nommé un
-  // bibliothécaire sans acheter le module), pas un bug.
-  assert.equal(P.premiereRoute(roles, false, ["scolarite"], "superieur"), null);
-
-  // Même avec le module, une école (non supérieure) ne lui ouvre rien : toutes
-  // les pages biblio sont gatées `types:["superieur"]`.
-  assert.equal(P.premiereRoute(roles, false, ["bibliotheque"], "ecole"), null);
-});
-
-test("les pages biblio ont quitté Pédagogie pour leur espace dédié", () => {
-  const ped = P.espaceParId("pedagogie");
-  const bib = P.espaceParId("bibliotheque");
-  assert.ok(bib, "l'espace Bibliothèque doit exister");
+  // Module non souscrit : aucune page de bibliothèque n'est ouvrable. Depuis
+  // que le rôle emprunte Pédagogie et Gestion, il n'est plus en cul-de-sac —
+  // il retombe sur les transverses (« À signer », ouvert à tout le personnel).
+  // Mieux qu'un écran « sans accès », mais l'essentiel reste vrai :
   for (const cle of ["bibliotheque", "biblio_circulation", "biblio_depots",
                      "biblio_acquisitions", "biblio_inventaire"]) {
-    assert.ok(bib.items.some((i) => i.cle === cle), `${cle} doit être dans l'espace Bibliothèque`);
-    assert.ok(!ped.items.some((i) => i.cle === cle), `${cle} ne doit plus être dans Pédagogie`);
+    assert.equal(P.moduleActif(["scolarite"], cle), false,
+      `${cle} ne doit pas être ouvrable sans le module Bibliothèque`);
   }
-  // `direction` n'est pas un rôle complet : sans cette ligne, elle perdrait
-  // l'accès au menu Bibliothèque en le sortant de Pédagogie.
-  assert.ok(bib.roles.includes("direction"), "direction doit garder l'accès à l'espace");
-  assert.ok(P.premiereRoute(["direction"], false, ["bibliotheque", "scolarite"], "superieur"),
-    "direction doit conserver au moins une page ouvrable");
+
+  // Même avec le module, une école (non supérieure) n'ouvre aucune page biblio :
+  // toutes sont gatées `types:["superieur"]`.
+  const bib = ["bibliotheque", "biblio_circulation", "biblio_depots",
+               "biblio_acquisitions", "biblio_inventaire"];
+  for (const esp of P.espacesAccessibles(roles, false)) {
+    for (const it of esp.items.filter((i) => bib.includes(i.cle))) {
+      assert.equal(P.itemPourType(it, "ecole"), false, `${it.cle} ne doit pas s'afficher en école`);
+    }
+  }
+});
+
+test("bibliothèque : réparties entre Pédagogie et Gestion selon leur nature", () => {
+  const ped = P.espaceParId("pedagogie");
+  const ges = P.espaceParId("gestion");
+  assert.equal(P.espaceParId("bibliotheque"), null, "l'espace dédié a été dissous");
+
+  const cles = (e) => e.items.filter((i) => i.groupe === "Bibliothèque").map((i) => i.cle);
+  // Consulter, prêter, publier : pédagogique.
+  assert.deepEqual(cles(ped), ["bibliotheque", "biblio_circulation", "biblio_depots"]);
+  // Acheter et inventorier : prix d'achat, fournisseurs, biens → gestion.
+  assert.deepEqual(cles(ges), ["bibliotheque", "biblio_acquisitions", "biblio_inventaire"]);
+
+  // Une entrée que personne de l'espace ne peut ouvrir serait un leurre.
+  assert.ok(P.peutVoir(["comptable"], "biblio_acquisitions"), "le comptable doit voir Acquisitions");
+  assert.ok(P.peutVoir(["comptable"], "biblio_inventaire"), "le comptable doit voir Inventaire");
 });
 
 test("les formules empilent bien leurs modules (Confort ⊃ Essentiel, etc.)", () => {

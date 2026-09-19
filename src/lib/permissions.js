@@ -57,8 +57,8 @@ const ACCES = {
   bibliotheque: ["direction", "bibliothecaire", "enseignant", "secretaire"],
   biblio_circulation: ["direction", "bibliothecaire"],
   biblio_depots: ["direction", "bibliothecaire"],
-  biblio_acquisitions: ["direction", "bibliothecaire"],
-  biblio_inventaire: ["direction", "bibliothecaire"],
+  biblio_acquisitions: ["direction", "bibliothecaire", "comptable"],
+  biblio_inventaire: ["direction", "bibliothecaire", "comptable"],
 
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],

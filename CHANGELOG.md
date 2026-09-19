@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.187.0] — aucune migration
+- **La bibliothèque quitte son espace dédié et se range sous Pédagogie ET Gestion**, en section repliable comme Évaluation ou Communication. Le découpage suit la nature des données, pas la commodité :
+  - **Pédagogie** — *Catalogue*, *Prêts & retours*, *Mémoires & thèses* : ce qui se consulte, se prête et se publie.
+  - **Gestion** — *Catalogue* (le secrétariat doit pouvoir chercher), *Acquisitions*, *Inventaire* : les acquisitions portent **prix d'achat et fournisseurs** — c'est d'ailleurs pourquoi leur RLS était déjà réservée à la gestion — et l'inventaire compte des biens.
+- **⚠️ Deux pièges traités.** Le rôle `bibliothecaire` aurait de nouveau perdu toute navigation en dissolvant son espace : il est rattaché aux deux espaces. Et le **comptable** ne voyait pas *Acquisitions* ni *Inventaire* (`ACCES` ne listait que direction et bibliothécaire) — placer ces entrées dans son espace sans lui en ouvrir le droit aurait produit des entrées invisibles. Les deux lui sont ouvertes.
+- Effet de bord positif : sans le module Bibliothèque, un bibliothécaire n'est plus en cul-de-sac. Il retombe sur les transverses au lieu de l'écran « sans accès ».
+
 ## [2.186.1] — aucune migration
 - **Retour en arrière : la grille de tuiles redevient propre au mobile.** Exposée sur ordinateur en 2.181.0, elle recouvrait toute la zone de contenu au chargement — ce n'est pas ce qu'on attend d'un menu sur grand écran, où la barre latérale suffit et laisse la page visible. Le bouton **▦** ajouté à la barre latérale n'a plus d'objet et disparaît. Les sections repliables (2.186.0), elles, restent : c'est là qu'était le vrai besoin.
 
