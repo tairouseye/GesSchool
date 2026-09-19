@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.200.0] — migration **142** · le parent imprime sa facture et ses reçus
+- **Le parent peut éditer lui-même sa facture** depuis l'espace parent (onglet Paiements, bouton « 🧾 Facture »), au même format carnet que le secrétariat, et **un reçu par encaissement**. Jusqu'ici il devait le réclamer à l'école.
+- **Pourquoi une migration.** `enfant_factures` (mig. 004) ne renvoie que l'en-tête : numéro, dates, totaux, statut. De quoi dresser une liste, pas de quoi produire un document — il manquait **les lignes de la facture**, les encaissements, et l'identité de l'établissement. Et le parent n'a accès à aucune de ces tables : `factures` et `paiements` lui sont fermées depuis la migration 133, et son `profils.ecole_id` est NULL de toute façon.
+- `enfant_facture_detail(p_facture)` renvoie **tout en un seul appel** — le document s'affiche d'un bloc, il ne se compose pas progressivement sous les yeux du parent. Gardé par `_parent_possede()`, le même verrou que les autres `enfant_*` : le contrôle porte sur l'**élève**, c'est le lien de filiation qui autorise.
+- Piège évité au passage : l'état de la modale ne s'appelle pas `document` — ce nom aurait masqué l'objet global du DOM dans tout le composant.
+- **Mentions légales de Tut'Tank renseignées** (RCCM, NINEA, CORIS BANK, ordre des chèques), plus l'adresse et le téléphone qui manquaient à leur fiche. Le pied de page imprimé reproduit désormais celui de leur carnet.
+
 ## [2.199.1] — migration **141** · 🔴 onze entrées de menu manquaient à six écoles sur sept
 - **Trouvé en travaillant sur les factures, mesuré sur les 7 écoles de la base.** Tut'Tank — **client réel** — et cinq autres établissements ne voyaient plus dans leur menu : Appel, Cahier de textes, Progression, Emploi du temps, Niveaux & classes, Notes, Bulletins, Classement, Vie scolaire, Assiduité, Fournitures. Seule l'UCAD était épargnée.
 - **Cause.** `ecoles.type_etablissement` porte deux significations successives. La migration 001 l'a créée pour le **statut juridique** (« Privé », « Public », « Confessionnel ») — et c'est encore ce qu'écrivait la page d'onboarding. La migration 108 a voulu en faire la bascule école / supérieur avec `add column if not exists … not null default 'ecole' check (…)`. **La colonne existait déjà : l'instruction entière n'a rien fait.** Ni défaut, ni contrainte, sans la moindre erreur. Les écoles sont restées à « Privé », et le filtre de menu `["ecole"].includes("Privé")` a commencé à les exclure dès que le gating par type est arrivé (v2.171.0, élargi en v2.185.0).

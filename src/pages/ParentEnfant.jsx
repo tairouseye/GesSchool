@@ -6,13 +6,15 @@ import {
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
   alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
+  enfantFactureDetail,
 } from "@/lib/parent.js";
+import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
 import { Icone } from "@/composants/Icones.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
-import { codeBulletinId } from "@/lib/verification.js";
+import { codeBulletinId, codeFacture } from "@/lib/verification.js";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -610,6 +612,9 @@ function Fournitures({ items }) {
 
 function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur }) {
   const [payer, setPayer] = useState(null); // facture à régler (flux manuel)
+  // Volontairement pas « document » : ce nom masquerait l'objet global du DOM
+  // dans tout le composant.
+  const [factureDoc, setFactureDoc] = useState(null); // id de la facture à imprimer
   const [enLigne, setEnLigne] = useState({ actif: false });
   const [encours, setEncours] = useState(null); // id de facture en cours de redirection
 
@@ -661,6 +666,12 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
                       {reste > 0 && aDesNumeros && (
                         <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Déclarer</button>
                       )}
+                      {/* Le parent réclamait systématiquement sa facture au
+                          secrétariat : il peut désormais l'éditer lui-même. */}
+                      <button onClick={() => setFactureDoc(f.id)}
+                        className="rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/70 hover:border-or-500">
+                        🧾 Facture
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -706,7 +717,92 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
           } catch (e) { onErreur(e.message); }
         }}
       />
+
+      {factureDoc && <ModaleDocument factureId={factureDoc} onFermer={() => setFactureDoc(null)} />}
     </div>
+  );
+}
+
+// Facture et reçus d'une facture, imprimables par le parent lui-même.
+// Tout arrive en un seul appel (migration 142) : le document s'affiche d'un
+// bloc, il ne se compose pas progressivement sous les yeux du parent.
+function ModaleDocument({ factureId, onFermer }) {
+  const [d, setD] = useState(null);
+  const [erreur, setErreur] = useState("");
+  const [apercu, setApercu] = useState({ type: "facture", paiement: null });
+
+  useEffect(() => {
+    let vivant = true;
+    enfantFactureDetail(factureId)
+      .then((r) => { if (vivant) setD(r); })
+      .catch((e) => { if (vivant) setErreur(e.message); });
+    return () => { vivant = false; };
+  }, [factureId]);
+
+  const f = d?.facture;
+  const recu = apercu.type === "recu";
+  const rangRecu = recu ? (d?.paiements || []).findIndex((x) => x.id === apercu.paiement?.id) + 1 : 0;
+  // Une université émet un document sobre : la mise en page « carnet » est un
+  // usage du primaire et du secondaire.
+  const ecoleStyle = d?.ecole?.type_etablissement !== "superieur";
+
+  return (
+    <Modale ouvert onFermer={onFermer} titre={f ? `Facture ${f.numero}` : "Facture"} large>
+      <Alerte ton="erreur">{erreur}</Alerte>
+
+      {!d ? (
+        <p className="text-sm text-navy-900/40">Chargement…</p>
+      ) : !ecoleStyle ? (
+        <p className="text-sm text-navy-900/50">
+          Document indisponible à l&apos;impression pour cet établissement.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {d.paiements.length > 0 && (
+            <div className="no-print flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-navy-900/45">Pièce :</span>
+              <button type="button" onClick={() => setApercu({ type: "facture", paiement: null })}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${!recu ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900/60"}`}>
+                Facture
+              </button>
+              {d.paiements.map((p, i) => (
+                <button key={p.id} type="button" onClick={() => setApercu({ type: "recu", paiement: p })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${apercu.paiement?.id === p.id ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900/60"}`}>
+                  Reçu {i + 1} · {fmt(p.montant)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <DocumentCaisse
+            type={apercu.type}
+            ecole={d.ecole} identite={d.identite} mobile={d.mobile}
+            numero={recu ? `${f.numero}-R${rangRecu}` : f.numero}
+            date={recu ? apercu.paiement?.date_paiement : f.date_emission}
+            objet={f.notes || "Frais de scolarité"}
+            destinataire={[`${d.eleve?.prenom || ""} ${d.eleve?.nom || ""}`.trim(), d.eleve?.matricule]
+              .filter(Boolean).join(" · ")}
+            lignes={recu
+              ? [{ id: apercu.paiement?.id, libelle: `Règlement sur facture ${f.numero}`, quantite: 1,
+                   prix_unitaire: apercu.paiement?.montant, montant: apercu.paiement?.montant }]
+              : d.lignes}
+            total={recu ? apercu.paiement?.montant : f.montant_total}
+            paiement={recu ? {
+              mode: (MODES_MOBILE.find((m) => m[0] === apercu.paiement?.mode) || [])[1] || apercu.paiement?.mode,
+              reference: apercu.paiement?.reference,
+              payeur: `${d.eleve?.prenom || ""} ${d.eleve?.nom || ""}`.trim(),
+            } : null}
+            codeVerification={codeFacture(f.id)}
+          />
+
+          <div className="no-print flex justify-end">
+            <Bouton variante="fantome" onClick={() => window.print()}>
+              Imprimer {recu ? "le reçu" : "la facture"}
+            </Bouton>
+          </div>
+        </div>
+      )}
+    </Modale>
   );
 }
 

@@ -81,6 +81,15 @@ export async function enfantFactures(eleveId) {
   return data ?? [];
 }
 
+// Facture complète pour l'impression : lignes, encaissements, identité et
+// mentions de l'établissement. `enfant_factures` n'en renvoie que l'en-tête,
+// ce qui suffit à une liste mais pas à un document (migration 142).
+export async function enfantFactureDetail(factureId) {
+  const { data, error } = await supabase.rpc("enfant_facture_detail", { p_facture: factureId });
+  if (error) throw error;
+  return data || null;
+}
+
 export async function enfantAbsences(eleveId) {
   const { data, error } = await supabase.rpc("enfant_absences", { p_eleve: eleveId });
   if (error) throw error;
