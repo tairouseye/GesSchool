@@ -138,7 +138,19 @@ function requeteEleves(ecoleId, { anneeId, q, classeId, statut, classesAutorisee
   return req.order("nom").order("prenom");
 }
 
+// ⚠️ CONTRAT PRÉSERVÉ : renvoie un TABLEAU. Sept pages s'en servent pour
+// alimenter des sélecteurs d'élèves (Cantine, Certificats, Inscriptions,
+// Messagerie, Paiements, Transport, Vie scolaire). En changer la forme les
+// casserait toutes en silence — le build ne vérifie pas les formes d'objet.
+// La liste paginée porte un autre nom : `getElevesPage`.
 export async function getEleves(ecoleId, options = {}) {
+  const { data, error } = await requeteEleves(ecoleId, options).range(0, PLAFOND_LOT - 1);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Liste paginée, pour l'écran Élèves. Renvoie { lignes, total }.
+export async function getElevesPage(ecoleId, options = {}) {
   const { page = 0, taille = 25 } = options;
   const { debut, fin } = bornesPagination(page, taille);
   const { data, error, count } = await requeteEleves(ecoleId, options).range(debut, fin);

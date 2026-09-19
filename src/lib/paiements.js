@@ -62,15 +62,21 @@ export async function supprimerFrais(id) {
 // Le numéro de facture est posé ATOMIQUEMENT par le trigger `set_numero_facture`
 // (compteur par école/année). On n'en génère plus côté client (cf. migration 071).
 
-export async function getFactures(ecoleId, anneeId) {
-  let q = supabase
-    .from("factures")
-    .select("*, eleves(prenom, nom, matricule)")
-    .eq("ecole_id", ecoleId);
-  if (anneeId) q = q.eq("annee_id", anneeId);
-  const { data, error } = await q.order("date_emission", { ascending: false });
+// Liste PAGINÉE des factures (migration 136).
+//
+// Passe par une RPC et non par `.range()` : la recherche doit porter à la
+// fois sur le numéro de facture et sur l'élève embarqué, ce que PostgREST
+// refuse de combiner dans un même `or()`. Le OU est donc écrit en SQL.
+//
+// Renvoie { lignes, total } — le total vient d'un COUNT sur le même filtre,
+// sans quoi le nombre de pages serait faux.
+export async function getFactures(ecoleId, { anneeId = null, q = null, statut = null, page = 0, taille = 25 } = {}) {
+  const { data, error } = await supabase.rpc("factures_paginees", {
+    p_ecole: ecoleId, p_annee: anneeId, p_q: q || null,
+    p_statut: statut || null, p_page: page, p_taille: taille,
+  });
   if (error) throw error;
-  return data ?? [];
+  return { lignes: data?.lignes ?? [], total: data?.total ?? 0 };
 }
 
 export async function getFacture(id) {
@@ -342,8 +348,20 @@ export async function rejeterDeclaration(id) {
 }
 
 // Solde par élève (somme due - payé sur ses factures).
+//
+// N'utilise PLUS `getFactures`, devenue paginée : un solde calculé sur une
+// page serait faux. Requête dédiée et allégée — trois colonnes au lieu des
+// lignes complètes avec l'élève embarqué.
+// À terme, cet agrégat a sa place en base ; il reste ici tant que la
+// volumétrie des factures d'une année le permet.
 export async function getSoldesEleves(ecoleId, anneeId) {
-  const factures = await getFactures(ecoleId, anneeId);
+  let q = supabase.from("factures")
+    .select("eleve_id, montant_total, montant_paye")
+    .eq("ecole_id", ecoleId);
+  if (anneeId) q = q.eq("annee_id", anneeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  const factures = data ?? [];
   const map = {};
   for (const f of factures) {
     const m = (map[f.eleve_id] ||= { total: 0, paye: 0 });

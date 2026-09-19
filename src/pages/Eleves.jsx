@@ -64,7 +64,7 @@ export default function Eleves() {
         classesAutorisees, page, taille: 25,
       };
       const [res, cls, champs] = await Promise.all([
-        api.getEleves(ecoleId, critere),
+        api.getElevesPage(ecoleId, critere),
         classesVues ? Promise.resolve(classesVues) : getClasses(ecoleId, an?.id),
         getChampsEleve(ecoleId),
       ]);

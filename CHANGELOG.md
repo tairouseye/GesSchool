@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.192.1] — migration 136 · **phase 2 : page Paiements, et correctif d'une régression**
+- **🔴 Correctif — `getEleves` avait changé de forme en 2.192.0** et renvoyait `{lignes, total}` au lieu d'un tableau. **Sept pages** l'utilisent pour alimenter leurs sélecteurs d'élèves — Cantine, Certificats, Inscriptions, Messagerie, Paiements, Transport, Vie scolaire — et se seraient toutes cassées en silence : JavaScript ne vérifie pas les formes d'objet, et le build passait. Le contrat d'origine est restauré ; la liste paginée porte désormais un nom distinct, `getElevesPage`.
+- **La page Paiements est paginée** (25 factures), recherche comprise.
+  - Elle passe par une **RPC** (`factures_paginees`, migration 136) et non par `.range()` : la recherche doit porter à la fois sur le numéro de facture et sur l'élève embarqué, ce que **PostgREST refuse de combiner dans un même `or()`** — vérifié sur la base, erreur `PGRST100`. Le OU est donc écrit en SQL.
+  - La garde de la RPC **reproduit exactement** la RLS posée en migration 133 : une fonction `SECURITY DEFINER` contourne la RLS, et sans cette précaution elle aurait rouvert la fuite que la phase 0 venait de fermer.
+  - `getSoldesEleves` ne s'appuie plus sur la liste : un solde calculé sur une page serait faux. Requête dédiée, trois colonnes au lieu des lignes complètes.
+  - Index `(ecole_id, annee_id, date_emission desc)` ajouté pour le tri de la liste.
+
 ## [2.192.0] — aucune migration · **phase 2 : pagination, page Élèves**
 - **La page Élèves charge désormais 25 élèves à la fois**, au lieu de la table entière. Recherche, filtre de classe et filtre de statut s'exécutent **en base** — les appliquer après coup n'aurait filtré que la page affichée.
 - Le second chargement complet de `inscriptions` disparaît : l'inscription de l'année est embarquée dans la même requête. La carte `inscriptions[eleve.id]` est reconstruite depuis la page, ce qui laisse tout le rendu existant inchangé.

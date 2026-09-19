@@ -9,6 +9,7 @@ import { codeFacture } from "@/lib/verification.js";
 import { GESPRO } from "@/lib/gespro.js";
 import { getTransactions, LIBELLE_STATUT_TX } from "@/lib/paiementEnLigne.js";
 import { getEleves } from "@/lib/eleves.js";
+import { nbPages } from "@/lib/pagination.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast } from "@/composants/Feedback.jsx";
@@ -35,13 +36,23 @@ export default function Paiements() {
   const [modaleLot, setModaleLot] = useState(false);
   const [factureId, setFactureId] = useState(null);
 
+  const [pageFac, setPageFac] = useState(0);
+  const [totalFac, setTotalFac] = useState(0);
+  const [saisie, setSaisie] = useState("");
+
+  // La recherche part au serveur : sans anti-rebond, une requête par frappe.
+  useEffect(() => {
+    const t = setTimeout(() => { setRecherche(saisie); setPageFac(0); }, 300);
+    return () => clearTimeout(t);
+  }, [saisie]);
+
   const recharger = useCallback(async () => {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
       const [fac, fr, els, niv, cyc, ins, decl, mob] = await Promise.all([
-        api.getFactures(ecoleId, an?.id),
+        api.getFactures(ecoleId, { anneeId: an?.id, q: recherche, page: pageFac, taille: 25 }),
         api.getFrais(ecoleId, an?.id),
         getEleves(ecoleId),
         getNiveaux(ecoleId),
@@ -50,7 +61,8 @@ export default function Paiements() {
         api.getDeclarations(ecoleId, "en_attente"),
         api.getPaiementMobile(ecoleId),
       ]);
-      setFactures(fac);
+      setFactures(fac.lignes);
+      setTotalFac(fac.total);
       setFrais(fr);
       setEleves(els);
       setNiveaux(niv);
@@ -61,7 +73,7 @@ export default function Paiements() {
     } catch (e) {
       setErreur(e.message);
     }
-  }, [ecoleId]);
+  }, [ecoleId, recherche, pageFac]);
 
   useEffect(() => { recharger(); }, [recharger]);
 
@@ -70,11 +82,9 @@ export default function Paiements() {
     catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
-  const facturesFiltrees = factures.filter((f) => {
-    const q = recherche.toLowerCase();
-    const nom = `${f.eleves?.prenom || ""} ${f.eleves?.nom || ""}`.toLowerCase();
-    return !q || nom.includes(q) || (f.numero || "").toLowerCase().includes(q);
-  });
+  // Plus de filtrage client : la RPC a déjà cherché sur le numéro ET sur
+  // l'élève. Filtrer ici ne porterait que sur les 25 lignes affichées.
+  const facturesFiltrees = factures;
 
   return (
     <>
@@ -105,8 +115,8 @@ export default function Paiements() {
           <Carte className="overflow-hidden">
             <div className="border-b border-navy-900/10 p-4">
               <input
-                value={recherche}
-                onChange={(e) => setRecherche(e.target.value)}
+                value={saisie}
+                onChange={(e) => setSaisie(e.target.value)}
                 placeholder="Rechercher (élève, n° facture)…"
                 className="w-full max-w-md rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
               />
@@ -143,6 +153,22 @@ export default function Paiements() {
                   })}
                 </tbody>
               </table>
+            )}
+
+            {/* Pagination SERVEUR — le total vient du COUNT de la RPC. */}
+            {totalFac > 25 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 px-4 py-3 text-sm">
+                <span className="text-navy-900/50">
+                  {pageFac * 25 + 1}–{Math.min((pageFac + 1) * 25, totalFac)} sur {totalFac} facture(s)
+                </span>
+                <div className="flex items-center gap-3">
+                  <Bouton variante="fantome" onClick={() => setPageFac((p) => Math.max(0, p - 1))}
+                    disabled={pageFac === 0}>← Précédent</Bouton>
+                  <span className="text-navy-900/60">Page {pageFac + 1} / {nbPages(totalFac, 25)}</span>
+                  <Bouton variante="fantome" onClick={() => setPageFac((p) => Math.min(nbPages(totalFac, 25) - 1, p + 1))}
+                    disabled={pageFac >= nbPages(totalFac, 25) - 1}>Suivant →</Bouton>
+                </div>
+              </div>
             )}
           </Carte>
         ) : onglet === "declarations" ? (
