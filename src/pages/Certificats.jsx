@@ -6,6 +6,7 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { codeDoc } from "@/lib/verification.js";
 import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
+import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante, getSignataires } from "@/lib/academique.js";
 import { getDernierBulletin } from "@/lib/bulletins.js";
 import { getResumePaiementEleve } from "@/lib/paiements.js";
@@ -150,14 +151,10 @@ export default function Certificats() {
         <Carte className="no-print p-6">
           <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Nouveau document</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élève</span>
-              <select value={eleveId} onChange={(e) => setEleveId(e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-                <option value="">— Choisir —</option>
-                {eleves.map((e) => <option key={e.id} value={e.id}>{e.prenom} {e.nom} — {e.matricule}</option>)}
-              </select>
-            </label>
+            {/* Pas de <label> englobant : le sélecteur pose le sien, et des
+                labels imbriqués détourneraient le clic sur les résultats. */}
+            <SelecteurEleve ecoleId={ecoleId} value={eleveId}
+              onChange={(id) => setEleveId(id)} label="Élève" />
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type de document</span>
               <select value={modeleId} onChange={(e) => setModeleId(e.target.value)}

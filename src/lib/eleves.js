@@ -149,6 +149,17 @@ export async function getEleves(ecoleId, options = {}) {
   return data ?? [];
 }
 
+// Recherche bornée, pour les sélecteurs d'élève. Rend au plus `limite`
+// résultats : un menu déroulant contenant 10 000 options n'est ni chargeable
+// ni utilisable. C'est le même principe que la recherche d'emprunteur au
+// guichet de la bibliothèque.
+export async function chercherEleves(ecoleId, q, { anneeId = null, limite = 8 } = {}) {
+  if (!ecoleId) return [];
+  const { data, error } = await requeteEleves(ecoleId, { q, anneeId }).range(0, Math.max(1, limite) - 1);
+  if (error) throw error;
+  return data ?? [];
+}
+
 // Liste paginée, pour l'écran Élèves. Renvoie { lignes, total }.
 export async function getElevesPage(ecoleId, options = {}) {
   const { page = 0, taille = 25 } = options;

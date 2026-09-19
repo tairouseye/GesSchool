@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.194.0] — aucune migration · **fin de la phase 2**
+- **Correction du diagnostic de l'audit.** Les 137 requêtes « non bornées » était une mesure **statique** qui surestimait le problème : `getSalaires` est filtré par période, le cumul d'IR par année et par employé, les notes de bulletin par les évaluations d'une classe. Ces requêtes ont une **borne métier naturelle** et n'avaient pas besoin d'être paginées. RH et Bulletins sortent donc du chantier.
+- **Le vrai goulot restant était ailleurs** : six pages rendaient **un `<option>` par élève** dans un menu déroulant (Cantine, Transport, Messagerie, Documents, Vie scolaire, Inscriptions). Indolore à 96 élèves, impraticable à 10 000 — autant de nœuds dans le DOM, et une liste qu'on ne peut pas parcourir.
+- **Nouveau composant `SelecteurEleve`** : on tape, le serveur renvoie au plus huit résultats (recherche bornée `chercherEleves`, anti-rebond 250 ms). Il sait exclure des élèves déjà traités sans que l'appelant charge toute la liste. Branché sur **Documents** pour valider le patron ; les cinq autres pages suivront.
+  - Piège corrigé au passage : le composant pose son propre `<label>`, un `<label>` englobant aurait produit une imbrication invalide et détourné le clic sur les résultats.
+
 ## [2.193.0] — migration 137 · **phase 2 : tableau de bord**
 - **Les agrégats financiers du tableau de bord passent en base.** La page faisait déjà bien deux choses sur quatre — l'effectif par un `count` sans transfert de lignes, la moyenne des notes par RPC. Mais elle rapatriait **toutes les factures de l'année et tous les paiements de six mois**… pour n'en faire que des sommes. À 10 000 élèves, plusieurs dizaines de milliers de lignes traversaient le réseau à chaque ouverture d'une page qui n'affiche que trois chiffres et un histogramme.
 - L'histogramme mensuel est construit par `generate_series` : les **mois sans paiement** restent présents à zéro. Un graphique qui saute les mois vides donne une lecture fausse de la saisonnalité.
