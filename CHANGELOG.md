@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.187.1] — aucune migration
+- **Les entrées d'une section repliable sont décalées** vers la droite et soulignées d'un filet vertical. Elles s'alignaient exactement sur les entrées de premier niveau : rien ne distinguait un sous-menu d'un menu, il fallait relire les intitulés pour comprendre la hiérarchie.
+
 ## [2.187.0] — aucune migration
 - **La bibliothèque quitte son espace dédié et se range sous Pédagogie ET Gestion**, en section repliable comme Évaluation ou Communication. Le découpage suit la nature des données, pas la commodité :
   - **Pédagogie** — *Catalogue*, *Prêts & retours*, *Mémoires & thèses* : ce qui se consulte, se prête et se publie.

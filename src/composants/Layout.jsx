@@ -67,7 +67,11 @@ function Section({ titre, actif, pastilles = 0, children }) {
           </span>
         )}
       </button>
-      {ouvert && <div className="space-y-1">{children}</div>}
+      {/* Décalé et souligné d'un filet : le sous-niveau doit se lire
+          d'un coup d'œil, sans avoir à relire les intitulés. */}
+      {ouvert && (
+        <div className="ml-5 space-y-1 border-l border-creme/10 pl-1">{children}</div>
+      )}
     </div>
   );
 }
