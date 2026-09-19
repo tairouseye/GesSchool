@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Badge, SkeletonListe, Kpi } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
-import { mesFactures, mesDeclarations, declarerMonPaiement, mesInfosPaiement } from "@/lib/etudiant.js";
+import { mesFactures, mesDeclarations, declarerMonPaiement, mesInfosPaiement, monDossier } from "@/lib/etudiant.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—");
@@ -14,8 +13,10 @@ const MODES = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money"
 // Espace étudiant — scolarité. L'étudiant est majeur : il voit ses factures
 // et déclare lui-même ses paiements, sans passer par un tuteur.
 export default function EtudiantScolarite() {
-  const { ecole } = useAuth();
-  const devise = ecole?.devise || "XOF";
+  // La devise vient du dossier étudiant : `useAuth().ecole` est NULL pour un
+  // étudiant (son `profils.ecole_id` l'est aussi), la coder en dur donnerait
+  // « XOF » à un établissement en USD ou en CDF.
+  const [devise, setDevise] = useState("XOF");
   const toast = useToast();
   const [factures, setFactures] = useState(null);
   const [decls, setDecls] = useState([]);
@@ -32,6 +33,7 @@ export default function EtudiantScolarite() {
   useEffect(() => {
     recharger();
     mesInfosPaiement().then(setInfos).catch(() => setInfos({}));
+    monDossier().then((d) => d?.devise && setDevise(d.devise)).catch(() => {});
   }, [recharger]);
 
   const total = (factures || []).reduce((s, f) => s + (Number(f.montant_total) || 0), 0);

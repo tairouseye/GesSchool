@@ -18,6 +18,7 @@ const TUILES = [
   { to: "/etudiant/actualites", cle: "annonces", label: "Actualités" },
   { to: "/etudiant/bibliotheque", cle: "bibliotheque", label: "Bibliothèque" },
   { to: "/etudiant/depots", cle: "biblio_depots", label: "Mon dépôt" },
+  { to: "/etudiant/carte", cle: "carte_etudiant", label: "Ma carte" },
 ];
 
 // Accueil étudiant : gestion du consentement d'accès parent aux notes.

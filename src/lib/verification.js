@@ -15,6 +15,7 @@ export const codeDoc = (id) => `doc~${id}`;                  // certificat / att
 export const codeReleve = (id) => `releve~${id}`;            // relevé de notes (LMD)
 export const codeBulletinId = (id) => `bulletin~${id}`;      // bulletin (id connu — espace parent)
 export const codeBulletin = (eleveId, periodeId) => `bulletin~${eleveId}~${periodeId}`; // bulletin (élève+période — espace gestion)
+export const codeCarteEtudiant = (eleveId) => `etu~${eleveId}`; // carte d'étudiant (valide tant que l'inscription est active)
 
 // URL publique de vérification — indépendante du domaine d'hébergement
 // (production, prévisualisation, sous-chemin GitHub Pages ou localhost).

@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.183.0] — migration 131
+- **Carte d'étudiant vérifiable par QR.** L'étudiant l'affiche sur son téléphone ou l'imprime ; le QR renvoie vers la page publique de vérification, comme les factures, bulletins et relevés. La branche `etu` **ne répond que si l'inscription est ACTIVE** : une carte périmée ou un étudiant radié se signalent d'eux-mêmes — c'est tout l'intérêt d'un contrôle à l'entrée d'un campus ou d'une bibliothèque. Elle n'expose que ce qui figure déjà sur une carte physique : nom, matricule, filière, établissement.
+  - `verifier_document()` a dû être **reproduite en entier** (`create or replace` remplace tout le corps) ; les six branches existantes sont conservées à l'identique, ce qu'un contrôle automatique a vérifié avant livraison.
+- **⚠️ Correctif — devise figée à XOF dans l'espace étudiant.** `useAuth().ecole` est NULL pour un étudiant, son `profils.ecole_id` l'étant aussi : la page scolarité affichait « XOF » en dur, faux pour un établissement en USD ou CDF (démo RDC). `mon_dossier_etudiant()` renvoie désormais l'établissement, sa devise, son logo, l'année académique et la photo.
+
 ## [2.182.0] — migration 130 · **l'espace étudiant devient un vrai portail**
 Audit de l'espace étudiant : il ne comptait que 4 entrées. Constat de fond — un parent dispose de **26 RPC**, et **aucune n'est réutilisable** par un étudiant, toutes étant gardées par `_parent_possede()` ou une jointure sur `tuteurs`. La donnée existait donc déjà partout ; c'est le chemin d'accès qui manquait.
 
