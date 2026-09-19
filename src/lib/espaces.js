@@ -95,6 +95,7 @@ export const ESPACES = [
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure" },
       { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"], groupe: "Élèves & structure" },
+      { to: "/admissions", label: "Admissions", icone: "📨", cle: "admissions", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Élèves & structure" },
 

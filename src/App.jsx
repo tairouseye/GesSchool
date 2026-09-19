@@ -35,6 +35,8 @@ const NotesLMD = lazy(() => import("@/pages/NotesLMD.jsx"));
 const Deliberations = lazy(() => import("@/pages/Deliberations.jsx"));
 const CodesEtudiants = lazy(() => import("@/pages/CodesEtudiants.jsx"));
 const EmploiSup = lazy(() => import("@/pages/EmploiSup.jsx"));
+const Admissions = lazy(() => import("@/pages/Admissions.jsx"));
+const Candidature = lazy(() => import("@/pages/Candidature.jsx"));
 const Bibliotheque = lazy(() => import("@/pages/Bibliotheque.jsx"));
 const BiblioCirculation = lazy(() => import("@/pages/BiblioCirculation.jsx"));
 const BiblioDepots = lazy(() => import("@/pages/BiblioDepots.jsx"));
@@ -155,6 +157,8 @@ export default function App() {
           <Route path="/rejoindre" element={<Rejoindre />} />
           <Route path="/a-propos" element={<APropos />} />
           <Route path="/verifier" element={<Verifier />} />
+          {/* Publique, sans compte : un candidat n'en a pas encore un. */}
+          <Route path="/candidature" element={<Candidature />} />
 
           {/* Connecté sans profil → choix (école ou parent) */}
           <Route
@@ -238,6 +242,7 @@ export default function App() {
             <Route path="/deliberations" element={<Garde cle="deliberations_sup"><Deliberations /></Garde>} />
             <Route path="/codes-etudiants" element={<Garde cle="codes_etudiants"><CodesEtudiants /></Garde>} />
             <Route path="/emploi-sup" element={<Garde cle="emploi_sup"><EmploiSup /></Garde>} />
+            <Route path="/admissions" element={<Garde cle="admissions"><Admissions /></Garde>} />
             <Route path="/bibliotheque" element={<Garde cle="bibliotheque"><Bibliotheque /></Garde>} />
             <Route path="/biblio-circulation" element={<Garde cle="biblio_circulation"><BiblioCirculation /></Garde>} />
             <Route path="/biblio-depots" element={<Garde cle="biblio_depots"><BiblioDepots /></Garde>} />
