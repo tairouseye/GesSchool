@@ -5,6 +5,19 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.189.0] — migrations 133 → 134 · **suites de l'audit global, phases 0 et 1a**
+Aucun fichier applicatif modifié : ces deux migrations ne touchent que la base.
+
+- **🔴 PHASE 0 — confidentialité à l'intérieur d'un établissement** (migration 133). Mesuré avec un vrai compte `enseignant`, sans aucun droit d'interface sur les finances : il lisait par simple appel REST les **factures**, les **paiements**, les **déclarations de paiement** et les **messages privés entre les familles et l'école**. L'interface masquait, la base autorisait — le type même de faille qui résiste à une revue d'écrans.
+  - Cause : la migration 001 pose sur 37 tables une policy `<table>_tenant` qui ne contrôle **que l'établissement, pas le rôle**. La comptabilité et la paie avaient été durcies depuis ; la facturation et la messagerie étaient restées en arrière.
+  - Les policies sont supprimées **dynamiquement** via `pg_policies`, pas par leur nom : celles de `factures`/`paiements` naissent d'une boucle `execute format` et celle de `declarations_paiement` d'une migration jamais versionnée. Un `drop if exists` sur un nom inexistant n'aurait rien retiré — et **deux policies permissives s'additionnent**, le correctif aurait été sans effet.
+  - Vérifié après application : les cinq tables renvoient 0 pour un enseignant, qui conserve élèves, notes, classes, matières et catalogue.
+  - `tuteurs` reste volontairement lisible : l'enseignant y accède depuis la fiche de l'élève et peut devoir joindre une famille.
+- **PHASE 1a — traçabilité des actes contestables** (migration 134). Aucune trace n'existait sur la modification d'une note, la suppression d'un élève, l'annulation d'un paiement ou le changement de rôle. Un trigger commun alimente désormais `journal_audit` pour `notes`, `notes_lmd`, `releves`, `bulletins`, `factures`, `paiements`, `eleves`, `inscriptions_sup` et `profil_roles`.
+  - **UPDATE et DELETE seulement** : une création est rarement contestée et serait très bruyante en saisie de masse. Le détail ne conserve que les champs réellement modifiés, avec leur valeur avant et après ; à la suppression, la ligne entière — sans elle on saurait qu'on a supprimé, pas quoi.
+  - `SECURITY DEFINER`, sans quoi la RLS empêcherait un enseignant d'écrire au journal et sa modification passerait sans trace.
+  - Trois journaux coexistaient ; on étend le seul vivant. **`audit_log` n'a aucun écrivain depuis la migration 001** : elle est marquée obsolète par un commentaire, pas supprimée — une suppression est irréversible et cette migration doit rester sans risque.
+
 ## [2.188.0] — aucune migration
 - **Gestion se replie à son tour en sections** : **Scolarité** (Élèves, Codes parents, Documents, Demandes), **Finances** (Paiements, Recouvrement, Comptabilité), **Services aux familles** (Cantine, Transport), plus Communication et Bibliothèque déjà groupées. Dix entrées traînaient en vrac au-dessus. Les deux grands espaces se lisent désormais de la même façon.
 - Le test « toute page métier porte un groupe » couvre maintenant **Pédagogie et Gestion** : ajouter une page en oubliant sa section fait échouer la suite.
