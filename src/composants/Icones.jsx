@@ -13,6 +13,9 @@ const P = {
   _documentation: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8M8 16h5"/>',
   bibliotheque: '<path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="M16.5 4.6l3.4.9-4.1 15.4-3.4-.9z"/>',
   biblio_circulation: '<path d="M21 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3"/><path d="M3 16v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3"/><path d="M7 11l-3 1 3 1M17 15l3-1-3-1"/><path d="M4 12h16"/>',
+  biblio_depots: '<path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M6 10.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.5"/><path d="M22 8v6"/>',
+  biblio_acquisitions: '<path d="M6 4h12l2 5H4l2-5z"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/>',
+  biblio_inventaire: '<path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><path d="M16 5h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2"/><path d="M9 12l2 2 4-4"/>',
   membres: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   signatures: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
 

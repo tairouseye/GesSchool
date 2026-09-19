@@ -56,6 +56,9 @@ const ACCES = {
   // --- Bibliothèque universitaire (module payant, réservé au supérieur) ---
   bibliotheque: ["direction", "bibliothecaire", "enseignant", "secretaire"],
   biblio_circulation: ["direction", "bibliothecaire"],
+  biblio_depots: ["direction", "bibliothecaire"],
+  biblio_acquisitions: ["direction", "bibliothecaire"],
+  biblio_inventaire: ["direction", "bibliothecaire"],
 
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
@@ -113,6 +116,9 @@ export const PAGES = [
   { cle: "codes_etudiants", path: "/codes-etudiants" },
   { cle: "bibliotheque", path: "/bibliotheque" },
   { cle: "biblio_circulation", path: "/biblio-circulation" },
+  { cle: "biblio_depots", path: "/biblio-depots" },
+  { cle: "biblio_acquisitions", path: "/biblio-acquisitions" },
+  { cle: "biblio_inventaire", path: "/biblio-inventaire" },
   { cle: "enseignants", path: "/enseignants" },
   { cle: "vie_scolaire", path: "/vie-scolaire" },
   { cle: "emploi", path: "/emploi-du-temps" },

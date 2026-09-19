@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, Badge, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, Badge, SkeletonListe, Kpi } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/bibliotheque.js";
 import { nbPages } from "@/lib/biblio.regles.js";
 import { moduleActif } from "@/lib/modules.js";
+import ModaleImportNotices from "@/composants/ModaleImportNotices.jsx";
+import SectionAuteurs from "@/composants/SectionAuteurs.jsx";
 
 const TAILLE = 20;
 const libType = (t) => api.TYPES.find(([v]) => v === t)?.[1] || t;
@@ -16,10 +18,11 @@ const auteursDe = (r) => (r.biblio_ressource_auteurs || [])
 const fmtTaille = (o) => (!o ? "—" : o > 1048576 ? `${(o / 1048576).toFixed(1)} Mo` : `${Math.round(o / 1024)} Ko`);
 
 export default function Bibliotheque() {
-  const { ecoleId, typeEtablissement } = useAuth();
+  const { ecoleId, typeEtablissement, ecole } = useAuth();
   const toast = useToast();
   const confirmer = useConfirm();
 
+  const [vue, setVue] = useState("catalogue");    // catalogue | stats
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
   const [page, setPage] = useState(0);
@@ -29,6 +32,7 @@ export default function Bibliotheque() {
   const [erreur, setErreur] = useState("");
   const [edition, setEdition] = useState(null);   // ressource en cours d'édition (ou {} pour création)
   const [fiche, setFiche] = useState(null);       // id de la ressource ouverte
+  const [imports, setImport] = useState(false);
 
   const recharger = useCallback(async () => {
     if (!ecoleId) return;
@@ -61,7 +65,12 @@ export default function Bibliotheque() {
   return (
     <>
       <EnTete titre="Bibliothèque" sousTitre="Catalogue, exemplaires et documents numériques"
-        action={<Bouton onClick={() => setEdition({})}>+ Ajouter une ressource</Bouton>} />
+        action={
+          <div className="flex gap-2">
+            <Bouton variante="fantome" onClick={() => setImport(true)}>⬆ Importer</Bouton>
+            <Bouton onClick={() => setEdition({})}>+ Ajouter une ressource</Bouton>
+          </div>
+        } />
 
       <div className="space-y-5 p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
@@ -69,6 +78,19 @@ export default function Bibliotheque() {
           <Alerte ton="info">La bibliothèque universitaire s'adresse aux établissements en mode « Supérieur ».</Alerte>
         )}
 
+        <div className="flex gap-2">
+          {[["catalogue", "📚 Catalogue"], ["stats", "📊 Statistiques"]].map(([v, l]) => (
+            <button key={v} onClick={() => setVue(v)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium ${vue === v ? "bg-navy-900 text-creme" : "border border-navy-900/15"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {vue === "stats" && <PanneauStats ecoleId={ecoleId} devise={ecole?.devise || "XOF"} />}
+
+        {vue === "catalogue" && (
+        <>
         <Carte className="flex flex-wrap items-end gap-3 p-4">
           <div className="min-w-56 flex-1">
             <Recherche valeur={q} onChange={chercher} placeholder="Titre, auteur, éditeur, mot-clé…" />
@@ -133,6 +155,8 @@ export default function Bibliotheque() {
             <Bouton variante="fantome" onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>Suivant →</Bouton>
           </div>
         )}
+        </>
+        )}
       </div>
 
       <ModaleRessource ouvert={!!edition} ressource={edition} ecoleId={ecoleId}
@@ -140,6 +164,9 @@ export default function Bibliotheque() {
         onEnregistre={() => { setEdition(null); recharger(); }} />
 
       <ModaleFiche id={fiche} ecoleId={ecoleId} onFermer={() => setFiche(null)} onChange={recharger} />
+
+      {imports && <ModaleImportNotices ecoleId={ecoleId} onFermer={() => setImport(false)}
+        onFini={() => { setImport(false); setPage(0); recharger(); }} />}
     </>
   );
 }
@@ -147,9 +174,13 @@ export default function Bibliotheque() {
 // --- Création / édition d'une notice ---------------------------------------
 function ModaleRessource({ ouvert, ressource, ecoleId, onFermer, onEnregistre }) {
   const toast = useToast();
-  const vide = { titre: "", sous_titre: "", type_ressource: "livre", auteur_libre: "", editeur: "", annee_pub: "", isbn: "", discipline: "", langue: "fr", resume: "", mots_cles: "" };
+  // Les auteurs ne sont pas des colonnes de la notice : ils se rattachent
+  // depuis la fiche (SectionAuteurs), via la table de liaison.
+  const vide = { titre: "", sous_titre: "", type_ressource: "livre", editeur: "", annee_pub: "", isbn: "", discipline: "", langue: "fr", resume: "", mots_cles: "" };
   const [f, setF] = useState(vide);
   const [busy, setBusy] = useState(false);
+  const [recherche, setRecherche] = useState(false);
+  const [trouve, setTrouve] = useState(null);   // auteurs rapportés, rattachés après création
   const edition = ressource && ressource.id;
 
   useEffect(() => {
@@ -157,10 +188,38 @@ function ModaleRessource({ ouvert, ressource, ecoleId, onFermer, onEnregistre })
     setF(edition
       ? { ...vide, ...ressource, annee_pub: ressource.annee_pub ?? "", mots_cles: (ressource.mots_cles || []).join(", ") }
       : vide);
+    setTrouve(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ouvert, ressource]);
 
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  // Enrichissement depuis Open Library (ISBN) ou Crossref (DOI).
+  // On NE REMPLACE JAMAIS un champ déjà rempli : le catalogueur qui a saisi
+  // une information la veut, et une base externe se trompe aussi.
+  async function enrichir() {
+    const saisie = (f.isbn || "").trim();
+    if (!saisie) { toast.erreur("Saisissez d'abord un ISBN ou un DOI."); return; }
+    setRecherche(true);
+    try {
+      const enr = await import("@/lib/biblio.enrichissement.js");
+      const estDoi = !!enr.normaliserDoi(saisie);
+      const d = estDoi ? await enr.chercherParDoi(saisie) : await enr.chercherParIsbn(saisie);
+      setF((s) => ({
+        ...s,
+        titre: s.titre || d.titre || "",
+        sous_titre: s.sous_titre || d.sous_titre || "",
+        editeur: s.editeur || d.editeur || "",
+        annee_pub: s.annee_pub || d.annee_pub || "",
+        isbn: d.isbn || s.isbn,
+        type_ressource: estDoi && s.type_ressource === "livre" ? "article" : s.type_ressource,
+        mots_cles: s.mots_cles || (d.mots_cles || []).join(", "),
+      }));
+      setTrouve(d);
+      toast.succes(`Notice trouvée sur ${d.source}.`);
+    } catch (e) { toast.erreur(e); }
+    finally { setRecherche(false); }
+  }
 
   async function soumettre(e) {
     e.preventDefault();
@@ -174,8 +233,14 @@ function ModaleRessource({ ouvert, ressource, ecoleId, onFermer, onEnregistre })
         resume: f.resume || null,
         mots_cles: (f.mots_cles || "").split(",").map((x) => x.trim()).filter(Boolean),
       };
-      if (edition) await api.modifierRessource(ressource.id, payload);
-      else await api.creerRessource(ecoleId, payload);
+      if (edition) {
+        await api.modifierRessource(ressource.id, payload);
+        if (trouve?.auteurs?.length) await api.rattacherAuteurs(ecoleId, ressource.id, trouve.auteurs);
+      } else {
+        const r = await api.creerRessource(ecoleId, payload);
+        // Les auteurs ne peuvent être liés qu'une fois la notice créée.
+        if (trouve?.auteurs?.length) await api.rattacherAuteurs(ecoleId, r.id, trouve.auteurs);
+      }
       toast.succes(edition ? "Notice modifiée." : "Notice ajoutée.");
       onEnregistre();
     } catch (er) { toast.erreur(er); }
@@ -200,9 +265,27 @@ function ModaleRessource({ ouvert, ressource, ecoleId, onFermer, onEnregistre })
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Champ label="Éditeur" value={f.editeur || ""} onChange={(e) => maj("editeur", e.target.value)} />
-          <Champ label="ISBN / ISSN" value={f.isbn || ""} onChange={(e) => maj("isbn", e.target.value)} />
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Champ label="ISBN / DOI" value={f.isbn || ""} onChange={(e) => maj("isbn", e.target.value)} />
+            </div>
+            <Bouton type="button" variante="fantome" onClick={enrichir} disabled={recherche || !(f.isbn || "").trim()}>
+              {recherche ? "…" : "🔎"}
+            </Bouton>
+          </div>
           <Champ label="Discipline" value={f.discipline || ""} onChange={(e) => maj("discipline", e.target.value)} />
         </div>
+
+        {trouve && (
+          <Alerte ton="succes">
+            Complété depuis <b>{trouve.source}</b>
+            {trouve.auteurs?.length > 0 && (
+              <> — auteur(s) rattaché(s) à l&apos;enregistrement :{" "}
+                {trouve.auteurs.map((a) => [a.prenom, a.nom].filter(Boolean).join(" ")).join(", ")}</>
+            )}
+            . Les champs que vous aviez déjà remplis n&apos;ont pas été touchés.
+          </Alerte>
+        )}
         <Champ label="Mots-clés (séparés par des virgules)" value={f.mots_cles || ""} onChange={(e) => maj("mots_cles", e.target.value)} />
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Résumé</span>
@@ -295,6 +378,8 @@ function ModaleFiche({ id, ecoleId, onFermer, onChange }) {
             {r.resume && <p className="mt-2 text-navy-900/70">{r.resume}</p>}
           </div>
 
+          <SectionAuteurs r={r} ecoleId={ecoleId} onChange={() => { charger(); onChange?.(); }} />
+
           {/* Exemplaires physiques */}
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy-900/45">Exemplaires physiques</p>
@@ -371,5 +456,105 @@ function ModaleFiche({ id, ecoleId, onFermer, onChange }) {
         </div>
       )}
     </Modale>
+  );
+}
+
+// --- Tableau de bord --------------------------------------------------------
+const fmtN = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
+const moisFr = (ym) => {
+  const [a, m] = String(ym || "").split("-");
+  if (!a || !m) return ym;
+  return new Date(Number(a), Number(m) - 1, 1)
+    .toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+};
+
+function PanneauStats({ ecoleId, devise }) {
+  const [s, setS] = useState(null);
+  const [erreur, setErreur] = useState("");
+
+  useEffect(() => {
+    if (!ecoleId) return;
+    let vivant = true;
+    api.statistiques(ecoleId)
+      .then((d) => { if (vivant) setS(d); })
+      .catch((e) => { if (vivant) setErreur(e.message); });
+    return () => { vivant = false; };
+  }, [ecoleId]);
+
+  if (erreur) return <Alerte ton="erreur">{erreur}</Alerte>;
+  const chargement = !s;
+  const mois = s?.par_mois || [];
+  const maxMois = Math.max(1, ...mois.map((m) => Number(m.emprunts) || 0));
+  const top = s?.top_ouvrages || [];
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Notices au catalogue" valeur={fmtN(s?.ressources)} chargement={chargement}
+          sous={`${fmtN(s?.numeriques)} document(s) numérique(s)`} />
+        <Kpi label="Exemplaires" valeur={fmtN(s?.exemplaires)} chargement={chargement}
+          sous={`${fmtN(s?.exemplaires_disponibles)} disponible(s)`} />
+        <Kpi label="Emprunts en cours" valeur={fmtN(s?.emprunts_en_cours)} chargement={chargement}
+          ton={Number(s?.emprunts_en_retard) > 0 ? "rouge" : "navy"}
+          sous={`${fmtN(s?.emprunts_en_retard)} en retard`} />
+        <Kpi label="Réservations actives" valeur={fmtN(s?.reservations_actives)} chargement={chargement} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Emprunts sur 12 mois" valeur={fmtN(s?.emprunts_periode)} chargement={chargement} ton="or" />
+        <Kpi label="Dépôts à traiter" valeur={fmtN(s?.depots_a_traiter)} chargement={chargement}
+          ton={Number(s?.depots_a_traiter) > 0 ? "or" : "navy"}
+          sous={`${fmtN(s?.depots_publies)} publié(s)`} />
+        <Kpi label="Pénalités dues" valeur={fmtN(s?.penalites_dues)} suffixe={devise} chargement={chargement}
+          ton={Number(s?.penalites_dues) > 0 ? "rouge" : "vert"} />
+        <Kpi label="Taux de disponibilité" chargement={chargement}
+          valeur={s && Number(s.exemplaires) > 0
+            ? `${Math.round((Number(s.exemplaires_disponibles) / Number(s.exemplaires)) * 100)} %`
+            : "—"} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Volume mensuel — histogramme sobre, sans librairie */}
+        <Carte className="p-5">
+          <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Emprunts par mois</h3>
+          {chargement ? <SkeletonListe lignes={3} /> : mois.length === 0 ? (
+            <p className="text-sm text-navy-900/50">Aucune donnée.</p>
+          ) : (
+            <div className="flex h-40 items-end gap-1.5">
+              {mois.map((m) => {
+                const n = Number(m.emprunts) || 0;
+                return (
+                  <div key={m.mois} className="flex flex-1 flex-col items-center gap-1" title={`${m.mois} : ${n}`}>
+                    <span className="text-[10px] font-medium tabular-nums text-navy-900/50">{n || ""}</span>
+                    <div className="w-full rounded-t bg-or-500/70"
+                      style={{ height: `${Math.max(2, (n / maxMois) * 100)}%` }} />
+                    <span className="text-[10px] text-navy-900/45">{moisFr(m.mois)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Carte>
+
+        {/* Ouvrages les plus empruntés */}
+        <Carte className="p-5">
+          <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Les plus empruntés</h3>
+          {chargement ? <SkeletonListe lignes={4} /> : top.length === 0 ? (
+            <p className="text-sm text-navy-900/50">Aucun emprunt sur la période.</p>
+          ) : (
+            <ol className="space-y-2">
+              {top.map((t, i) => (
+                <li key={`${t.titre}-${i}`} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate text-navy-900">
+                    <span className="mr-2 font-mono text-xs text-navy-900/40">{i + 1}.</span>{t.titre}
+                  </span>
+                  <Badge ton="navy">{fmtN(t.emprunts)}</Badge>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Carte>
+      </div>
+    </div>
   );
 }

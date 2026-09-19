@@ -5,21 +5,26 @@ import { Bouton, Champ, Carte, Alerte, EtatVide, Badge, SkeletonListe, Modale } 
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/bibliotheque.js";
 import { nbPages, joursRetard } from "@/lib/biblio.regles.js";
+import ScannerCodeBarres, { scanCameraDisponible } from "@/composants/ScannerCodeBarres.jsx";
 
 const TAILLE = 20;
 const auj = () => new Date().toISOString().slice(0, 10);
+const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—");
 const nomEmprunteur = (e) =>
   e?.profils ? `${e.profils.prenom || ""} ${e.profils.nom || ""}`.trim()
   : e?.eleves ? `${e.eleves.prenom || ""} ${e.eleves.nom || ""}`.trim()
   : "—";
+// Le rôle sert à retrouver la règle de prêt applicable (quota, durée, pénalité).
+const roleDe = (emp) => (emp?.emprunteur_eleve_id ? "etudiant" : "enseignant");
 
 export default function BiblioCirculation() {
-  const { ecoleId, utilisateur } = useAuth();
+  const { ecoleId, utilisateur, ecole } = useAuth();
+  const devise = ecole?.devise || "XOF";
   const toast = useToast();
   const confirmer = useConfirm();
 
-  const [onglet, setOnglet] = useState("pret");     // pret | retour
+  const [onglet, setOnglet] = useState("pret");     // pret | retour | penalites
   const [page, setPage] = useState(0);
   const [enRetard, setEnRetard] = useState(false);
   const [liste, setListe] = useState({ lignes: [], total: 0 });
@@ -36,12 +41,32 @@ export default function BiblioCirculation() {
   }, [ecoleId, enRetard, page]);
   useEffect(() => { recharger(); }, [recharger]);
 
+  // Retour + proposition de pénalité : on n'en crée jamais sans un « oui ».
   async function rendre(emp) {
-    try { await api.rendre(emp.id); toast.succes("Retour enregistré."); recharger(); }
-    catch (e) { toast.erreur(e); }
+    try {
+      const p = await api.rendre(emp.id, { ecoleId, emprunt: emp, role: roleDe(emp) });
+      toast.succes("Retour enregistré.");
+      recharger();
+      if (p) await proposerPenalite(emp, p);
+    } catch (e) { toast.erreur(e); }
   }
+
+  async function proposerPenalite(emp, p) {
+    const ok = await confirmer({
+      titre: "Pénalité de retard",
+      message: `Retard de ${p.jours} jour(s) — enregistrer une pénalité de ${fmt(p.montant)} ${devise} pour ${nomEmprunteur(emp)} ?`,
+      confirmer: "Enregistrer", danger: false,
+    });
+    if (!ok) return;
+    try {
+      await api.creerPenalite(ecoleId, { emprunt_id: emp.id, type: "retard", montant: p.montant,
+        note: `Retard de ${p.jours} jour(s)` });
+      toast.succes("Pénalité enregistrée.");
+    } catch (e) { toast.erreur(e); }
+  }
+
   async function renouveler(emp) {
-    const role = emp.emprunteur_eleve_id ? "etudiant" : "enseignant";
+    const role = roleDe(emp);
     try {
       const d = await api.renouveler(ecoleId, emp, role);
       toast.succes(`Renouvelé jusqu'au ${dateFr(d)}.`);
@@ -67,14 +92,18 @@ export default function BiblioCirculation() {
             className={`rounded-lg px-4 py-2 text-sm font-medium ${onglet === "retour" ? "bg-navy-900 text-creme" : "border border-navy-900/15"}`}>
             📗 Retour
           </button>
+          <button onClick={() => setOnglet("penalites")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${onglet === "penalites" ? "bg-navy-900 text-creme" : "border border-navy-900/15"}`}>
+            💰 Pénalités
+          </button>
         </div>
 
-        {onglet === "pret"
-          ? <PanneauPret ecoleId={ecoleId} agentId={utilisateur?.id} onFait={recharger} />
-          : <PanneauRetour ecoleId={ecoleId} onFait={recharger} />}
+        {onglet === "pret" && <PanneauPret ecoleId={ecoleId} agentId={utilisateur?.id} devise={devise} onFait={recharger} />}
+        {onglet === "retour" && <PanneauRetour ecoleId={ecoleId} onFait={recharger} onPenalite={proposerPenalite} />}
+        {onglet === "penalites" && <PanneauPenalites ecoleId={ecoleId} devise={devise} />}
 
         {/* Emprunts en cours */}
-        <Carte className="p-5">
+        <Carte className={`p-5 ${onglet === "penalites" ? "hidden" : ""}`}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-display text-lg font-semibold text-navy-900">
               Emprunts en cours <span className="text-sm font-normal text-navy-900/50">({liste.total})</span>
@@ -239,16 +268,18 @@ function ModaleRegles({ ouvert, ecoleId, onFermer }) {
 }
 
 // --- Prêt -------------------------------------------------------------------
-function PanneauPret({ ecoleId, agentId, onFait }) {
+function PanneauPret({ ecoleId, agentId, devise, onFait }) {
   const toast = useToast();
   const [type, setType] = useState("etudiant");     // etudiant | personnel
   const [q, setQ] = useState("");
   const [resultats, setResultats] = useState([]);
   const [emprunteur, setEmprunteur] = useState(null);
+  const [dette, setDette] = useState(0);
   const [code, setCode] = useState("");
   const [exemplaire, setExemplaire] = useState(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [camera, setCamera] = useState(false);
 
   // Recherche serveur, déclenchée à partir de 2 caractères.
   useEffect(() => {
@@ -264,16 +295,36 @@ function PanneauPret({ ecoleId, agentId, onFait }) {
     return () => { vivant = false; clearTimeout(t); };
   }, [ecoleId, q, type]);
 
-  async function chercherExemplaire() {
+  // Dette de pénalités de l'emprunteur : information de guichet, jamais bloquante
+  // (c'est le bibliothécaire qui décide de prêter ou non).
+  useEffect(() => {
+    if (!emprunteur) { setDette(0); return; }
+    let vivant = true;
+    const cible = type === "etudiant"
+      ? { eleveId: emprunteur.id }
+      : { profilId: emprunteur.profil_id };
+    if (!cible.eleveId && !cible.profilId) { setDette(0); return; }
+    api.penalitesDues(ecoleId, cible)
+      .then((d) => { if (vivant) setDette(d); })
+      .catch(() => { if (vivant) setDette(0); });
+    return () => { vivant = false; };
+  }, [ecoleId, emprunteur, type]);
+
+  // Stable : passée en dépendance d'effet au scanner caméra.
+  const chercherCode = useCallback(async (valeur) => {
+    const c = String(valeur || "").trim();
     setMsg("");
-    if (!code.trim()) return;
+    if (!c) return;
+    setCode(c);
     try {
-      const ex = await api.exemplaireParCode(ecoleId, code.trim());
+      const ex = await api.exemplaireParCode(ecoleId, c);
       if (!ex) { setExemplaire(null); setMsg("Aucun exemplaire avec ce code-barres."); return; }
       setExemplaire(ex);
       if (ex.statut !== "disponible") setMsg(`Cet exemplaire est « ${api.STATUTS_EXEMPLAIRE[ex.statut] || ex.statut} ».`);
     } catch (e) { setMsg(e.message); }
-  }
+  }, [ecoleId]);
+
+  const chercherExemplaire = () => chercherCode(code);
 
   async function preter() {
     if (!emprunteur || !exemplaire) return;
@@ -341,6 +392,11 @@ function PanneauPret({ ecoleId, agentId, onFait }) {
             )}
           </>
         )}
+        {dette > 0 && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            ⚠️ Pénalités impayées : <b>{fmt(dette)} {devise}</b>.
+          </p>
+        )}
       </div>
 
       {/* 2. Exemplaire */}
@@ -352,6 +408,9 @@ function PanneauPret({ ecoleId, agentId, onFait }) {
             placeholder="Scanner ou saisir le code-barres, puis Entrée"
             className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 font-mono text-sm outline-none focus:border-or-500" />
           <Bouton variante="fantome" onClick={chercherExemplaire}>Chercher</Bouton>
+          {scanCameraDisponible() && (
+            <Bouton variante="fantome" onClick={() => setCamera(true)}>📷</Bouton>
+          )}
         </div>
         {exemplaire && (
           <div className="mt-2 flex items-center justify-between rounded-xl border border-navy-900/10 px-3 py-2 text-sm">
@@ -368,36 +427,47 @@ function PanneauPret({ ecoleId, agentId, onFait }) {
       <div className="flex justify-end">
         <Bouton onClick={preter} disabled={!pretPossible || busy}>{busy ? "…" : "Enregistrer le prêt"}</Bouton>
       </div>
+
+      <ScannerCodeBarres ouvert={camera} onCode={chercherCode}
+        onFermer={() => setCamera(false)} titre="Scanner l'exemplaire" />
     </Carte>
   );
 }
 
 // --- Retour -----------------------------------------------------------------
-function PanneauRetour({ ecoleId, onFait }) {
+function PanneauRetour({ ecoleId, onFait, onPenalite }) {
   const toast = useToast();
   const [code, setCode] = useState("");
   const [emprunt, setEmprunt] = useState(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [camera, setCamera] = useState(false);
 
-  async function chercher() {
+  // Stable : passée en dépendance d'effet au scanner caméra.
+  const chercherCode = useCallback(async (valeur) => {
+    const c = String(valeur || "").trim();
     setMsg(""); setEmprunt(null);
-    if (!code.trim()) return;
+    if (!c) return;
+    setCode(c);
     try {
-      const ex = await api.exemplaireParCode(ecoleId, code.trim());
+      const ex = await api.exemplaireParCode(ecoleId, c);
       if (!ex) { setMsg("Aucun exemplaire avec ce code-barres."); return; }
       const emp = await api.empruntActifParExemplaire(ecoleId, ex.id);
       if (!emp) { setMsg("Cet exemplaire n'est pas actuellement emprunté."); return; }
       setEmprunt({ ...emp, titre: ex.biblio_ressources?.titre });
     } catch (e) { setMsg(e.message); }
-  }
+  }, [ecoleId]);
+
+  const chercher = () => chercherCode(code);
 
   async function rendre() {
     setBusy(true);
+    const emp = emprunt;
     try {
-      await api.rendre(emprunt.id);
+      const p = await api.rendre(emp.id, { ecoleId, emprunt: emp, role: roleDe(emp) });
       toast.succes("Retour enregistré.");
       setEmprunt(null); setCode(""); onFait?.();
+      if (p) await onPenalite?.(emp, p);
     } catch (e) { toast.erreur(e); }
     finally { setBusy(false); }
   }
@@ -412,6 +482,9 @@ function PanneauRetour({ ecoleId, onFait }) {
           placeholder="Scanner ou saisir le code-barres, puis Entrée"
           className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 font-mono text-sm outline-none focus:border-or-500" />
         <Bouton variante="fantome" onClick={chercher}>Chercher</Bouton>
+        {scanCameraDisponible() && (
+          <Bouton variante="fantome" onClick={() => setCamera(true)}>📷</Bouton>
+        )}
       </div>
 
       {msg && <Alerte ton="or">{msg}</Alerte>}
@@ -426,6 +499,107 @@ function PanneauRetour({ ecoleId, onFait }) {
           <div className="flex justify-end">
             <Bouton onClick={rendre} disabled={busy}>{busy ? "…" : "Enregistrer le retour"}</Bouton>
           </div>
+        </div>
+      )}
+
+      <ScannerCodeBarres ouvert={camera} onCode={chercherCode}
+        onFermer={() => setCamera(false)} titre="Scanner l'exemplaire à rendre" />
+    </Carte>
+  );
+}
+
+// --- Pénalités ---------------------------------------------------------------
+const STATUTS_PEN = { due: ["À payer", "danger"], payee: ["Payée", "success"], annulee: ["Annulée", "neutre"] };
+const TYPES_PEN = { retard: "Retard", perte: "Perte", dommage: "Dommage" };
+
+function PanneauPenalites({ ecoleId, devise }) {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [statut, setStatut] = useState("due");
+  const [page, setPage] = useState(0);
+  const [res, setRes] = useState({ lignes: [], total: 0 });
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState("");
+
+  const recharger = useCallback(async () => {
+    if (!ecoleId) return;
+    setChargement(true); setErreur("");
+    try { setRes(await api.getPenalites(ecoleId, { statut: statut || undefined, page, taille: TAILLE })); }
+    catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
+  }, [ecoleId, statut, page]);
+  useEffect(() => { recharger(); }, [recharger]);
+
+  async function changer(p, vers, libelle) {
+    if (!(await confirmer({ titre: libelle, message: `${libelle} cette pénalité de ${fmt(p.montant)} ${devise} ?`,
+      confirmer: libelle, danger: vers === "annulee" }))) return;
+    try { await api.changerStatutPenalite(p.id, vers); toast.succes("Pénalité mise à jour."); recharger(); }
+    catch (e) { toast.erreur(e); }
+  }
+
+  const pages = nbPages(res.total, TAILLE);
+  const totalDu = res.lignes.filter((p) => p.statut === "due").reduce((s, p) => s + (Number(p.montant) || 0), 0);
+
+  return (
+    <Carte className="space-y-4 p-5">
+      <Alerte ton="erreur">{erreur}</Alerte>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {[["due", "À payer"], ["payee", "Payées"], ["annulee", "Annulées"], ["", "Toutes"]].map(([v, l]) => (
+          <button key={v || "tous"} onClick={() => { setStatut(v); setPage(0); }}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              statut === v ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900/70 hover:bg-creme"}`}>
+            {l}
+          </button>
+        ))}
+        <span className="ml-auto text-sm text-navy-900/60">
+          {res.total} pénalité{res.total > 1 ? "s" : ""}
+          {statut === "due" && totalDu > 0 ? ` · ${fmt(totalDu)} ${devise} sur cette page` : ""}
+        </span>
+      </div>
+
+      {chargement ? <SkeletonListe lignes={4} /> : res.lignes.length === 0 ? (
+        <EtatVide icone="💰" titre="Aucune pénalité">
+          {statut === "due" ? "Rien à recouvrer." : "Aucune pénalité dans cette catégorie."}
+        </EtatVide>
+      ) : (
+        <ul className="space-y-2">
+          {res.lignes.map((p) => {
+            const [lib, ton] = STATUTS_PEN[p.statut] || [p.statut, "neutre"];
+            const emp = p.biblio_emprunts;
+            return (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-navy-900/10 px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy-900">
+                    {nomEmprunteur(emp)} — {fmt(p.montant)} {devise}
+                  </p>
+                  <p className="text-xs text-navy-900/55">
+                    {TYPES_PEN[p.type] || p.type}
+                    {emp?.date_echeance ? ` · échéance ${dateFr(emp.date_echeance)}` : ""}
+                    {emp?.date_retour ? ` · rendu ${dateFr(emp.date_retour)}` : ""}
+                    {p.note ? ` · ${p.note}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge ton={ton}>{lib}</Badge>
+                  {p.statut === "due" && (
+                    <>
+                      <Bouton variante="fantome" onClick={() => changer(p, "payee", "Marquer payée")}>Payée</Bouton>
+                      <Bouton variante="fantome" onClick={() => changer(p, "annulee", "Annuler")}>Annuler</Bouton>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-3 text-sm">
+          <Bouton variante="fantome" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>← Précédent</Bouton>
+          <span className="text-navy-900/60">Page {page + 1} / {pages}</span>
+          <Bouton variante="fantome" onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>Suivant →</Bouton>
         </div>
       )}
     </Carte>

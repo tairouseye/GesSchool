@@ -44,6 +44,8 @@ test("aucun couplage cassé : une page vendue a son infrastructure active", () =
     { consommateur: "emploi", besoin: "enseignants" },
     // La bibliothèque numérique n'a de sens qu'avec le module Bibliothèque.
     { consommateur: "biblio_numerique", besoin: "bibliotheque" },
+    // Le dépôt institutionnel publie DANS le catalogue : il le suppose actif.
+    { consommateur: "biblio_depots", besoin: "bibliotheque" },
   ];
   for (const [fname, mods] of Object.entries(FORMULES)) {
     if (mods === null) continue; // tout actif

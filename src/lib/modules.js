@@ -13,11 +13,14 @@ export const MODULES = [
   { id: "transport", label: "Transport scolaire", desc: "Circuits, abonnements, embarquement", cles: ["transport"] },
   { id: "pilotage", label: "Pilotage", desc: "Vue consolidée multi-écoles", cles: ["_pilotage"] },
   // --- Modules « enseignement supérieur », vendus en option ---------------
-  { id: "bibliotheque", label: "Bibliothèque", desc: "Catalogue, exemplaires, prêts, retours et réservations", cles: ["bibliotheque", "biblio_circulation"] },
+  // Acquisitions et inventaire font partie du SIGB de base : pas de SKU à part,
+  // la grille université ne prévoit que trois modules bibliothèque.
+  { id: "bibliotheque", label: "Bibliothèque", desc: "Catalogue, exemplaires, prêts, retours, réservations, acquisitions et inventaire", cles: ["bibliotheque", "biblio_circulation", "biblio_acquisitions", "biblio_inventaire"] },
   // `biblio_numerique` n'est pas une page : c'est un interrupteur de
   // fonctionnalité (section « documents numériques ») à l'intérieur de la
   // bibliothèque — facturé à part.
   { id: "bibliotheque_numerique", label: "Bibliothèque numérique", desc: "Dépôt et consultation sécurisée de documents (PDF, e-books)", cles: ["biblio_numerique"] },
+  { id: "memoires_theses", label: "Mémoires & thèses", desc: "Dépôt institutionnel : soumission, validation et publication des travaux", cles: ["biblio_depots"] },
 ];
 
 const CLE_MODULE = {};

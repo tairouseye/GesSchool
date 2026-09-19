@@ -36,9 +36,13 @@ const Deliberations = lazy(() => import("@/pages/Deliberations.jsx"));
 const CodesEtudiants = lazy(() => import("@/pages/CodesEtudiants.jsx"));
 const Bibliotheque = lazy(() => import("@/pages/Bibliotheque.jsx"));
 const BiblioCirculation = lazy(() => import("@/pages/BiblioCirculation.jsx"));
+const BiblioDepots = lazy(() => import("@/pages/BiblioDepots.jsx"));
+const BiblioAcquisitions = lazy(() => import("@/pages/BiblioAcquisitions.jsx"));
+const BiblioInventaire = lazy(() => import("@/pages/BiblioInventaire.jsx"));
 const EtudiantLayout = lazy(() => import("@/pages/EtudiantLayout.jsx"));
 const EtudiantAccueil = lazy(() => import("@/pages/EtudiantAccueil.jsx"));
 const EtudiantBibliotheque = lazy(() => import("@/pages/EtudiantBibliotheque.jsx"));
+const EtudiantDepots = lazy(() => import("@/pages/EtudiantDepots.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -191,6 +195,7 @@ export default function App() {
           >
             <Route index element={<EtudiantAccueil />} />
             <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
+            <Route path="depots" element={<EtudiantDepots />} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}
@@ -217,6 +222,9 @@ export default function App() {
             <Route path="/codes-etudiants" element={<Garde cle="codes_etudiants"><CodesEtudiants /></Garde>} />
             <Route path="/bibliotheque" element={<Garde cle="bibliotheque"><Bibliotheque /></Garde>} />
             <Route path="/biblio-circulation" element={<Garde cle="biblio_circulation"><BiblioCirculation /></Garde>} />
+            <Route path="/biblio-depots" element={<Garde cle="biblio_depots"><BiblioDepots /></Garde>} />
+            <Route path="/biblio-acquisitions" element={<Garde cle="biblio_acquisitions"><BiblioAcquisitions /></Garde>} />
+            <Route path="/biblio-inventaire" element={<Garde cle="biblio_inventaire"><BiblioInventaire /></Garde>} />
             <Route path="/enseignants" element={<Garde cle="enseignants"><Enseignants /></Garde>} />
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />

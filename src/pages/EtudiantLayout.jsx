@@ -26,7 +26,11 @@ export default function EtudiantLayout() {
       </header>
       {/* Navigation de l'espace étudiant */}
       <nav className="flex gap-1 overflow-x-auto border-b border-navy-900/10 bg-white px-4 py-2">
-        {[["/etudiant", "Accueil", true], ["/etudiant/bibliotheque", "Bibliothèque", false]].map(([to, label, exact]) => (
+        {[
+          ["/etudiant", "Accueil", true],
+          ["/etudiant/bibliotheque", "Bibliothèque", false],
+          ["/etudiant/depots", "Mon dépôt", false],
+        ].map(([to, label, exact]) => (
           <NavLink key={to} to={to} end={exact}
             className={({ isActive }) =>
               `whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${

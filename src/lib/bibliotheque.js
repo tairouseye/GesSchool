@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase.js";
 import { urlSignee } from "@/lib/stockage.js";
 import {
   calculerEcheance, verifierEmprunt, verifierRenouvellement, bornesPagination, rangSuivant,
+  calculerPenalite, joursRetard,
 } from "@/lib/biblio.regles.js";
 
 // GesSchool — Bibliothèque universitaire : accès aux données.
@@ -273,10 +274,186 @@ export async function emprunter(ecoleId, { exemplaireId, profilId = null, eleveI
   return data;
 }
 
-export async function rendre(empruntId) {
+// Retour d'un exemplaire. Renvoie la pénalité de retard SUGGÉRÉE — jamais
+// créée d'office : le bibliothécaire tranche (geste commercial, cas de force
+// majeure…), et une école peut désactiver les pénalités par rôle.
+export async function rendre(empruntId, { ecoleId, emprunt, role } = {}) {
+  const dateRetour = auj();
   const { error } = await supabase.from("biblio_emprunts")
-    .update({ statut: "rendu", date_retour: auj() }).eq("id", empruntId);
+    .update({ statut: "rendu", date_retour: dateRetour }).eq("id", empruntId);
   if (error) throw error;
+
+  if (!ecoleId || !emprunt?.date_echeance) return null;
+  const jours = joursRetard(emprunt.date_echeance, dateRetour);
+  if (jours <= 0) return null;
+  const regles = await getRegles(ecoleId);
+  const regle = regles.find((r) => r.role === role && r.actif !== false) || null;
+  const montant = calculerPenalite({ dateEcheance: emprunt.date_echeance, dateRetour, regle });
+  return montant > 0 ? { jours, montant } : null;
+}
+
+// --- Import en masse de notices --------------------------------------------
+// L'analyse et la normalisation vivent dans `biblio.import.js` (pur, testé).
+// Ici : uniquement les écritures, PAR LOTS — on n'envoie jamais un fichier
+// entier en une requête.
+//
+// `ignorerExistants` compare les ISBN à ceux déjà au catalogue : sans ce
+// garde-fou, réimporter le même fichier duplique tout le fonds.
+export async function importerNotices(ecoleId, notices, {
+  ignorerExistants = true, taille = 200, onProgres = null,
+} = {}) {
+  const { enLots } = await import("@/lib/biblio.import.js");
+  let aInserer = notices;
+  let ignores = 0;
+
+  if (ignorerExistants) {
+    const isbns = [...new Set(notices.map((n) => n.isbn).filter(Boolean))];
+    const connus = new Set();
+    for (const lot of enLots(isbns, 200)) {
+      const { data, error } = await supabase.from("biblio_ressources")
+        .select("isbn").eq("ecole_id", ecoleId).in("isbn", lot);
+      if (error) throw error;
+      for (const r of data ?? []) if (r.isbn) connus.add(r.isbn);
+    }
+    if (connus.size > 0) {
+      aInserer = notices.filter((n) => !(n.isbn && connus.has(n.isbn)));
+      ignores = notices.length - aInserer.length;
+    }
+  }
+
+  // Les auteurs vivent dans une table à part : on les résout AVANT, une seule
+  // fois pour tout le fichier, sinon le même auteur serait recréé à chaque ligne.
+  const { cleAuteur } = await import("@/lib/biblio.import.js");
+  const parCle = await resoudreAuteurs(ecoleId, aInserer.flatMap((n) => n.auteurs || []));
+
+  let crees = 0, exemplaires = 0, liens = 0, faits = 0;
+  for (const lot of enLots(aInserer, taille)) {
+    // `quantite`, `cote` et `auteurs` ne sont pas des colonnes de la notice :
+    // ils servent à fabriquer les exemplaires et les liaisons juste après.
+    const payload = lot.map(({ quantite, cote, auteurs, ...n }) => ({ ecole_id: ecoleId, ...n, visible: true }));
+    const { data, error } = await supabase.from("biblio_ressources").insert(payload).select("id");
+    if (error) throw error;
+    crees += data?.length ?? 0;
+
+    const exs = [];
+    const rel = [];
+    (data ?? []).forEach((r, i) => {
+      const src = lot[i];
+      for (let k = 0; k < (src.quantite || 0); k++) {
+        exs.push({ ecole_id: ecoleId, ressource_id: r.id, cote: src.cote || null, statut: "disponible", etat: "bon" });
+      }
+      (src.auteurs || []).forEach((a, ordre) => {
+        const id = parCle.get(cleAuteur(a));
+        if (id) rel.push({ ecole_id: ecoleId, ressource_id: r.id, auteur_id: id, role: "auteur", ordre });
+      });
+    });
+
+    for (const sousLot of enLots(exs, 500)) {
+      const { error: e2 } = await supabase.from("biblio_exemplaires").insert(sousLot);
+      if (e2) throw e2;
+      exemplaires += sousLot.length;
+    }
+    for (const sousLot of enLots(rel, 500)) {
+      const { error: e3 } = await supabase.from("biblio_ressource_auteurs").insert(sousLot);
+      if (e3) throw e3;
+      liens += sousLot.length;
+    }
+
+    faits += lot.length;
+    onProgres?.(faits, aInserer.length);
+  }
+
+  return { crees, ignores, exemplaires, auteurs: liens };
+}
+
+// Rattache une liste [{nom, prenom}] à une notice, en réutilisant les auteurs
+// déjà connus de l'établissement. Utilisé après un enrichissement ISBN/DOI.
+export async function rattacherAuteurs(ecoleId, ressourceId, auteurs = []) {
+  const liste = (auteurs || []).filter((a) => a?.nom);
+  if (liste.length === 0) return 0;
+  const { cleAuteur } = await import("@/lib/biblio.import.js");
+  const parCle = await resoudreAuteurs(ecoleId, liste);
+  const rel = liste.map((a, ordre) => ({
+    ecole_id: ecoleId, ressource_id: ressourceId,
+    auteur_id: parCle.get(cleAuteur(a)), role: "auteur", ordre,
+  })).filter((r) => r.auteur_id);
+  if (rel.length === 0) return 0;
+  const { error } = await supabase.from("biblio_ressource_auteurs").insert(rel);
+  if (error) throw error;
+  return rel.length;
+}
+
+// Renvoie une Map clé → auteur_id, en réutilisant les auteurs déjà connus de
+// l'école et en créant uniquement les manquants.
+async function resoudreAuteurs(ecoleId, auteurs) {
+  const { cleAuteur, enLots } = await import("@/lib/biblio.import.js");
+  const parCle = new Map();
+  const uniques = new Map();
+  for (const a of auteurs) if (a?.nom) uniques.set(cleAuteur(a), a);
+  if (uniques.size === 0) return parCle;
+
+  // Auteurs déjà en base : on compare sur le nom (l'index utile), puis on
+  // affine sur la clé complète côté client.
+  const noms = [...new Set([...uniques.values()].map((a) => a.nom))];
+  for (const lot of enLots(noms, 200)) {
+    const { data, error } = await supabase.from("biblio_auteurs")
+      .select("id, nom, prenom").eq("ecole_id", ecoleId).in("nom", lot);
+    if (error) throw error;
+    for (const a of data ?? []) parCle.set(cleAuteur(a), a.id);
+  }
+
+  const manquants = [...uniques.entries()].filter(([c]) => !parCle.has(c)).map(([, a]) => a);
+  for (const lot of enLots(manquants, 200)) {
+    const { data, error } = await supabase.from("biblio_auteurs")
+      .insert(lot.map((a) => ({ ecole_id: ecoleId, nom: a.nom, prenom: a.prenom })))
+      .select("id, nom, prenom");
+    if (error) throw error;
+    for (const a of data ?? []) parCle.set(cleAuteur(a), a.id);
+  }
+  return parCle;
+}
+
+// Tableau de bord : TOUT est agrégé en base (migration 122) et revient en un
+// seul aller-retour. Compter côté client imposerait de télécharger les emprunts.
+export async function statistiques(ecoleId, depuis = null) {
+  const { data, error } = await supabase.rpc("biblio_statistiques",
+    depuis ? { p_ecole: ecoleId, p_depuis: depuis } : { p_ecole: ecoleId });
+  if (error) throw error;
+  return data || {};
+}
+
+// --- Pénalités --------------------------------------------------------------
+export async function getPenalites(ecoleId, { statut, page = 0, taille = 20 } = {}) {
+  const { debut, fin, taille: t, page: p } = bornesPagination(page, taille);
+  let req = supabase.from("biblio_penalites")
+    .select("*, biblio_emprunts(id, date_echeance, date_retour," +
+            " profils:emprunteur_profil_id(prenom, nom), eleves:emprunteur_eleve_id(prenom, nom, matricule))",
+            { count: "exact" })
+    .eq("ecole_id", ecoleId);
+  if (statut) req = req.eq("statut", statut);
+  const { data, error, count } = await req.order("created_at", { ascending: false }).range(debut, fin);
+  if (error) throw error;
+  return { lignes: data ?? [], total: count ?? 0, page: p, taille: t };
+}
+export async function creerPenalite(ecoleId, p) {
+  const { error } = await supabase.from("biblio_penalites").insert({ ecole_id: ecoleId, ...p });
+  if (error) throw error;
+}
+export async function changerStatutPenalite(id, statut) {
+  const { error } = await supabase.from("biblio_penalites").update({ statut }).eq("id", id);
+  if (error) throw error;
+}
+// Total encore dû, pour l'afficher au guichet avant un nouveau prêt.
+export async function penalitesDues(ecoleId, { profilId, eleveId }) {
+  let req = supabase.from("biblio_penalites")
+    .select("montant, biblio_emprunts!inner(emprunteur_profil_id, emprunteur_eleve_id)")
+    .eq("ecole_id", ecoleId).eq("statut", "due");
+  req = profilId
+    ? req.eq("biblio_emprunts.emprunteur_profil_id", profilId)
+    : req.eq("biblio_emprunts.emprunteur_eleve_id", eleveId);
+  const { data, error } = await req;
+  if (error) throw error;
+  return (data ?? []).reduce((s, p) => s + (Number(p.montant) || 0), 0);
 }
 
 export async function renouveler(ecoleId, emprunt, role) {

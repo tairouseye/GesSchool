@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Carte, Alerte, EtatVide, Badge, Recherche, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/bibliotheque.js";
+import * as acq from "@/lib/acquisitions.js";
 import { monDossier } from "@/lib/etudiant.js";
 import { nbPages, joursRetard } from "@/lib/biblio.regles.js";
 
@@ -31,6 +32,7 @@ export default function EtudiantBibliotheque() {
     ["emprunts", "Mes emprunts"],
     ["reservations", "Mes réservations"],
     ["favoris", "Mes favoris"],
+    ["suggestions", "Suggérer un achat"],
   ];
 
   return (
@@ -57,6 +59,7 @@ export default function EtudiantBibliotheque() {
       {onglet === "emprunts" && <MesEmprunts onErreur={setErreur} />}
       {onglet === "reservations" && <MesReservations onErreur={setErreur} toast={toast} />}
       {onglet === "favoris" && <MesFavoris onErreur={setErreur} toast={toast} />}
+      {onglet === "suggestions" && <MesSuggestions dossier={dossier} toast={toast} />}
     </div>
   );
 }
@@ -237,6 +240,104 @@ function MesFavoris({ onErreur, toast }) {
           <button onClick={() => retirer(f)} className="text-xs text-rose-500 hover:underline">retirer</button>
         </Carte>
       ))}
+    </div>
+  );
+}
+
+// --- Suggestions d'achat ----------------------------------------------------
+function MesSuggestions({ dossier, toast }) {
+  const [lignes, setLignes] = useState([]);
+  const [chargement, setChargement] = useState(true);
+  const [f, setF] = useState({ titre: "", auteur: "", editeur: "", isbn: "", motif: "" });
+  const [busy, setBusy] = useState(false);
+  const maj = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
+
+  const recharger = useCallback(async () => {
+    setChargement(true);
+    try { setLignes(await acq.mesSuggestions()); }
+    catch { setLignes([]); }
+    finally { setChargement(false); }
+  }, []);
+  useEffect(() => { recharger(); }, [recharger]);
+
+  async function envoyer(e) {
+    e.preventDefault();
+    if (!f.titre.trim()) { toast.erreur("Indiquez au moins le titre."); return; }
+    if (!dossier?.ecole_id) { toast.erreur("Dossier étudiant introuvable."); return; }
+    setBusy(true);
+    try {
+      await acq.suggerer(dossier.ecole_id, {
+        titre: f.titre.trim(), auteur: f.auteur || null, editeur: f.editeur || null,
+        isbn: f.isbn || null, motif: f.motif || null,
+      });
+      setF({ titre: "", auteur: "", editeur: "", isbn: "", motif: "" });
+      toast.succes("Suggestion envoyée à la bibliothèque.");
+      recharger();
+    } catch (e2) { toast.erreur(e2); }
+    finally { setBusy(false); }
+  }
+
+  async function retirer(s) {
+    try { await acq.supprimerSuggestion(s.id); recharger(); } catch (e) { toast.erreur(e); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Carte className="space-y-3 p-4">
+        <p className="text-sm text-navy-900/70">
+          Un ouvrage manque au catalogue ? Proposez-le : la bibliothèque étudie chaque demande.
+        </p>
+        <form onSubmit={envoyer} className="space-y-3">
+          <input value={f.titre} onChange={maj("titre")} placeholder="Titre de l'ouvrage *" required
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <input value={f.auteur} onChange={maj("auteur")} placeholder="Auteur"
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <input value={f.editeur} onChange={maj("editeur")} placeholder="Éditeur"
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <input value={f.isbn} onChange={maj("isbn")} placeholder="ISBN"
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+          </div>
+          <textarea value={f.motif} onChange={maj("motif")} rows={2} placeholder="Pourquoi cet ouvrage vous serait utile"
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2 text-sm outline-none focus:border-or-500" />
+          <div className="flex justify-end">
+            <Bouton type="submit" disabled={busy || !dossier}>{busy ? "…" : "Envoyer la suggestion"}</Bouton>
+          </div>
+        </form>
+      </Carte>
+
+      {chargement ? <SkeletonListe lignes={2} /> : lignes.length === 0 ? (
+        <EtatVide icone="💡" titre="Aucune suggestion">Vos propositions apparaîtront ici avec leur réponse.</EtatVide>
+      ) : (
+        <div className="space-y-2">
+          {lignes.map((s) => {
+            const st = acq.STATUTS_SUGGESTION[s.statut] || { label: s.statut, ton: "neutre" };
+            return (
+              <Carte key={s.id} className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-navy-900">{s.titre}</p>
+                    <p className="text-xs text-navy-900/55">
+                      {[s.auteur, s.editeur].filter(Boolean).join(" · ") || "—"} · proposé le {dateFr(s.created_at)}
+                    </p>
+                  </div>
+                  <Badge ton={st.ton}>{st.label}</Badge>
+                </div>
+                {s.reponse && (
+                  <p className="mt-2 rounded-lg bg-creme px-3 py-2 text-xs text-navy-900/70">
+                    Réponse de la bibliothèque : {s.reponse}
+                  </p>
+                )}
+                {s.statut === "soumise" && (
+                  <div className="mt-2 flex justify-end">
+                    <button onClick={() => retirer(s)} className="text-xs text-rose-500 hover:underline">retirer</button>
+                  </div>
+                )}
+              </Carte>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
