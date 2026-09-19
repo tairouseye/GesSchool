@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.196.0] — migration **138** · phase 3 : emploi du temps du supérieur
+- **L'université avait perdu son emploi du temps.** La page existante planifie par **classe** (`emplois_du_temps.classe_id` est `NOT NULL`) ; le supérieur n'a pas de classes, l'entrée de menu y avait donc été masquée en v2.185.0. Le besoin restait entier.
+- **Nouveau modèle `emplois_sup`** (migration 138) : la séance se rattache à une **filière**, un **semestre** et une **UE** (ou un ECUE), avec son type — **CM / TD / TP** —, son jour, ses horaires, sa salle et son enseignant. C'est la maille réelle d'une université.
+- **Page `Emploi du temps` (Pédagogie, supérieur)** : saisie par filière et semestre, séances regroupées par jour. Les créneaux qui **se chevauchent** sont encadrés en rouge et comptés en tête de page — une salle occupée deux fois, ou un étudiant convoqué à deux endroits, ne se voit pas à la lecture d'une liste.
+- **L'étudiant voit sa semaine** (`/etudiant/emploi`, tuile sur son accueil), le jour courant mis en avant. Les séances passent par le RPC `mon_emploi_sup` : les tables de la maquette lui sont fermées, c'est la fonction qui résout son inscription (filière + niveau + année).
+- Détails qui comptent : une séance dont l'heure de fin précède le début est **refusée en base** (contrainte), pas affichée à l'envers ; le RPC teste l'inscription par `exists` et non par une jointure, sinon un étudiant réinscrit dans la même filière verrait chaque cours en double.
+- Six tests unitaires sur le regroupement par jour et la détection des chevauchements (dont le cas « bord à bord », qui n'est **pas** un conflit).
+
 ## [2.195.0] — aucune migration
 - **Le sélecteur d'élève est étendu** à Cantine, Transport et Inscriptions (supérieur), en plus de Documents. Ces pages construisaient un menu déroulant d'un `<option>` par élève.
 - **Le composant lit désormais l'établissement dans le contexte** au lieu de l'exiger en propriété. Sans ce changement, les trois conversions auraient **planté à l'ouverture** : ces sélecteurs vivent dans des modales, composants séparés où `ecoleId` n'est pas en portée. Le build ne détecte pas ce genre d'erreur — c'est la deuxième fois aujourd'hui qu'un identifiant manquant passe la compilation.

@@ -83,10 +83,11 @@ export const ESPACES = [
       { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
-      // Gaté « école » : il n'existe pas encore d'emploi du temps LMD
-      // (`emplois_du_temps.classe_id` est NOT NULL, or le supérieur n'a pas de
-      // classes). Proposer la page au supérieur mènerait à un écran inutilisable.
+      // Deux pages pour un même besoin, parce que les modèles diffèrent :
+      // `emplois_du_temps` planifie par CLASSE (école), `emplois_sup` par
+      // FILIÈRE et SEMESTRE (université, migration 138). D'où le gating.
       { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/emploi-sup", label: "Emploi du temps", icone: "🗓️", cle: "emploi_sup", types: ["superieur"], groupe: "Au quotidien" },
 
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },

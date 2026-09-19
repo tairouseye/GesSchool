@@ -34,6 +34,7 @@ const InscriptionsSup = lazy(() => import("@/pages/InscriptionsSup.jsx"));
 const NotesLMD = lazy(() => import("@/pages/NotesLMD.jsx"));
 const Deliberations = lazy(() => import("@/pages/Deliberations.jsx"));
 const CodesEtudiants = lazy(() => import("@/pages/CodesEtudiants.jsx"));
+const EmploiSup = lazy(() => import("@/pages/EmploiSup.jsx"));
 const Bibliotheque = lazy(() => import("@/pages/Bibliotheque.jsx"));
 const BiblioCirculation = lazy(() => import("@/pages/BiblioCirculation.jsx"));
 const BiblioDepots = lazy(() => import("@/pages/BiblioDepots.jsx"));
@@ -48,6 +49,7 @@ const EtudiantScolarite = lazy(() => import("@/pages/EtudiantScolarite.jsx"));
 const EtudiantDocuments = lazy(() => import("@/pages/EtudiantDocuments.jsx"));
 const EtudiantActualites = lazy(() => import("@/pages/EtudiantActualites.jsx"));
 const EtudiantCarte = lazy(() => import("@/pages/EtudiantCarte.jsx"));
+const EtudiantEmploi = lazy(() => import("@/pages/EtudiantEmploi.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -202,6 +204,7 @@ export default function App() {
             <Route index element={<EtudiantAccueil />} />
             <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
             <Route path="notes" element={<EtudiantNotes />} />
+            <Route path="emploi" element={<EtudiantEmploi />} />
             <Route path="scolarite" element={<EtudiantScolarite />} />
             <Route path="documents" element={<EtudiantDocuments />} />
             <Route path="actualites" element={<EtudiantActualites />} />
@@ -232,6 +235,7 @@ export default function App() {
             <Route path="/notes-lmd" element={<Garde cle="notes_lmd"><NotesLMD /></Garde>} />
             <Route path="/deliberations" element={<Garde cle="deliberations_sup"><Deliberations /></Garde>} />
             <Route path="/codes-etudiants" element={<Garde cle="codes_etudiants"><CodesEtudiants /></Garde>} />
+            <Route path="/emploi-sup" element={<Garde cle="emploi_sup"><EmploiSup /></Garde>} />
             <Route path="/bibliotheque" element={<Garde cle="bibliotheque"><Bibliotheque /></Garde>} />
             <Route path="/biblio-circulation" element={<Garde cle="biblio_circulation"><BiblioCirculation /></Garde>} />
             <Route path="/biblio-depots" element={<Garde cle="biblio_depots"><BiblioDepots /></Garde>} />

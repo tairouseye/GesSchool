@@ -52,6 +52,9 @@ const ACCES = {
   notes_lmd: ["direction", "enseignant"],
   deliberations_sup: ["direction", "comptable", "secretaire"],
   codes_etudiants: ["direction", "comptable", "secretaire"],
+  // L'emploi du temps du supérieur est une page distincte : il se planifie par
+  // filière/semestre, pas par classe (cf. migration 138).
+  emploi_sup: ["direction", "enseignant"],
 
   // --- Bibliothèque universitaire (module payant, réservé au supérieur) ---
   bibliotheque: ["direction", "bibliothecaire", "enseignant", "secretaire"],
@@ -114,6 +117,7 @@ export const PAGES = [
   { cle: "notes_lmd", path: "/notes-lmd" },
   { cle: "deliberations_sup", path: "/deliberations" },
   { cle: "codes_etudiants", path: "/codes-etudiants" },
+  { cle: "emploi_sup", path: "/emploi-sup" },
   { cle: "bibliotheque", path: "/bibliotheque" },
   { cle: "biblio_circulation", path: "/biblio-circulation" },
   { cle: "biblio_depots", path: "/biblio-depots" },
