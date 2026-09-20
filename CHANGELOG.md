@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.207.2] — migration **149** · balayage complet : la comptabilité était ouverte elle aussi
+- **Plutôt que de découvrir ces trous un par un**, balayage de tout le schéma. Méthode : les 169 fonctions `SECURITY DEFINER` du dépôt → retrait de celles qui portent une garde interne ou une révocation explicite (**31 restent**) → croisement avec les **148 RPC réellement exposées** par PostgREST, une fonction `returns trigger` ne l'étant pas (**19**) → mise à l'écart des **4 publiques par conception** (portail d'admission, QR de vérification) → vérification qu'aucune n'est appelée depuis `src/`.
+- **Neuf fonctions internes restaient appelables par tout compte connecté**, et ce sont les plus sensibles : `_compta_poster`, `_compta_tresorerie`, `_annuler_piece_source`, `_compte_ligne_salaire`, `poster_facture`, `poster_paiement`, `poster_depense` (écritures comptables), `recalc_salaire` (moteur de paie) et `prochain_numero_facture` (séquence de numérotation). Toutes sont invoquées par des déclencheurs, qui s'exécutent avec les droits du propriétaire : la révocation ne les gêne pas.
+- **`prochain_matricule` reste exposée volontairement** : l'interface l'appelle à la création d'un élève, et elle se limite d'elle-même à `ecole_courante()` — nulle pour un parent, qui échoue donc déjà.
+- **La révocation est dynamique, par lecture de `pg_proc`.** Écrire les signatures à la main exige l'exactitude, et une seule erreur fait échouer la migration : en extrayant les neuf signatures des fichiers d'origine, **six différaient de ce que j'avais d'abord écrit**. Le dépôt peut de surcroît avoir dérivé de la base — précédent avéré avec `enfant_factures`. On lit donc la vérité dans le catalogue, ce qui couvre aussi les surcharges éventuelles.
+
 ## [2.207.1] — migration **148** · 🔴 les fabriques de notifications étaient ouvertes à tous
 - **Trouvé en éprouvant la migration 147 avec une vraie session de parent** — pas en relisant le code. Sondage depuis un compte parent sans aucun rôle de gestion :
 
