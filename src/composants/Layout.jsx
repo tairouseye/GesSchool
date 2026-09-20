@@ -35,13 +35,22 @@ function LogoEcole({ logoUrl, sigle, size }) {
 // Elle s'ouvre d'office si la page courante s'y trouve — on ne cache jamais
 // à l'utilisateur où il est. L'état est mémorisé par titre, pour que le menu
 // se retrouve tel qu'on l'a laissé d'une visite à l'autre.
+// L'état de repli est partagé par la barre latérale ET la grille de tuiles
+// du téléphone : replier « Bibliothèque » sur mobile la retrouve repliée sur
+// l'ordinateur. Une même clé, deux affichages.
+const cleSection = (titre) => `menu_sec_${titre}`;
+const sectionOuverte = (titre) => {
+  if (!titre) return true;
+  try { const v = localStorage.getItem(cleSection(titre)); if (v !== null) return v === "1"; }
+  catch { /* navigation privée, stockage bloqué : on ouvre */ }
+  return true;
+};
+const memoriserSection = (titre, ouvert) => {
+  try { localStorage.setItem(cleSection(titre), ouvert ? "1" : "0"); } catch { /* ignoré */ }
+};
+
 function Section({ titre, actif, pastilles = 0, children }) {
-  const cle = `menu_sec_${titre}`;
-  const [ouvert, setOuvert] = useState(() => {
-    if (!titre) return true;
-    try { const v = localStorage.getItem(cle); if (v !== null) return v === "1"; } catch { /* ignoré */ }
-    return true;
-  });
+  const [ouvert, setOuvert] = useState(() => sectionOuverte(titre));
 
   // Naviguer vers une page d'une section fermée doit la rouvrir.
   useEffect(() => { if (actif) setOuvert(true); }, [actif]);
@@ -49,10 +58,7 @@ function Section({ titre, actif, pastilles = 0, children }) {
   if (!titre) return children;
 
   const basculer = () => {
-    setOuvert((o) => {
-      try { localStorage.setItem(cle, o ? "0" : "1"); } catch { /* ignoré */ }
-      return !o;
-    });
+    setOuvert((o) => { memoriserSection(titre, !o); return !o; });
   };
 
   return (
@@ -73,6 +79,37 @@ function Section({ titre, actif, pastilles = 0, children }) {
         <div className="ml-5 space-y-1 border-l border-creme/10 pl-1">{children}</div>
       )}
     </div>
+  );
+}
+
+// Même section, en version TUILES (téléphone). L'espace Pédagogie compte une
+// vingtaine d'entrées : déplié d'un bloc, il impose plusieurs écrans de
+// défilement pour atteindre la dernière. On replie ce dont on ne se sert pas.
+//
+// Sur fond clair, contrairement à `Section` qui vit sur le navy de la barre
+// latérale — d'où les couleurs distinctes, pour le même geste.
+// CONTRÔLÉE, contrairement à `Section` : l'en-tête de l'espace affiche
+// « tout replier » ou « tout déplier » selon l'état des sections. Si chacune
+// gardait le sien, ce libellé se figerait au premier repli.
+function SectionTuiles({ titre, ouvert, onBascule, pastilles = 0, nb = 0, children }) {
+  if (!titre) return children;
+
+  return (
+    <>
+      <button type="button" onClick={onBascule} aria-expanded={ouvert}
+        className="mb-2 flex w-full items-center gap-2 py-1 text-left text-[11px] font-semibold uppercase tracking-wide text-navy-900/45 transition active:text-navy-900">
+        <span className={`inline-block text-sm transition-transform ${ouvert ? "rotate-90" : ""}`}>›</span>
+        <span className="truncate">{titre}</span>
+        <span className="font-normal text-navy-900/25">{nb}</span>
+        {/* Replier ne doit jamais escamoter une alerte en attente. */}
+        {!ouvert && pastilles > 0 && (
+          <span className="ml-auto grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
+            {pastilles}
+          </span>
+        )}
+      </button>
+      {ouvert && children}
+    </>
   );
 }
 
@@ -166,6 +203,27 @@ export default function Layout() {
   // Ouvrir une page depuis une tuile (mobile) : referme la grille.
   const ouvrirTuile = (to) => { setTuiles(false); navigate(to); };
 
+  // Sections repliées de la grille de tuiles. L'état vit ICI, et non dans
+  // chaque section : l'en-tête doit savoir si tout est replié pour proposer
+  // le bon libellé. Semé depuis le stockage local, partagé avec la barre
+  // latérale (même clé) — replier sur le téléphone vaut pour l'ordinateur.
+  const [repliees, setRepliees] = useState(() => new Set());
+  const semerReplis = (titres) =>
+    setRepliees(new Set(titres.filter((t) => !sectionOuverte(t))));
+  const basculerSection = (titre) =>
+    setRepliees((s) => {
+      const n = new Set(s);
+      const ferme = !n.has(titre);
+      if (ferme) n.add(titre); else n.delete(titre);
+      memoriserSection(titre, !ferme);
+      return n;
+    });
+  const basculerToutes = (titres) => {
+    const toutReplie = titres.every((t) => repliees.has(t));
+    titres.forEach((t) => memoriserSection(t, toutReplie));
+    setRepliees(toutReplie ? new Set() : new Set(titres));
+  };
+
   // --- Swipe animé entre espaces (mobile) : carrousel des grilles de tuiles ---
   const idxEspace = Math.max(0, accessibles.findIndex((e) => e.id === espaceCourant?.id));
   const pisteRef = useRef(null);
@@ -184,6 +242,16 @@ export default function Layout() {
   }, [tuiles, accessibles.length]);
 
   const menusVisibles = (e) => menusDe(e).filter((it) => it.cle !== "signatures" || aSigner > 0);
+
+  // À chaque ouverture du panneau, relire ce que l'utilisateur avait replié.
+  // Sans cela, son choix serait perdu dès qu'il ouvre un module et revient.
+  useEffect(() => {
+    if (!tuiles) return;
+    semerReplis([...new Set(
+      accessibles.flatMap((e) => grouperItems(menusVisibles(e)).map((s) => s.groupe).filter(Boolean))
+    )]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tuiles]);
 
   const onTouchStart = (e) => { drag.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dir: null }; setGlisse(true); };
   const onTouchMove = (e) => {
@@ -396,9 +464,21 @@ export default function Layout() {
                   transform: `translateX(${-(idxEspace * larg) + dragX}px)`,
                   transition: glisse ? "none" : "transform .28s cubic-bezier(.22,.61,.36,1)",
                 }}>
-                {accessibles.map((e) => (
+                {accessibles.map((e) => {
+                  const sections = grouperItems(menusVisibles(e));
+                  const titres = sections.map((s) => s.groupe).filter(Boolean);
+                  return (
                   <div key={e.id} className="h-full shrink-0 overflow-auto p-4" style={{ width: larg || "100%" }}>
-                    <p className="mb-1 font-display text-lg font-bold text-navy-900">{e.icone} {e.label}</p>
+                    <div className="mb-1 flex items-baseline justify-between gap-2">
+                      <p className="font-display text-lg font-bold text-navy-900">{e.icone} {e.label}</p>
+                      {/* Replier six sections une à une, c'est six gestes. */}
+                      {titres.length > 1 && (
+                        <button type="button" onClick={() => basculerToutes(titres)}
+                          className="shrink-0 text-xs font-medium text-navy-900/45 underline-offset-2 active:text-navy-900 active:underline">
+                          {titres.every((t) => repliees.has(t)) ? "Tout déplier" : "Tout replier"}
+                        </button>
+                      )}
+                    </div>
                     <p className="mb-4 text-xs text-navy-900/50">
                       {accessibles.length > 1 && (
                         <span className="lg:hidden">Glissez ← → pour changer d&apos;espace · </span>
@@ -406,11 +486,12 @@ export default function Layout() {
                       <span className="lg:hidden">Touchez un module pour l&apos;ouvrir.</span>
                       <span className="hidden lg:inline">Cliquez un module pour l&apos;ouvrir.</span>
                     </p>
-                    {grouperItems(menusVisibles(e)).map((sec, si) => (
-                    <div key={sec.groupe || `g${si}`} className={si ? "mt-5" : ""}>
-                    {sec.groupe && (
-                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-navy-900/40">{sec.groupe}</p>
-                    )}
+                    {sections.map((sec, si) => (
+                    <div key={sec.groupe || `g${si}`} className={si ? "mt-4" : ""}>
+                    <SectionTuiles titre={sec.groupe} nb={sec.items.length}
+                      ouvert={!repliees.has(sec.groupe)}
+                      onBascule={() => basculerSection(sec.groupe)}
+                      pastilles={sec.items.reduce((n, x) => n + pastille(x.cle), 0)}>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                       {sec.items.map((item) => (
                         <button key={item.to} onClick={() => ouvrirTuile(item.to)}
@@ -425,10 +506,12 @@ export default function Layout() {
                         </button>
                       ))}
                     </div>
+                    </SectionTuiles>
                     </div>
                     ))}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {/* Points indicateurs d'espace */}
               {accessibles.length > 1 && (

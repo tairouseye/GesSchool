@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.208.0] — aucune migration · les tuiles se replient sur téléphone
+- **Les sections de la grille de tuiles (mobile) se replient et se déplient.** Pédagogie compte une vingtaine d'entrées : dépliée d'un bloc, elle imposait plusieurs écrans de défilement pour atteindre la dernière.
+- **L'état est partagé avec la barre latérale** : même clé de stockage (`menu_sec_<section>`). Replier « Bibliothèque » sur le téléphone la retrouve repliée sur l'ordinateur — un seul réglage, deux affichages. Et il est relu à chaque ouverture du panneau : ouvrir un module puis revenir ne perd pas le choix.
+- **Un bouton « Tout replier / Tout déplier »** dans l'en-tête de chaque espace : replier six sections une à une, c'est six gestes.
+- **Replier n'escamote jamais une alerte** : une section fermée affiche la somme des pastilles qu'elle contient, comme le fait déjà la barre latérale.
+- Détail d'implémentation corrigé en cours de route : les sections du panneau mobile sont **contrôlées** par le parent, contrairement à celles de la barre latérale. Si chacune gardait son état, le libellé « Tout replier » se serait figé dès le premier repli.
+- **Non concernés** : les tuiles des espaces parent et étudiant ne sont pas groupées — il n'y a rien à y replier. Les regrouper serait un autre sujet.
+
 ## [2.207.2] — migration **149** · balayage complet : la comptabilité était ouverte elle aussi
 - **Plutôt que de découvrir ces trous un par un**, balayage de tout le schéma. Méthode : les 169 fonctions `SECURITY DEFINER` du dépôt → retrait de celles qui portent une garde interne ou une révocation explicite (**31 restent**) → croisement avec les **148 RPC réellement exposées** par PostgREST, une fonction `returns trigger` ne l'étant pas (**19**) → mise à l'écart des **4 publiques par conception** (portail d'admission, QR de vérification) → vérification qu'aucune n'est appelée depuis `src/`.
 - **Neuf fonctions internes restaient appelables par tout compte connecté**, et ce sont les plus sensibles : `_compta_poster`, `_compta_tresorerie`, `_annuler_piece_source`, `_compte_ligne_salaire`, `poster_facture`, `poster_paiement`, `poster_depense` (écritures comptables), `recalc_salaire` (moteur de paie) et `prochain_numero_facture` (séquence de numérotation). Toutes sont invoquées par des déclencheurs, qui s'exécutent avec les droits du propriétaire : la révocation ne les gêne pas.
