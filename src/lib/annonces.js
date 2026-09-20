@@ -54,3 +54,24 @@ export async function annoncesParent() {
   if (error) throw error;
   return data ?? [];
 }
+
+// Les annonces d'UN enfant : celles de SON établissement et de SA classe.
+// La vue globale mélange les écoles quand un parent a des enfants dans
+// plusieurs — ici, c'est cadré sur l'enfant ouvert (migration 145).
+export async function annoncesEnfant(eleveId) {
+  const { data, error } = await supabase.rpc("annonces_enfant", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Regroupe les annonces de l'accueil par établissement. Utile seulement
+// quand le parent en a plusieurs — sinon un seul titre n'apprend rien.
+export function annoncesParEcole(annonces = []) {
+  const par = new Map();
+  for (const a of annonces) {
+    const cle = a.ecole_id || a.ecole || "—";
+    if (!par.has(cle)) par.set(cle, { ecole_id: a.ecole_id || null, ecole: a.ecole || "", items: [] });
+    par.get(cle).items.push(a);
+  }
+  return [...par.values()];
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
-import { annoncesParent } from "@/lib/annonces.js";
+import { annoncesParent, annoncesParEcole } from "@/lib/annonces.js";
 import { Carte, Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
@@ -38,6 +38,8 @@ export default function ParentAccueil() {
   }, []);
 
   useEffect(() => { charger(); }, [charger]);
+
+  const groupesAnnonces = annoncesParEcole(annonces);
 
   return (
     <div className="space-y-5">
@@ -105,21 +107,32 @@ export default function ParentAccueil() {
         ))}
       </div>
 
-      {/* Annonces de l'école */}
+      {/* Annonces — groupées par établissement quand le parent en a
+          plusieurs, sinon une liste simple : un titre unique n'apprendrait
+          rien. Le détail par enfant se trouve dans sa page. */}
       {annonces.length > 0 && (
         <div className="space-y-3 pt-2">
           <h2 className="font-display text-lg font-bold text-navy-900">📣 Annonces</h2>
-          {annonces.map((a) => (
-            <Carte key={a.id} className="p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-navy-900">{a.titre}</h3>
-                {a.classe && (
-                  <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.classe}</span>
-                )}
-              </div>
-              {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
-              <p className="mt-2 text-xs text-navy-900/40">{fmtDate(a.publie_le)} · {a.ecole}</p>
-            </Carte>
+          {groupesAnnonces.map((g) => (
+            <div key={g.ecole_id || g.ecole} className="space-y-3">
+              {groupesAnnonces.length > 1 && (
+                <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">{g.ecole}</p>
+              )}
+              {g.items.map((a) => (
+                <Carte key={a.id} className="p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-navy-900">{a.titre}</h3>
+                    {a.classe && (
+                      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.classe}</span>
+                    )}
+                  </div>
+                  {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
+                  <p className="mt-2 text-xs text-navy-900/40">
+                    {fmtDate(a.publie_le)}{groupesAnnonces.length > 1 ? "" : ` · ${a.ecole}`}
+                  </p>
+                </Carte>
+              ))}
+            </div>
           ))}
         </div>
       )}

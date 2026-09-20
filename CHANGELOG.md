@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.205.0] — migration **145** · les annonces se rattachent à un enfant
+- **Signalé par l'utilisateur** : dans l'espace parent, les annonces ne semblaient pas cloisonnées par école ni par enfant.
+- **Vérifié d'abord : le cloisonnement de sécurité est CORRECT.** `annonces_parent()` (mig. 006) filtre déjà sur les écoles où le profil a un enfant, et les annonces ciblées « classe » sur les classes de ses propres enfants. Une annonce destinée aux enseignants ou aux étudiants ne lui parvient pas. **Aucune fuite inter-établissement** — c'est la lisibilité qui manquait.
+- **Le vrai défaut** : les annonces s'affichaient en une liste unique sur l'accueil, et la page d'un enfant n'en montrait **aucune** — alors que c'est là qu'on les cherche. Un parent ayant des enfants dans plusieurs établissements (cas réel en base : un profil rattaché à trois écoles) les voyait mélangées.
+- **Cause technique** : la RPC ne renvoyait que le *nom* de l'école et de la classe, jamais leurs identifiants — le client ne pouvait rattacher une annonce à rien.
+- **Nouvelle section « Annonces » dans la page de chaque enfant** (`annonces_enfant`, gardée par `_parent_possede` comme les autres `enfant_*`), cadrée sur **son** établissement et **sa** classe — et non sur celles de toute la fratrie, contrairement à la vue globale.
+- **L'accueil groupe désormais par établissement** quand le parent en a plusieurs ; sinon la liste reste simple, un titre unique n'apprendrait rien. Le regroupement se fait sur l'identifiant, pas sur le nom : deux écoles homonymes restent distinctes.
+- `annonces_parent` a été **supprimée avant d'être recréée** (42P13 sur un `returns table`, quatrième occurrence après les migrations 114, 131 et 144).
+- Piège évité en écrivant : `fmtDate` n'existait pas dans `ParentEnfant.jsx` et `annoncesEnfant` n'était pas importée — le build serait passé et la page aurait planté à l'ouverture de la section.
+
 ## [2.204.0] — migration **144** · la catégorie devient un vrai champ
 - **Même évolution que `fourni_ecole`** (migration 105) : ce que les écoles exprimaient par convention devient un champ. Elles écrivaient la catégorie dans le libellé — `Livres — BLED CM1/CM2` — faute d'endroit où la mettre. La deviner marchait ; la **saisir** est mieux : un article mal rangé cesse de l'être définitivement.
 - **Nouvelle colonne `fournitures.categorie`**, saisie à la création (liste ouverte, suggestions tirées du vocabulaire déjà employé par l'école) et **modifiable sur chaque ligne** — sans quoi le rattrapage ne serait pas rectifiable.

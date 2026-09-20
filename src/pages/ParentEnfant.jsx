@@ -10,6 +10,7 @@ import {
 } from "@/lib/parent.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
+import { annoncesEnfant } from "@/lib/annonces.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
@@ -22,6 +23,8 @@ const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
+const fmtDate = (d) =>
+  (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 
 export default function ParentEnfant() {
   const { id } = useParams();
@@ -33,6 +36,7 @@ export default function ParentEnfant() {
   const [absences, setAbsences] = useState([]);
   const [emploi, setEmploi] = useState([]);
   const [fournitures, setFournitures] = useState([]);
+  const [annonces, setAnnonces] = useState([]);
   const [infos, setInfos] = useState({});
   const [declarations, setDeclarations] = useState([]);
   const [cahier, setCahier] = useState([]);
@@ -75,6 +79,7 @@ export default function ParentEnfant() {
       else if (cle === "fournitures") setFournitures(await enfantFournitures(id));
       else if (cle === "absences") setAbsences(await enfantAbsences(id));
       else if (cle === "cantine") setMenu(await enfantMenuCantine(id));
+      else if (cle === "annonces") setAnnonces(await annoncesEnfant(id));
       else if (cle === "paiements") {
         const [i, d] = await Promise.all([ecolePaiementInfos(id), enfantDeclarations(id)]);
         setInfos(i); setDeclarations(d);
@@ -200,6 +205,8 @@ export default function ParentEnfant() {
         <Emploi creneaux={emploi} />
       ) : onglet === "fournitures" ? (
         <Fournitures items={fournitures} enfant={enfant} />
+      ) : onglet === "annonces" ? (
+        <AnnoncesEnfant items={annonces} enfant={enfant} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} onErreur={setErreur} />
       ) : onglet === "documents" ? (
@@ -227,6 +234,7 @@ const TUILES = [
   { cle: "absences",    label: "Absences" },
   { cle: "fournitures", label: "Fournitures" },
   { cle: "documents",   label: "Documents" },
+  { cle: "annonces",    label: "Annonces" },
   { cle: "cantine",     label: "Cantine" },
   { cle: "transport",   label: "Transport" },
 ];
@@ -577,6 +585,41 @@ function Cahier({ entrees }) {
               {e.date_pour && <span className="ml-1 text-xs text-navy-900/50">(pour le {fmtD(e.date_pour)})</span>}
             </p>
           )}
+        </Carte>
+      ))}
+    </div>
+  );
+}
+
+// Les annonces de CET enfant : son établissement, sa classe. La liste de
+// l'accueil couvre toute la fratrie et peut mélanger plusieurs écoles ;
+// ici, c'est cadré (migration 145).
+function AnnoncesEnfant({ items, enfant }) {
+  if (items.length === 0) {
+    return (
+      <Carte className="p-6 text-sm text-navy-900/40">
+        Aucune annonce {enfant?.ecole ? `de ${enfant.ecole}` : "pour le moment"}.
+      </Carte>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {enfant?.ecole && (
+        <p className="text-xs text-navy-900/45">
+          Annonces de <b className="text-navy-900/70">{enfant.ecole}</b>
+          {enfant.classe ? ` concernant ${enfant.prenom} (${enfant.classe})` : ""}.
+        </p>
+      )}
+      {items.map((a) => (
+        <Carte key={a.id} className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-navy-900">{a.titre}</h3>
+            {a.cible === "classe" && a.classe && (
+              <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.classe}</span>
+            )}
+          </div>
+          {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
+          <p className="mt-2 text-xs text-navy-900/40">{fmtDate(a.publie_le)}</p>
         </Carte>
       ))}
     </div>
