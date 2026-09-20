@@ -9,6 +9,7 @@ import {
   enfantFactureDetail,
 } from "@/lib/parent.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
+import { fourniParEcole, aAcheter, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
@@ -198,7 +199,7 @@ export default function ParentEnfant() {
       ) : onglet === "emploi" ? (
         <Emploi creneaux={emploi} />
       ) : onglet === "fournitures" ? (
-        <Fournitures items={fournitures} />
+        <Fournitures items={fournitures} enfant={enfant} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} onErreur={setErreur} />
       ) : onglet === "documents" ? (
@@ -582,31 +583,113 @@ function Cahier({ entrees }) {
   );
 }
 
-function Fournitures({ items }) {
+function Fournitures({ items, enfant }) {
+  // Ce que le parent doit encore acheter : coché par défaut, il décoche ce
+  // qu'il a déjà. Une liste de rentrée s'achète en plusieurs fois.
+  const [pris, setPris] = useState(() => new Set());
+  const [copie, setCopie] = useState(false);
+
   if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
-  // Article fourni / disponible à l'école (case cochée par le staff ; repli sur la note).
-  const fourniEcole = (f) => f.fourni_ecole === true || (f.note || "").toLowerCase().includes("école");
-  const yEnA = items.some(fourniEcole);
+
+  const ecoleFournit = items.filter(fourniParEcole);
+  const restants = aAcheter(items);
+  const clef = (f, i) => `${i}-${f.libelle}`;
+  const selection = restants.filter((f, i) => !pris.has(clef(f, i)));
+
+  const basculer = (k) => setPris((s) => {
+    const n = new Set(s);
+    if (n.has(k)) n.delete(k); else n.add(k);
+    return n;
+  });
+
+  const message = messageFournitures(selection, {
+    enfant: enfant ? `${enfant.prenom} ${enfant.nom}` : null,
+    classe: enfant?.classe, ecole: enfant?.ecole,
+  });
+
+  async function copier() {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2000);
+    } catch { /* presse-papiers indisponible : le bouton WhatsApp reste */ }
+  }
+
   return (
-    <Carte className="p-6">
-      <h3 className="mb-1 font-display font-semibold text-navy-900">Liste des fournitures</h3>
-      {yEnA && <p className="mb-3 text-xs text-rose-600">En <b>rouge</b> : fourni ou disponible à l'école (pas besoin de l'acheter ailleurs).</p>}
-      <ul className="divide-y divide-navy-900/5">
-        {items.map((f, i) => {
-          const ecole = fourniEcole(f);
-          return (
-            <li key={i} className="flex items-center justify-between py-2 text-sm">
-              <span className={ecole ? "text-rose-600" : "text-navy-900"}>
-                <span className={`font-mono text-xs ${ecole ? "text-rose-600" : "text-or-600"}`}>×{f.quantite}</span>{" "}
-                <span className={ecole ? "font-bold" : "font-medium"}>{f.libelle}</span>
-                {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
-                {f.note && <span className={`ml-2 text-xs ${ecole ? "font-semibold text-rose-600" : "text-navy-900/50"}`}>— {f.note}</span>}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </Carte>
+    <div className="space-y-4">
+      <Carte className="p-6">
+        <h3 className="mb-1 font-display font-semibold text-navy-900">À acheter</h3>
+        <p className="mb-3 text-xs text-navy-900/50">
+          {restants.length === 0
+            ? "Rien à acheter : tout est fourni par l'école."
+            : "Décochez ce que vous avez déjà, puis envoyez la liste à votre boutique."}
+        </p>
+
+        {restants.length > 0 && (
+          <>
+            <ul className="divide-y divide-navy-900/5">
+              {restants.map((f, i) => {
+                const k = clef(f, i);
+                const fait = pris.has(k);
+                return (
+                  <li key={k}>
+                    <label className="flex cursor-pointer items-start gap-3 py-2.5 text-sm">
+                      <input type="checkbox" checked={!fait} onChange={() => basculer(k)}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
+                      <span className={fait ? "text-navy-900/35 line-through" : "text-navy-900"}>
+                        <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
+                        <span className="font-medium">{f.libelle}</span>
+                        {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
+                        {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <a
+                href={lienPartageWhatsApp(message)}
+                target="_blank" rel="noreferrer"
+                aria-disabled={selection.length === 0}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition ${
+                  selection.length === 0 ? "pointer-events-none bg-navy-900/25" : "bg-emerald-600 hover:bg-emerald-500"}`}
+              >
+                Envoyer par WhatsApp
+                {selection.length > 0 && <span className="rounded-full bg-white/20 px-1.5 text-xs">{selection.length}</span>}
+              </a>
+              <button type="button" onClick={copier} disabled={selection.length === 0}
+                className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm font-medium text-navy-900/70 transition hover:border-or-500 disabled:opacity-40">
+                {copie ? "Copié ✓" : "Copier la liste"}
+              </button>
+              {selection.length === 0 && (
+                <span className="text-xs text-navy-900/45">Tout est coché comme déjà acheté.</span>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-navy-900/40">
+              WhatsApp vous laissera choisir le destinataire.
+            </p>
+          </>
+        )}
+      </Carte>
+
+      {ecoleFournit.length > 0 && (
+        <Carte className="p-6">
+          <h3 className="mb-1 font-display font-semibold text-navy-900">Fourni par l&apos;école</h3>
+          <p className="mb-3 text-xs text-navy-900/50">Inutile de l&apos;acheter ailleurs.</p>
+          <ul className="divide-y divide-navy-900/5">
+            {ecoleFournit.map((f, i) => (
+              <li key={i} className="py-2 text-sm text-navy-900/70">
+                <span className="font-mono text-xs text-navy-900/45">×{f.quantite}</span>{" "}
+                <span className="font-medium">{f.libelle}</span>
+                {f.note && <span className="ml-2 text-xs text-navy-900/45">— {f.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </Carte>
+      )}
+    </div>
   );
 }
 

@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.202.0] — aucune migration · le parent envoie sa liste de fournitures par WhatsApp
+- **L'espace parent sépare désormais deux listes** : **À acheter** et **Fourni par l'école**. Avant, tout était mélangé dans une seule liste où le « fourni par l'école » se signalait par une couleur — il fallait lire ligne à ligne pour savoir quoi mettre dans son panier.
+- **Bouton « Envoyer par WhatsApp »** : la liste des articles à acheter part en message texte, prêt à être relu dans un rayon de magasin. **Aucun numéro n'est imposé** — WhatsApp laisse le parent choisir le destinataire : sa boutique, son conjoint, lui-même. C'est l'inverse des relances de l'école, qui visent une famille précise.
+- **Cases à cocher** : une liste de rentrée s'achète en plusieurs fois. Le parent décoche ce qu'il a déjà, et seul le reste part dans le message. Un bouton **Copier la liste** sert de repli quand WhatsApp n'est pas installé (ordinateur).
+- **Ce qui ne doit jamais arriver, verrouillé par un test** : un article fourni par l'école ne figure **jamais** dans le message — le parent le paierait deux fois. Le repli sur la note (« disponible à l'école ») est conservé pour les listes saisies avant la migration 105, qui a introduit la case.
+- Détails du message : la quantité n'apparaît que si elle dépasse 1, la note de l'école est reprise (format, couleur — c'est ce qui sert en magasin), et l'en-tête nomme l'enfant et sa classe. 6 tests sur le module, qui est pur.
+
 ## [2.201.0] — migration **143** · supprimer ou annuler une facture
 - **Question de l'utilisateur : une facture générée ne peut pas être supprimée ?** Exact, et c'était un manque : `supprimerFacture()` existait dans la couche données depuis le début, **aucune page ne l'appelait**. Même défaut que `journaliser()` et `creerAuteur()` en bibliothèque — une fonction livrée sans porte d'entrée.
 - **Mais « ajouter un bouton Supprimer » aurait été la mauvaise réponse.** `paiements.facture_id` est en `on delete cascade` : effacer une facture réglée aurait effacé **ses encaissements avec elle**, de l'argent disparaissant des livres. Et `factures.numero` est une numérotation séquentielle : on n'efface pas une pièce numérotée, on l'annule.
