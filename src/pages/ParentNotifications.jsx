@@ -141,11 +141,17 @@ export default function ParentNotifications() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-navy-900">{n.titre}</p>
-                  {nomEnfant(n.eleve_id) && (
+                  {nomEnfant(n.eleve_id) ? (
                     <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
                       {nomEnfant(n.eleve_id)}
                     </span>
-                  )}
+                  ) : enfants.length > 1 && !n.eleve_id ? (
+                    // Une alerte d'établissement ne vise aucun enfant : le
+                    // dire évite que l'absence de nom passe pour un oubli.
+                    <span className="rounded-full bg-navy-900/5 px-2 py-0.5 text-[11px] font-medium text-navy-900/50">
+                      Toute l&apos;école
+                    </span>
+                  ) : null}
                   {!n.lu && <span className="rounded-full bg-or-500/15 px-2 py-0.5 text-[10px] font-medium text-or-600">nouveau</span>}
                 </div>
                 {n.message && <p className="text-sm text-navy-900/70">{n.message}</p>}

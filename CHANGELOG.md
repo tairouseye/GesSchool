@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.207.0] — migration **147** · notification d'enfant vs notification d'école
+- **Question posée** : il y a des notifications par enfant et d'autres qui concernent l'école — cette particularité est-elle bien gérée ? **Recensement de toutes les sources avant de répondre**, et la réponse tient en deux temps.
+- **Aucune notification d'école n'existe aujourd'hui.** Les six sources (`_notifier_parents`, `traiter_demande`, `executer_relances`, `relancer_eleve`, `transport_notifier`, messagerie étudiante) sont **toutes** rattachées à un enfant. Un même parent ne reçoit donc jamais deux exemplaires d'un même évènement. La particularité ne pose pas de problème… parce qu'elle n'existe pas encore.
+- **Mais rien ne la préparait.** Le jour où l'on notifie un évènement d'école — annonce publiée, fermeture exceptionnelle —, l'écriture naturelle (parcourir `eleve_tuteurs`) enverrait **trois fois le même message** à un parent de trois enfants. C'est exactement le défaut redouté. La primitive correcte est donc posée **avant** d'en avoir besoin : `_notifier_parents_ecole()` fait **un `select distinct` sur le profil** — une notification par parent, quel que soit son nombre d'enfants — et laisse `eleve_id` à NULL à dessein.
+- **Trois sources par enfant omettaient encore `eleve_id`** : les rappels de paiement (mig. 019, deux fonctions) et la prise en charge du bus (mig. 042). Leurs alertes ne pouvaient donc pas porter le nom de l'enfant ni alimenter les pastilles par section. Corrigé, avec la catégorie.
+- Méthode : les corps de ces trois fonctions ont été **extraits programmatiquement des migrations d'origine et patchés uniquement sur leurs lignes d'insertion**, plutôt que retapés — retyper quarante lignes de PL/pgSQL pour en changer deux est le meilleur moyen d'y glisser une erreur.
+- Côté parent, une alerte sans enfant s'affiche **« Toute l'école »** dès qu'il y a plusieurs enfants : l'absence de nom devient une information, et non un oubli apparent.
+
 ## [2.206.0] — migration **146** · une notification dit de quel enfant elle parle
 - **Signalé** : un parent de plusieurs enfants dans la même école reçoit « 3 mêmes notifications ». Mesuré avant de corriger — et la réponse n'est pas celle qu'on attendait.
 - **Les annonces, elles, ne se dupliquent pas** : `annonces_parent()` porte un `select distinct`, et **aucun déclencheur ne transforme une annonce en notification**. Rien à corriger de ce côté.
