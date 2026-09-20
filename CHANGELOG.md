@@ -5,6 +5,23 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.207.1] — migration **148** · 🔴 les fabriques de notifications étaient ouvertes à tous
+- **Trouvé en éprouvant la migration 147 avec une vraie session de parent** — pas en relisant le code. Sondage depuis un compte parent sans aucun rôle de gestion :
+
+  | Fonction | Résultat |
+  |---|---|
+  | `_notifier_parents` | 🔴 204 — autorisé |
+  | `_notifier_etudiant` | 🔴 204 — autorisé |
+  | `executer_relances` | 🔴 200 — autorisé |
+  | `_notifier_parents_ecole` | 🔴 200 — autorisé |
+  | `relancer_eleve` | ✓ « Réservé au comptable. » |
+
+- Concrètement : **un parent pouvait forger une notification adressée à n'importe quel parent de n'importe quel établissement**, ou déclencher la campagne de relances d'une autre école.
+- **Deux causes, et l'une est la mienne.** (1) `create function` accorde EXECUTE à PUBLIC par défaut ; les helpers `_notifier_parents` (mig. 013/112) et `_notifier_etudiant` (mig. 130) n'avaient jamais été révoqués — défaut ancien. (2) `executer_relances` avait été **délibérément** révoquée en migration 019, avec un wrapper `relancer_tout()` gardé pour l'interface : **ma migration 147 l'a rouverte** avec un `grant … to authenticated` ajouté « par sécurité ». Reposer des droits sans vérifier ce qu'ils étaient, c'est les inventer.
+- **Correctif** : les quatre fonctions sont révoquées de `public`, `anon` **et** `authenticated`. Un helper préfixé `_` n'est jamais appelé par le client — il est invoqué depuis des déclencheurs et des fonctions `SECURITY DEFINER`, qui s'exécutent avec les droits du propriétaire et ne sont donc pas gênés. Aucun appel applicatif à ces quatre fonctions n'existe, vérifié dans `src/`.
+- **Défense en profondeur** : `_notifier_parents_ecole` porte désormais sa garde de rôle **à l'intérieur**, pour qu'un `grant` distrait — comme le mien — ne suffise plus à rouvrir la brèche.
+- **Troisième occurrence du même motif** après `ecole_conversations` (mig. 139) : une fonction `SECURITY DEFINER` sans contrôle interne, atteignable parce que personne n'avait révoqué PUBLIC.
+
 ## [2.207.0] — migration **147** · notification d'enfant vs notification d'école
 - **Question posée** : il y a des notifications par enfant et d'autres qui concernent l'école — cette particularité est-elle bien gérée ? **Recensement de toutes les sources avant de répondre**, et la réponse tient en deux temps.
 - **Aucune notification d'école n'existe aujourd'hui.** Les six sources (`_notifier_parents`, `traiter_demande`, `executer_relances`, `relancer_eleve`, `transport_notifier`, messagerie étudiante) sont **toutes** rattachées à un enfant. Un même parent ne reçoit donc jamais deux exemplaires d'un même évènement. La particularité ne pose pas de problème… parce qu'elle n'existe pas encore.
