@@ -145,3 +145,30 @@ test("lienPartageWhatsApp : sans destinataire, et le texte est encodé", async (
   assert.ok(l.includes("%26"), "l'esperluette est encodée, sinon le texte est tronqué");
   assert.ok(!l.includes(" "), "aucune espace brute dans l'URL");
 });
+
+// --- Colonne `categorie` (migration 144) ----------------------------------
+
+test("categoriser : la colonne saisie prime sur le préfixe ET sur la devinette", async () => {
+  const { categoriser } = await charger();
+  // L'école a rangé « Gomme » dans Petit matériel : la colonne fait foi.
+  assert.equal(categoriser({ libelle: "Gomme", categorie: "Petit matériel" }).label, "Petit matériel");
+  // Elle prime aussi sur un préfixe resté dans un libellé non rattrapé.
+  assert.equal(categoriser({ libelle: "Livres — BLED", categorie: "Maison" }).label, "Maison");
+  // « Autres » saisi en colonne est ramené au fourre-tout, comme en préfixe.
+  assert.equal(categoriser({ libelle: "Gourde", categorie: "Autres" }).id, "divers");
+  // Colonne vide ou blanche → on retombe sur le préfixe, puis la devinette.
+  assert.equal(categoriser({ libelle: "Livres — BLED", categorie: "  " }).label, "Livres");
+  assert.equal(categoriser({ libelle: "Cahier 96 pages", categorie: null }).label, "Cahiers");
+});
+
+test("grouperFournitures : la colonne et le préfixe cohabitent pendant la transition", async () => {
+  const { grouperFournitures } = await charger();
+  // Une école rattrapée par la 144 et une autre pas encore : les deux
+  // doivent produire le même groupe.
+  const g = grouperFournitures([
+    { libelle: "Cahiers de 100 pages", categorie: "Cahiers", quantite: 3 },
+    { libelle: "Cahiers — Cahiers de 50 pages", quantite: 2 },
+  ]);
+  assert.equal(g.length, 1, "même catégorie, un seul groupe");
+  assert.deepEqual(g[0].items.map((i) => i.libelle), ["Cahiers de 100 pages", "Cahiers de 50 pages"]);
+});

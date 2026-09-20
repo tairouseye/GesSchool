@@ -29,6 +29,13 @@ export default function Fournitures() {
     catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
+  // Les catégories déjà employées par l'école alimentent la saisie : on
+  // suggère son propre vocabulaire plutôt que d'en imposer un.
+  const categories = [...new Set([
+    ...items.map((f) => (f.categorie || "").trim()).filter(Boolean),
+    "Cahiers", "Livres & manuels", "Stylos & crayons", "Divers",
+  ])].sort();
+
   // Groupes : un par niveau + « Tous niveaux »
   const groupes = [
     { id: null, libelle: "Tous niveaux", items: items.filter((f) => !f.niveau_id) },
@@ -41,7 +48,8 @@ export default function Fournitures() {
       <div className="space-y-6 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <FormFourniture niveaux={niveaux} onAjout={(f) => wrap(() => creerFourniture(ecoleId, f), "Fourniture ajoutée.")} />
+        <FormFourniture niveaux={niveaux} categories={categories}
+          onAjout={(f) => wrap(() => creerFourniture(ecoleId, f), "Fourniture ajoutée.")} />
 
         {items.length === 0 ? (
           <EtatVide icone="🎒" titre="Aucune fourniture">Ajoutez la première fourniture avec le formulaire ci-dessus.</EtatVide>
@@ -59,6 +67,15 @@ export default function Fournitures() {
                       {f.note && <span className={`ml-2 text-xs ${f.fourni_ecole ? "font-semibold text-rose-600" : "text-navy-900/50"}`}>— {f.note}</span>}
                     </span>
                     <span className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                      {/* Le rattrapage de la migration 144 a rangé les
+                          articles d'après le préfixe : il doit rester
+                          corrigible sans repasser par la base. */}
+                      <select value={f.categorie || ""} title="Catégorie"
+                        onChange={(e) => wrap(() => modifierFourniture(f.id, { categorie: e.target.value }), "Catégorie modifiée.")}
+                        className="max-w-36 truncate rounded-full border border-navy-900/15 bg-white px-2 py-0.5 text-xs text-navy-900/60 outline-none focus:border-or-500">
+                        <option value="">— sans catégorie —</option>
+                        {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
                       <button onClick={() => wrap(() => modifierFourniture(f.id, { fourni_ecole: !f.fourni_ecole }), f.fourni_ecole ? "Retiré de « fourni par l'école »." : "Marqué « fourni par l'école ».")}
                         className={`rounded-full border px-2 py-0.5 text-xs font-medium ${f.fourni_ecole ? "border-rose-500/40 bg-rose-500/10 text-rose-600" : "border-navy-900/15 text-navy-900/50"}`}
                         title="Fourni ou disponible à l'école (affiché en rouge chez le parent)">
@@ -79,8 +96,8 @@ export default function Fournitures() {
   );
 }
 
-function FormFourniture({ niveaux, onAjout }) {
-  const vide = { libelle: "", quantite: "1", obligatoire: true, fourni_ecole: false, niveau_id: "", note: "" };
+function FormFourniture({ niveaux, categories, onAjout }) {
+  const vide = { libelle: "", quantite: "1", obligatoire: true, fourni_ecole: false, niveau_id: "", categorie: "", note: "" };
   const [f, setF] = useState(vide);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
@@ -100,6 +117,13 @@ function FormFourniture({ niveaux, onAjout }) {
             {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
           </select>
         </label>
+        {/* Liste ouverte : les suggestions couvrent le cas courant, mais une
+            école qui range autrement (« Petit matériel », « Maison ») garde
+            son vocabulaire — c'est ainsi qu'elles font déjà. */}
+        <div className="min-w-40">
+          <Champ label="Catégorie" list="categories-fournitures" value={f.categorie}
+            onChange={(e) => maj("categorie", e.target.value)} placeholder="Cahiers" />
+        </div>
         <div className="min-w-36 flex-1"><Champ label="Note (optionnel)" value={f.note} onChange={(e) => maj("note", e.target.value)} placeholder="grand format…" /></div>
         <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70">
           <input type="checkbox" checked={f.obligatoire} onChange={(e) => maj("obligatoire", e.target.checked)} /> Obligatoire
@@ -109,6 +133,9 @@ function FormFourniture({ niveaux, onAjout }) {
         </label>
         <Bouton type="submit">+ Ajouter</Bouton>
       </form>
+      <datalist id="categories-fournitures">
+        {categories.map((c) => <option key={c} value={c} />)}
+      </datalist>
     </Carte>
   );
 }

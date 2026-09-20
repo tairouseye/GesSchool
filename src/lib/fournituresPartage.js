@@ -48,14 +48,23 @@ export function separerPrefixe(libelle) {
 // les ramène à « Divers » pour qu'elles se rangent en dernier.
 const EST_FOURRE_TOUT = (c) => ["autres", "autre", "divers", "reste"].includes(sansAccent(c));
 
-// Catégorie d'un article : le classement de l'école d'abord, la devinette
-// ensuite. Renvoie { id, label }.
-export function categoriser(libelle) {
-  const { categorie, libelle: net } = separerPrefixe(libelle);
-  if (categorie) {
-    if (EST_FOURRE_TOUT(categorie)) return DIVERS;
-    return { id: "ecole:" + sansAccent(categorie), label: categorie };
-  }
+const groupeEcole = (c) =>
+  EST_FOURRE_TOUT(c) ? DIVERS : { id: "ecole:" + sansAccent(c), label: String(c).trim() };
+
+// Catégorie d'un article, par ordre d'autorité décroissante :
+//   1. la colonne `categorie` saisie par l'école (migration 144) ;
+//   2. le préfixe « Catégorie — Article » qu'elle écrivait avant, faute de
+//      champ — encore présent dans les listes non rattrapées ;
+//   3. la devinette par mot-clé.
+// Accepte un article ou, par commodité, un simple libellé.
+export function categoriser(f) {
+  const item = typeof f === "string" ? { libelle: f } : (f || {});
+  const saisie = String(item.categorie || "").trim();
+  if (saisie) return groupeEcole(saisie);
+
+  const { categorie, libelle: net } = separerPrefixe(item.libelle);
+  if (categorie) return groupeEcole(categorie);
+
   const t = sansAccent(net);
   for (const c of DEVINETTE) {
     if (c.motifs.some((m) => t.includes(m))) return { id: c.id, label: c.label };
@@ -81,8 +90,10 @@ export function aAcheter(items = []) {
 export function grouperFournitures(items = []) {
   const groupes = new Map();
   for (const f of items) {
-    const c = categoriser(f.libelle);
+    const c = categoriser(f);
     if (!groupes.has(c.id)) groupes.set(c.id, { ...c, items: [] });
+    // Le préfixe est retiré du libellé affiché : une fois sous son titre de
+    // groupe, « Petit matériel — Gomme » n'a plus à répéter sa catégorie.
     groupes.get(c.id).items.push({ ...f, libelle: separerPrefixe(f.libelle).libelle });
   }
   const rang = (id) => {

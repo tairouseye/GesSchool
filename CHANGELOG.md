@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.204.0] — migration **144** · la catégorie devient un vrai champ
+- **Même évolution que `fourni_ecole`** (migration 105) : ce que les écoles exprimaient par convention devient un champ. Elles écrivaient la catégorie dans le libellé — `Livres — BLED CM1/CM2` — faute d'endroit où la mettre. La deviner marchait ; la **saisir** est mieux : un article mal rangé cesse de l'être définitivement.
+- **Nouvelle colonne `fournitures.categorie`**, saisie à la création (liste ouverte, suggestions tirées du vocabulaire déjà employé par l'école) et **modifiable sur chaque ligne** — sans quoi le rattrapage ne serait pas rectifiable.
+- **Rattrapage essayé à blanc avant d'être écrit** sur les 100 libellés réels : **79 lignes rangées, 27 laissées intactes, aucun tiret orphelin**. Catégories obtenues : Petit matériel (49), Cahiers (12), Divers (7), Livres (6), Maison (5). « Taille-crayon avec réservoir » reste entier — le séparateur reconnu est le tiret **cadratin**, jamais le trait d'union.
+- **La transition se fait sans rupture** : l'espace parent lit la colonne quand elle existe, retombe sur le préfixe pour les listes non rattrapées, puis sur la devinette. Une école rattrapée et une autre pas produisent le même groupe. Verrouillé par deux tests.
+- `enfant_fournitures` renvoie désormais la catégorie. La fonction a été **supprimée avant d'être recréée** : `create or replace` ne peut pas changer le type de retour d'un `returns table(...)` — piège déjà rencontré en migrations 114 et 131.
+
 ## [2.203.0] — aucune migration · fournitures regroupées par nature
 - **Les fournitures s'affichent et s'envoient par groupes** — Cahiers, Livres & manuels, Stylos & crayons, Divers — au lieu d'une liste continue. En magasin, on parcourt un rayon à la fois.
 - **Découverte en regardant les vraies listes : les écoles écrivent déjà la catégorie dans le libellé** — `Livres — BLED CM1/CM2`, `Cahiers — Cahiers de 100 pages`, `Petit matériel — Gomme`, `Maison — Trousse`. Tut'Tank range sa liste à la main, faute de champ pour le faire. **Ce classement fait donc foi** : on l'affiche tel quel, et on ne devine que pour les listes sans préfixe (« Cahier 96 pages », « Bic bleu »…). Le préfixe est retiré des lignes, sinon chaque article répéterait « Petit matériel — » sous son propre titre.

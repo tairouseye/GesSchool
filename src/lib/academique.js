@@ -356,6 +356,7 @@ export async function creerFourniture(ecoleId, f) {
       quantite: Number(f.quantite) || 1,
       obligatoire: f.obligatoire ?? true,
       fourni_ecole: f.fourni_ecole ?? false,
+      categorie: f.categorie?.trim() || null,
       note: f.note || null,
     })
     .select()
@@ -370,6 +371,7 @@ export async function modifierFourniture(id, patch) {
   if (patch.quantite != null) p.quantite = Number(patch.quantite) || 1;
   if (patch.obligatoire != null) p.obligatoire = patch.obligatoire;
   if (patch.fourni_ecole != null) p.fourni_ecole = patch.fourni_ecole;
+  if (patch.categorie !== undefined) p.categorie = patch.categorie?.trim() || null;
   if (patch.note !== undefined) p.note = patch.note || null;
   const { data, error } = await supabase.from("fournitures").update(p).eq("id", id).select().single();
   if (error) throw error;
