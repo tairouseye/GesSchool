@@ -9,7 +9,7 @@ import {
   enfantFactureDetail,
 } from "@/lib/parent.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
-import { fourniParEcole, aAcheter, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
+import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
@@ -591,10 +591,15 @@ function Fournitures({ items, enfant }) {
 
   if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
 
-  const ecoleFournit = items.filter(fourniParEcole);
-  const restants = aAcheter(items);
-  const clef = (f, i) => `${i}-${f.libelle}`;
-  const selection = restants.filter((f, i) => !pris.has(clef(f, i)));
+  // Une clé stable par article : les libellés se répètent d'une catégorie à
+  // l'autre (« Gomme » chez Maison ET Petit matériel), l'index seul ne suffit
+  // pas à les distinguer une fois la liste regroupée.
+  const restants = aAcheter(items).map((f, i) => ({ ...f, _k: `${i}-${f.libelle}` }));
+  // `grouperFournitures` nettoie le libellé du préfixe mais conserve le
+  // reste de l'article — la clé `_k` posée ci-dessus survit au regroupement.
+  const groupes = grouperFournitures(restants);
+  const ecoleFournit = grouperFournitures(items.filter(fourniParEcole));
+  const selection = restants.filter((f) => !pris.has(f._k));
 
   const basculer = (k) => setPris((s) => {
     const n = new Set(s);
@@ -627,26 +632,34 @@ function Fournitures({ items, enfant }) {
 
         {restants.length > 0 && (
           <>
-            <ul className="divide-y divide-navy-900/5">
-              {restants.map((f, i) => {
-                const k = clef(f, i);
-                const fait = pris.has(k);
-                return (
-                  <li key={k}>
-                    <label className="flex cursor-pointer items-start gap-3 py-2.5 text-sm">
-                      <input type="checkbox" checked={!fait} onChange={() => basculer(k)}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
-                      <span className={fait ? "text-navy-900/35 line-through" : "text-navy-900"}>
-                        <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
-                        <span className="font-medium">{f.libelle}</span>
-                        {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
-                        {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
-                      </span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-4">
+              {groupes.map((g) => (
+                <div key={g.id}>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">
+                    {g.label} <span className="font-normal text-navy-900/30">({g.items.length})</span>
+                  </p>
+                  <ul className="divide-y divide-navy-900/5">
+                    {g.items.map((f) => {
+                      const fait = pris.has(f._k);
+                      return (
+                        <li key={f._k}>
+                          <label className="flex cursor-pointer items-start gap-3 py-2.5 text-sm">
+                            <input type="checkbox" checked={!fait} onChange={() => basculer(f._k)}
+                              className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
+                            <span className={fait ? "text-navy-900/35 line-through" : "text-navy-900"}>
+                              <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
+                              <span className="font-medium">{f.libelle}</span>
+                              {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
+                              {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <a
@@ -678,15 +691,22 @@ function Fournitures({ items, enfant }) {
         <Carte className="p-6">
           <h3 className="mb-1 font-display font-semibold text-navy-900">Fourni par l&apos;école</h3>
           <p className="mb-3 text-xs text-navy-900/50">Inutile de l&apos;acheter ailleurs.</p>
-          <ul className="divide-y divide-navy-900/5">
-            {ecoleFournit.map((f, i) => (
-              <li key={i} className="py-2 text-sm text-navy-900/70">
-                <span className="font-mono text-xs text-navy-900/45">×{f.quantite}</span>{" "}
-                <span className="font-medium">{f.libelle}</span>
-                {f.note && <span className="ml-2 text-xs text-navy-900/45">— {f.note}</span>}
-              </li>
+          <div className="space-y-4">
+            {ecoleFournit.map((g) => (
+              <div key={g.id}>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">{g.label}</p>
+                <ul className="divide-y divide-navy-900/5">
+                  {g.items.map((f, i) => (
+                    <li key={i} className="py-2 text-sm text-navy-900/70">
+                      <span className="font-mono text-xs text-navy-900/45">×{f.quantite}</span>{" "}
+                      <span className="font-medium">{f.libelle}</span>
+                      {f.note && <span className="ml-2 text-xs text-navy-900/45">— {f.note}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </Carte>
       )}
     </div>

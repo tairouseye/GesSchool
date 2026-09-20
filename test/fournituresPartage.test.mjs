@@ -27,22 +27,100 @@ test("fourniParEcole : la case fait foi, la note sert de repli", async () => {
 
 test("aAcheter : ce que l'école fournit est écarté", async () => {
   const { aAcheter } = await charger();
-  const r = aAcheter(LISTE);
-  assert.deepEqual(r.map((f) => f.libelle), ["Cahier 96 pages", "Boîte de craies"]);
+  assert.deepEqual(aAcheter(LISTE).map((f) => f.libelle), ["Cahier 96 pages", "Boîte de craies"]);
   assert.equal(aAcheter([]).length, 0);
   assert.equal(aAcheter().length, 0);
 });
 
-test("messageFournitures : lisible, avec quantités, notes et mention optionnel", async () => {
+// --- Classement -----------------------------------------------------------
+
+test("separerPrefixe : le tiret cadratin sépare, le trait d'union NON", async () => {
+  const { separerPrefixe } = await charger();
+  assert.deepEqual(separerPrefixe("Livres — BLED CM1/CM2"), { categorie: "Livres", libelle: "BLED CM1/CM2" });
+  assert.deepEqual(separerPrefixe("Petit matériel — Taille-crayon avec réservoir"),
+    { categorie: "Petit matériel", libelle: "Taille-crayon avec réservoir" });
+  // Un trait d'union interne ne doit jamais être pris pour un séparateur.
+  assert.deepEqual(separerPrefixe("Taille-crayon avec réservoir"),
+    { categorie: null, libelle: "Taille-crayon avec réservoir" });
+  assert.deepEqual(separerPrefixe("Règle plate 30 cm"), { categorie: null, libelle: "Règle plate 30 cm" });
+  assert.deepEqual(separerPrefixe(null), { categorie: null, libelle: "" });
+});
+
+test("categoriser : le classement écrit par l'école prime sur la devinette", async () => {
+  const { categoriser } = await charger();
+  // « Gomme » serait devinée « Stylos & crayons » ; l'école l'a rangée
+  // ailleurs, c'est elle qui décide.
+  assert.equal(categoriser("Petit matériel — Gomme").label, "Petit matériel");
+  assert.equal(categoriser("Gomme").label, "Stylos & crayons");
+  // « Autres » et « Maison » : le premier est un fourre-tout, pas le second.
+  assert.equal(categoriser("Autres — Gourde").id, "divers");
+  assert.equal(categoriser("Maison — Trousse").label, "Maison");
+});
+
+test("categoriser : la devinette range les libellés sans préfixe", async () => {
+  const { categoriser } = await charger();
+  const cat = (l) => categoriser(l).label;
+  assert.equal(cat("Cahier de dessin grand format"), "Cahiers");
+  assert.equal(cat("Protège-cahiers (bleu, vert)"), "Cahiers", "accents et trait d'union");
+  assert.equal(cat("Rame de papier A4"), "Cahiers");
+  assert.equal(cat("Dictionnaire Larousse"), "Livres & manuels");
+  assert.equal(cat("Manuels (Maths, Physique)"), "Livres & manuels");
+  assert.equal(cat("Bic bleu"), "Stylos & crayons");
+  assert.equal(cat("Boîte de crayons de couleur"), "Stylos & crayons");
+  assert.equal(cat("Surligneur jaune"), "Stylos & crayons");
+  // Le fourre-tout assumé.
+  assert.equal(cat("Cartable"), "Divers");
+  assert.equal(cat("Gourde"), "Divers");
+  assert.equal(cat("Compas"), "Divers");
+});
+
+test("grouperFournitures : ordre demandé, Divers toujours en dernier", async () => {
+  const { grouperFournitures } = await charger();
+  const g = grouperFournitures([
+    { libelle: "Cartable", quantite: 1 },
+    { libelle: "Bic bleu", quantite: 4 },
+    { libelle: "Dictionnaire Larousse", quantite: 1 },
+    { libelle: "Cahier 96 pages", quantite: 6 },
+  ]);
+  assert.deepEqual(g.map((x) => x.label), ["Cahiers", "Livres & manuels", "Stylos & crayons", "Divers"]);
+  assert.deepEqual(g[0].items.map((i) => i.libelle), ["Cahier 96 pages"]);
+});
+
+test("grouperFournitures : le préfixe est retiré des libellés affichés", async () => {
+  const { grouperFournitures } = await charger();
+  const g = grouperFournitures([
+    { libelle: "Petit matériel — Gomme", quantite: 1 },
+    { libelle: "Petit matériel — Stylos (2 bleus)", quantite: 1 },
+  ]);
+  assert.equal(g.length, 1);
+  assert.equal(g[0].label, "Petit matériel");
+  assert.deepEqual(g[0].items.map((i) => i.libelle), ["Gomme", "Stylos (2 bleus)"],
+    "sinon chaque ligne répéterait « Petit matériel — » sous son propre titre");
+});
+
+// --- Message --------------------------------------------------------------
+
+test("messageFournitures : groupé, avec quantités, notes et mention optionnel", async () => {
   const { messageFournitures, aAcheter } = await charger();
   const m = messageFournitures(aAcheter(LISTE), { enfant: "Awa Diop", classe: "CE1", ecole: "Tut'Tank" });
 
   assert.ok(m.startsWith("Fournitures à acheter — Awa Diop — CE1"), "l'en-tête dit de qui il s'agit");
+  assert.ok(m.includes("*Cahiers*"), "les titres de groupe sont en gras WhatsApp");
   assert.ok(m.includes("• 6 × Cahier 96 pages — grands carreaux"), "quantité et note, utiles en magasin");
   assert.ok(m.includes("• Boîte de craies (optionnel)"), "une quantité de 1 ne s'écrit pas");
   assert.ok(m.includes("(Tut'Tank)"));
   assert.ok(!m.includes("Blouse"), "un article fourni par l'école ne doit JAMAIS figurer");
   assert.ok(!m.includes("Manuel de lecture"), "ni celui que la note dit disponible à l'école");
+});
+
+test("messageFournitures : un seul groupe → pas de titre inutile", async () => {
+  const { messageFournitures } = await charger();
+  const m = messageFournitures([
+    { libelle: "Cahier 96 pages", quantite: 6, obligatoire: true },
+    { libelle: "Cahier de dessin", quantite: 1, obligatoire: true },
+  ]);
+  assert.ok(!m.includes("*"), "un titre unique n'apprendrait rien");
+  assert.ok(m.includes("• 6 × Cahier 96 pages"));
 });
 
 test("messageFournitures : liste vide → message explicite, pas une coquille", async () => {

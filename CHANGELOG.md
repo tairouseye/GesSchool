@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.203.0] — aucune migration · fournitures regroupées par nature
+- **Les fournitures s'affichent et s'envoient par groupes** — Cahiers, Livres & manuels, Stylos & crayons, Divers — au lieu d'une liste continue. En magasin, on parcourt un rayon à la fois.
+- **Découverte en regardant les vraies listes : les écoles écrivent déjà la catégorie dans le libellé** — `Livres — BLED CM1/CM2`, `Cahiers — Cahiers de 100 pages`, `Petit matériel — Gomme`, `Maison — Trousse`. Tut'Tank range sa liste à la main, faute de champ pour le faire. **Ce classement fait donc foi** : on l'affiche tel quel, et on ne devine que pour les listes sans préfixe (« Cahier 96 pages », « Bic bleu »…). Le préfixe est retiré des lignes, sinon chaque article répéterait « Petit matériel — » sous son propre titre.
+- Le séparateur reconnu est le tiret **cadratin** entouré d'espaces, jamais le trait d'union : sinon « Taille-crayon avec réservoir » serait coupé en deux. Verrouillé par un test.
+- « Autres » et « Divers » sont ramenés au même groupe, toujours placé **en dernier**. Les catégories propres à l'école (« Petit matériel », « Maison ») gardent leur nom et leur place.
+- Dans le message WhatsApp, les titres de groupe sont en **gras WhatsApp**. Un seul groupe → pas de titre, il n'apprendrait rien.
+- Une clé stable par article remplace l'index : les libellés se répètent d'une catégorie à l'autre (« Gomme » chez *Maison* **et** *Petit matériel*), et cocher l'un aurait coché l'autre.
+- 12 tests sur le module, vérifiés ensuite sur les listes réelles de Tut'Tank.
+- **Amélioration possible plus tard** : une vraie colonne `categorie` sur `fournitures`, éditable par l'école. C'est exactement l'évolution qu'a connue `fourni_ecole` — détection par mot-clé, puis vraie case à cocher (migration 105).
+
 ## [2.202.0] — aucune migration · le parent envoie sa liste de fournitures par WhatsApp
 - **L'espace parent sépare désormais deux listes** : **À acheter** et **Fourni par l'école**. Avant, tout était mélangé dans une seule liste où le « fourni par l'école » se signalait par une couleur — il fallait lire ligne à ligne pour savoir quoi mettre dans son panier.
 - **Bouton « Envoyer par WhatsApp »** : la liste des articles à acheter part en message texte, prêt à être relu dans un rayon de magasin. **Aucun numéro n'est imposé** — WhatsApp laisse le parent choisir le destinataire : sa boutique, son conjoint, lui-même. C'est l'inverse des relances de l'école, qui visent une famille précise.
