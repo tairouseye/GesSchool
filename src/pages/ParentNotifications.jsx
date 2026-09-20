@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { mesNotifications, marquerLue, marquerToutesLues } from "@/lib/parent.js";
+import { mesNotifications, marquerLue, marquerToutesLues, mesEnfants } from "@/lib/parent.js";
 import { pushSupporte, etatPush, activerPush, desactiverPush } from "@/lib/push.js";
 import { Carte, Alerte, Bouton, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 
@@ -73,12 +73,18 @@ const ICONE = (titre = "") => {
 
 export default function ParentNotifications() {
   const [items, setItems] = useState([]);
+  const [enfants, setEnfants] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
   const recharger = async () => {
     try {
-      setItems(await mesNotifications());
+      // Les notifications portent `eleve_id` mais pas le nom de l'enfant :
+      // la table `eleves` est fermée au parent. On le retrouve par
+      // `mes_enfants`, qu'il a déjà le droit de lire.
+      const [n, e] = await Promise.all([mesNotifications(), mesEnfants()]);
+      setItems(n);
+      setEnfants(e);
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -89,6 +95,16 @@ export default function ParentNotifications() {
   useEffect(() => { recharger(); }, []);
 
   const nonLues = items.filter((n) => !n.lu).length;
+
+  // ⚠️ Sans cela, un parent de trois enfants reçoit trois « Nouvelle note »
+  // rigoureusement identiques et ne sait pas lesquelles concernent qui. Le
+  // nom n'est affiché qu'à partir de deux enfants : avec un seul, il n'ajoute
+  // rien et encombre.
+  const nomEnfant = (eleveId) => {
+    if (!eleveId || enfants.length < 2) return null;
+    const e = enfants.find((x) => x.eleve_id === eleveId);
+    return e ? `${e.prenom} ${e.nom}`.trim() : null;
+  };
 
   return (
     <div className="space-y-5">
@@ -125,6 +141,11 @@ export default function ParentNotifications() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-navy-900">{n.titre}</p>
+                  {nomEnfant(n.eleve_id) && (
+                    <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                      {nomEnfant(n.eleve_id)}
+                    </span>
+                  )}
                   {!n.lu && <span className="rounded-full bg-or-500/15 px-2 py-0.5 text-[10px] font-medium text-or-600">nouveau</span>}
                 </div>
                 {n.message && <p className="text-sm text-navy-900/70">{n.message}</p>}

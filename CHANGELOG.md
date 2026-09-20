@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.206.0] — migration **146** · une notification dit de quel enfant elle parle
+- **Signalé** : un parent de plusieurs enfants dans la même école reçoit « 3 mêmes notifications ». Mesuré avant de corriger — et la réponse n'est pas celle qu'on attendait.
+- **Les annonces, elles, ne se dupliquent pas** : `annonces_parent()` porte un `select distinct`, et **aucun déclencheur ne transforme une annonce en notification**. Rien à corriger de ce côté.
+- **Les notifications sont émises par enfant, et c'est correct** : trois enfants, trois notes saisies, trois évènements réels. Le défaut est qu'elles sont **indiscernables**. Relevé sur un vrai parent : deux « Demande de document — Votre document est prêt à être retiré. » rigoureusement identiques, à deux dates, pour deux enfants différents.
+- **Le nom de l'enfant s'affiche désormais** en pastille sur chaque alerte — à partir de **deux enfants** seulement, car avec un seul il n'ajoute rien. Aucune migration nécessaire pour l'affichage : la table `eleves` est fermée au parent, mais il retrouve le nom par `mes_enfants`, qu'il a déjà le droit de lire.
+- **Encore fallait-il que la colonne soit remplie.** `notifications.eleve_id` existe depuis la migration 112 et `_notifier_parents` la renseigne — mais `traiter_demande` (mig. 028) est antérieure et insérait sa notification à la main, **sans** `eleve_id` ni `categorie`. Seule source à l'omettre ; corrigée, et le **type de document** rejoint le message : deux demandes distinctes cessent de se ressembler.
+- **Rattrapage prudent des notifications déjà envoyées** : l'enfant n'est rétabli que lorsque le rattachement est **sans ambiguïté** — un seul enfant de ce parent dans cette école. Essai à blanc : 10 notifications sans enfant, **2 rattrapables, 8 laissées à null**. Deviner pour les autres serait pire que se taire : une alerte attribuée au mauvais enfant induit en erreur, une alerte sans nom se lit encore.
+- Dans la page d'un enfant, une annonce générale porte la mention **« Toute l'école »** — sans quoi, relue d'un enfant à l'autre, elle passerait pour un doublon alors qu'elle n'a été publiée qu'une fois.
+
 ## [2.205.0] — migration **145** · les annonces se rattachent à un enfant
 - **Signalé par l'utilisateur** : dans l'espace parent, les annonces ne semblaient pas cloisonnées par école ni par enfant.
 - **Vérifié d'abord : le cloisonnement de sécurité est CORRECT.** `annonces_parent()` (mig. 006) filtre déjà sur les écoles où le profil a un enfant, et les annonces ciblées « classe » sur les classes de ses propres enfants. Une annonce destinée aux enseignants ou aux étudiants ne lui parvient pas. **Aucune fuite inter-établissement** — c'est la lisibilité qui manquait.
