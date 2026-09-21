@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.208.1] — aucune migration · 🔴 renvoyé sur « Bienvenue » alors qu'on a déjà un compte
+- **Signalé** : impossible d'entrer dans l'application, renvoi systématique sur l'écran de bienvenue.
+- **Vérifié d'abord côté base** : les comptes concernés sont sains (profil présent, `actif`, rôles en place) et rejouer les quatre requêtes du contexte d'authentification **avec le jeton du compte bloqué** les fait toutes aboutir. Le serveur n'était pas en cause.
+- **La cause est côté client** : `chargerProfil` ne lisait **jamais** le champ `error` de ses requêtes. Une lecture qui échoue — réseau coupé, jeton en cours de renouvellement, réponse perdue — renvoyait `data = null`, et l'application en concluait « cet utilisateur n'a pas de profil » : direction l'écran de bienvenue, en `replace`, donc sans retour possible.
+- Aggravant : `onAuthStateChange` rejoue ce chargement **à chaque renouvellement de jeton**. Un utilisateur déjà connecté pouvait donc se faire éjecter en cours de session.
+- **Correctif** : une erreur de lecture n'est plus une absence de profil. Nouvel état `erreurProfil` ; `sansProfil` n'est vrai que si la lecture a **abouti** et n'a rien trouvé — seul cas où proposer la création d'une école. En cas d'erreur, un écran **« Connexion au serveur interrompue »** affiche le message exact et un bouton **Réessayer**, au lieu d'annoncer à un client établi qu'il n'a pas de compte.
+- **Deux courses corrigées au passage** : un numéro de demande empêche une réponse en retard d'écraser une plus récente (deux chargements se croisent à chaque événement d'authentification), et `setChargement(false)` passe en `finally` — un échec ne fige plus l'écran d'attente.
+
 ## [2.208.0] — aucune migration · les tuiles se replient sur téléphone
 - **Les sections de la grille de tuiles (mobile) se replient et se déplient.** Pédagogie compte une vingtaine d'entrées : dépliée d'un bloc, elle imposait plusieurs écrans de défilement pour atteindre la dernière.
 - **L'état est partagé avec la barre latérale** : même clé de stockage (`menu_sec_<section>`). Replier « Bibliothèque » sur le téléphone la retrouve repliée sur l'ordinateur — un seul réglage, deux affichages. Et il est relu à chaque ouverture du panneau : ouvrir un module puis revenir ne perd pas le choix.

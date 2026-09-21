@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase.js";
 import { appliquerAccent } from "@/lib/theme.js";
 
@@ -15,33 +15,61 @@ export function AuthProvider({ children }) {
   const [ecole, setEcole] = useState(null);
   const [ecolesPossedees, setEcolesPossedees] = useState([]);
   const [chargement, setChargement] = useState(true);
+  // ⚠️ Distingue « cet utilisateur n'a pas de profil » (il doit créer son
+  // école) de « je n'ai pas RÉUSSI à lire son profil » (réseau coupé, jeton
+  // en cours de renouvellement, RLS qui refuse). Sans cette distinction, la
+  // moindre erreur de lecture renvoyait un utilisateur établi sur l'écran de
+  // bienvenue — et le `replace` de la garde l'y laissait.
+  const [erreurProfil, setErreurProfil] = useState(null);
+  // Numéro de la dernière demande : `onAuthStateChange` se déclenche à chaque
+  // renouvellement de jeton, et deux chargements peuvent se croiser. Une
+  // réponse en retard ne doit pas écraser une plus récente.
+  const demande = useRef(0);
 
   // Charge le profil + les rôles de l'utilisateur connecté.
   const chargerProfil = useCallback(async (userId) => {
+    const n = ++demande.current;
     if (!userId) {
       setProfil(null);
       setRoles([]);
       setEcole(null);
       setEcolesPossedees([]);
+      setErreurProfil(null);
       return;
     }
     // Profil, rôles et écoles possédées sont indépendants → EN PARALLÈLE
     // (au lieu de 3 allers-retours en série, rejoués à chaque événement d'auth).
-    const [{ data: p }, { data: r }, { data: prop }] = await Promise.all([
-      supabase.from("profils").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("profil_roles").select("role").eq("profil_id", userId),
-      supabase.from("proprietaires").select("ecole_id, ecoles(nom, sigle)").eq("profil_id", userId),
-    ]);
-    setProfil(p ?? null);
-    setRoles((r ?? []).map((x) => x.role));
+    let rp, rr, rprop;
+    try {
+      [rp, rr, rprop] = await Promise.all([
+        supabase.from("profils").select("*").eq("id", userId).maybeSingle(),
+        supabase.from("profil_roles").select("role").eq("profil_id", userId),
+        supabase.from("proprietaires").select("ecole_id, ecoles(nom, sigle)").eq("profil_id", userId),
+      ]);
+    } catch (e) {
+      if (n === demande.current) setErreurProfil(e.message || "Connexion au serveur impossible.");
+      return;
+    }
+    if (n !== demande.current) return;   // une demande plus récente a pris la main
+
+    // ⚠️ Une ERREUR n'est pas une absence de profil. On ne touche à rien :
+    // l'état précédent reste valable, et l'interface propose de réessayer.
+    if (rp.error) {
+      setErreurProfil(rp.error.message || "Profil illisible.");
+      return;
+    }
+
+    setErreurProfil(null);
+    setProfil(rp.data ?? null);
+    setRoles((rr.data ?? []).map((x) => x.role));
     setEcolesPossedees(
-      (prop ?? []).map((x) => ({ ecole_id: x.ecole_id, nom: x.ecoles?.nom, sigle: x.ecoles?.sigle }))
+      (rprop.data ?? []).map((x) => ({ ecole_id: x.ecole_id, nom: x.ecoles?.nom, sigle: x.ecoles?.sigle }))
     );
 
     // École de rattachement (dépend de profil.ecole_id) → 2ᵉ vague.
-    if (p?.ecole_id) {
-      const { data: e } = await supabase.from("ecoles").select("*").eq("id", p.ecole_id).maybeSingle();
-      setEcole(e ?? null);
+    if (rp.data?.ecole_id) {
+      const { data: e } = await supabase.from("ecoles").select("*").eq("id", rp.data.ecole_id).maybeSingle();
+      if (n === demande.current) setEcole(e ?? null);
     } else {
       setEcole(null);
     }
@@ -49,10 +77,12 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Session initiale
+    // `finally` : si le chargement du profil échoue, l'écran d'attente ne
+    // doit pas rester figé pour autant — la garde affichera l'erreur.
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
-      await chargerProfil(data.session?.user?.id);
-      setChargement(false);
+      try { await chargerProfil(data.session?.user?.id); }
+      finally { setChargement(false); }
     });
 
     // Écoute des changements (login / logout / refresh)
@@ -106,6 +136,10 @@ export function AuthProvider({ children }) {
     estPromoteur: ecolesPossedees.length > 0,
     estConnecte: !!session,
     aProfil: !!profil,
+    // Vrai seulement si la lecture a ABOUTI et n'a rien trouvé : c'est la
+    // seule situation où proposer la création d'une école.
+    sansProfil: !profil && !erreurProfil,
+    erreurProfil,
     estSuspendu: !!profil && profil.actif === false,
     estParent: roles.includes("parent"),
     estEtudiant: roles.includes("etudiant"),

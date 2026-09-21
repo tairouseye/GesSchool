@@ -11,7 +11,7 @@ import { premiereRoute } from "@/lib/espaces.js";
 //  - rôle requis non détenu → page « accès refusé »
 // Garde de l'espace STAFF (admin/direction/enseignant…).
 export default function RouteProtegee({ children, role, exigeProfil = true }) {
-  const { estConnecte, aProfil, estParent, estEtudiant, estSuspendu, aRole, chargement } = useAuth();
+  const { estConnecte, aProfil, sansProfil, erreurProfil, estParent, estEtudiant, estSuspendu, aRole, chargement } = useAuth();
   const location = useLocation();
 
   if (chargement) return <Ecran chargement />;
@@ -19,6 +19,11 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
   if (!estConnecte) {
     return <Navigate to="/connexion" replace state={{ from: location }} />;
   }
+
+  // ⚠️ Le profil n'a pas pu être LU (réseau, jeton en renouvellement…).
+  // Ce n'est pas la même chose qu'un compte sans école : envoyer ici vers
+  // « Bienvenue » disait à un utilisateur établi qu'il n'avait pas de compte.
+  if (erreurProfil) return <EcranProfilIllisible />;
 
   if (estSuspendu) return <EcranSuspendu />;
 
@@ -32,7 +37,8 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
     return <Navigate to="/etudiant" replace />;
   }
 
-  if (exigeProfil && !aProfil) {
+  // `sansProfil` et non `!aProfil` : la lecture doit avoir ABOUTI.
+  if (exigeProfil && sansProfil) {
     return <Navigate to="/bienvenue" replace />;
   }
 
@@ -104,22 +110,53 @@ export function GardePromoteur({ children }) {
 
 // Garde de l'ESPACE PARENT.
 export function RouteParent({ children }) {
-  const { estConnecte, estParent, estSuspendu, aProfil, chargement } = useAuth();
+  const { estConnecte, estParent, estSuspendu, sansProfil, erreurProfil, chargement } = useAuth();
   if (chargement) return <Ecran chargement />;
   if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (erreurProfil) return <EcranProfilIllisible />;
   if (estSuspendu) return <EcranSuspendu />;
-  if (!estParent) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
+  if (!estParent) return <Navigate to={sansProfil ? "/bienvenue" : "/"} replace />;
   return children;
 }
 
 // Garde de l'ESPACE ÉTUDIANT (supérieur).
 export function RouteEtudiant({ children }) {
-  const { estConnecte, estEtudiant, estSuspendu, aProfil, chargement } = useAuth();
+  const { estConnecte, estEtudiant, estSuspendu, sansProfil, erreurProfil, chargement } = useAuth();
   if (chargement) return <Ecran chargement />;
   if (!estConnecte) return <Navigate to="/connexion" replace />;
+  if (erreurProfil) return <EcranProfilIllisible />;
   if (estSuspendu) return <EcranSuspendu />;
-  if (!estEtudiant) return <Navigate to={aProfil ? "/" : "/bienvenue"} replace />;
+  if (!estEtudiant) return <Navigate to={sansProfil ? "/bienvenue" : "/"} replace />;
   return children;
+}
+
+// Le profil n'a pas pu être lu. On le DIT, avec un bouton pour réessayer —
+// plutôt que de conclure que l'utilisateur n'a pas de compte et de l'envoyer
+// créer une école qu'il possède déjà.
+function EcranProfilIllisible() {
+  const { erreurProfil, rafraichirProfil, deconnexion } = useAuth();
+  return (
+    <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
+      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+        <Cachet size={72} className="text-or-500/60" />
+        <h1 className="font-display text-xl font-bold">Connexion au serveur interrompue</h1>
+        <p className="text-sm text-creme/70">
+          Votre compte existe bien — c&apos;est la lecture de votre profil qui a échoué.
+          Vérifiez votre connexion, puis réessayez.
+        </p>
+        {erreurProfil && (
+          <p className="rounded-lg bg-white/5 px-3 py-2 font-mono text-[11px] text-creme/50">{erreurProfil}</p>
+        )}
+        <button onClick={rafraichirProfil}
+          className="rounded-xl bg-or-500 px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-or-400">
+          Réessayer
+        </button>
+        <button onClick={deconnexion} className="text-xs text-creme/60 underline hover:text-creme">
+          Se déconnecter
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // Écran affiché lorsqu'un compte a été suspendu par un responsable.
