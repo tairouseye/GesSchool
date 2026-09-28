@@ -63,11 +63,13 @@ export async function supprimerAnnonce(id) {
 }
 
 // --- Côté parent (RPC sécurisée) ---
-export async function annoncesParent() {
-  const { data, error } = await supabase.rpc("annonces_parent");
-  if (error) throw error;
-  return data ?? [];
-}
+//
+// ⚠️ `annoncesParent()` et `annoncesParEcole()` ont été retirés en 2.218.0 :
+// l'accueil parent n'affiche plus la liste des annonces, elle appartient à la
+// page de l'enfant (migration 157). La RPC `annonces_parent()` reste en base,
+// dormante — on ne la supprime pas ici, car elle porte l'une des quatre
+// écritures de la règle de visibilité (cf. en-tête de la migration 152) et son
+// retrait mérite sa propre migration, pas un effet de bord.
 
 // Les annonces d'UN enfant : celles de SON établissement et de SA classe.
 // La vue globale mélange les écoles quand un parent a des enfants dans
@@ -76,18 +78,6 @@ export async function annoncesEnfant(eleveId) {
   const { data, error } = await supabase.rpc("annonces_enfant", { p_eleve: eleveId });
   if (error) throw error;
   return data ?? [];
-}
-
-// Regroupe les annonces de l'accueil par établissement. Utile seulement
-// quand le parent en a plusieurs — sinon un seul titre n'apprend rien.
-export function annoncesParEcole(annonces = []) {
-  const par = new Map();
-  for (const a of annonces) {
-    const cle = a.ecole_id || a.ecole || "—";
-    if (!par.has(cle)) par.set(cle, { ecole_id: a.ecole_id || null, ecole: a.ecole || "", items: [] });
-    par.get(cle).items.push(a);
-  }
-  return [...par.values()];
 }
 
 // Intitulé de l'audience d'une annonce, côté personnel : « CM1 »,

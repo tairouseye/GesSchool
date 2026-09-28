@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.218.0] — migration **157** · les annonces appartiennent à l'enfant, pas à l'accueil
+- **Demandé** : sur le profil parent, que les annonces soient liées à l'enfant et ne s'affichent pas dès l'ouverture de l'application. L'accueil présentait la liste complète, toutes écoles confondues, avant même d'avoir choisi un enfant.
+- **La liste a quitté l'accueil** ; elle reste dans la page de chaque enfant, où elle était déjà cadrée sur son établissement, sa classe, son niveau et son cycle.
+- **⚠️ Mais les retirer sans rien mettre à la place les rendait invisibles.** Vérifié : il n'existe **aucun déclencheur sur `annonces`** — publier une annonce ne crée pas de notification, et la migration 146 le disait déjà (« les annonces ne se dupliquent pas »). L'accueil **était** le mécanisme de distribution. Sans repère, l'école aurait publié une circulaire que personne n'ouvrirait, faute de savoir qu'elle existe.
+- **Un compteur sur la carte de chaque enfant** — « 📣 2 annonces » — indique où il y a du nouveau. Il porte sur les **7 derniers jours**, parce qu'il n'existe pas d'état « lu » sur les annonces, contrairement aux notifications : un total resterait affiché pour toujours dès la première publication, ce qui serait du bruit, pas un signal. Une fenêtre s'efface d'elle-même et répond à la seule question utile. Un vrai état de lecture serait plus juste, mais c'est un autre chantier.
+- **La règle de visibilité n'a pas été recopiée une cinquième fois.** La migration 152 prévient qu'elle vit déjà à quatre endroits ; `mes_enfants()` **appelle** `annonces_enfant(e.id)`, qui reste la seule source — le compteur ne peut donc pas montrer une annonce que la page ne montrerait pas, ni l'inverse. Elle revérifie au passage l'appartenance de l'enfant, redondant ici mais c'est ce qu'on attend d'un contrôle d'accès.
+- Ménage : `annoncesParent()` et `annoncesParEcole()` n'avaient plus aucun appelant, ils sont retirés. La RPC `annonces_parent()` **reste en base**, dormante : elle porte l'une des quatre écritures de la règle, son retrait mérite sa propre migration et non un effet de bord.
+- Les quatre tests d'`annoncesParEcole` sont remplacés par cinq sur le **ciblage** de la migration 152, qui n'en avait aucun : chaque cible exige la bonne entité, n'en renseigne qu'une, et sait la nommer — y compris quand la jointure revient vide, où « Une classe » vaut mieux qu'une pastille muette.
+
 ## [2.217.0] — aucune migration · 🔴 Journal des actes : la page ne s'ouvrait pas
 - **Signalé** : « Could not find a relationship between `journal_audit` and `utilisateur` in the schema cache ». La page était **inutilisable depuis sa création** — pas dégradée, inaccessible.
 - **Cause** : `journal_audit.utilisateur` est un uuid **sans clé étrangère** vers `profils` (migration 079), et un embed PostgREST exige une relation déclarée. Vérifié en base avant de conclure : la relation n'existe bien nulle part.

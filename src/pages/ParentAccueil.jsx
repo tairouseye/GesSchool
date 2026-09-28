@@ -1,14 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
-import { annoncesParent, annoncesParEcole } from "@/lib/annonces.js";
-import { lienFichier, poids } from "@/lib/fichiers.js";
-import { Carte, Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
-
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";
 
 // Couleur d'avatar stable par enfant (dérivée de son id) — accord avec les tuiles.
 const AVATAR_COULEURS = ["bg-violet-500", "bg-rose-500", "bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-fuchsia-500", "bg-teal-500", "bg-indigo-500"];
@@ -21,16 +16,13 @@ const avatarColor = (id) => {
 export default function ParentAccueil() {
   const toast = useToast();
   const [enfants, setEnfants] = useState([]);
-  const [annonces, setAnnonces] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
 
   const charger = useCallback(async () => {
     try {
-      const [enf, ann] = await Promise.all([mesEnfants(), annoncesParent()]);
-      setEnfants(enf);
-      setAnnonces(ann);
+      setEnfants(await mesEnfants());
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -39,8 +31,6 @@ export default function ParentAccueil() {
   }, []);
 
   useEffect(() => { charger(); }, [charger]);
-
-  const groupesAnnonces = annoncesParEcole(annonces);
 
   return (
     <div className="space-y-5">
@@ -85,7 +75,17 @@ export default function ParentAccueil() {
                   />
                 )}
               </div>
-              <p className="mt-4 text-sm font-medium text-or-600">Ouvrir l'espace →</p>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-or-600">Ouvrir l'espace →</p>
+                {/* Fenêtre de 7 jours, faute d'état « lu » sur les annonces :
+                    un total resterait affiché pour toujours dès la première
+                    publication — du bruit, pas un signal. */}
+                {Number(e.annonces_nouvelles) > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-or-500/15 px-2.5 py-1 text-xs font-semibold text-or-600">
+                    📣 {e.annonces_nouvelles} annonce{Number(e.annonces_nouvelles) > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
             </Link>
           ))}
         </div>
@@ -109,49 +109,11 @@ export default function ParentAccueil() {
         ))}
       </div>
 
-      {/* Annonces — groupées par établissement quand le parent en a
-          plusieurs, sinon une liste simple : un titre unique n'apprendrait
-          rien. Le détail par enfant se trouve dans sa page. */}
-      {annonces.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <h2 className="font-display text-lg font-bold text-navy-900">📣 Annonces</h2>
-          {groupesAnnonces.map((g) => (
-            <div key={g.ecole_id || g.ecole} className="space-y-3">
-              {groupesAnnonces.length > 1 && (
-                <p className="pt-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">{g.ecole}</p>
-              )}
-              {g.items.map((a) => (
-                <Carte key={a.id} className="p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-navy-900">{a.titre}</h3>
-                    {a.portee_libelle && (
-                      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.portee_libelle}</span>
-                    )}
-                  </div>
-                  {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
-                  {(a.fichiers || []).length > 0 && (
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {a.fichiers.map((f) => (
-                        <li key={f.id}>
-                          <button type="button"
-                            onClick={async () => { const u = await lienFichier(f.chemin).catch(() => null); if (u) window.open(u, "_blank", "noopener"); }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
-                            📎 <span className="max-w-44 truncate">{f.nom_fichier}</span>
-                            <span className="text-navy-900/35">{poids(f.taille)}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="mt-2 text-xs text-navy-900/40">
-                    {fmtDate(a.publie_le)}{groupesAnnonces.length > 1 ? "" : ` · ${a.ecole}`}
-                  </p>
-                </Carte>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* La liste des annonces a quitté cet accueil : elle appartient à
+          l'enfant concerné, et l'ouverture de l'application ne doit pas
+          commencer par un mur de texte (migration 157). Le repère est sur la
+          carte de chaque enfant — sans lui, les annonces deviendraient
+          invisibles, faute de notification à leur publication. */}
 
       <ModaleAjout
         ouvert={modale}
