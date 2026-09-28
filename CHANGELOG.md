@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.211.1] — migration **153** · 🔴 une pièce jointe suit son annonce, et elle seule
+- **Trouvé en éprouvant la 152 avec de vraies sessions parent** — pas en relisant le code.
+- La migration 151 avait ouvert une seconde voie de lecture dans `fichiers_ecole` : un texte de portée « familles » est lisible par tout membre de l'établissement. C'était le but — un règlement intérieur que les familles ne peuvent pas lire ne sert à rien.
+- **Mais cette voie ne distinguait pas les pièces jointes.** Un fichier rattaché à une annonce ciblée « Préscolaire » et portant `portee = 'familles'` devenait lisible par **tous** les parents de l'école, ligne comme octet. Le ciblage, correct au niveau de l'annonce, était contourné par son propre fichier.
+- **Pourquoi le corriger alors que l'interface ne produit pas ce cas** : `televerserFichier` force bien `portee = 'interne'` dès qu'il y a une annonce. Mais une règle de sécurité qui tient parce que le client choisit bien la valeur d'une colonne n'est pas une règle de sécurité — c'est une convention, et une convention se perd. Même leçon que l'audit bibliothèque : ne jamais faire garder au client ce que la RLS doit garantir.
+- **Deux audiences, deux voies, aucun recouvrement** : une pièce jointe (`annonce_id` renseigné) suit l'audience de son annonce ; un document libre (`annonce_id` nul) suit sa portée. `textes_reference()` écarte également les pièces jointes — le filtre de catégorie le faisait déjà en pratique, mais c'était encore l'application qui le décidait.
+- Rien à changer côté Storage : `_doc_peut_lire` étant en `SECURITY INVOKER`, le droit de lire l'octet suit la policy corrigée sans qu'on ait à le redire.
+
 ## [2.211.0] — migration **152** · cibler une annonce par niveau ou par cycle
 - **Le ciblage s'arrêtait à la classe.** Or une école annonce rarement à une seule classe : une sortie concerne « le préscolaire », une réunion « les CM », un rappel de fournitures « l'élémentaire ». Faute de maille intermédiaire, ces messages partaient à **toutes** les familles — et ce qui s'adresse à tout le monde n'est lu par personne.
 - **Deux cibles ajoutées** — **cycle** et **niveau** — sur le même patron que « classe » : un discriminant `cible` et la colonne d'identifiant correspondante. Chez Tut'Tank, cela donne « Préscolaire », « Élémentaire », puis TPS/PS, MS/GS, CI/CP, CE1/CE2, CM1.
