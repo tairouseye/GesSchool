@@ -11,6 +11,7 @@ import {
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
+import { lienFichier, poids } from "@/lib/fichiers.js";
 import { JOURS } from "@/lib/emploi.js";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
@@ -594,6 +595,30 @@ function Cahier({ entrees }) {
 // Les annonces de CET enfant : son établissement, sa classe. La liste de
 // l'accueil couvre toute la fratrie et peut mélanger plusieurs écoles ;
 // ici, c'est cadré (migration 145).
+// Une pièce jointe ne s'ouvre que par un lien signé, valable une heure :
+// le serveur vérifie d'abord que ce parent a le droit de voir l'annonce.
+function PiecesJointes({ fichiers }) {
+  const liste = Array.isArray(fichiers) ? fichiers : [];
+  if (liste.length === 0) return null;
+  async function ouvrir(f) {
+    const url = await lienFichier(f.chemin).catch(() => null);
+    if (url) window.open(url, "_blank", "noopener");
+  }
+  return (
+    <ul className="mt-2 flex flex-wrap gap-2">
+      {liste.map((f) => (
+        <li key={f.id}>
+          <button type="button" onClick={() => ouvrir(f)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
+            📎 <span className="max-w-44 truncate">{f.nom_fichier}</span>
+            <span className="text-navy-900/35">{poids(f.taille)}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function AnnoncesEnfant({ items, enfant }) {
   if (items.length === 0) {
     return (
@@ -624,6 +649,7 @@ function AnnoncesEnfant({ items, enfant }) {
             )}
           </div>
           {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
+          <PiecesJointes fichiers={a.fichiers} />
           <p className="mt-2 text-xs text-navy-900/40">{fmtDate(a.publie_le)}</p>
         </Carte>
       ))}

@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.209.0] — migration **150** · pièces jointes aux annonces, archivées dans la Documentation
+- **Une annonce peut désormais porter des fichiers** — PDF, image, document bureautique, 20 Mo par pièce. Ils s'affichent sous l'annonce dans l'espace parent (accueil et page de l'enfant) et dans l'espace étudiant, et s'ouvrent par un lien signé valable une heure.
+- **Ces fichiers sont conservés dans Pilotage → Documentation**, dans une nouvelle section « Bibliothèque de fichiers » où l'on peut aussi déposer directement un règlement ou une circulaire. La page promettait cet archivage « prochainement » : la mention est retirée.
+- **Une seule table, pas deux.** Les stocker séparément — une copie pour l'annonce, une pour la GED — garantirait qu'elles divergent. `fichiers_ecole` **est** la documentation de l'établissement ; une pièce jointe n'est qu'une de ses lignes, rattachée à une annonce. Supprimer le fichier depuis la Documentation le retire aussi de l'annonce, et l'interface le dit avant de confirmer.
+- **Le point délicat : qui peut lire le fichier.** Une annonce ciblée « classe » ne s'adresse qu'aux parents de cette classe ; sa pièce jointe doit suivre la même audience, sinon le ciblage est contourné par le fichier. La règle est écrite **une seule fois**, dans `_annonce_visible_par()`, et appliquée à la policy de la table, à la policy Storage et aux trois RPC des espaces parent et étudiant.
+- 🔴 **Défaut attrapé pendant l'écriture** : j'avais déclaré `_doc_peut_lire` en `SECURITY DEFINER`. Elle aurait alors **contourné la RLS** de `fichiers_ecole` et répondu « oui » pour n'importe quel fichier existant — annulant le contrôle d'audience au moment même où on croit l'appliquer. Passée en `SECURITY INVOKER` : la ligne n'est visible que si l'appelant a le droit de la voir, et la policy de la table fait donc foi pour l'octet aussi.
+- Détails : le fichier est retiré du stockage si l'enregistrement de la ligne échoue (un octet sans ligne serait invisible et pèserait pour rien) ; les fichiers trop lourds sont écartés **avant** l'envoi, pas après plusieurs minutes de téléversement ; le champ de dépôt est réinitialisé après coup, sans quoi redéposer le même fichier ne déclencherait rien.
+
 ## [2.208.1] — aucune migration · 🔴 renvoyé sur « Bienvenue » alors qu'on a déjà un compte
 - **Signalé** : impossible d'entrer dans l'application, renvoi systématique sur l'écran de bienvenue.
 - **Vérifié d'abord côté base** : les comptes concernés sont sains (profil présent, `actif`, rôles en place) et rejouer les quatre requêtes du contexte d'authentification **avec le jeton du compte bloqué** les fait toutes aboutir. Le serveur n'était pas en cause.

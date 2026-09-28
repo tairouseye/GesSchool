@@ -4,6 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/annonces.js";
+import { televerserFichier, getFichiers as getFichiersEcole, supprimerFichier, lienFichier, poids, TAILLE_MAX } from "@/lib/fichiers.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 
 const fmtDate = (d) =>
@@ -25,12 +26,29 @@ export default function Annonces() {
   const [classes, setClasses] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
+  const [pieces, setPieces] = useState({});
+
+  // Lien signé valable une heure : le serveur vérifie le droit de lire la
+  // ligne avant de délivrer le fichier.
+  async function ouvrir(fichier) {
+    try {
+      const url = await lienFichier(fichier.chemin);
+      if (url) window.open(url, "_blank", "noopener");
+      else toast.erreur("Fichier introuvable.");
+    } catch (e) { toast.erreur(e); }
+  }
 
   const recharger = useCallback(async () => {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
       const [ann, cls] = await Promise.all([api.getAnnonces(ecoleId), getClasses(ecoleId, an?.id)]);
+      // Une requête par annonce serait N+1 ; on tire tout d'un coup et on
+      // regroupe côté client.
+      const tous = await getFichiersEcole(ecoleId);
+      const parAnnonce = {};
+      tous.forEach((x) => { if (x.annonce_id) (parAnnonce[x.annonce_id] ||= []).push(x); });
+      setPieces(parAnnonce);
       setAnnonces(ann);
       setClasses(cls);
     } catch (e) {
@@ -80,6 +98,19 @@ export default function Annonces() {
                     </span>
                   </div>
                   {a.contenu && <p className="mt-1.5 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
+                  {(pieces[a.id] || []).length > 0 && (
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {pieces[a.id].map((x) => (
+                        <li key={x.id}>
+                          <button type="button" onClick={() => ouvrir(x)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 hover:border-or-500 hover:text-or-600">
+                            📎 <span className="max-w-48 truncate">{x.nom_fichier}</span>
+                            <span className="text-navy-900/35">{poids(x.taille)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <p className="mt-2 text-xs text-navy-900/40">
                     {fmtDate(a.publie_le)}
                     {a.profils && ` · ${a.profils.prenom} ${a.profils.nom}`}
@@ -101,11 +132,17 @@ export default function Annonces() {
         ouvert={modale}
         onFermer={() => setModale(false)}
         classes={classes}
-        onCreer={(data) =>
+        onCreer={(data, fichiers) =>
           wrap(async () => {
-            await api.creerAnnonce(ecoleId, data, utilisateur?.id);
+            const a = await api.creerAnnonce(ecoleId, data, utilisateur?.id);
+            // Les pièces jointes ne sont envoyées qu'une fois l'annonce
+            // créée : elles ont besoin de son identifiant pour hériter de
+            // son audience.
+            for (const fic of fichiers || []) {
+              await televerserFichier(ecoleId, fic, { annonceId: a.id, auteurId: utilisateur?.id });
+            }
             setModale(false);
-          })
+          }, (fichiers || []).length ? "Annonce publiée avec ses pièces jointes." : "Annonce publiée.")
         }
       />
     </>
@@ -115,7 +152,19 @@ export default function Annonces() {
 function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
   const vide = { titre: "", contenu: "", cible: "tous", classe_id: "" };
   const [f, setF] = useState(vide);
+  const [fichiers, setFichiers] = useState([]);
+  const [refus, setRefus] = useState("");
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  // On écarte les fichiers trop lourds AVANT l'envoi : le serveur les
+  // refuserait après plusieurs minutes de téléversement.
+  function choisir(liste) {
+    const trop = liste.filter((x) => x.size > TAILLE_MAX);
+    setRefus(trop.length
+      ? `${trop.map((x) => x.name).join(", ")} — au-delà de ${poids(TAILLE_MAX)}, non joint${trop.length > 1 ? "s" : ""}.`
+      : "");
+    setFichiers(liste.filter((x) => x.size <= TAILLE_MAX));
+  }
 
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouvelle annonce" large>
@@ -125,8 +174,8 @@ function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
           e.preventDefault();
           if (!f.titre.trim()) return;
           if (f.cible === "classe" && !f.classe_id) return;
-          onCreer({ ...f, titre: f.titre.trim() });
-          setF(vide);
+          onCreer({ ...f, titre: f.titre.trim() }, fichiers);
+          setF(vide); setFichiers([]); setRefus("");
         }}
       >
         <Champ label="Titre *" value={f.titre} onChange={(e) => maj("titre", e.target.value)} placeholder="Réunion de rentrée…" />
@@ -141,6 +190,36 @@ function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
           />
         </label>
+
+        {/* Pièces jointes. Elles suivent EXACTEMENT l'audience de l'annonce :
+            une annonce de classe ne les expose qu'aux parents de cette classe
+            (migration 150). Elles sont aussi archivées dans la Documentation. */}
+        <div className="rounded-xl border border-dashed border-navy-900/15 bg-creme/40 p-3">
+          <label className="block cursor-pointer">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
+              Pièces jointes <span className="font-normal text-navy-900/40">(PDF, image, document — {poids(TAILLE_MAX)} maximum)</span>
+            </span>
+            <input type="file" multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+              onChange={(e) => choisir([...e.target.files])}
+              className="block w-full text-sm text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-creme" />
+          </label>
+          {fichiers.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {fichiers.map((x, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 text-xs text-navy-900/70">
+                  <span className="min-w-0 truncate">📎 {x.name} <span className="text-navy-900/40">({poids(x.size)})</span></span>
+                  <button type="button" onClick={() => setFichiers(fichiers.filter((_, j) => j !== i))}
+                    className="shrink-0 text-rose-500 hover:underline">retirer</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {refus && <p className="mt-2 text-xs text-rose-600">{refus}</p>}
+          <p className="mt-2 text-[11px] text-navy-900/45">
+            Ces fichiers seront conservés dans Pilotage → Documentation.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">

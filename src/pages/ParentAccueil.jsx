@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { annoncesParent, annoncesParEcole } from "@/lib/annonces.js";
+import { lienFichier, poids } from "@/lib/fichiers.js";
 import { Carte, Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
@@ -127,6 +128,20 @@ export default function ParentAccueil() {
                     )}
                   </div>
                   {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
+                  {(a.fichiers || []).length > 0 && (
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {a.fichiers.map((f) => (
+                        <li key={f.id}>
+                          <button type="button"
+                            onClick={async () => { const u = await lienFichier(f.chemin).catch(() => null); if (u) window.open(u, "_blank", "noopener"); }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
+                            📎 <span className="max-w-44 truncate">{f.nom_fichier}</span>
+                            <span className="text-navy-900/35">{poids(f.taille)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <p className="mt-2 text-xs text-navy-900/40">
                     {fmtDate(a.publie_le)}{groupesAnnonces.length > 1 ? "" : ` · ${a.ecole}`}
                   </p>

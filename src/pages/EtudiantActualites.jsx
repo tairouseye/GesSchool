@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Bouton, Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { mesNotifications, marquerNotificationsLues, mesAnnonces } from "@/lib/etudiant.js";
+import { lienFichier, poids } from "@/lib/fichiers.js";
 
 const quand = (d) => {
   if (!d) return "";
@@ -83,6 +84,20 @@ export default function EtudiantActualites() {
                   <span className="shrink-0 text-xs text-navy-900/45">{quand(a.publie_le)}</span>
                 </div>
                 {a.contenu && <p className="mt-1 whitespace-pre-line text-sm text-navy-900/65">{a.contenu}</p>}
+                {(a.fichiers || []).length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {a.fichiers.map((f) => (
+                      <li key={f.id}>
+                        <button type="button"
+                          onClick={async () => { const u = await lienFichier(f.chemin).catch(() => null); if (u) window.open(u, "_blank", "noopener"); }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
+                          📎 <span className="max-w-44 truncate">{f.nom_fichier}</span>
+                          <span className="text-navy-900/35">{poids(f.taille)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </Carte>
             ))}
           </div>

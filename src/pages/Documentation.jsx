@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { getDocuments } from "@/lib/documents.js";
+import { getFichiers, televerserFichier, supprimerFichier, lienFichier, poids, CATEGORIES, libCategorie, TAILLE_MAX } from "@/lib/fichiers.js";
+import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 // Documentation (Pilotage) — hub central de tous les documents de l'école.
 // Phase 1 : catalogue par famille (accès rapide aux générateurs) + liste des
@@ -76,8 +78,14 @@ const familleDe = (d) => d.famille || TYPE_FAMILLE[d.type] || "scolarite";
 const FAMILLE_LABEL = { scolarite: "Scolarité", pedagogie: "Pédagogie", finances: "Finances", rh: "RH & Paie" };
 
 export default function Documentation() {
-  const { ecoleId, ecole } = useAuth();
+  const { ecoleId, ecole, utilisateur } = useAuth();
   const devise = ecole?.devise || "XOF";
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [fichiers, setFichiers] = useState([]);
+  const [catF, setCatF] = useState("");
+  const [qF, setQF] = useState("");
+  const [envoi, setEnvoi] = useState(false);
   const [docs, setDocs] = useState([]);
   const [q, setQ] = useState("");
   const [fam, setFam] = useState("");
@@ -92,6 +100,53 @@ export default function Documentation() {
   useEffect(() => {
     getDocuments(ecoleId).then(setDocs).catch(() => {}).finally(() => setChargement(false));
   }, [ecoleId]);
+
+  const rechargerFichiers = useCallback(() => {
+    if (!ecoleId) return;
+    getFichiers(ecoleId).then(setFichiers).catch(() => {});
+  }, [ecoleId]);
+  useEffect(() => { rechargerFichiers(); }, [rechargerFichiers]);
+
+  // Le filtrage se fait ici : la bibliothèque d'un établissement se compte
+  // en dizaines de fichiers, pas en milliers.
+  const fichiersFiltres = fichiers.filter((x) => {
+    if (catF && x.categorie !== catF) return false;
+    const m = qF.trim().toLowerCase();
+    if (m && !`${x.titre} ${x.nom_fichier}`.toLowerCase().includes(m)) return false;
+    return true;
+  });
+
+  async function deposer(fichier, input) {
+    if (!fichier) return;
+    setEnvoi(true);
+    try {
+      await televerserFichier(ecoleId, fichier, { categorie: "autre", auteurId: utilisateur?.id });
+      toast.succes("Fichier déposé.");
+      rechargerFichiers();
+    } catch (e) { toast.erreur(e); }
+    finally {
+      setEnvoi(false);
+      // Sans cela, redéposer le même fichier ne déclencherait pas `change`.
+      if (input) input.value = "";
+    }
+  }
+
+  async function ouvrirFichier(x) {
+    try {
+      const url = await lienFichier(x.chemin);
+      if (url) window.open(url, "_blank", "noopener");
+      else toast.erreur("Fichier introuvable.");
+    } catch (e) { toast.erreur(e); }
+  }
+
+  async function retirer(x) {
+    const suite = x.annonce_id
+      ? "Ce fichier est joint à une annonce : il disparaîtra aussi de celle-ci."
+      : "Cette suppression est définitive.";
+    if (!(await confirmer({ titre: "Supprimer le fichier", message: `« ${x.titre} » — ${suite}`, confirmer: "Supprimer" }))) return;
+    try { await supprimerFichier(x); toast.succes("Fichier supprimé."); rechargerFichiers(); }
+    catch (e) { toast.erreur(e); }
+  }
 
   const dateDoc = (d) => (d.date_doc || d.created_at || "").toString().slice(0, 10);
   const typesPresents = [...new Set(docs.map((d) => d.type).filter(Boolean))].sort();
@@ -137,8 +192,8 @@ export default function Documentation() {
       <div className="space-y-6 p-4 sm:p-8">
         <p className="rounded-xl bg-creme/60 px-4 py-2.5 text-xs text-navy-900/60">
           Retrouvez ici tous les documents de l'établissement, classés par famille. Cliquez sur un type pour le générer.
-          Les documents validés s'affichent dans « Documents enregistrés » ci-dessous ; l'archivage automatique des
-          factures, bulletins et fiches de paie arrive prochainement.
+          Les documents validés s'affichent dans « Documents enregistrés » ci-dessous. Les fichiers déposés — pièces
+          jointes des annonces comprises — sont conservés dans « Bibliothèque de fichiers ».
         </p>
 
         {/* Catalogue par famille */}
@@ -174,6 +229,60 @@ export default function Documentation() {
             </Carte>
           ))}
         </div>
+
+        {/* Bibliothèque de fichiers — dépôts directs ET pièces jointes des
+            annonces. Une seule table, pour qu'elles ne divergent jamais. */}
+        <Carte className="p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-lg font-semibold text-navy-900">
+              Bibliothèque de fichiers
+              {fichiers.length > 0 && <span className="ml-2 text-sm font-normal text-navy-900/40">({fichiersFiltres.length}/{fichiers.length})</span>}
+            </h3>
+            <label className="cursor-pointer rounded-xl bg-navy-900 px-4 py-2 text-sm font-semibold text-creme hover:bg-navy-800">
+              {envoi ? "Envoi…" : "+ Déposer un fichier"}
+              <input type="file" className="hidden" disabled={envoi}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={(e) => deposer(e.target.files?.[0], e.target)} />
+            </label>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            <input value={qF} onChange={(e) => setQF(e.target.value)} placeholder="🔍 Rechercher un fichier…"
+              className="min-w-48 flex-1 rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            <select value={catF} onChange={(e) => setCatF(e.target.value)}
+              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              <option value="">Toutes catégories</option>
+              {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+
+          {fichiersFiltres.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-navy-900/15 px-4 py-8 text-center text-sm text-navy-900/45">
+              {fichiers.length === 0
+                ? "Aucun fichier. Déposez un règlement, une circulaire — ou joignez un PDF à une annonce, il arrivera ici."
+                : "Aucun fichier ne correspond à ce filtre."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-navy-900/5">
+              {fichiersFiltres.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                  <button type="button" onClick={() => ouvrirFichier(x)} className="min-w-0 flex-1 text-left">
+                    <p className="truncate font-medium text-navy-900">📎 {x.titre}</p>
+                    <p className="truncate text-xs text-navy-900/50">
+                      {[libCategorie(x.categorie),
+                        x.annonces?.titre ? `annonce « ${x.annonces.titre} »` : null,
+                        poids(x.taille),
+                        new Date(x.created_at).toLocaleDateString("fr-FR")].filter(Boolean).join(" · ")}
+                    </p>
+                  </button>
+                  <button onClick={() => retirer(x)} className="shrink-0 text-xs text-rose-500 hover:underline">
+                    supprimer
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Carte>
 
         {/* Documents enregistrés */}
         <Carte className="p-5">
