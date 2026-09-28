@@ -124,8 +124,8 @@ export default function ParentAccueil() {
                 <Carte key={a.id} className="p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold text-navy-900">{a.titre}</h3>
-                    {a.classe && (
-                      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.classe}</span>
+                    {a.portee_libelle && (
+                      <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.portee_libelle}</span>
                     )}
                   </div>
                   {a.contenu && <p className="mt-1 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}

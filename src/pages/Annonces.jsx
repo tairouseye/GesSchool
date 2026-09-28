@@ -24,6 +24,8 @@ export default function Annonces() {
   const toast = useToast();
   const [annonces, setAnnonces] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [niveaux, setNiveaux] = useState([]);
+  const [cycles, setCycles] = useState([]);
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(false);
   const [pieces, setPieces] = useState({});
@@ -42,7 +44,9 @@ export default function Annonces() {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
-      const [ann, cls] = await Promise.all([api.getAnnonces(ecoleId), getClasses(ecoleId, an?.id)]);
+      const [ann, cls, niv, cyc] = await Promise.all([
+        api.getAnnonces(ecoleId), getClasses(ecoleId, an?.id), getNiveaux(ecoleId), getCycles(ecoleId)]);
+      setNiveaux(niv); setCycles(cyc);
       // Une requête par annonce serait N+1 ; on tire tout d'un coup et on
       // regroupe côté client.
       const tous = await getFichiersEcole(ecoleId);
@@ -94,7 +98,7 @@ export default function Annonces() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-display text-lg font-semibold text-navy-900">{a.titre}</h3>
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TONS_CIBLE[a.cible] || TONS_CIBLE.tous}`}>
-                      {a.cible === "classe" ? a.classes?.libelle || "Classe" : api.libelleCible(a.cible)}
+                      {api.libelleAudience(a)}
                     </span>
                   </div>
                   {a.contenu && <p className="mt-1.5 whitespace-pre-wrap text-sm text-navy-900/70">{a.contenu}</p>}
@@ -131,7 +135,7 @@ export default function Annonces() {
       <ModaleAnnonce
         ouvert={modale}
         onFermer={() => setModale(false)}
-        classes={classes}
+        classes={classes} niveaux={niveaux} cycles={cycles}
         onCreer={(data, fichiers) =>
           wrap(async () => {
             const a = await api.creerAnnonce(ecoleId, data, utilisateur?.id);
@@ -149,8 +153,8 @@ export default function Annonces() {
   );
 }
 
-function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
-  const vide = { titre: "", contenu: "", cible: "tous", classe_id: "" };
+function ModaleAnnonce({ ouvert, onFermer, classes, niveaux, cycles, onCreer }) {
+  const vide = { titre: "", contenu: "", cible: "tous", classe_id: "", niveau_id: "", cycle_id: "" };
   const [f, setF] = useState(vide);
   const [fichiers, setFichiers] = useState([]);
   const [refus, setRefus] = useState("");
@@ -173,7 +177,7 @@ function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
         onSubmit={(e) => {
           e.preventDefault();
           if (!f.titre.trim()) return;
-          if (f.cible === "classe" && !f.classe_id) return;
+          if (api.cibleExigeChoix(f.cible) && !f[api.CHAMP_CIBLE[f.cible]]) return;
           onCreer({ ...f, titre: f.titre.trim() }, fichiers);
           setF(vide); setFichiers([]); setRefus("");
         }}
@@ -234,6 +238,26 @@ function ModaleAnnonce({ ouvert, onFermer, classes, onCreer }) {
               ))}
             </select>
           </label>
+          {f.cible === "cycle" && (
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Cycle *</span>
+              <select value={f.cycle_id} onChange={(e) => maj("cycle_id", e.target.value)} required
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— Choisir —</option>
+                {cycles.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+              </select>
+            </label>
+          )}
+          {f.cible === "niveau" && (
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Niveau *</span>
+              <select value={f.niveau_id} onChange={(e) => maj("niveau_id", e.target.value)} required
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— Choisir —</option>
+                {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
+              </select>
+            </label>
+          )}
           {f.cible === "classe" && (
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Classe *</span>

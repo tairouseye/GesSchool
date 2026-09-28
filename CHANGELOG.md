@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.211.0] — migration **152** · cibler une annonce par niveau ou par cycle
+- **Le ciblage s'arrêtait à la classe.** Or une école annonce rarement à une seule classe : une sortie concerne « le préscolaire », une réunion « les CM », un rappel de fournitures « l'élémentaire ». Faute de maille intermédiaire, ces messages partaient à **toutes** les familles — et ce qui s'adresse à tout le monde n'est lu par personne.
+- **Deux cibles ajoutées** — **cycle** et **niveau** — sur le même patron que « classe » : un discriminant `cible` et la colonne d'identifiant correspondante. Chez Tut'Tank, cela donne « Préscolaire », « Élémentaire », puis TPS/PS, MS/GS, CI/CP, CE1/CE2, CM1.
+- **La règle de visibilité est écrite à quatre endroits**, et les quatre ont été modifiés ensemble : `_annonce_visible_par()` (qui gouverne aussi les pièces jointes, table **et** Storage), `annonces_parent()`, `annonces_enfant()` et `mes_annonces()`. En oublier un, c'était soit masquer une annonce légitime, soit laisser fuir sa pièce jointe.
+- **Nuance conservée, et elle compte** : une annonce « tous » ou « parents » atteint un parent **dès qu'il a un enfant dans l'école**, même sans inscription active. Un ciblage par classe, niveau ou cycle exige au contraire l'inscription de l'année courante — c'est elle qui rattache l'enfant à une classe. Avec 35 élèves de Tut'Tank sans responsable rattaché, la distinction n'est pas théorique.
+- **L'étudiant du supérieur n'a ni classe, ni niveau, ni cycle** : `mes_annonces` écartait déjà les annonces de classe, elle écarte désormais les trois.
+- Côté familles, la pastille affiche l'audience réelle — « CM1 », « Élémentaire » — au lieu du seul mot « classe ». Côté personnel, la liste des annonces fait de même.
+- Détail : changer de cible remet à zéro les autres identifiants, sinon une annonce basculée de « classe » à « cycle » aurait gardé un ciblage fantôme.
+
 ## [2.210.0] — migration **151** · « Textes de référence », le rayon réglementaire
 - **Nouveau rayon dans Pilotage → Documentation** : règlement intérieur, codes et décrets relatifs à l'enseignement, arrêtés, conventions et agréments, chartes et procédures internes.
 - **Pourquoi un rayon distinct** plutôt qu'une catégorie de plus : ces textes ne se consultent pas comme une circulaire ponctuelle. On y revient, on les cite, ils font autorité et ils survivent aux années scolaires. Les mélanger au tout-venant reviendrait à les perdre.

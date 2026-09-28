@@ -642,8 +642,8 @@ function AnnoncesEnfant({ items, enfant }) {
             {/* Dire à qui l'annonce s'adresse : sans cela, une annonce
                 générale relue dans la page de chaque enfant passe pour un
                 doublon alors qu'elle n'a été publiée qu'une fois. */}
-            {a.cible === "classe" && a.classe ? (
-              <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.classe}</span>
+            {a.portee_libelle ? (
+              <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs text-sky-700">{a.portee_libelle}</span>
             ) : (
               <span className="rounded-full bg-navy-900/5 px-2 py-0.5 text-xs text-navy-900/50">Toute l&apos;école</span>
             )}
