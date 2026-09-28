@@ -105,7 +105,16 @@ export async function televerserFichier(ecoleId, fichier, { titre, categorie = "
 export async function getFichiers(ecoleId, { categorie = "", q = "" } = {}) {
   let req = supabase
     .from("fichiers_ecole")
-    .select("*, annonces(titre)")
+    // L'audience de l'annonce est remontée pour PRÉREMPLIR celle du texte au
+    // moment de le verser au rayon : le règlement d'un cycle doit se ranger
+    // sur ce cycle sans qu'on ait à s'en souvenir (migration 159).
+    //
+    // ⚠️ On n'embarque PAS `classes(libelle)` & co. : ces clés étrangères
+    // n'existent qu'après la 159, et un embed sur une relation absente fait
+    // échouer TOUTE la requête (PGRST200) — la page de Documentation serait
+    // cassée entre le déploiement et l'application de la migration. Les
+    // libellés sont résolus côté écran, depuis les listes déjà chargées.
+    .select("*, annonces(titre, cible, classe_id, niveau_id, cycle_id)")
     .eq("ecole_id", ecoleId);
   if (categorie) req = req.eq("categorie", categorie);
   if ((q || "").trim()) {
@@ -143,25 +152,45 @@ export const lienFichier = (chemin) => urlSignee(BUCKET, chemin);
 
 // --- Verser un document au rayon réglementaire (migration 159) --------------
 //
-// Une pièce jointe d'annonce peut AUSSI être un texte de référence : Tut'Tank
-// a publié son règlement intérieur en pièce jointe d'une annonce ciblée sur
-// l'Élémentaire — 45 élèves du Préscolaire ne l'ont donc pas reçu, et il
-// n'apparaissait dans aucune étagère où l'on revient le chercher.
+// Une pièce jointe d'annonce peut AUSSI être un texte de référence. Tut'Tank a
+// publié son règlement intérieur en pièce jointe d'une annonce ciblée sur
+// l'Élémentaire : c'était volontaire — le règlement n'appartient qu'à ce cycle.
+// Ce qui manquait, c'est qu'une annonce se lit une fois, alors qu'un règlement
+// se consulte pendant des années ; il n'était sur aucune étagère.
+//
+// ⚠️ L'AUDIENCE EST OBLIGATOIRE, et c'est le cœur de la correction. Le rayon ne
+// savait publier qu'en tout-ou-rien : y verser ce règlement l'aurait ouvert aux
+// familles du Préscolaire, à rebours de l'intention de l'école. Un texte de
+// référence porte donc la même audience qu'une annonce.
 //
 // ⚠️ On passe par une RPC nommée d'après l'intention, et non par une mise à
 // jour de `portee` + `categorie` depuis le client : la base ne peut pas
 // distinguer une portée « familles » posée volontairement d'une posée par
-// accident. Ce sont ces deux champs, forcés à « interne » et « annonce » pour
-// toute pièce jointe, qui font le double verrou — la RPC est la seule porte.
-export async function verserAuRayon(fichierId, { categorie, reference, dateTexte } = {}) {
+// accident. Ces deux champs, forcés à « interne » et « annonce » pour toute
+// pièce jointe, font le double verrou — la RPC est la seule porte.
+export async function verserAuRayon(fichierId, { categorie, cible, entite, reference, dateTexte } = {}) {
   const { error } = await supabase.rpc("verser_au_rayon", {
     p_fichier: fichierId,
     p_categorie: categorie,
+    p_cible: cible || "tous",
+    p_entite: cible && cible !== "tous" ? entite || null : null,
     p_reference: reference?.trim() || null,
     p_date: dateTexte || null,
   });
   if (error) throw error;
 }
+
+// Audiences d'un texte de référence. Volontairement le même vocabulaire que
+// `annonces.CIBLES`, moins « parents » et « etudiants » : sur une étagère
+// réglementaire, ce qui compte est le périmètre scolaire, pas le type de lecteur.
+export const AUDIENCES = [
+  ["tous", "Tout l'établissement"],
+  ["cycle", "Un cycle (préscolaire, élémentaire…)"],
+  ["niveau", "Un niveau"],
+  ["classe", "Une classe"],
+];
+export const audienceExigeEntite = (c) => ["classe", "niveau", "cycle"].includes(c);
+export const CHAMP_AUDIENCE = { classe: "classe_id", niveau: "niveau_id", cycle: "cycle_id" };
 
 export async function retirerDuRayon(fichierId) {
   const { error } = await supabase.rpc("retirer_du_rayon", { p_fichier: fichierId });

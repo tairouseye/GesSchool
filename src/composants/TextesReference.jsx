@@ -43,7 +43,17 @@ export default function TextesReference({ titre = "Textes de référence" }) {
           {items.map((t) => (
             <Carte key={t.id} className="p-4">
               <button type="button" onClick={() => ouvrir(t)} className="w-full text-left">
-                <p className="font-medium text-navy-900">⚖️ {t.titre}</p>
+                <p className="flex flex-wrap items-center gap-2 font-medium text-navy-900">
+                  ⚖️ {t.titre}
+                  {/* Un règlement peut n'appartenir qu'à un cycle : sans le
+                      dire, un parent d'enfants dans deux cycles ne saurait
+                      pas lequel le concerne (migration 159). */}
+                  {t.portee_libelle && (
+                    <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-normal text-sky-700">
+                      {t.portee_libelle}
+                    </span>
+                  )}
+                </p>
                 <p className="mt-0.5 text-xs text-navy-900/55">
                   {[libCategorie(t.categorie), t.reference,
                     t.date_texte ? new Date(t.date_texte).toLocaleDateString("fr-FR") : null,

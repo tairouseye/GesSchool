@@ -7,7 +7,9 @@ import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { getDocuments } from "@/lib/documents.js";
 import { getFichiers, televerserFichier, supprimerFichier, lienFichier, poids, CATEGORIES, CATEGORIES_TEXTES,
          libCategorie, libPortee, PORTEES, estTexteReference, TAILLE_MAX,
-         verserAuRayon, retirerDuRayon, peutEtreVerse } from "@/lib/fichiers.js";
+         verserAuRayon, retirerDuRayon, peutEtreVerse,
+         AUDIENCES, audienceExigeEntite, CHAMP_AUDIENCE } from "@/lib/fichiers.js";
+import { getCycles, getNiveaux, getClasses, getAnneeCourante } from "@/lib/academique.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 // Documentation (Pilotage) — hub central de tous les documents de l'école.
@@ -79,6 +81,18 @@ const TYPE_FAMILLE = {
 const familleDe = (d) => d.famille || TYPE_FAMILLE[d.type] || "scolarite";
 const FAMILLE_LABEL = { scolarite: "Scolarité", pedagogie: "Pédagogie", finances: "Finances", rh: "RH & Paie" };
 
+// Audience d'un texte du rayon, telle qu'on la lit : « CM1 », « Élémentaire »…
+// Rien pour un texte qui vaut pour tout l'établissement — le silence est là la
+// bonne information (migration 159). Résolue depuis les listes chargées par la
+// page, et non par un embed : voir la note dans `getFichiers`.
+function libAudience(x, { cycles = [], niveaux = [], classes = [] } = {}) {
+  const trouve = (liste, id) => liste.find((e) => e.id === id)?.libelle;
+  if (x?.cible === "classe") return trouve(classes, x.classe_id) || "Une classe";
+  if (x?.cible === "niveau") return trouve(niveaux, x.niveau_id) || "Un niveau";
+  if (x?.cible === "cycle") return trouve(cycles, x.cycle_id) || "Un cycle";
+  return null;
+}
+
 export default function Documentation() {
   const { ecoleId, ecole, utilisateur } = useAuth();
   const devise = ecole?.devise || "XOF";
@@ -101,9 +115,29 @@ export default function Documentation() {
   const [exportEnCours, setExportEnCours] = useState(false);
   // Document en cours de versement au rayon réglementaire (migration 159).
   const [versement, setVersement] = useState(null);
+  // Listes de ciblage, chargées une fois : l'audience d'un texte se choisit
+  // dans le même vocabulaire que celle d'une annonce (migration 159).
+  const [cycles, setCycles] = useState([]);
+  const [niveaux, setNiveaux] = useState([]);
+  const [classes, setClasses] = useState([]);
 
   useEffect(() => {
     getDocuments(ecoleId).then(setDocs).catch(() => {}).finally(() => setChargement(false));
+  }, [ecoleId]);
+
+  useEffect(() => {
+    if (!ecoleId) return;
+    let vivant = true;
+    (async () => {
+      try {
+        const an = await getAnneeCourante(ecoleId);
+        const [cy, nv, cl] = await Promise.all([
+          getCycles(ecoleId), getNiveaux(ecoleId), getClasses(ecoleId, an?.id)]);
+        if (!vivant) return;
+        setCycles(cy); setNiveaux(nv); setClasses(cl);
+      } catch { /* le versement restera limité à « tout l'établissement » */ }
+    })();
+    return () => { vivant = false; };
   }, [ecoleId]);
 
   const rechargerFichiers = useCallback(() => {
@@ -302,6 +336,13 @@ export default function Documentation() {
                       {x.portee === "familles" && (
                         <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                           publié
+                        </span>
+                      )}
+                      {/* L'audience doit se lire sur l'étagère : un règlement
+                          d'un seul cycle n'est pas un règlement d'école. */}
+                      {libAudience(x, { cycles, niveaux, classes }) && (
+                        <span className="ml-2 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                          {libAudience(x, { cycles, niveaux, classes })}
                         </span>
                       )}
                     </p>
@@ -569,7 +610,8 @@ export default function Documentation() {
         )}
       </Modale>
 
-      <ModaleVersement fichier={versement} onFermer={() => setVersement(null)} onVerser={verser} />
+      <ModaleVersement fichier={versement} onFermer={() => setVersement(null)} onVerser={verser}
+        cycles={cycles} niveaux={niveaux} classes={classes} />
     </>
   );
 }
@@ -580,35 +622,53 @@ export default function Documentation() {
 // avait joint son règlement intérieur à une annonce ciblée « Élémentaire ».
 // Le document ne parvenait donc qu'à 51 élèves sur 96, et n'apparaissait dans
 // aucune étagère — alors qu'un règlement se consulte pendant des années.
-function ModaleVersement({ fichier, onFermer, onVerser }) {
+function ModaleVersement({ fichier, onFermer, onVerser, cycles, niveaux, classes }) {
   const [categorie, setCategorie] = useState("reglement");
+  const [cible, setCible] = useState("tous");
+  const [entite, setEntite] = useState("");
   const [reference, setReference] = useState("");
   const [dateTexte, setDateTexte] = useState("");
 
+  // ⚠️ L'audience est PRÉREMPLIE depuis celle de l'annonce. C'est tout l'enjeu :
+  // le règlement de Tut'Tank appartient à l'Élémentaire, et verser « à toutes
+  // les familles » par défaut aurait reproduit l'erreur qu'on corrige.
   useEffect(() => {
     if (!fichier) return;
-    setCategorie("reglement");
+    setCategorie(estTexteReference(fichier.categorie) ? fichier.categorie : "reglement");
     setReference(fichier.reference || "");
     setDateTexte(fichier.date_texte || "");
+    const a = fichier.annonces;
+    if (a && ["classe", "niveau", "cycle"].includes(a.cible)) {
+      setCible(a.cible);
+      setEntite(a[CHAMP_AUDIENCE[a.cible]] || "");
+    } else {
+      setCible("tous");
+      setEntite("");
+    }
   }, [fichier]);
 
   if (!fichier) return null;
+
+  const listes = { cycle: cycles, niveau: niveaux, classe: classes };
+  const liste = listes[cible] || [];
+  const manque = audienceExigeEntite(cible) && !entite;
+  const heritee = !!fichier.annonces && ["classe", "niveau", "cycle"].includes(fichier.annonces.cible)
+    && cible === fichier.annonces.cible && entite === (fichier.annonces[CHAMP_AUDIENCE[fichier.annonces.cible]] || "");
 
   return (
     <Modale ouvert={!!fichier} onFermer={onFermer} titre="Verser au rayon réglementaire">
       <div className="space-y-4">
         <p className="text-sm text-navy-900/70">
-          <b className="text-navy-900">{fichier.titre}</b> deviendra consultable par <b>toutes les familles</b> de
-          l&apos;établissement, dans « Textes de référence ».
+          <b className="text-navy-900">{fichier.titre}</b> sera consultable en permanence dans
+          « Textes de référence », par les familles que vous désignez ci-dessous.
         </p>
         {fichier.annonce_id && (
-          <p className="rounded-xl border border-or-500/40 bg-or-500/5 px-3 py-2.5 text-xs text-navy-900/70">
-            Ce fichier est joint à l&apos;annonce
-            {fichier.annonces?.titre ? <> « <b>{fichier.annonces.titre}</b> »</> : null}.
-            <b> L&apos;annonce garde son audience</b> — seul le document est publié. C&apos;est ce qu&apos;on
-            attend d&apos;un règlement : annoncé à une classe, mais opposable à tous.
+          <p className="rounded-xl border border-navy-900/10 bg-creme/60 px-3 py-2.5 text-xs text-navy-900/70">
+            Joint à l&apos;annonce{fichier.annonces?.titre ? <> « <b>{fichier.annonces.titre}</b> »</> : null}.
+            <b> L&apos;annonce n&apos;est pas modifiée</b> : on publie le document, pas l&apos;annonce.
           </p>
         )}
+
         <label className="block">
           <span className="mb-1.5 block text-xs text-navy-900/50">Nature du texte</span>
           <select value={categorie} onChange={(e) => setCategorie(e.target.value)}
@@ -616,15 +676,45 @@ function ModaleVersement({ fichier, onFermer, onVerser }) {
             {CATEGORIES_TEXTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </label>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-xs text-navy-900/50">Qui peut le consulter</span>
+            <select value={cible} onChange={(e) => { setCible(e.target.value); setEntite(""); }}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              {AUDIENCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          {audienceExigeEntite(cible) && (
+            <label className="block">
+              <span className="mb-1.5 block text-xs text-navy-900/50">
+                {cible === "cycle" ? "Cycle" : cible === "niveau" ? "Niveau" : "Classe"}
+              </span>
+              <select value={entite} onChange={(e) => setEntite(e.target.value)}
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— à choisir —</option>
+                {liste.map((x) => <option key={x.id} value={x.id}>{x.libelle}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+        {heritee && (
+          <p className="text-xs text-emerald-700">
+            Audience reprise de l&apos;annonce — les mêmes familles y ont accès, ni plus ni moins.
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Champ label="Référence (facultatif)" value={reference} placeholder="Décret n° 2024-1234"
             onChange={(e) => setReference(e.target.value)} />
           <Champ label="Date du texte (facultatif)" type="date" value={dateTexte}
             onChange={(e) => setDateTexte(e.target.value)} />
         </div>
+
         <div className="flex justify-end gap-2">
           <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton onClick={() => onVerser(fichier, { categorie, reference, dateTexte: dateTexte || null })}>
+          <Bouton disabled={manque}
+            onClick={() => onVerser(fichier, { categorie, cible, entite: entite || null, reference, dateTexte: dateTexte || null })}>
             Verser au rayon
           </Bouton>
         </div>

@@ -5,7 +5,19 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
-## [2.220.0] — migration **159** · verser une pièce jointe au rayon réglementaire
+## [2.220.0] — migration **159** · le rayon réglementaire porte une audience
+Deux corrections de l'utilisateur ont conduit ici, et **la seconde a renversé la première conclusion**. Le récit compte, parce qu'il explique la forme du correctif.
+
+- **« Tut'Tank a bien publié son règlement intérieur »** — exact. Il est en pièce jointe d'une annonce du 28/09, ciblée sur le cycle **Élémentaire**. Mon audit voyait la tuile « Règlement » vide et en concluait qu'aucune école n'avait rien publié : constat juste, **cause fausse**.
+- **« Mais le préscolaire ne doit pas voir ce règlement, qui n'appartient qu'à l'élémentaire »** — et là tout change. Le ciblage n'était pas un défaut, c'était une **décision** : un établissement peut avoir un règlement par cycle. J'avais d'abord écrit une 159 qui versait le document « à toutes les familles » ; elle aurait violé l'intention de l'école. Elle n'était pas encore appliquée, elle est donc corrigée à la source plutôt que rattrapée par une 160.
+- **Ce qui était fautif, c'était le rayon.** « Textes de référence » ne savait publier qu'en tout-ou-rien — `portee = 'familles'` ⇒ visible de tous les membres. Le vrai manque n'était pas une porte entre les deux endroits, c'est que le rayon **ignorait la notion d'audience** que les annonces possèdent depuis la migration 152.
+- **Un texte de référence reçoit donc le même vocabulaire de ciblage qu'une annonce** : tout l'établissement, un cycle, un niveau, une classe. Le règlement de l'Élémentaire se range sur l'étagère, consultable en permanence — par les familles de l'Élémentaire, et par elles seules.
+- **Et la règle n'est pas recopiée une cinquième fois.** L'en-tête de la 152 prévient qu'elle vit à quatre endroits ; elle est désormais **sortie dans `_public_vise()`**, que `_annonce_visible_par()` et le rayon appellent tous deux. Une règle, deux appelants, au lieu de deux copies qui divergeront. La recette de la 152 est rejouée après application pour prouver que le comportement des annonces est inchangé.
+- **L'audience est un paramètre obligatoire** de `verser_au_rayon()`, pour qu'on ne puisse pas publier à tout le monde par omission ; et la modale la **préremplit depuis l'annonce** — le règlement d'un cycle se range sur ce cycle sans qu'on ait à s'en souvenir. La RPC refuse une catégorie hors rayon, une audience ciblée sans entité, et une entité appartenant à une autre école : un ciblage silencieusement faux rendrait le texte invisible partout, ce qui est pire qu'un refus.
+- **Rétrocompatibilité** : `cible` reste `NULL` sur les textes déjà publiés, et `_public_vise` traite `NULL` comme « toute l'école » — leur audience ne change pas.
+- « Retirer du rayon » remet la portée à « interne », rend à une pièce jointe sa catégorie d'origine et remet le ciblage à zéro. Sans ça elle sortirait du rayon en restant classée « règlement » : invisible partout.
+- **Prévention** : joindre un fichier à une annonce **ciblée** avertit désormais que la pièce ne parviendra qu'aux familles visées, et renvoie au rayon.
+- Détail d'implémentation qui évite une page cassée : les libellés d'audience sont résolus **côté écran** et non par un embed `classes(libelle)` sur `fichiers_ecole`. Ces clés étrangères n'existent qu'après la migration, et un embed sur une relation absente fait échouer *toute* la requête (PGRST200) — la Documentation serait tombée entre le déploiement et l'application.
 - **Parti d'une correction de l'utilisateur** : Tut'Tank *avait* publié son règlement intérieur, contrairement à ce que mon audit concluait. Vérifié : il est bien là, en pièce jointe d'une annonce du 28/09 — **ciblée sur le cycle Élémentaire**. Mon constat (« la tuile Règlement est vide ») était exact ; ma cause était fausse.
 - **Ce que la vérification a révélé**, et qui valait mieux que mon constat d'origine :
 
