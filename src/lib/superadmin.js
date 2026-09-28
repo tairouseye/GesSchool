@@ -33,6 +33,15 @@ export async function definirAbonnement(ecoleId, planId, statut, fin) {
   if (error) throw error;
 }
 
+// Classer une école en démonstration : elle reste gérable normalement, mais
+// sort des totaux consolidés du Pilotage de son promoteur (migration 156).
+export async function marquerDemonstration(ecoleId, demo) {
+  const { error } = await supabase.rpc("admin_marquer_demonstration", {
+    p_ecole: ecoleId, p_demo: !!demo,
+  });
+  if (error) throw error;
+}
+
 export async function definirStatut(ecoleId, statut) {
   const { error } = await supabase.rpc("admin_set_statut", { p_ecole: ecoleId, p_statut: statut });
   if (error) throw error;

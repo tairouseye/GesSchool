@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.214.0] — migration **156** · écoles de démonstration, écartées des totaux
+- **Décidé après les 154-155** : sur les 9 357 500 de trésorerie cumulée du promoteur de Tut'Tank, **9 732 500 venaient de TutTank_Demo**. Un total dont l'essentiel est fictif n'est pas un total approximatif — il est inexploitable.
+- **Un marqueur sur la fiche école**, `ecoles.demonstration`, et non une convention de nommage : se fier au suffixe « _Demo » aurait marché jusqu'au jour où quelqu'un renomme l'école, et se serait cassé en silence. Réglable depuis la console super-admin (« Nature de l'établissement »).
+- **La carte de l'école reste.** Le promoteur doit pouvoir continuer à gérer sa démo depuis Pilotage — c'est son outil de démarchage. Seuls les totaux l'écartent ; la carte porte une pastille « Démonstration · hors totaux » et son bouton « Gérer cette école » fonctionne comme avant.
+- **⚠️ Et certains comptes n'ont QUE des démos.** Vérifié en base : la démarcheuse ne possède que TutTank_Demo, et le compte de présentation RDC que « Complexe Scolaire La Grâce ». Les écarter sans filet aurait donné 0 partout — une page qui paraît cassée. D'où un repli : s'il ne reste aucune école réelle, on consolide les démos **et on l'annonce** (« établissement de démonstration »), au lieu de faire passer des chiffres de démonstration pour des vrais.
+- Le sous-titre suit — « 4 établissements · dont 1 de démonstration, hors totaux » — sinon il aurait contredit les tuiles qui n'en cumulent que 3. Les démos passent en fin de liste : la page s'ouvre sur les vraies écoles.
+- Deux écoles marquées : **TutTank_Demo** et **Complexe Scolaire La Grâce** (démo RDC). Attendu pour ton compte : trésorerie consolidée **−375 000** au lieu de 9 357 500.
+- 4 tests de plus, dont celui du repli et un qui vérifie qu'**en l'absence du marqueur, aucune école n'est exclue par surprise**.
+
 ## [2.213.0] — migration **155** · 🔴 Pilotage : la masse salariale comptait des brouillons
 - **Signalé** : « je ne reconnais pas 805k, 3 572 999 et 9 257 500 pour Tut'Tank, ça ne colle pas avec Gestion ». Deux réponses, dont une est un vrai défaut.
 - **Ces trois nombres ne sont pas ceux de Tut'Tank** : ce sont les totaux des **4 écoles** du compte. Tut'Tank seule affiche trésorerie 0, masse 300 000, résultat 0. Et surtout, **9 732 500 des 9 357 500 de trésorerie consolidée viennent de TutTank_Demo**, l'école de démonstration : les montants fictifs écrasent les vrais. Le sous-titre annonçait « 4 établissements · vue consolidée », mais les tuiles, elles, ne disaient rien — on les lisait donc comme le chiffre de l'école ouverte dans Gestion. Chaque tuile porte désormais la mention « N établissements cumulés ».

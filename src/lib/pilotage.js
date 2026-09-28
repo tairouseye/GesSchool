@@ -14,6 +14,25 @@ export async function getSynthese() {
 export const resultatAnnee = (l) =>
   Number(l?.recettes_annee || 0) + Number(l?.scolarite_annee || 0) - Number(l?.depenses_annee || 0);
 
+// Quelles écoles entrent dans les totaux (migration 156).
+//
+// Une école de démonstration contient des montants fictifs : les cumuler avec
+// les vraies ne donne pas un total approximatif, mais un total inexploitable
+// — chez le promoteur de Tut'Tank, 9 732 500 des 9 357 500 cumulés venaient
+// de la démo.
+//
+// ⚠️ MAIS CERTAINS COMPTES N'ONT QUE DES DÉMOS : la démarcheuse ne possède
+// que TutTank_Demo, le compte de présentation RDC que son école test. Les
+// écarter sans filet donnerait une page vide, donc une page cassée. D'où le
+// repli : s'il ne reste aucune école réelle, on consolide tout — et l'écran
+// le dit, au lieu de faire passer des chiffres de démonstration pour des vrais.
+export function lignesConsolidables(lignes = []) {
+  const reelles = lignes.filter((l) => !l.demonstration);
+  return reelles.length > 0
+    ? { lignes: reelles, demoIncluse: false, exclues: lignes.length - reelles.length }
+    : { lignes, demoIncluse: lignes.length > 0, exclues: 0 };
+}
+
 // Consolide les montants PAR DEVISE. Additionner des dollars et des francs CFA
 // en un seul nombre ne donne pas un total approximatif : cela donne un nombre
 // qui ne veut rien dire. Tant qu'il n'y a qu'une monnaie, la carte se lit comme

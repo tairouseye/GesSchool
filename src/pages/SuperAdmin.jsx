@@ -154,6 +154,8 @@ export default function SuperAdmin() {
         ecole={edit} plans={plans} onFermer={() => setEdit(null)}
         onAbonnement={(planId, statut, fin) => wrap(async () => { await api.definirAbonnement(edit.ecole_id, planId, statut, fin); setEdit(null); }, "Abonnement mis à jour.")}
         onModules={(mods) => wrap(async () => { await api.definirModules(edit.ecole_id, mods); setEdit(null); }, "Modules mis à jour.")}
+        onDemonstration={(demo) => wrap(async () => { await api.marquerDemonstration(edit.ecole_id, demo); setEdit(null); },
+          demo ? "École classée en démonstration." : "École reclassée en établissement réel.")}
       />
     </div>
   );
@@ -548,11 +550,12 @@ function Kpi({ label, valeur, ton }) {
   );
 }
 
-function ModaleEcole({ ecole, plans, onFermer, onAbonnement, onModules }) {
+function ModaleEcole({ ecole, plans, onFermer, onAbonnement, onModules, onDemonstration }) {
   const [planId, setPlanId] = useState("");
   const [statut, setStatut] = useState("actif");
   const [fin, setFin] = useState("");
   const [mods, setMods] = useState(new Set());
+  const [demo, setDemo] = useState(false);
 
   useEffect(() => {
     if (!ecole) return;
@@ -561,6 +564,7 @@ function ModaleEcole({ ecole, plans, onFermer, onAbonnement, onModules }) {
     setStatut(ecole.statut || "actif");
     setFin(ecole.fin || "");
     setMods(new Set(ecole.modules || MODULES.map((m) => m.id)));
+    setDemo(!!ecole.demonstration);
   }, [ecole, plans]);
 
   if (!ecole) return null;
@@ -592,6 +596,25 @@ function ModaleEcole({ ecole, plans, onFermer, onAbonnement, onModules }) {
           <p className="mt-2 text-xs text-navy-900/40">Appliquer un plan active automatiquement ses modules.</p>
           <div className="mt-2 flex justify-end">
             <Bouton onClick={() => onAbonnement(planId, statut, fin)}>Appliquer le plan</Bouton>
+          </div>
+        </div>
+
+        {/* Classement démonstration */}
+        <div className="border-t border-navy-900/10 pt-4">
+          <p className="mb-2 text-sm font-medium text-navy-900/70">Nature de l&apos;établissement</p>
+          <label className="flex items-start justify-between gap-3 rounded-xl border border-navy-900/10 px-3 py-2.5 text-sm">
+            <span>
+              École de <b>démonstration</b>
+              <span className="mt-0.5 block text-xs text-navy-900/45">
+                Reste gérable normalement, mais sort des totaux consolidés du Pilotage de son
+                promoteur : ses montants sont fictifs et écraseraient les vrais. Si le compte n&apos;a
+                que des démos, la page se replie sur elles et l&apos;annonce.
+              </span>
+            </span>
+            <input type="checkbox" className="mt-1 shrink-0" checked={demo} onChange={(e) => setDemo(e.target.checked)} />
+          </label>
+          <div className="mt-2 flex justify-end">
+            <Bouton variante="fantome" onClick={() => onDemonstration(demo)}>Enregistrer la nature</Bouton>
           </div>
         </div>
 

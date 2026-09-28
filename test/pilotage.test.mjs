@@ -103,6 +103,49 @@ test("valider un bulletin déplace le montant, il ne le crée pas", async () => 
   assert.equal(avant.masse + avant.masseBrouillon, apres.masse + apres.masseBrouillon);
 });
 
+test("une école de démonstration sort des totaux, mais reste dans la liste", async () => {
+  const { lignesConsolidables } = await pilotage();
+  // Cas réel : le promoteur de Tut'Tank a 3 écoles réelles + TutTank_Demo,
+  // dont les 9 732 500 fictifs écrasaient les 3 vraies (migration 156).
+  const toutes = [
+    { ecole: "Tut'Tank", tresorerie: 0 },
+    { ecole: "UCAD", tresorerie: -375000 },
+    { ecole: "Diamniadio", tresorerie: 0 },
+    { ecole: "TutTank_Demo", tresorerie: 9732500, demonstration: true },
+  ];
+  const { lignes, demoIncluse, exclues } = lignesConsolidables(toutes);
+  assert.equal(lignes.length, 3);
+  assert.equal(exclues, 1);
+  assert.equal(demoIncluse, false);
+  assert.ok(!lignes.some((l) => l.demonstration), "aucune démo dans le cumul");
+  // La démo n'est pas retirée de l'écran : le promoteur doit pouvoir la gérer.
+  assert.equal(toutes.length, 4, "la liste d'origine n'est pas amputée");
+});
+
+test("⚠️ un compte n'ayant QUE des démos ne se retrouve pas avec une page vide", async () => {
+  const { lignesConsolidables, consoliderParDevise } = await pilotage();
+  // Vérifié en base : la démarcheuse (Binette Gueye Fall) ne possède que
+  // TutTank_Demo, et le compte de présentation RDC que son école test. Les
+  // écarter sans filet donnerait 0 partout — une page qui semble cassée.
+  const { lignes, demoIncluse, exclues } = lignesConsolidables([
+    { ecole: "TutTank_Demo", devise: "XOF", tresorerie: 9732500, demonstration: true },
+  ]);
+  assert.equal(lignes.length, 1, "repli : on consolide la démo");
+  assert.equal(demoIncluse, true, "…et l'écran doit le dire");
+  assert.equal(exclues, 0);
+  assert.equal(consoliderParDevise(lignes, "XOF")[0][1].tresorerie, 9732500);
+});
+
+test("sans marqueur, rien ne change : aucune école n'est exclue par surprise", async () => {
+  const { lignesConsolidables } = await pilotage();
+  // Le champ est absent tant que la migration 156 n'est pas appliquée ; il ne
+  // doit pas être lu comme « démonstration ».
+  const r = lignesConsolidables([{ ecole: "A" }, { ecole: "B", demonstration: false }]);
+  assert.equal(r.lignes.length, 2);
+  assert.equal(r.exclues, 0);
+  assert.equal(r.demoIncluse, false);
+});
+
 test("aucune école : aucune ligne, et surtout aucun zéro trompeur", async () => {
   const { consoliderParDevise } = await pilotage();
   assert.deepEqual(consoliderParDevise([], "XOF"), []);

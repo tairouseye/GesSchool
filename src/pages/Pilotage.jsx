@@ -43,26 +43,38 @@ export default function Pilotage() {
     }
   }
 
+  // Les écoles de démonstration sortent des totaux — leurs montants fictifs
+  // écrasaient les vrais. Repli si le compte n'a QUE des démos (mig. 156).
+  const { lignes: cumulees, demoIncluse, exclues } = api.lignesConsolidables(lignes);
+
   // Effectif et taux de recouvrement se consolident : l'un compte des têtes,
   // l'autre est un rapport, donc sans unité.
-  const t = lignes.reduce((a, l) => ({
+  const t = cumulees.reduce((a, l) => ({
     effectif: a.effectif + Number(l.effectif || 0),
     facture: a.facture + Number(l.total_facture || 0),
     paye: a.paye + Number(l.total_paye || 0),
   }), { effectif: 0, facture: 0, paye: 0 });
 
   // Les MONTANTS, eux, ne s'additionnent qu'à devise égale (migration 154).
-  const monnaies = api.consoliderParDevise(lignes, devise);
+  const monnaies = api.consoliderParDevise(cumulees, devise);
 
-  // ⚠️ Ces tuiles agrègent TOUTES les écoles du promoteur — y compris une
-  // école de démonstration, dont les montants fictifs écrasent les vrais.
-  // Sans le dire, on laisse lire un total consolidé comme le chiffre de
-  // l'école ouverte dans Gestion : c'est exactement la confusion signalée.
-  const portee = lignes.length > 1 ? `${lignes.length} établissements cumulés` : null;
+  // Dire ce que les tuiles cumulent : sans cela, un total consolidé se lit
+  // comme le chiffre de l'école ouverte dans Gestion — la confusion signalée.
+  const portee = demoIncluse
+    ? "établissement de démonstration"
+    : [cumulees.length > 1 ? `${cumulees.length} établissements cumulés` : null,
+       exclues > 0 ? `démo exclue${exclues > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ") || null;
 
   // Un brouillon de paie n'est pas une charge, mais il ne doit pas non plus
   // disparaître : on l'annonce, sans le compter (migration 155).
   const brouillons = monnaies.reduce((a, [, v]) => a + v.bulletinsBrouillon, 0);
+  // Le sous-titre annonçait « 4 établissements · vue consolidée » alors que
+  // la consolidation n'en retient plus que 3 : il aurait contredit les tuiles.
+  const sousTitre = [
+    `${lignes.length} établissement${lignes.length > 1 ? "s" : ""}`,
+    exclues > 0 ? `dont ${exclues} de démonstration, hors totaux` : "vue consolidée",
+  ].join(" · ");
+
   const noteBrouillons = brouillons > 0
     ? `+ ${monnaies.filter(([, v]) => v.masseBrouillon > 0).map(([d, v]) => `${fmt(v.masseBrouillon)} ${d}`).join(" · ")} en brouillon (${brouillons} bulletin${brouillons > 1 ? "s" : ""} à valider)`
     : portee;
@@ -71,7 +83,7 @@ export default function Pilotage() {
     <>
       <EnTete
         titre="Pilotage"
-        sousTitre={`${lignes.length} établissement${lignes.length > 1 ? "s" : ""} · vue consolidée`}
+        sousTitre={sousTitre}
         action={<Bouton variante="fantome" onClick={() => navigate("/onboarding")}>+ Ajouter une école</Bouton>}
       />
       <div className="space-y-6 p-8">
@@ -106,7 +118,15 @@ export default function Pilotage() {
                       <Cachet size={40} sigle={l.sigle || "GS"} className="text-navy-900/60" />
                       <div className="min-w-0">
                         <p className="truncate font-display text-lg font-bold text-navy-900">{l.ecole}</p>
-                        {actif && <span className="text-xs text-or-600">École active</span>}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {actif && <span className="text-xs text-or-600">École active</span>}
+                          {/* La démo reste gérable : on la signale, on ne la cache pas. */}
+                          {l.demonstration && (
+                            <span className="rounded-full bg-navy-900/10 px-2 py-0.5 text-[11px] font-medium text-navy-900/60">
+                              Démonstration · hors totaux
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
