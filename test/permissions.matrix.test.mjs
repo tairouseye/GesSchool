@@ -133,13 +133,59 @@ test("grouperItems : sections contiguës, entrées libres isolées, groupe solit
   assert.equal(g.reduce((n, s) => n + s.items.length, 0), 6);
 });
 
-test("Pédagogie et Gestion : toutes leurs pages métier sont rangées en section", () => {
-  // Accueils et utilitaires transverses restent volontairement libres.
-  const libres = ["_pedagogie", "_gestion", "membres", "signatures", "parametres"];
+test("Pédagogie et Gestion : AUCUNE entrée ne flotte hors section", () => {
+  // Les accueils et les transverses (Membres, À signer, Paramètres) étaient
+  // volontairement libres. Ils ne le sont plus : sans en-tête, ils ne
+  // pouvaient pas se replier sur téléphone, où ces deux espaces comptent une
+  // vingtaine d'entrées. Ils sont désormais rangés sous « Établissement ».
   for (const id of ["pedagogie", "gestion"]) {
-    const orphelines = P.espaceParId(id).items.filter((i) => !i.groupe && !libres.includes(i.cle));
+    const orphelines = P.espaceParId(id).items.filter((i) => !i.groupe);
     assert.deepEqual(orphelines.map((i) => i.cle), [],
-      `toute page métier de ${id} doit porter un groupe`);
+      `toute entrée de ${id} doit porter un groupe`);
+  }
+});
+
+// 🔴 Régression attrapée en regroupant le menu (28/09/2026) : remonter
+// « Établissement » en tête a fait atterrir le bibliothécaire sur « À signer »
+// au lieu de son catalogue, parce que `premiereRoute` suivait l'ordre de
+// déclaration. L'ordre du menu ne doit pas décider où l'on atterrit.
+test("une page d'atterrissage est du travail, jamais un utilitaire", () => {
+  const utilitaires = ["/membres", "/a-signer", "/parametres"];
+
+  // Un bibliothécaire dont le module est actif atterrit sur son catalogue,
+  // même si Membres et À signer le précèdent dans le menu.
+  assert.equal(P.premiereRoute(["bibliothecaire"], false, ["bibliotheque"], "superieur"), "/bibliotheque");
+
+  // Plus largement : aucun rôle ne doit atterrir sur un utilitaire tant qu'une
+  // page métier lui est ouverte.
+  for (const roles of [["comptable"], ["secretaire"], ["enseignant"], ["direction"], ["rh"], ["surveillant"]]) {
+    const cible = P.premiereRoute(roles, false, null, "ecole");
+    if (!cible) continue;                       // rôle sans aucun accès : traité ailleurs
+    const metier = P.ESPACES.flatMap((e) => e.items).some(
+      (x) => !x.transverse && P.routeOuvrable(x, roles, false, null) && P.itemPourType(x, "ecole"));
+    if (metier) {
+      assert.ok(!utilitaires.includes(cible),
+        `${roles} atterrit sur ${cible} alors qu'une page métier lui est ouverte`);
+    }
+  }
+
+  // Mais un utilitaire reste un repli valable : mieux qu'un cul-de-sac. Le
+  // bibliothécaire sans le module en est l'exemple vécu.
+  const sansModule = P.premiereRoute(["bibliothecaire"], false, ["scolarite"], "superieur");
+  assert.ok(sansModule === null || utilitaires.includes(sansModule),
+    `sans module, le repli doit être un utilitaire ou rien — obtenu ${sansModule}`);
+});
+
+test("« Établissement » ouvre le menu, et le lien d'accueil reste le premier", () => {
+  // Regrouper ne doit pas déplacer l'accueil en pied de menu : c'est la page
+  // d'atterrissage de l'espace, et `premiereRoute` s'appuie sur cet ordre.
+  for (const [id, cleAccueil] of [["gestion", "_gestion"], ["pedagogie", "_pedagogie"]]) {
+    const items = P.espaceParId(id).items;
+    assert.equal(items[0].cle, cleAccueil, `${id} : l'accueil doit rester en première position`);
+    assert.equal(items[0].groupe, "Établissement");
+    // Et le groupe doit précéder les sections métier, pas s'y intercaler.
+    const sections = P.grouperItems(items).map((s) => s.groupe);
+    assert.equal(sections[0], "Établissement", `${id} : « Établissement » doit ouvrir le menu`);
   }
 });
 

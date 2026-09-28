@@ -22,8 +22,11 @@ export const ESPACES = [
       { to: "/organigramme", label: "Organigramme", icone: "🗂️", cle: "_organigramme" },
       { to: "/documentation", label: "Documentation", icone: "📁", cle: "_documentation" },
       { to: "/journal", label: "Journal des actes", icone: "🗒️", cle: "_journal" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
+      // `transverse` : utilitaire, jamais une page d'atterrissage (cf.
+      // premiereRoute). Pilotage n'est pas regroupé — huit entrées se lisent
+      // d'un bloc — mais la nature de ces deux-là ne change pas pour autant.
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", transverse: true },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", transverse: true },
     ],
   },
   {
@@ -33,7 +36,16 @@ export const ESPACES = [
     accueil: "/gestion",
     roles: ["comptable", "secretaire", "bibliothecaire"],
     items: [
-      { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true },
+      // L'établissement lui-même, et non l'une de ses matières : sa vue
+      // d'ensemble, qui y travaille, ce qu'il y a à signer, comment il est
+      // réglé. Ces quatre entrées flottaient sans en-tête — donc, sur
+      // téléphone, sans pouvoir se replier. Elles sont en tête parce que le
+      // lien d'accueil doit rester le premier : ce n'est pas au regroupement
+      // de décider de l'ordre de lecture.
+      { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true, groupe: "Établissement" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
+      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
 
       // Scolarité
       { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Scolarité" },
@@ -61,9 +73,6 @@ export const ESPACES = [
       { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"], groupe: "Bibliothèque" },
       { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"], groupe: "Bibliothèque" },
 
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
-      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
     ],
   },
   {
@@ -77,7 +86,11 @@ export const ESPACES = [
     // `types` = types d'établissement où l'item s'affiche ; absent = tous.
     // La branche académique bascule ainsi entre « école » et « supérieur » (LMD).
     items: [
-      { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
+      // Même regroupement qu'en Gestion : voir le commentaire là-bas.
+      { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true, groupe: "Établissement" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
+      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
 
       // Au quotidien
       { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
@@ -122,10 +135,6 @@ export const ESPACES = [
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces", groupe: "Communication" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie", groupe: "Communication" },
 
-      // Transverses : volontairement hors section, en pied de menu.
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
-      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres" },
     ],
   },
   {
@@ -137,8 +146,8 @@ export const ESPACES = [
     items: [
       { to: "/rh", label: "Personnel & paie", icone: "🧑‍💼", cle: "rh", exact: true },
       { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres" },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", transverse: true },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", transverse: true },
     ],
   },
 ];
@@ -213,10 +222,22 @@ export function itemPourType(item, typeEtab) {
 // Première page réellement accessible, tous espaces confondus.
 // Renvoie `null` si l'utilisateur n'a accès à RIEN : l'appelant doit alors
 // afficher un écran explicite plutôt que de rediriger indéfiniment.
+//
+// ⚠️ CETTE FONCTION DÉCIDE OÙ L'ON ATTERRIT APRÈS CONNEXION (App.jsx), pas
+// seulement du repli d'une garde. Elle ne doit donc PAS suivre aveuglément
+// l'ordre du menu : quand « Établissement » a été remonté en tête, un
+// bibliothécaire s'est retrouvé à atterrir sur « À signer » au lieu de son
+// catalogue. Une page d'atterrissage doit être du TRAVAIL, pas un utilitaire
+// — d'où deux passes, et un ordre de menu désormais libre de changer sans
+// déplacer personne.
 export function premiereRoute(roles, estPromoteur, modulesActifs, typeEtab) {
-  for (const e of espacesAccessibles(roles, estPromoteur)) {
-    const it = e.items.find((x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, typeEtab));
-    if (it) return it.to;
+  const espaces = espacesAccessibles(roles, estPromoteur);
+  const ouvrable = (x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, typeEtab);
+  for (const transverses of [false, true]) {
+    for (const e of espaces) {
+      const it = e.items.find((x) => !!x.transverse === transverses && ouvrable(x));
+      if (it) return it.to;
+    }
   }
   return null;
 }
@@ -224,8 +245,10 @@ export function premiereRoute(roles, estPromoteur, modulesActifs, typeEtab) {
 export { ROLES_COMPLETS };
 
 // Regroupe des entrées par `groupe`, en préservant l'ordre de déclaration.
-// Les entrées sans groupe restent isolées, en tête (accueil) ou en pied
-// (Membres, À signer, Paramètres) — elles ne se replient pas.
+// Une entrée sans groupe reste isolée et ne se replie pas — c'est le cas des
+// espaces Pilotage et RH & Paie, assez courts pour se lire d'un bloc. En
+// Gestion et Pédagogie, plus rien ne flotte : les transverses (accueil,
+// Membres, À signer, Paramètres) sont rangées sous « Établissement ».
 // Renvoie [{ groupe: string|null, items: [] }].
 export function grouperItems(items = []) {
   const out = [];

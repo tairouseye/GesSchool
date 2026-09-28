@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.216.0] — aucune migration · « Établissement » : les entrées transverses ont un toit
+- **Demandé** : un nom pour regrouper Accueil, Membres et Paramètres dans les menus Gestion et Pédagogie.
+- **Le nom retenu — « Établissement »** — désigne ce que ces entrées ont en commun : l'établissement lui-même, et non l'une de ses matières. Sa vue d'ensemble, qui y travaille, ce qu'il y a à signer, comment il est réglé. C'est un nom simple, comme les autres en-têtes (Scolarité, Finances, Évaluation) — « Administration » aurait fait doublon avec l'espace Gestion.
+- **« À signer » rejoint le groupe** : elle flottait avec les trois autres et relève de la même famille.
+- **Contrainte structurelle assumée** : `grouperItems` ne fusionne que des entrées adjacentes, or Accueil était en tête et les autres en pied. Le groupe est donc placé **en tête**, Accueil en première position : le lien d'accueil doit rester le premier, ce n'est pas au regroupement de dicter l'ordre de lecture. Bénéfice immédiat sur téléphone — ces quatre tuiles se replient maintenant comme les autres, ce qu'elles ne pouvaient pas faire sans en-tête.
+- **🔴 Régression attrapée par les tests, et elle valait mieux qu'un correctif local.** Remonter le groupe en tête a fait atterrir le **bibliothécaire sur « À signer » au lieu de son catalogue** : `premiereRoute` — qui décide où l'on atterrit après connexion, pas seulement du repli d'une garde — suivait l'ordre de déclaration du menu. Le vrai défaut n'était pas la position du groupe mais ce **couplage** : l'ordre d'un menu ne doit pas déplacer les gens.
+- `premiereRoute` procède désormais en deux passes, les entrées marquées `transverse` n'étant retenues qu'en dernier recours : **une page d'atterrissage est du travail, pas un utilitaire**. Le marquage suit la nature de l'entrée, donc il vaut aussi dans Pilotage et RH & Paie, qui ne sont pas regroupés pour autant (huit entrées et quatre se lisent d'un bloc).
+- Deux tests de plus : aucun rôle n'atterrit sur un utilitaire tant qu'une page métier lui est ouverte — mais un utilitaire reste un repli valable, mieux qu'un cul-de-sac. Le test « toutes les pages métier sont rangées en section » devient « **aucune** entrée ne flotte hors section », plus strict et conforme à la nouvelle intention.
+
 ## [2.215.0] — aucune migration · Pilotage cloisonné à l'école ouverte
 - **Demandé** : « quand je rentre dans une école, la vue d'ensemble doit être cloisonnée à cette école, mais pas toutes ».
 - **Vérifié d'abord qu'il ne s'agissait pas d'une fuite** : `pilotage_synthese` filtre sur `proprietaires`, donc on ne voit que ses propres écoles — jamais celles d'un autre promoteur. C'était bien la vue consolidée voulue à l'origine, pas un défaut de cloisonnement.
