@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.212.0] — migration **154** · 🔴 Pilotage : la trésorerie oubliait la scolarité encaissée
+- **Signalé** : « des montants qui ne font pas de sens » dans Pilotage → vue d'ensemble. Constaté sur les données réelles : **TutTank_Demo affichait une trésorerie de −370 000 après avoir encaissé 10 102 500** ; l'UCAD, −435 000 pour 60 000 encaissés.
+- **La trésorerie ne comptait que les sorties.** Elle valait `solde initial + recettes − dépenses`, or la scolarité ne passe pas par les recettes du livre de caisse mais par la table des paiements — et celle des recettes est vide dans toute la base. Le solde n'était pas sous-estimé : il était **inversé**.
+- **La page se contredisait elle-même**, et c'est ce qui la rendait illisible : le même argent figurait dans « Résultat (année) » — 9 732 500 pour la démo — mais pas dans « Trésorerie », juste à côté.
+- **Le diagnostic avait déjà été posé.** La migration 075 s'appelle « Trésorerie : la scolarité encaissée alimente la caisse » et décrit exactement ce symptôme. Mais elle n'avait corrigé que `soldes_comptes` ; `pilotage_synthese`, écrite en 010, n'a jamais été reprise. Une même règle métier vivait à deux endroits, un seul a été réparé.
+- **Pourquoi compter les encaissements par école et non par compte de caisse** : `soldes_comptes` joint sur le compte, ce qui est juste pour un solde de caisse. Mais au niveau de l'établissement, un encaissement non imputé reste de l'argent entré — et il n'existe aujourd'hui que **2 comptes de caisse dans toute la base**, avec la **totalité** des paiements à `compte_id` nul. Raisonner par compte aurait effacé tout ce qui est encaissé.
+- **Deux corrections trouvées au passage.** Les factures **annulées** gonflaient le dénominateur du taux de recouvrement : la migration 143 avait posé la règle pour le tableau de bord des finances, Pilotage ne la suivait pas. Et l'écran appliquait la **devise de l'école active à toutes les cartes**, en sommant le tout : un promoteur ayant une école en USD ou en CDF (démo RDC) lisait des francs CFA qui n'existent pas, et `1 000 USD + 1 000 XOF` donnait « 2 000 XOF ». Chaque carte porte désormais la devise de son école, et les tuiles consolidées gardent **une ligne par monnaie** plutôt qu'un total impossible.
+- Libellé précisé en « Résultat (**année civile**) » : le calcul court depuis le 1er janvier, alors que tout le reste de l'application raisonne en année scolaire. Le chiffre ne change pas — seule l'ambiguïté disparaît.
+- Le calcul propre à l'écran est sorti dans `lib/pilotage.js` (`resultatAnnee`, `consoliderParDevise`) et couvert par 5 tests, dont un qui vérifie qu'**aucune ligne ne porte la somme de deux devises**.
+
 ## [2.211.2] — aucune migration · 🔴 « Can't find variable: getNiveaux » sur la page Annonces
 - **Signalé** : la page Annonces refusait de s'ouvrir sur `Can't find variable: getNiveaux`.
 - **De mon fait, en livrant la 2.211.0** : `Annonces.jsx` appelait `getNiveaux` et `getCycles` sans les importer. Un caractère manquant dans une ligne d'import, et la page entière tombe.

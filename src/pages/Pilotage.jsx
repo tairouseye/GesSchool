@@ -43,15 +43,16 @@ export default function Pilotage() {
     }
   }
 
-  // Totaux consolidés
+  // Effectif et taux de recouvrement se consolident : l'un compte des têtes,
+  // l'autre est un rapport, donc sans unité.
   const t = lignes.reduce((a, l) => ({
     effectif: a.effectif + Number(l.effectif || 0),
     facture: a.facture + Number(l.total_facture || 0),
     paye: a.paye + Number(l.total_paye || 0),
-    tresorerie: a.tresorerie + Number(l.tresorerie || 0),
-    masse: a.masse + Number(l.masse_salariale || 0),
-    resultat: a.resultat + Number(l.recettes_annee || 0) + Number(l.scolarite_annee || 0) - Number(l.depenses_annee || 0),
-  }), { effectif: 0, facture: 0, paye: 0, tresorerie: 0, masse: 0, resultat: 0 });
+  }), { effectif: 0, facture: 0, paye: 0 });
+
+  // Les MONTANTS, eux, ne s'additionnent qu'à devise égale (migration 154).
+  const monnaies = api.consoliderParDevise(lignes, devise);
 
   return (
     <>
@@ -75,16 +76,17 @@ export default function Pilotage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <Kpi label="Effectif total" valeur={fmt(t.effectif)} />
               <Kpi label="Taux de recouvrement" valeur={`${taux(t.paye, t.facture)}%`} ton="vert" />
-              <Kpi label="Trésorerie" valeur={fmt(t.tresorerie)} suffixe={devise} ton="navy" />
-              <Kpi label="Masse salariale (mois)" valeur={fmt(t.masse)} suffixe={devise} ton="rouge" />
-              <Kpi label="Résultat (année)" valeur={fmt(t.resultat)} suffixe={devise} ton={t.resultat >= 0 ? "or" : "rouge"} />
+              <KpiMonnaie label="Trésorerie" monnaies={monnaies} champ="tresorerie" ton="navy" />
+              <KpiMonnaie label="Masse salariale (mois)" monnaies={monnaies} champ="masse" ton="rouge" />
+              <KpiMonnaie label="Résultat (année civile)" monnaies={monnaies} champ="resultat" selonSigne />
             </div>
 
             {/* Comparatif par école */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               {lignes.map((l) => {
                 const actif = l.ecole_id === ecoleId;
-                const resultat = Number(l.recettes_annee || 0) + Number(l.scolarite_annee || 0) - Number(l.depenses_annee || 0);
+                const resultat = api.resultatAnnee(l);
+                const dev = l.devise || devise;   // la devise de CETTE école
                 return (
                   <Carte key={l.ecole_id} className={`p-5 ${actif ? "ring-2 ring-or-500" : ""}`}>
                     <div className="flex items-center gap-3">
@@ -98,9 +100,9 @@ export default function Pilotage() {
                     <dl className="mt-4 space-y-1.5 text-sm">
                       <Ligne l="Effectif" v={fmt(l.effectif)} />
                       <Ligne l="Recouvrement" v={`${taux(l.total_paye, l.total_facture)}%`} />
-                      <Ligne l="Trésorerie" v={`${fmt(l.tresorerie)} ${devise}`} />
-                      <Ligne l="Masse salariale" v={`${fmt(l.masse_salariale)} ${devise}`} />
-                      <Ligne l="Résultat (année)" v={`${fmt(resultat)} ${devise}`} ton={resultat >= 0 ? "vert" : "rouge"} />
+                      <Ligne l="Trésorerie" v={`${fmt(l.tresorerie)} ${dev}`} />
+                      <Ligne l="Masse salariale" v={`${fmt(l.masse_salariale)} ${dev}`} />
+                      <Ligne l="Résultat (année civile)" v={`${fmt(resultat)} ${dev}`} ton={resultat >= 0 ? "vert" : "rouge"} />
                     </dl>
 
                     <div className="mt-4">
@@ -183,6 +185,32 @@ function Kpi({ label, valeur, suffixe, ton }) {
       <p className={`mt-2 font-display text-2xl font-bold ${tons[ton] || tons.navy}`}>
         {valeur}{suffixe && <span className="ml-1 text-sm font-normal text-navy-900/40">{suffixe}</span>}
       </p>
+    </Carte>
+  );
+}
+
+// Une tuile de montant consolidé. Tant qu'il n'y a qu'une devise, elle se lit
+// comme avant ; dès qu'il y en a plusieurs, chaque monnaie garde sa ligne —
+// « 12 000 » sans dire de quoi, ou pire la somme d'USD et de francs CFA,
+// n'informe pas : elle trompe.
+function KpiMonnaie({ label, monnaies, champ, ton, selonSigne }) {
+  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
+  const couleur = (v) => (selonSigne ? (v >= 0 ? tons.or : tons.rouge) : tons[ton] || tons.navy);
+  return (
+    <Carte className="p-5">
+      <p className="text-sm text-navy-900/50">{label}</p>
+      {monnaies.length === 0 ? (
+        <p className="mt-2 font-display text-2xl font-bold text-navy-900/30">—</p>
+      ) : (
+        <div className={monnaies.length > 1 ? "mt-2 space-y-0.5" : "mt-2"}>
+          {monnaies.map(([dev, v]) => (
+            <p key={dev} className={`font-display font-bold ${monnaies.length > 1 ? "text-lg" : "text-2xl"} ${couleur(v[champ])}`}>
+              {fmt(v[champ])}
+              <span className="ml-1 text-sm font-normal text-navy-900/40">{dev}</span>
+            </p>
+          ))}
+        </div>
+      )}
     </Carte>
   );
 }
