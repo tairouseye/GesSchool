@@ -72,6 +72,37 @@ test("une école sans devise retombe sur celle de l'école active, pas sur rien"
   assert.equal(m[0][1].tresorerie, 150);
 });
 
+test("un brouillon de paie s'ajoute à l'engagé, il n'en fait pas partie", async () => {
+  const { consoliderParDevise } = await pilotage();
+  // Chiffres réels du 28/09/2026 : TOUS les bulletins de la base sont en
+  // brouillon. L'écran annonçait 3 572 999 de masse salariale dont pas un
+  // franc n'était engagé — un promoteur lit cette tuile à côté de sa
+  // trésorerie pour décider s'il peut payer (migration 155).
+  const m = consoliderParDevise([
+    { devise: "XOF", masse_salariale: 0, masse_brouillon: 300000, bulletins_brouillon: 2 },    // Tut'Tank
+    { devise: "XOF", masse_salariale: 0, masse_brouillon: 2622999, bulletins_brouillon: 12 },  // TutTank_Demo
+    { devise: "XOF", masse_salariale: 0, masse_brouillon: 650000, bulletins_brouillon: 3 },    // UCAD
+  ], "XOF");
+  const [, v] = m[0];
+  assert.equal(v.masse, 0, "rien d'engagé : la tuile doit afficher 0, pas 3 572 999");
+  assert.equal(v.masseBrouillon, 3572999, "mais le montant en préparation reste visible");
+  assert.equal(v.bulletinsBrouillon, 17);
+});
+
+test("valider un bulletin déplace le montant, il ne le crée pas", async () => {
+  const { consoliderParDevise } = await pilotage();
+  const avant = consoliderParDevise([
+    { devise: "XOF", masse_salariale: 0, masse_brouillon: 300000, bulletins_brouillon: 2 },
+  ], "XOF")[0][1];
+  const apres = consoliderParDevise([
+    { devise: "XOF", masse_salariale: 140000, masse_brouillon: 160000, bulletins_brouillon: 1 },
+  ], "XOF")[0][1];
+  assert.equal(apres.masse, 140000);
+  assert.equal(apres.bulletinsBrouillon, 1);
+  // Le total des deux colonnes ne bouge pas : l'argent change de colonne.
+  assert.equal(avant.masse + avant.masseBrouillon, apres.masse + apres.masseBrouillon);
+});
+
 test("aucune école : aucune ligne, et surtout aucun zéro trompeur", async () => {
   const { consoliderParDevise } = await pilotage();
   assert.deepEqual(consoliderParDevise([], "XOF"), []);

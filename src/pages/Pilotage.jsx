@@ -54,6 +54,19 @@ export default function Pilotage() {
   // Les MONTANTS, eux, ne s'additionnent qu'à devise égale (migration 154).
   const monnaies = api.consoliderParDevise(lignes, devise);
 
+  // ⚠️ Ces tuiles agrègent TOUTES les écoles du promoteur — y compris une
+  // école de démonstration, dont les montants fictifs écrasent les vrais.
+  // Sans le dire, on laisse lire un total consolidé comme le chiffre de
+  // l'école ouverte dans Gestion : c'est exactement la confusion signalée.
+  const portee = lignes.length > 1 ? `${lignes.length} établissements cumulés` : null;
+
+  // Un brouillon de paie n'est pas une charge, mais il ne doit pas non plus
+  // disparaître : on l'annonce, sans le compter (migration 155).
+  const brouillons = monnaies.reduce((a, [, v]) => a + v.bulletinsBrouillon, 0);
+  const noteBrouillons = brouillons > 0
+    ? `+ ${monnaies.filter(([, v]) => v.masseBrouillon > 0).map(([d, v]) => `${fmt(v.masseBrouillon)} ${d}`).join(" · ")} en brouillon (${brouillons} bulletin${brouillons > 1 ? "s" : ""} à valider)`
+    : portee;
+
   return (
     <>
       <EnTete
@@ -74,11 +87,11 @@ export default function Pilotage() {
           <>
             {/* KPIs consolidés */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <Kpi label="Effectif total" valeur={fmt(t.effectif)} />
-              <Kpi label="Taux de recouvrement" valeur={`${taux(t.paye, t.facture)}%`} ton="vert" />
-              <KpiMonnaie label="Trésorerie" monnaies={monnaies} champ="tresorerie" ton="navy" />
-              <KpiMonnaie label="Masse salariale (mois)" monnaies={monnaies} champ="masse" ton="rouge" />
-              <KpiMonnaie label="Résultat (année civile)" monnaies={monnaies} champ="resultat" selonSigne />
+              <Kpi label="Effectif total" valeur={fmt(t.effectif)} note={portee} />
+              <Kpi label="Taux de recouvrement" valeur={`${taux(t.paye, t.facture)}%`} ton="vert" note="toutes années confondues" />
+              <KpiMonnaie label="Trésorerie" monnaies={monnaies} champ="tresorerie" ton="navy" note={portee} />
+              <KpiMonnaie label="Masse salariale engagée (mois)" monnaies={monnaies} champ="masse" ton="rouge" note={noteBrouillons} />
+              <KpiMonnaie label="Résultat (année civile)" monnaies={monnaies} champ="resultat" selonSigne note={portee} />
             </div>
 
             {/* Comparatif par école */}
@@ -101,7 +114,13 @@ export default function Pilotage() {
                       <Ligne l="Effectif" v={fmt(l.effectif)} />
                       <Ligne l="Recouvrement" v={`${taux(l.total_paye, l.total_facture)}%`} />
                       <Ligne l="Trésorerie" v={`${fmt(l.tresorerie)} ${dev}`} />
-                      <Ligne l="Masse salariale" v={`${fmt(l.masse_salariale)} ${dev}`} />
+                      <Ligne l="Masse salariale engagée" v={`${fmt(l.masse_salariale)} ${dev}`} />
+                      {/* « + », et non « dont » : un brouillon s'ajoute à l'engagé,
+                          il n'en fait pas partie — c'est tout le sujet. */}
+                      {Number(l.bulletins_brouillon) > 0 && (
+                        <Ligne l={`+ brouillons à valider (${l.bulletins_brouillon})`}
+                               v={`${fmt(l.masse_brouillon)} ${dev}`} />
+                      )}
                       <Ligne l="Résultat (année civile)" v={`${fmt(resultat)} ${dev}`} ton={resultat >= 0 ? "vert" : "rouge"} />
                     </dl>
 
@@ -177,7 +196,7 @@ function MiseEnRoute({ ecoleId, ecole }) {
   );
 }
 
-function Kpi({ label, valeur, suffixe, ton }) {
+function Kpi({ label, valeur, suffixe, ton, note }) {
   const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
   return (
     <Carte className="p-5">
@@ -185,6 +204,7 @@ function Kpi({ label, valeur, suffixe, ton }) {
       <p className={`mt-2 font-display text-2xl font-bold ${tons[ton] || tons.navy}`}>
         {valeur}{suffixe && <span className="ml-1 text-sm font-normal text-navy-900/40">{suffixe}</span>}
       </p>
+      {note && <p className="mt-1 text-xs text-navy-900/40">{note}</p>}
     </Carte>
   );
 }
@@ -193,7 +213,7 @@ function Kpi({ label, valeur, suffixe, ton }) {
 // comme avant ; dès qu'il y en a plusieurs, chaque monnaie garde sa ligne —
 // « 12 000 » sans dire de quoi, ou pire la somme d'USD et de francs CFA,
 // n'informe pas : elle trompe.
-function KpiMonnaie({ label, monnaies, champ, ton, selonSigne }) {
+function KpiMonnaie({ label, monnaies, champ, ton, selonSigne, note }) {
   const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
   const couleur = (v) => (selonSigne ? (v >= 0 ? tons.or : tons.rouge) : tons[ton] || tons.navy);
   return (
@@ -211,6 +231,7 @@ function KpiMonnaie({ label, monnaies, champ, ton, selonSigne }) {
           ))}
         </div>
       )}
+      {note && <p className="mt-1 text-xs text-navy-900/40">{note}</p>}
     </Carte>
   );
 }
