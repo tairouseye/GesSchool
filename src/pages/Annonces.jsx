@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/annonces.js";
 import { televerserFichier, getFichiers as getFichiersEcole, supprimerFichier, lienFichier, poids, TAILLE_MAX } from "@/lib/fichiers.js";
-import { getAnneeCourante, getClasses } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getNiveaux, getCycles } from "@/lib/academique.js";
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "";

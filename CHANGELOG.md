@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.211.2] — aucune migration · 🔴 « Can't find variable: getNiveaux » sur la page Annonces
+- **Signalé** : la page Annonces refusait de s'ouvrir sur `Can't find variable: getNiveaux`.
+- **De mon fait, en livrant la 2.211.0** : `Annonces.jsx` appelait `getNiveaux` et `getCycles` sans les importer. Un caractère manquant dans une ligne d'import, et la page entière tombe.
+- **Le vrai sujet, c'est que rien ne l'a vu.** `vite build` a réussi, les 111 tests sont passés. Un empaqueteur ne résout que les **imports** : un identifiant libre est pour lui une variable globale parfaitement licite, et l'erreur n'apparaît qu'à l'ouverture de la page, chez l'utilisateur. Aucun de nos tests n'ouvre les pages — c'était un angle mort complet de la chaîne.
+- **Garde-fou ajouté** (`test/identifiants.test.mjs`) : chaque fichier de `src/` est transformé puis analysé, et tout identifiant utilisé sans être déclaré ni importé fait échouer la suite, avec son fichier et sa ligne. Confronté au défaut réel, il nomme bien `Annonces.jsx:45 — getNiveaux` et `:46 — getCycles`.
+- Deux précautions dans le garde-fou lui-même : les constantes injectées au build (`__APP_VERSION__`…) sont lues dans `vite.config.js` au lieu d'être codées en dur — une liste figée mentirait dès qu'on en ajouterait une ; et un second test rejoue le défaut d'origine en miniature, parce qu'un garde-fou qui ne détecte rien est pire que pas de garde-fou : il rassure.
+- Vérifié au passage que `getNiveaux`/`getCycles` rendent bien un tableau plat avec `id` et `libelle`, ce que lisent les sélecteurs — un import correct rendant une forme inattendue aurait donné un menu vide **sans lever d'erreur**, comme la régression `getFactures` de la 2.206.
+
 ## [2.211.1] — migration **153** · 🔴 une pièce jointe suit son annonce, et elle seule
 - **Trouvé en éprouvant la 152 avec de vraies sessions parent** — pas en relisant le code.
 - La migration 151 avait ouvert une seconde voie de lecture dans `fichiers_ecole` : un texte de portée « familles » est lisible par tout membre de l'établissement. C'était le but — un règlement intérieur que les familles ne peuvent pas lire ne sert à rien.
