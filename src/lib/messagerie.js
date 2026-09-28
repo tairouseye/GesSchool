@@ -9,26 +9,24 @@ export async function getConversations() {
   return data ?? [];
 }
 
-// Fil d'un parent (tuteur). Marque les messages du parent comme lus.
-export async function getThread(tuteurId) {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("id, expediteur, contenu, created_at")
-    .eq("tuteur_id", tuteurId)
-    .order("created_at");
+// Fil d'un parent — la PERSONNE, pas une de ses fiches tuteur (mig. 158).
+//
+// ⚠️ On passe par une RPC au lieu de lire `messages` directement : regrouper
+// les fiches d'une même personne demanderait au client de connaître leur
+// liste, donc de calculer ce que la base doit décider. Elle marque aussi les
+// messages du parent comme lus, en une seule aller-retour.
+export async function getThread(parentId) {
+  const { data, error } = await supabase.rpc("ecole_fil_parent", { p_parent: parentId });
   if (error) throw error;
-  await supabase.from("messages").update({ lu: true }).eq("tuteur_id", tuteurId).eq("expediteur", "parent").eq("lu", false);
   return data ?? [];
 }
 
-export async function envoyerEcole(ecoleId, tuteurId, contenu, auteurId) {
+// `ecoleId` n'est plus transmis : la RPC prend l'école courante, et la fiche
+// d'écriture est la même que celle du parent — sinon le fil se rescinderait.
+export async function envoyerEcole(parentId, contenu) {
   if (!contenu?.trim()) return;
-  const { error } = await supabase.from("messages").insert({
-    ecole_id: ecoleId,
-    tuteur_id: tuteurId,
-    expediteur: "ecole",
-    contenu: contenu.trim(),
-    auteur_id: auteurId || null,
+  const { error } = await supabase.rpc("ecole_envoyer_parent", {
+    p_parent: parentId, p_contenu: contenu.trim(),
   });
   if (error) throw error;
 }

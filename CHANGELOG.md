@@ -5,6 +5,29 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.219.0] — migration **158** · audit de l'espace parent : trois corrections
+Audit demandé sur l'espace parent, en particulier la logique des menus à la première connexion. Tout ce qui suit a été constaté dans le code ou avec de vraies sessions parent.
+
+### 🔴 Messagerie : un fil par personne, non par fiche
+- **Mesuré sur de vraies sessions** : **Idrissa KANE**, 4 fiches tuteur pour 4 enfants de la même école, voyait **4 boutons tous intitulés « Tut'Tank »**, indiscernables. **Tahirou SEYE**, 3 fiches pour 1 enfant, voyait 3 onglets dont deux pour des écoles où il n'a aucun enfant. Et le miroir existait côté école : `ecole_conversations()` listant les fiches, Idrissa y apparaissait **quatre fois sous le même nom**.
+- **Ce n'est pas un défaut d'affichage mais un défaut de clé.** Le fil était identifié par la fiche tuteur, or une fiche est créée par élève **et** par responsable — c'est le principe même des codes d'accès. Les échanges se répartissaient donc entre les fiches : l'école répondait dans un fil, le parent regardait dans un autre.
+- La clé devient la **personne dans une école**. Un parent parle à un établissement, pas à une fiche.
+- **Aucune donnée n'est déplacée** : les messages restent attachés à leur fiche, on change la façon de les regrouper. L'écriture se fait sur une fiche canonique — la plus ancienne — et **les deux côtés écrivent au même endroit**, sinon le fil se rescinderait par le bas.
+- Le versant école nomme désormais **les enfants concernés** : le secrétariat parlait quatre fois au même « Idrissa KANE » sans savoir duquel il s'agissait.
+- ⚠️ Les noms de paramètres changent (`p_tuteur` → `p_ecole`, et un `p_parent` côté école). PostgREST résout les RPC **par nom** : l'ancien appel répond 404, pas 403. Front et base sont modifiés dans le même lot, et les anciennes signatures supprimées pour ne pas laisser deux surcharges ambiguës. Le lien profond de la fiche élève passe de `?tuteur=` à `?parent=`. Le volet **étudiant** n'est pas touché : sa clé est l'élève, un étudiant majeur n'a qu'un fil.
+
+### 🔴 La visite guidée ratait son étape principale
+- Elle s'ouvrait après un délai **devinné de 700 ms**, indépendamment du chargement. L'étape « Vos enfants » cible une ancre qui n'existe pas encore pendant le chargement, et `Tour` saute alors l'étape **en silence** — l'étape la plus importante, à la seule occasion où elle compte. La migration 157 avait aggravé le risque en ralentissant `mes_enfants()`.
+- Elle attend maintenant que l'ancre existe, avec un plafond de 8 secondes pour qu'un parent sans enfant rattaché ait quand même le guide. Et elle ne s'ouvre plus que sur l'accueil : trois de ses cinq étapes visent le contenu de cette page.
+
+### Les tuiles dupliquaient l'en-tête sans en porter les signaux
+- **« Mon compte » est retirée** des tuiles, comme signalé : c'est un réglage qu'on ouvre une fois, la roue dentée de l'en-tête suffit, et une tuile de la taille de « Messages » lui donnait une importance qu'elle n'a pas.
+- **Les pastilles de non-lus passent sur les tuiles.** Elles n'étaient que sur les icônes de l'en-tête, minuscules sur téléphone — là où se trouve l'essentiel du public parent. Le chemin visible ne signalait rien, le chemin qui signale était presque invisible. Les compteurs sont transmis par la coque, déjà chargés : aucune requête de plus.
+
+### Constaté, non corrigé
+- La tuile **« Règlement » mène à une page vide pour tous les parents** : `textes_reference()` renvoie 0 texte, `fichiers_ecole` étant vide dans toute la base. C'est un manque de contenu, pas de code — aucune école n'a encore publié son règlement intérieur.
+- L'état « aucun enfant » n'est **pas atteignable en pratique** : on entre dans l'espace parent par un code enfant, donc toujours avec au moins un enfant. L'écran vide est un filet, pas la première connexion — utile à savoir avant d'y investir du travail.
+
 ## [2.218.0] — migration **157** · les annonces appartiennent à l'enfant, pas à l'accueil
 - **Demandé** : sur le profil parent, que les annonces soient liées à l'enfant et ne s'affichent pas dès l'ouverture de l'application. L'accueil présentait la liste complète, toutes écoles confondues, avant même d'avoir choisi un enfant.
 - **La liste a quitté l'accueil** ; elle reste dans la page de chaque enfant, où elle était déjà cadrée sur son établissement, sa classe, son niveau et son cycle.

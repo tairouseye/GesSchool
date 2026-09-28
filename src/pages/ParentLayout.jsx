@@ -24,12 +24,32 @@ export default function ParentLayout() {
   }, [location.pathname]);
 
   // Visite guidée au premier accès.
+  //
+  // ⚠️ ELLE ATTEND QUE LE CONTENU SOIT LÀ, et non un délai devinné. Avec un
+  // `setTimeout` de 700 ms, l'étape « Vos enfants » cible une ancre encore
+  // absente pendant le chargement : `Tour` la saute alors en silence — et
+  // c'est l'étape principale, à la seule occasion où elle compte. Sur une
+  // connexion lente le guide perdait donc son intérêt.
+  //
+  // Elle ne s'ouvre que sur l'accueil : trois de ses cinq étapes visent le
+  // contenu de cette page.
   useEffect(() => {
-    if (localStorage.getItem("tour_parent_v1") !== "done") {
-      const t = setTimeout(() => setTour(true), 700);
-      return () => clearTimeout(t);
-    }
-  }, []);
+    if (localStorage.getItem("tour_parent_v1") === "done") return;
+    if (location.pathname !== "/parent") return;
+    let fini = false;
+    const debut = Date.now();
+    const chercher = () => {
+      if (fini) return;
+      // Ancre présente, ou attente trop longue : on ouvre quand même, faute de
+      // quoi un parent sans enfant rattaché n'aurait jamais le guide.
+      if (document.querySelector('[data-tour="enfants"]') || Date.now() - debut > 8000) {
+        fini = true; setTour(true); return;
+      }
+      setTimeout(chercher, 150);
+    };
+    const t = setTimeout(chercher, 400);
+    return () => { fini = true; clearTimeout(t); };
+  }, [location.pathname]);
   const fermerTour = () => { setTour(false); localStorage.setItem("tour_parent_v1", "done"); };
   return (
     <div className="min-h-dscreen bg-creme">
@@ -70,7 +90,9 @@ export default function ParentLayout() {
         {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
         <div className="empty:hidden lg:hidden"><InvitePush /></div>
         <Suspense fallback={<ChargementPage />}>
-          <Outlet />
+          {/* Les compteurs sont déjà chargés ici, à chaque navigation : on les
+              transmet plutôt que de les redemander depuis l'accueil. */}
+          <Outlet context={{ nonLues, msgNonLus }} />
         </Suspense>
       </main>
       <footer className="pb-6">

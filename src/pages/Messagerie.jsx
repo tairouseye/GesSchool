@@ -30,7 +30,9 @@ export default function Messagerie() {
   const [eleves, setEleves] = useState([]);
   const [recherche, setRecherche] = useState("");
   const [choixParents, setChoixParents] = useState(null); // { eleve, parents } si plusieurs
-  const [tuteurId, setTuteurId] = useState(null);
+  // La cle du fil parent est le PROFIL de la personne, plus une de ses
+  // fiches tuteur : le systeme de codes en cree une par enfant (mig. 158).
+  const [parentId, setParentId] = useState(null);
   const [selInfo, setSelInfo] = useState(null);
 
   // --- Fils ÉTUDIANTS (migration 139) ---
@@ -71,10 +73,10 @@ export default function Messagerie() {
     return () => { vivant = false; clearTimeout(t); };
   }, [ecoleId, rechercheEt]);
 
-  // Lien profond depuis la fiche élève : /messagerie?tuteur=…&nom=…
+  // Lien profond depuis la fiche élève : /messagerie?parent=<profil>&nom=…
   const [params] = useSearchParams();
   useEffect(() => {
-    const t = params.get("tuteur");
+    const t = params.get("parent");
     if (t) { setOnglet("parents"); ouvrir(t, params.get("nom") || "Parent", params.get("eleve") || undefined); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -82,9 +84,9 @@ export default function Messagerie() {
   const chargerThread = useCallback(async () => {
     try {
       if (onglet === "etudiants") setMessages(eleveId ? await api.getThreadEtudiant(eleveId) : []);
-      else setMessages(tuteurId ? await api.getThread(tuteurId) : []);
+      else setMessages(parentId ? await api.getThread(parentId) : []);
     } catch (e) { setErreur(e.message); }
-  }, [onglet, tuteurId, eleveId]);
+  }, [onglet, parentId, eleveId]);
   useEffect(() => { chargerThread(); }, [chargerThread]);
 
   async function envoyer(e) {
@@ -97,8 +99,8 @@ export default function Messagerie() {
         if (!eleveId) return;
         await api.envoyerEcoleEtudiant(ecoleId, eleveId, t, utilisateur?.id);
       } else {
-        if (!tuteurId) return;
-        await api.envoyerEcole(ecoleId, tuteurId, t, utilisateur?.id);
+        if (!parentId) return;
+        await api.envoyerEcole(parentId, t);
       }
       setTexte("");
       await chargerThread();
@@ -107,8 +109,8 @@ export default function Messagerie() {
     finally { setEnvoi(false); }
   }
 
-  function ouvrir(tid, nom, eleveNom) {
-    setTuteurId(tid);
+  function ouvrir(pid, nom, eleveNom) {
+    setParentId(pid);
     setSelInfo(nom ? { nom, eleve: eleveNom } : null);
     setRecherche("");
     setChoixParents(null);
@@ -136,15 +138,15 @@ export default function Messagerie() {
       const liens = await getTuteursEleve(el.id);
       const parents = liens.map((l) => l.tuteurs).filter((t) => t && t.profil_id);
       if (parents.length === 0) { toast.erreur("Aucun parent de cet élève n'a de compte."); return; }
-      if (parents.length === 1) ouvrir(parents[0].id, `${parents[0].prenom} ${parents[0].nom}`, `${el.prenom} ${el.nom}`);
+      if (parents.length === 1) ouvrir(parents[0].profil_id, `${parents[0].prenom} ${parents[0].nom}`, `${el.prenom} ${el.nom}`);
       else setChoixParents({ eleve: el, parents });
     } catch (e) { toast.erreur(e.message); }
   }
 
   const etudiants = onglet === "etudiants";
-  const conv = convs.find((c) => c.tuteur_id === tuteurId);
+  const conv = convs.find((c) => c.parent_id === parentId);
   const convEt = convsEt.find((c) => c.eleve_id === eleveId);
-  const ouvert = etudiants ? eleveId : tuteurId;
+  const ouvert = etudiants ? eleveId : parentId;
   const titreFil = etudiants
     ? (convEt?.etudiant || (selEleve ? `${selEleve.prenom} ${selEleve.nom}` : "Étudiant"))
     : (conv?.parent || selInfo?.nom || "Parent");
@@ -238,7 +240,7 @@ export default function Messagerie() {
                 <button onClick={() => setChoixParents(null)} className="px-4 py-2 text-xs text-navy-700 hover:text-or-500">← Retour</button>
                 <p className="px-4 pb-1 text-xs text-navy-900/50">Parents de {choixParents.eleve.prenom} {choixParents.eleve.nom}</p>
                 {choixParents.parents.map((p) => (
-                  <button key={p.id} onClick={() => ouvrir(p.id, `${p.prenom} ${p.nom}`, `${choixParents.eleve.prenom} ${choixParents.eleve.nom}`)}
+                  <button key={p.id} onClick={() => ouvrir(p.profil_id, `${p.prenom} ${p.nom}`, `${choixParents.eleve.prenom} ${choixParents.eleve.nom}`)}
                     className="block w-full border-t border-navy-900/5 px-4 py-3 text-left hover:bg-creme/60">
                     <p className="font-medium text-navy-900">{p.prenom} {p.nom}</p>
                     <p className="text-xs text-navy-900/50">{p.telephone || p.email || "—"}</p>
@@ -273,13 +275,19 @@ export default function Messagerie() {
                   <li className="px-4 pb-4 text-sm text-navy-900/40">Aucune conversation. Recherchez un élève ci‑dessus pour écrire à son parent.</li>
                 ) : (
                   convs.map((c) => (
-                    <li key={c.tuteur_id}>
+                    <li key={c.parent_id}>
                       <button
-                        onClick={() => ouvrir(c.tuteur_id, c.parent)}
-                        className={`flex w-full items-start justify-between gap-2 border-b border-navy-900/5 px-4 py-3 text-left hover:bg-creme/60 ${c.tuteur_id === tuteurId ? "bg-creme" : ""}`}
+                        onClick={() => ouvrir(c.parent_id, c.parent, c.enfants || undefined)}
+                        className={`flex w-full items-start justify-between gap-2 border-b border-navy-900/5 px-4 py-3 text-left hover:bg-creme/60 ${c.parent_id === parentId ? "bg-creme" : ""}`}
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-medium text-navy-900">{c.parent}</span>
+                          {/* Nommer les enfants : le secrétariat parlait quatre
+                              fois au même « Idrissa KANE » sans savoir duquel
+                              il s'agissait (migration 158). */}
+                          {c.enfants && (
+                            <span className="block truncate text-xs text-navy-900/45">{c.enfants}</span>
+                          )}
                           <span className="block truncate text-xs text-navy-900/50">{c.dernier || "—"}</span>
                         </span>
                         {c.non_lus > 0 && (

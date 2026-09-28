@@ -8,7 +8,8 @@ const fmt = (d) =>
 
 export default function ParentMessagerie() {
   const [convs, setConvs] = useState([]);
-  const [tuteurId, setTuteurId] = useState(null);
+  // La cle du fil est l'ECOLE, plus la fiche tuteur (migration 158).
+  const [ecoleId, setEcoleId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [texte, setTexte] = useState("");
   const [erreur, setErreur] = useState("");
@@ -19,32 +20,32 @@ export default function ParentMessagerie() {
       try {
         const c = await mesConversations();
         setConvs(c);
-        if (c.length === 1) setTuteurId(c[0].tuteur_id);
+        if (c.length === 1) setEcoleId(c[0].ecole_id);
       } catch (e) { setErreur(e.message); }
     })();
   }, []);
 
   const charger = useCallback(async () => {
-    if (!tuteurId) return;
-    try { setMessages(await conversationMessages(tuteurId)); }
+    if (!ecoleId) return;
+    try { setMessages(await conversationMessages(ecoleId)); }
     catch (e) { setErreur(e.message); }
-  }, [tuteurId]);
+  }, [ecoleId]);
 
   useEffect(() => { charger(); }, [charger]);
 
   async function envoyer(e) {
     e.preventDefault();
-    if (!texte.trim() || !tuteurId) return;
+    if (!texte.trim() || !ecoleId) return;
     setEnvoi(true);
     try {
-      await parentEnvoyer(tuteurId, texte.trim());
+      await parentEnvoyer(ecoleId, texte.trim());
       setTexte("");
       await charger();
     } catch (er) { setErreur(er.message); }
     finally { setEnvoi(false); }
   }
 
-  const conv = convs.find((c) => c.tuteur_id === tuteurId);
+  const conv = convs.find((c) => c.ecole_id === ecoleId);
 
   return (
     <div className="space-y-5">
@@ -57,15 +58,15 @@ export default function ParentMessagerie() {
       {convs.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {convs.map((c) => (
-            <button key={c.tuteur_id} onClick={() => setTuteurId(c.tuteur_id)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${c.tuteur_id === tuteurId ? "bg-navy-900 text-creme" : "bg-navy-900/5 text-navy-900/70"}`}>
+            <button key={c.ecole_id} onClick={() => setEcoleId(c.ecole_id)}
+              className={`rounded-lg px-3 py-1.5 text-sm ${c.ecole_id === ecoleId ? "bg-navy-900 text-creme" : "bg-navy-900/5 text-navy-900/70"}`}>
               {c.ecole}{c.non_lus > 0 ? ` (${c.non_lus})` : ""}
             </button>
           ))}
         </div>
       )}
 
-      {!tuteurId ? (
+      {!ecoleId ? (
         <Carte className="p-8 text-sm text-navy-900/50">Aucune conversation.</Carte>
       ) : (
         <Carte className="flex h-[60vh] flex-col p-0">

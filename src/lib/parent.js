@@ -219,14 +219,18 @@ export async function mesMessagesNonLus() {
   return data ?? 0;
 }
 
-export async function conversationMessages(tuteurId) {
-  const { data, error } = await supabase.rpc("conversation_messages", { p_tuteur: tuteurId });
+// ⚠️ La clé du fil est l'ÉCOLE, plus la fiche tuteur (migration 158). Le
+// système de codes crée une fiche par élève et par responsable : un parent de
+// quatre enfants en avait quatre dans la même école, donc quatre fils séparés
+// et quatre onglets identiques. Il parle à une école, pas à une fiche.
+export async function conversationMessages(ecoleId) {
+  const { data, error } = await supabase.rpc("conversation_messages", { p_ecole: ecoleId });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function parentEnvoyer(tuteurId, contenu) {
-  const { error } = await supabase.rpc("parent_envoyer", { p_tuteur: tuteurId, p_contenu: contenu });
+export async function parentEnvoyer(ecoleId, contenu) {
+  const { error } = await supabase.rpc("parent_envoyer", { p_ecole: ecoleId, p_contenu: contenu });
   if (error) throw error;
 }
 

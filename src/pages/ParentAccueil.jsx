@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
@@ -15,6 +15,11 @@ const avatarColor = (id) => {
 
 export default function ParentAccueil() {
   const toast = useToast();
+  // ⚠️ Les pastilles de non-lus n'étaient QUE sur les icônes de l'en-tête,
+  // minuscules sur téléphone — là où se trouve l'essentiel du public parent.
+  // Le chemin visible ne signalait rien, le chemin qui signale était presque
+  // invisible. Les tuiles les portent maintenant aussi.
+  const { nonLues = 0, msgNonLus = 0 } = useOutletContext() || {};
   const [enfants, setEnfants] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
@@ -91,20 +96,26 @@ export default function ParentAccueil() {
         </div>
       )}
 
-      {/* Raccourcis en tuiles — mêmes gestes que dans l'espace enfant.
-          Ces trois destinations n'étaient que de petites icônes dans l'en-tête,
-          donc pratiquement invisibles sur téléphone. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Raccourcis en tuiles : les icônes de l'en-tête sont minuscules sur
+          téléphone, où se trouve l'essentiel du public parent.
+          « Mon compte » n'y figure pas : c'est un réglage, qu'on ouvre une
+          fois — la roue dentée de l'en-tête suffit, et une tuile de la même
+          taille que « Messages » lui donnerait une importance qu'il n'a pas. */}
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { to: "/parent/messages", cle: "messagerie", label: "Messages" },
-          { to: "/parent/notifications", cle: "annonces", label: "Alertes" },
+          { to: "/parent/messages", cle: "messagerie", label: "Messages", n: msgNonLus },
+          { to: "/parent/notifications", cle: "annonces", label: "Alertes", n: nonLues },
           { to: "/parent/textes", cle: "_documentation", label: "Règlement" },
-          { to: "/parent/compte", cle: "parametres", label: "Mon compte" },
         ].map((t) => (
           <Link key={t.to} to={t.to}
-            className="flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
+            className="relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
             <Icone name={t.cle} className="h-7 w-7 text-or-500" />
             <span className="text-sm font-semibold text-creme">{t.label}</span>
+            {Number(t.n) > 0 && (
+              <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
+                {Number(t.n) > 9 ? "9+" : t.n}
+              </span>
+            )}
           </Link>
         ))}
       </div>

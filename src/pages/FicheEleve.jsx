@@ -195,7 +195,7 @@ export default function FicheEleve() {
                     <div className="flex flex-col items-end gap-1">
                       {t.tuteurs.profil_id && peutMessage && (
                         <button
-                          onClick={() => navigate(`/messagerie?tuteur=${t.tuteurs.id}&nom=${encodeURIComponent(`${t.tuteurs.prenom} ${t.tuteurs.nom}`)}&eleve=${encodeURIComponent(`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim())}`)}
+                          onClick={() => navigate(`/messagerie?parent=${t.tuteurs.profil_id}&nom=${encodeURIComponent(`${t.tuteurs.prenom} ${t.tuteurs.nom}`)}&eleve=${encodeURIComponent(`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim())}`)}
                           className="text-xs font-medium text-navy-700 hover:text-or-500"
                         >
                           ✉️ Message
