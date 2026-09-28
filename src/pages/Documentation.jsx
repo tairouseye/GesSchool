@@ -5,7 +5,8 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { getDocuments } from "@/lib/documents.js";
-import { getFichiers, televerserFichier, supprimerFichier, lienFichier, poids, CATEGORIES, libCategorie, TAILLE_MAX } from "@/lib/fichiers.js";
+import { getFichiers, televerserFichier, supprimerFichier, lienFichier, poids, CATEGORIES, CATEGORIES_TEXTES,
+         libCategorie, libPortee, PORTEES, estTexteReference, TAILLE_MAX } from "@/lib/fichiers.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 // Documentation (Pilotage) — hub central de tous les documents de l'école.
@@ -86,6 +87,7 @@ export default function Documentation() {
   const [catF, setCatF] = useState("");
   const [qF, setQF] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  const [texte, setTexte] = useState({ titre: "", categorie: "reglement", reference: "", date_texte: "", portee: "familles", fichier: null });
   const [docs, setDocs] = useState([]);
   const [q, setQ] = useState("");
   const [fam, setFam] = useState("");
@@ -109,7 +111,8 @@ export default function Documentation() {
 
   // Le filtrage se fait ici : la bibliothèque d'un établissement se compte
   // en dizaines de fichiers, pas en milliers.
-  const fichiersFiltres = fichiers.filter((x) => {
+  const textes = fichiers.filter((x) => estTexteReference(x.categorie));
+  const fichiersFiltres = fichiers.filter((x) => !estTexteReference(x.categorie)).filter((x) => {
     if (catF && x.categorie !== catF) return false;
     const m = qF.trim().toLowerCase();
     if (m && !`${x.titre} ${x.nom_fichier}`.toLowerCase().includes(m)) return false;
@@ -129,6 +132,23 @@ export default function Documentation() {
       // Sans cela, redéposer le même fichier ne déclencherait pas `change`.
       if (input) input.value = "";
     }
+  }
+
+  async function deposerTexte(e) {
+    e.preventDefault();
+    if (!texte.fichier) { toast.erreur("Choisissez le fichier du texte."); return; }
+    if (!texte.titre.trim()) { toast.erreur("Donnez un intitulé au texte."); return; }
+    setEnvoi(true);
+    try {
+      await televerserFichier(ecoleId, texte.fichier, {
+        titre: texte.titre, categorie: texte.categorie, portee: texte.portee,
+        reference: texte.reference, dateTexte: texte.date_texte || null, auteurId: utilisateur?.id,
+      });
+      toast.succes(texte.portee === "familles" ? "Texte publié — visible des familles." : "Texte enregistré.");
+      setTexte({ titre: "", categorie: "reglement", reference: "", date_texte: "", portee: "familles", fichier: null });
+      rechargerFichiers();
+    } catch (er) { toast.erreur(er); }
+    finally { setEnvoi(false); }
   }
 
   async function ouvrirFichier(x) {
@@ -229,6 +249,93 @@ export default function Documentation() {
             </Carte>
           ))}
         </div>
+
+        {/* ── Textes de référence ────────────────────────────────────────
+            Les textes qui RÉGISSENT l'établissement : on y revient, on les
+            cite, ils survivent aux années scolaires. Un rayon à part, pour
+            ne pas les perdre dans le tout-venant. */}
+        <Carte className="p-5">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-lg font-semibold text-navy-900">
+              ⚖️ Textes de référence
+              {textes.length > 0 && <span className="ml-2 text-sm font-normal text-navy-900/40">({textes.length})</span>}
+            </h3>
+          </div>
+          <p className="mb-4 text-xs text-navy-900/50">
+            Règlement intérieur, codes et décrets relatifs à l'enseignement, arrêtés, conventions,
+            chartes. Un texte publié aux familles apparaît dans l'espace parent et dans l'espace étudiant.
+          </p>
+
+          {textes.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-navy-900/15 px-4 py-6 text-center text-sm text-navy-900/45">
+              Aucun texte déposé. Commencez par votre règlement intérieur.
+            </p>
+          ) : (
+            <ul className="divide-y divide-navy-900/5">
+              {textes.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                  <button type="button" onClick={() => ouvrirFichier(x)} className="min-w-0 flex-1 text-left">
+                    <p className="truncate font-medium text-navy-900">
+                      ⚖️ {x.titre}
+                      {x.portee === "familles" && (
+                        <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                          publié
+                        </span>
+                      )}
+                    </p>
+                    <p className="truncate text-xs text-navy-900/50">
+                      {[libCategorie(x.categorie), x.reference,
+                        x.date_texte ? new Date(x.date_texte).toLocaleDateString("fr-FR") : null,
+                        poids(x.taille)].filter(Boolean).join(" · ")}
+                    </p>
+                  </button>
+                  <button onClick={() => retirer(x)} className="shrink-0 text-xs text-rose-500 hover:underline">
+                    supprimer
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={deposerTexte} className="mt-4 space-y-3 rounded-xl border border-dashed border-navy-900/15 bg-creme/40 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-navy-900/45">Déposer un texte</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Champ label="Intitulé *" value={texte.titre}
+                onChange={(e) => setTexte((t) => ({ ...t, titre: e.target.value }))}
+                placeholder="Règlement intérieur 2026-2027" />
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Nature</span>
+                <select value={texte.categorie} onChange={(e) => setTexte((t) => ({ ...t, categorie: e.target.value }))}
+                  className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                  {CATEGORIES_TEXTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Champ label="Référence" value={texte.reference}
+                onChange={(e) => setTexte((t) => ({ ...t, reference: e.target.value }))}
+                placeholder="Décret n° 2024-1234" />
+              <Champ label="Date du texte" type="date" value={texte.date_texte}
+                onChange={(e) => setTexte((t) => ({ ...t, date_texte: e.target.value }))} />
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Qui peut le consulter</span>
+                <select value={texte.portee} onChange={(e) => setTexte((t) => ({ ...t, portee: e.target.value }))}
+                  className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                  {PORTEES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <label className="block flex-1">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Fichier *</span>
+                <input type="file" accept=".pdf,.doc,.docx" required
+                  onChange={(e) => setTexte((t) => ({ ...t, fichier: e.target.files?.[0] || null }))}
+                  className="block w-full text-sm text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-creme" />
+              </label>
+              <Bouton type="submit" disabled={envoi}>{envoi ? "Envoi…" : "Déposer le texte"}</Bouton>
+            </div>
+          </form>
+        </Carte>
 
         {/* Bibliothèque de fichiers — dépôts directs ET pièces jointes des
             annonces. Une seule table, pour qu'elles ne divergent jamais. */}

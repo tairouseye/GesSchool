@@ -15,6 +15,7 @@ const TUILES = [
   { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
   { to: "/etudiant/emploi", cle: "emploi_sup", label: "Emploi du temps" },
   { to: "/etudiant/messagerie", cle: "messagerie", label: "Messagerie" },
+  { to: "/etudiant/textes", cle: "_documentation", label: "Textes de référence" },
   { to: "/etudiant/scolarite", cle: "paiements", label: "Ma scolarité" },
   { to: "/etudiant/documents", cle: "certificats", label: "Mes documents" },
   { to: "/etudiant/actualites", cle: "annonces", label: "Actualités" },

@@ -94,10 +94,11 @@ export default function ParentAccueil() {
       {/* Raccourcis en tuiles — mêmes gestes que dans l'espace enfant.
           Ces trois destinations n'étaient que de petites icônes dans l'en-tête,
           donc pratiquement invisibles sur téléphone. */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { to: "/parent/messages", cle: "messagerie", label: "Messages" },
           { to: "/parent/notifications", cle: "annonces", label: "Alertes" },
+          { to: "/parent/textes", cle: "_documentation", label: "Règlement" },
           { to: "/parent/compte", cle: "parametres", label: "Mon compte" },
         ].map((t) => (
           <Link key={t.to} to={t.to}

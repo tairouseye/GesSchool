@@ -53,6 +53,7 @@ const EtudiantActualites = lazy(() => import("@/pages/EtudiantActualites.jsx"));
 const EtudiantCarte = lazy(() => import("@/pages/EtudiantCarte.jsx"));
 const EtudiantEmploi = lazy(() => import("@/pages/EtudiantEmploi.jsx"));
 const EtudiantMessagerie = lazy(() => import("@/pages/EtudiantMessagerie.jsx"));
+const TextesReference = lazy(() => import("@/composants/TextesReference.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
@@ -193,6 +194,7 @@ export default function App() {
             <Route index element={<ParentAccueil />} />
             <Route path="enfant/:id" element={<ParentEnfant />} />
             <Route path="notifications" element={<ParentNotifications />} />
+            <Route path="textes" element={<TextesReference />} />
             <Route path="messages" element={<ParentMessagerie />} />
             <Route path="compte" element={<ParentCompte />} />
           </Route>
@@ -211,6 +213,7 @@ export default function App() {
             <Route path="notes" element={<EtudiantNotes />} />
             <Route path="emploi" element={<EtudiantEmploi />} />
             <Route path="messagerie" element={<EtudiantMessagerie />} />
+            <Route path="textes" element={<TextesReference />} />
             <Route path="scolarite" element={<EtudiantScolarite />} />
             <Route path="documents" element={<EtudiantDocuments />} />
             <Route path="actualites" element={<EtudiantActualites />} />

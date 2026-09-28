@@ -8,15 +8,36 @@ import { urlSignee } from "@/lib/stockage.js";
 // deux fois garantirait qu'ils divergent ; une pièce jointe n'est qu'une
 // ligne de la documentation, rattachée à une annonce.
 
+// Le rayon réglementaire : les textes qui RÉGISSENT l'établissement. On y
+// revient, on les cite, ils survivent aux années scolaires — les mélanger au
+// tout-venant reviendrait à les perdre (migration 151).
+export const CATEGORIES_TEXTES = [
+  ["reglement", "Règlement intérieur"],
+  ["texte_officiel", "Texte officiel (code, décret, arrêté)"],
+  ["convention", "Statuts, convention, agrément"],
+  ["procedure", "Charte ou procédure interne"],
+];
+
 export const CATEGORIES = [
+  ...CATEGORIES_TEXTES,
   ["annonce", "Pièce jointe d'annonce"],
-  ["reglement", "Règlement"],
   ["circulaire", "Circulaire"],
   ["formulaire", "Formulaire"],
   ["calendrier", "Calendrier"],
   ["autre", "Autre"],
 ];
 export const libCategorie = (c) => (CATEGORIES.find((x) => x[0] === c) || [])[1] || "Autre";
+export const CLES_TEXTES = CATEGORIES_TEXTES.map(([v]) => v);
+export const estTexteReference = (c) => CLES_TEXTES.includes(c);
+
+// « interne » réserve le texte au personnel ; « familles » l'ouvre aux
+// parents et aux étudiants. C'est une décision de publication, pas un
+// réglage technique — d'où un champ explicite.
+export const PORTEES = [
+  ["interne", "Personnel uniquement"],
+  ["familles", "Visible des parents et étudiants"],
+];
+export const libPortee = (p) => (PORTEES.find((x) => x[0] === p) || [])[1] || "Personnel uniquement";
 
 const BUCKET = "documents";
 // Le serveur plafonne à 20 Mo (migration 150). On refuse avant l'envoi pour
@@ -41,7 +62,7 @@ function cheminPour(ecoleId, fichier) {
 // Téléverse puis enregistre la ligne. Si l'enregistrement échoue, le fichier
 // est retiré du stockage : un octet sans ligne serait invisible et pèserait
 // pour rien.
-export async function televerserFichier(ecoleId, fichier, { titre, categorie = "autre", annonceId = null, auteurId = null } = {}) {
+export async function televerserFichier(ecoleId, fichier, { titre, categorie = "autre", annonceId = null, auteurId = null, portee = "interne", reference = null, dateTexte = null } = {}) {
   if (!fichier) throw new Error("Aucun fichier sélectionné.");
   if (fichier.size > TAILLE_MAX) {
     throw new Error(`Fichier trop volumineux (${poids(fichier.size)}). Maximum ${poids(TAILLE_MAX)}.`);
@@ -64,6 +85,11 @@ export async function televerserFichier(ecoleId, fichier, { titre, categorie = "
       chemin,
       mime: fichier.type || null,
       taille: fichier.size,
+      // Une pièce jointe d'annonce tire son audience de l'annonce : sa portée
+      // propre n'aurait pas de sens et resterait « interne ».
+      portee: annonceId ? "interne" : portee,
+      reference: reference?.trim() || null,
+      date_texte: dateTexte || null,
       depose_par: auteurId || null,
     })
     .select()
@@ -114,3 +140,12 @@ export async function supprimerFichier(fichier) {
 // Lien de consultation, valable une heure. La policy Storage vérifie que
 // l'appelant a le droit de lire la LIGNE avant de délivrer l'octet.
 export const lienFichier = (chemin) => urlSignee(BUCKET, chemin);
+
+// --- Côté familles : les textes publiés (migration 151) ---------------------
+// RPC et non lecture directe : elle borne au rayon réglementaire et trie
+// dans l'ordre où l'on consulte ces textes.
+export async function textesReference() {
+  const { data, error } = await supabase.rpc("textes_reference");
+  if (error) throw error;
+  return data ?? [];
+}

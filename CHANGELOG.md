@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.210.0] — migration **151** · « Textes de référence », le rayon réglementaire
+- **Nouveau rayon dans Pilotage → Documentation** : règlement intérieur, codes et décrets relatifs à l'enseignement, arrêtés, conventions et agréments, chartes et procédures internes.
+- **Pourquoi un rayon distinct** plutôt qu'une catégorie de plus : ces textes ne se consultent pas comme une circulaire ponctuelle. On y revient, on les cite, ils font autorité et ils survivent aux années scolaires. Les mélanger au tout-venant reviendrait à les perdre.
+- **Le nom retenu — « Textes de référence »** — couvre aussi bien le règlement intérieur, texte propre à l'école, que les codes et décrets, textes externes. Il n'entre pas en collision avec le module Bibliothèque.
+- **Un besoin moins évident, traité au passage : un règlement intérieur que les familles ne peuvent pas lire ne sert à rien.** La migration 150 réservait les dépôts libres au personnel. Chaque texte porte désormais une **portée** explicite — « personnel uniquement » ou « visible des parents et étudiants ». C'est une décision de publication, pas un réglage technique, d'où un champ et non une convention de nommage.
+- Un texte publié apparaît dans l'espace parent (raccourci **Règlement**) et dans l'espace étudiant (tuile **Textes de référence**), via un composant partagé : même contenu, deux endroits de consultation.
+- Chaque texte peut porter sa **référence** (« Décret n° 2024-1234 ») et sa **date** — un décret se cite, un règlement intérieur a une version.
+- **Rien à changer côté Storage.** `_doc_peut_lire` étant en `SECURITY INVOKER` (mig. 150), elle s'appuie sur la policy de la table : le droit de lire l'octet suit automatiquement le droit de lire la ligne, portée « familles » comprise. C'est le bénéfice d'avoir écrit la règle à un seul endroit.
+
 ## [2.209.0] — migration **150** · pièces jointes aux annonces, archivées dans la Documentation
 - **Une annonce peut désormais porter des fichiers** — PDF, image, document bureautique, 20 Mo par pièce. Ils s'affichent sous l'annonce dans l'espace parent (accueil et page de l'enfant) et dans l'espace étudiant, et s'ouvrent par un lien signé valable une heure.
 - **Ces fichiers sont conservés dans Pilotage → Documentation**, dans une nouvelle section « Bibliothèque de fichiers » où l'on peut aussi déposer directement un règlement ou une circulaire. La page promettait cet archivage « prochainement » : la mention est retirée.
