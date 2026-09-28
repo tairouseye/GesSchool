@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.217.0] — aucune migration · 🔴 Journal des actes : la page ne s'ouvrait pas
+- **Signalé** : « Could not find a relationship between `journal_audit` and `utilisateur` in the schema cache ». La page était **inutilisable depuis sa création** — pas dégradée, inaccessible.
+- **Cause** : `journal_audit.utilisateur` est un uuid **sans clé étrangère** vers `profils` (migration 079), et un embed PostgREST exige une relation déclarée. Vérifié en base avant de conclure : la relation n'existe bien nulle part.
+- **La clé étrangère était la correction évidente ; je ne l'ai pas ajoutée.** En `on delete set null`, supprimer un compte effacerait l'auteur de **tous** ses actes passés — la seule chose qu'un journal d'audit ne doit jamais perdre. En `restrict`, plus aucun compte ne serait supprimable. L'uuid nu survit à la disparition du profil : c'est la bonne propriété, il ne faut pas la sacrifier pour la commodité d'un embed.
+- Les noms sont donc résolus par une **seconde requête bornée aux auteurs de la page affichée** (25 lignes), et rebranchés sous la même forme que l'embed — la page n'a rien à savoir de ce détour. Vérifié avec une vraie session de promoteur : 25 lignes, 90 au total, auteur résolu.
+- Deux précautions : un acte fait **hors session utilisateur** (éditeur SQL, clé de service) porte `utilisateur = null` et reste « auteur non identifié » — c'est exact, on n'impute rien à personne ; et si la résolution des noms échoue, le journal s'affiche quand même sans auteurs, plutôt que de rendre une page d'erreur.
+- **Trouvé au passage, et ce n'était pas cosmétique** : sur les 137 actes en base, **101 portaient `salaire_ligne / suppr_ligne`** — ni l'entité ni l'opération n'étaient déclarées. La majorité du journal s'affichait donc en clés brutes, et ces lignes étaient **hors du filtre**, donc introuvables. La paie journalise depuis la migration 079 ; seul le volet pédagogique (134-135) avait été déclaré. Les entités `salaire`, `salaire_ligne`, `contrat` et les opérations `suppr_ligne`, `validation`, `devalidation`, `modif_salaire_base` sont ajoutées.
+- 5 tests, dont un qui vérifie que **tout ce que les déclencheurs écrivent porte un libellé** et un ton connu du composant `Badge` — c'est ce test qui empêchera la prochaine entité de paie de passer inaperçue.
+
 ## [2.216.0] — aucune migration · « Établissement » : les entrées transverses ont un toit
 - **Demandé** : un nom pour regrouper Accueil, Membres et Paramètres dans les menus Gestion et Pédagogie.
 - **Le nom retenu — « Établissement »** — désigne ce que ces entrées ont en commun : l'établissement lui-même, et non l'une de ses matières. Sa vue d'ensemble, qui y travaille, ce qu'il y a à signer, comment il est réglé. C'est un nom simple, comme les autres en-têtes (Scolarité, Finances, Évaluation) — « Administration » aurait fait doublon avec l'espace Gestion.
