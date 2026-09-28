@@ -146,6 +146,60 @@ test("sans marqueur, rien ne change : aucune école n'est exclue par surprise", 
   assert.equal(r.demoIncluse, false);
 });
 
+test("entrer dans une école cloisonne les tuiles à cette école", async () => {
+  const { perimetreVue, consoliderParDevise } = await pilotage();
+  const toutes = [
+    { ecole_id: "a", ecole: "Tut'Tank", devise: "XOF", tresorerie: 0 },
+    { ecole_id: "b", ecole: "UCAD", devise: "XOF", tresorerie: -375000 },
+    { ecole_id: "d", ecole: "TutTank_Demo", devise: "XOF", tresorerie: 9732500, demonstration: true },
+  ];
+  const p = perimetreVue(toutes, "b", false);
+  assert.equal(p.tout, false);
+  assert.equal(p.lignes.length, 1);
+  assert.equal(p.ecoleActive.ecole, "UCAD");
+  assert.equal(consoliderParDevise(p.lignes, "XOF")[0][1].tresorerie, -375000);
+  // La liste d'origine n'est pas touchée : les cartes montrent toujours tout.
+  assert.equal(toutes.length, 3);
+});
+
+test("« Toutes mes écoles » consolide, en excluant toujours les démos", async () => {
+  const { perimetreVue, consoliderParDevise } = await pilotage();
+  const toutes = [
+    { ecole_id: "a", ecole: "Tut'Tank", devise: "XOF", tresorerie: 0 },
+    { ecole_id: "b", ecole: "UCAD", devise: "XOF", tresorerie: -375000 },
+    { ecole_id: "d", ecole: "TutTank_Demo", devise: "XOF", tresorerie: 9732500, demonstration: true },
+  ];
+  const p = perimetreVue(toutes, "b", true);
+  assert.equal(p.tout, true);
+  assert.equal(p.ecoleActive, null);
+  assert.equal(p.exclues, 1, "la démo reste hors du cumul");
+  assert.equal(consoliderParDevise(p.lignes, "XOF")[0][1].tresorerie, -375000);
+});
+
+test("cloisonner sur une école de démonstration le dit au lieu de le taire", async () => {
+  const { perimetreVue } = await pilotage();
+  // Cas de la démarcheuse : son école ouverte EST la démo. On l'affiche —
+  // c'est ce qu'elle a demandé en y entrant — mais on annonce sa nature.
+  const p = perimetreVue([{ ecole_id: "d", ecole: "TutTank_Demo", tresorerie: 9732500, demonstration: true }], "d", false);
+  assert.equal(p.lignes.length, 1);
+  assert.equal(p.demoIncluse, true);
+});
+
+test("aucune école ouverte : repli sur le cumul, jamais une page vide", async () => {
+  const { perimetreVue } = await pilotage();
+  const toutes = [
+    { ecole_id: "a", ecole: "Tut'Tank", tresorerie: 0 },
+    { ecole_id: "b", ecole: "UCAD", tresorerie: -375000 },
+  ];
+  // ecoleId null (aucune école active) ou hors périmètre : sans repli, les
+  // tuiles afficheraient zéro partout et la page paraîtrait cassée.
+  for (const id of [null, undefined, "inconnue"]) {
+    const p = perimetreVue(toutes, id, false);
+    assert.equal(p.tout, true, `repli attendu pour ${String(id)}`);
+    assert.equal(p.lignes.length, 2);
+  }
+});
+
 test("aucune école : aucune ligne, et surtout aucun zéro trompeur", async () => {
   const { consoliderParDevise } = await pilotage();
   assert.deepEqual(consoliderParDevise([], "XOF"), []);

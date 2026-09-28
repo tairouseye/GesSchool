@@ -33,6 +33,32 @@ export function lignesConsolidables(lignes = []) {
     : { lignes, demoIncluse: lignes.length > 0, exclues: 0 };
 }
 
+// Périmètre de la vue d'ensemble.
+//
+// Quand on est « entré » dans une école (super-admin ou promoteur), les tuiles
+// doivent parler de CETTE école : lire un total de quatre établissements en
+// croyant lire celui qu'on vient d'ouvrir est la confusion même. Le périmètre
+// est donc l'école active par défaut.
+//
+// Rien n'est perdu pour autant : les cartes en dessous listent toujours chaque
+// école, et « Toutes mes écoles » reste à un clic — d'où un choix explicite
+// plutôt qu'une suppression de la vue consolidée.
+export function perimetreVue(lignes = [], ecoleActiveId, tout = false) {
+  if (!tout) {
+    const active = lignes.find((l) => l.ecole_id === ecoleActiveId);
+    // Une école active absente de la liste (aucune école ouverte, ou fiche
+    // hors périmètre) ne doit pas donner une page vide : on retombe sur le cumul.
+    if (active) {
+      return {
+        lignes: [active], exclues: 0,
+        demoIncluse: !!active.demonstration,
+        ecoleActive: active, tout: false,
+      };
+    }
+  }
+  return { ...lignesConsolidables(lignes), ecoleActive: null, tout: true };
+}
+
 // Consolide les montants PAR DEVISE. Additionner des dollars et des francs CFA
 // en un seul nombre ne donne pas un total approximatif : cela donne un nombre
 // qui ne veut rien dire. Tant qu'il n'y a qu'une monnaie, la carte se lit comme

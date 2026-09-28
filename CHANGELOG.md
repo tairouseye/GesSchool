@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.215.0] — aucune migration · Pilotage cloisonné à l'école ouverte
+- **Demandé** : « quand je rentre dans une école, la vue d'ensemble doit être cloisonnée à cette école, mais pas toutes ».
+- **Vérifié d'abord qu'il ne s'agissait pas d'une fuite** : `pilotage_synthese` filtre sur `proprietaires`, donc on ne voit que ses propres écoles — jamais celles d'un autre promoteur. C'était bien la vue consolidée voulue à l'origine, pas un défaut de cloisonnement.
+- **Les tuiles portent désormais sur l'école ouverte**, par défaut. Entrer dans Tut'Tank puis lire un total de quatre établissements en croyant lire le sien, c'est exactement la confusion des versions précédentes.
+- **Un sélecteur plutôt qu'une suppression.** Pris au pied de la lettre, cloisonner effacerait la vue consolidée — la raison d'être de Pilotage pour un promoteur multi-écoles. Or les cartes en dessous listent déjà chaque école : seul le total disparaîtrait. « Toutes mes écoles » reste donc à un clic, et le sélecteur n'apparaît pas quand il n'y a qu'une école, où le choix n'aurait aucun sens.
+- **Le sous-titre et les légendes suivent le périmètre** : « Tut'Tank · 4 établissements au total » quand c'est cloisonné, « 4 établissements · dont 1 de démonstration, hors totaux » quand c'est consolidé. Annoncer « vue consolidée » au-dessus d'une seule école aurait été la même confusion, à l'envers.
+- **Deux replis, parce qu'une page vide se lit comme une page cassée** : si aucune école n'est ouverte (ou si l'école active sort du périmètre), on retombe sur le cumul ; et si l'école ouverte **est** une démo — le cas de la démarcheuse — on affiche ses chiffres, puisque c'est ce qu'elle a demandé en y entrant, mais la légende annonce « démonstration ».
+- 4 tests de plus sur le périmètre, dont les deux replis. Les cartes restent volontairement complètes : ce sont elles qui permettent de basculer d'une école à l'autre.
+
 ## [2.214.0] — migration **156** · écoles de démonstration, écartées des totaux
 - **Décidé après les 154-155** : sur les 9 357 500 de trésorerie cumulée du promoteur de Tut'Tank, **9 732 500 venaient de TutTank_Demo**. Un total dont l'essentiel est fictif n'est pas un total approximatif — il est inexploitable.
 - **Un marqueur sur la fiche école**, `ecoles.demonstration`, et non une convention de nommage : se fier au suffixe « _Demo » aurait marché jusqu'au jour où quelqu'un renomme l'école, et se serait cassé en silence. Réglable depuis la console super-admin (« Nature de l'établissement »).

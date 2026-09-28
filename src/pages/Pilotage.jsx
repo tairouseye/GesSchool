@@ -18,6 +18,8 @@ export default function Pilotage() {
   const [lignes, setLignes] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
+  // Périmètre des tuiles : l'école ouverte, ou l'ensemble du portefeuille.
+  const [toutVoir, setToutVoir] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -43,9 +45,11 @@ export default function Pilotage() {
     }
   }
 
-  // Les écoles de démonstration sortent des totaux — leurs montants fictifs
-  // écrasaient les vrais. Repli si le compte n'a QUE des démos (mig. 156).
-  const { lignes: cumulees, demoIncluse, exclues } = api.lignesConsolidables(lignes);
+  // Périmètre : l'école ouverte par défaut, le cumul sur demande. Les écoles
+  // de démonstration restent hors des totaux consolidés (mig. 156).
+  const { lignes: cumulees, demoIncluse, exclues, ecoleActive, tout } =
+    api.perimetreVue(lignes, ecoleId, toutVoir);
+  const plusieurs = lignes.length > 1;
 
   // Effectif et taux de recouvrement se consolident : l'un compte des têtes,
   // l'autre est un rapport, donc sans unité.
@@ -58,22 +62,25 @@ export default function Pilotage() {
   // Les MONTANTS, eux, ne s'additionnent qu'à devise égale (migration 154).
   const monnaies = api.consoliderParDevise(cumulees, devise);
 
-  // Dire ce que les tuiles cumulent : sans cela, un total consolidé se lit
+  // Dire de QUOI les tuiles parlent. Sans cela, un total consolidé se lit
   // comme le chiffre de l'école ouverte dans Gestion — la confusion signalée.
-  const portee = demoIncluse
-    ? "établissement de démonstration"
-    : [cumulees.length > 1 ? `${cumulees.length} établissements cumulés` : null,
-       exclues > 0 ? `démo exclue${exclues > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ") || null;
+  const portee = ecoleActive
+    ? `${ecoleActive.ecole}${ecoleActive.demonstration ? " · démonstration" : ""}`
+    : demoIncluse
+      ? "établissement de démonstration"
+      : [cumulees.length > 1 ? `${cumulees.length} établissements cumulés` : null,
+         exclues > 0 ? `démo exclue${exclues > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ") || null;
 
   // Un brouillon de paie n'est pas une charge, mais il ne doit pas non plus
   // disparaître : on l'annonce, sans le compter (migration 155).
   const brouillons = monnaies.reduce((a, [, v]) => a + v.bulletinsBrouillon, 0);
-  // Le sous-titre annonçait « 4 établissements · vue consolidée » alors que
-  // la consolidation n'en retient plus que 3 : il aurait contredit les tuiles.
-  const sousTitre = [
-    `${lignes.length} établissement${lignes.length > 1 ? "s" : ""}`,
-    exclues > 0 ? `dont ${exclues} de démonstration, hors totaux` : "vue consolidée",
-  ].join(" · ");
+  // Le sous-titre doit dire le PÉRIMÈRE affiché, pas seulement l'inventaire :
+  // annoncer « vue consolidée » alors que les tuiles montrent une seule école
+  // serait la même confusion, à l'envers.
+  const sousTitre = ecoleActive
+    ? `${ecoleActive.ecole} · ${lignes.length} établissement${plusieurs ? "s" : ""} au total`
+    : [`${lignes.length} établissement${plusieurs ? "s" : ""}`,
+       exclues > 0 ? `dont ${exclues} de démonstration, hors totaux` : "vue consolidée"].join(" · ");
 
   const noteBrouillons = brouillons > 0
     ? `+ ${monnaies.filter(([, v]) => v.masseBrouillon > 0).map(([d, v]) => `${fmt(v.masseBrouillon)} ${d}`).join(" · ")} en brouillon (${brouillons} bulletin${brouillons > 1 ? "s" : ""} à valider)`
@@ -97,7 +104,27 @@ export default function Pilotage() {
           <EtatVide icone="🏫" titre="Aucune école">Aucune école n'est rattachée à votre compte de promoteur.</EtatVide>
         ) : (
           <>
-            {/* KPIs consolidés */}
+            {/* Périmètre des tuiles. N'apparaît qu'avec plusieurs écoles :
+                avec une seule, le choix n'aurait aucun sens. */}
+            {plusieurs && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-navy-900/50">Chiffres affichés :</span>
+                <div className="inline-flex rounded-xl border border-navy-900/15 p-0.5">
+                  <button onClick={() => setToutVoir(false)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      !tout ? "bg-navy-900 text-creme" : "text-navy-900/60 hover:text-navy-900"}`}>
+                    {ecole?.nom || "École ouverte"}
+                  </button>
+                  <button onClick={() => setToutVoir(true)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                      tout ? "bg-navy-900 text-creme" : "text-navy-900/60 hover:text-navy-900"}`}>
+                    Toutes mes écoles ({lignes.length})
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* KPIs — cloisonnés à l'école ouverte, ou consolidés */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <Kpi label="Effectif total" valeur={fmt(t.effectif)} note={portee} />
               <Kpi label="Taux de recouvrement" valeur={`${taux(t.paye, t.facture)}%`} ton="vert" note="toutes années confondues" />
