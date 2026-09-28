@@ -141,6 +141,37 @@ export async function supprimerFichier(fichier) {
 // l'appelant a le droit de lire la LIGNE avant de délivrer l'octet.
 export const lienFichier = (chemin) => urlSignee(BUCKET, chemin);
 
+// --- Verser un document au rayon réglementaire (migration 159) --------------
+//
+// Une pièce jointe d'annonce peut AUSSI être un texte de référence : Tut'Tank
+// a publié son règlement intérieur en pièce jointe d'une annonce ciblée sur
+// l'Élémentaire — 45 élèves du Préscolaire ne l'ont donc pas reçu, et il
+// n'apparaissait dans aucune étagère où l'on revient le chercher.
+//
+// ⚠️ On passe par une RPC nommée d'après l'intention, et non par une mise à
+// jour de `portee` + `categorie` depuis le client : la base ne peut pas
+// distinguer une portée « familles » posée volontairement d'une posée par
+// accident. Ce sont ces deux champs, forcés à « interne » et « annonce » pour
+// toute pièce jointe, qui font le double verrou — la RPC est la seule porte.
+export async function verserAuRayon(fichierId, { categorie, reference, dateTexte } = {}) {
+  const { error } = await supabase.rpc("verser_au_rayon", {
+    p_fichier: fichierId,
+    p_categorie: categorie,
+    p_reference: reference?.trim() || null,
+    p_date: dateTexte || null,
+  });
+  if (error) throw error;
+}
+
+export async function retirerDuRayon(fichierId) {
+  const { error } = await supabase.rpc("retirer_du_rayon", { p_fichier: fichierId });
+  if (error) throw error;
+}
+
+// Un document que l'école gagnerait à verser au rayon : une pièce jointe
+// encore classée « annonce », donc absente de « Textes de référence ».
+export const peutEtreVerse = (f) => !!f && f.portee !== "familles";
+
 // --- Côté familles : les textes publiés (migration 151) ---------------------
 // RPC et non lecture directe : elle borne au rayon réglementaire et trie
 // dans l'ordre où l'on consulte ces textes.

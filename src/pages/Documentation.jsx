@@ -6,7 +6,8 @@ import { Carte, Bouton, Champ, Modale } from "@/composants/ui.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { getDocuments } from "@/lib/documents.js";
 import { getFichiers, televerserFichier, supprimerFichier, lienFichier, poids, CATEGORIES, CATEGORIES_TEXTES,
-         libCategorie, libPortee, PORTEES, estTexteReference, TAILLE_MAX } from "@/lib/fichiers.js";
+         libCategorie, libPortee, PORTEES, estTexteReference, TAILLE_MAX,
+         verserAuRayon, retirerDuRayon, peutEtreVerse } from "@/lib/fichiers.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 
 // Documentation (Pilotage) — hub central de tous les documents de l'école.
@@ -98,6 +99,8 @@ export default function Documentation() {
   const [apercu, setApercu] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [exportEnCours, setExportEnCours] = useState(false);
+  // Document en cours de versement au rayon réglementaire (migration 159).
+  const [versement, setVersement] = useState(null);
 
   useEffect(() => {
     getDocuments(ecoleId).then(setDocs).catch(() => {}).finally(() => setChargement(false));
@@ -165,6 +168,25 @@ export default function Documentation() {
       : "Cette suppression est définitive.";
     if (!(await confirmer({ titre: "Supprimer le fichier", message: `« ${x.titre} » — ${suite}`, confirmer: "Supprimer" }))) return;
     try { await supprimerFichier(x); toast.succes("Fichier supprimé."); rechargerFichiers(); }
+    catch (e) { toast.erreur(e); }
+  }
+
+  // Verser un document au rayon : deux champs à la fois (portée ET catégorie),
+  // via une RPC — c'est ce double geste qui distingue une publication voulue
+  // d'une portée « familles » posée par accident.
+  async function verser(f, champs) {
+    try {
+      await verserAuRayon(f.id, champs);
+      toast.succes("Document versé au rayon — visible de toutes les familles.");
+      setVersement(null);
+      rechargerFichiers();
+    } catch (e) { toast.erreur(e); }
+  }
+
+  async function sortirDuRayon(x) {
+    if (!(await confirmer({ titre: "Retirer du rayon",
+      message: `« ${x.titre} » ne sera plus consultable par les familles.`, confirmer: "Retirer" }))) return;
+    try { await retirerDuRayon(x.id); toast.succes("Document retiré du rayon."); rechargerFichiers(); }
     catch (e) { toast.erreur(e); }
   }
 
@@ -289,9 +311,19 @@ export default function Documentation() {
                         poids(x.taille)].filter(Boolean).join(" · ")}
                     </p>
                   </button>
-                  <button onClick={() => retirer(x)} className="shrink-0 text-xs text-rose-500 hover:underline">
-                    supprimer
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {/* Dépublier doit être possible sans passer par la base :
+                        un document mis aux familles par erreur ne doit pas
+                        y rester faute de bouton (migration 159). */}
+                    {x.portee === "familles" && (
+                      <button onClick={() => sortirDuRayon(x)} className="text-xs text-navy-700 hover:text-or-600">
+                        retirer du rayon
+                      </button>
+                    )}
+                    <button onClick={() => retirer(x)} className="text-xs text-rose-500 hover:underline">
+                      supprimer
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -382,9 +414,20 @@ export default function Documentation() {
                         new Date(x.created_at).toLocaleDateString("fr-FR")].filter(Boolean).join(" · ")}
                     </p>
                   </button>
-                  <button onClick={() => retirer(x)} className="shrink-0 text-xs text-rose-500 hover:underline">
-                    supprimer
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {/* Une pièce jointe d'annonce ciblée ne parvient qu'aux
+                        familles visées et ne figure dans aucune étagère : le
+                        règlement de Tut'Tank a échappé à 45 élèves du
+                        Préscolaire (migration 159). */}
+                    {peutEtreVerse(x) && (
+                      <button onClick={() => setVersement(x)} className="text-xs font-medium text-navy-700 hover:text-or-600">
+                        ⚖️ verser au rayon
+                      </button>
+                    )}
+                    <button onClick={() => retirer(x)} className="text-xs text-rose-500 hover:underline">
+                      supprimer
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -525,6 +568,67 @@ export default function Documentation() {
           </>
         )}
       </Modale>
+
+      <ModaleVersement fichier={versement} onFermer={() => setVersement(null)} onVerser={verser} />
     </>
+  );
+}
+
+// Verser un document au rayon réglementaire (migration 159).
+//
+// C'est ici que se règle le cas réel qui a motivé la migration : Tut'Tank
+// avait joint son règlement intérieur à une annonce ciblée « Élémentaire ».
+// Le document ne parvenait donc qu'à 51 élèves sur 96, et n'apparaissait dans
+// aucune étagère — alors qu'un règlement se consulte pendant des années.
+function ModaleVersement({ fichier, onFermer, onVerser }) {
+  const [categorie, setCategorie] = useState("reglement");
+  const [reference, setReference] = useState("");
+  const [dateTexte, setDateTexte] = useState("");
+
+  useEffect(() => {
+    if (!fichier) return;
+    setCategorie("reglement");
+    setReference(fichier.reference || "");
+    setDateTexte(fichier.date_texte || "");
+  }, [fichier]);
+
+  if (!fichier) return null;
+
+  return (
+    <Modale ouvert={!!fichier} onFermer={onFermer} titre="Verser au rayon réglementaire">
+      <div className="space-y-4">
+        <p className="text-sm text-navy-900/70">
+          <b className="text-navy-900">{fichier.titre}</b> deviendra consultable par <b>toutes les familles</b> de
+          l&apos;établissement, dans « Textes de référence ».
+        </p>
+        {fichier.annonce_id && (
+          <p className="rounded-xl border border-or-500/40 bg-or-500/5 px-3 py-2.5 text-xs text-navy-900/70">
+            Ce fichier est joint à l&apos;annonce
+            {fichier.annonces?.titre ? <> « <b>{fichier.annonces.titre}</b> »</> : null}.
+            <b> L&apos;annonce garde son audience</b> — seul le document est publié. C&apos;est ce qu&apos;on
+            attend d&apos;un règlement : annoncé à une classe, mais opposable à tous.
+          </p>
+        )}
+        <label className="block">
+          <span className="mb-1.5 block text-xs text-navy-900/50">Nature du texte</span>
+          <select value={categorie} onChange={(e) => setCategorie(e.target.value)}
+            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            {CATEGORIES_TEXTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Champ label="Référence (facultatif)" value={reference} placeholder="Décret n° 2024-1234"
+            onChange={(e) => setReference(e.target.value)} />
+          <Champ label="Date du texte (facultatif)" type="date" value={dateTexte}
+            onChange={(e) => setDateTexte(e.target.value)} />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Bouton variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton onClick={() => onVerser(fichier, { categorie, reference, dateTexte: dateTexte || null })}>
+            Verser au rayon
+          </Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }

@@ -223,6 +223,19 @@ function ModaleAnnonce({ ouvert, onFermer, classes, niveaux, cycles, onCreer }) 
           <p className="mt-2 text-[11px] text-navy-900/45">
             Ces fichiers seront conservés dans Pilotage → Documentation.
           </p>
+          {/* ⚠️ Prévention d'un cas réel : le règlement intérieur de Tut'Tank,
+              joint à une annonce ciblée « Élémentaire », n'a atteint que 51
+              élèves sur 96 — et ne figurait dans aucune étagère consultable.
+              L'école avait fait le geste évident ; rien ne l'avertissait
+              (migration 159). */}
+          {fichiers.length > 0 && api.cibleExigeChoix(f.cible) && (
+            <p className="mt-2 rounded-lg border border-or-500/40 bg-or-500/5 px-2.5 py-2 text-[11px] text-navy-900/70">
+              Cette annonce étant ciblée, la pièce jointe ne parviendra <b>qu&apos;aux familles visées</b>.
+              Un règlement intérieur ou un texte officiel concerne en général tout l&apos;établissement :
+              une fois l&apos;annonce publiée, versez-le au rayon <b>Textes de référence</b> depuis
+              Pilotage → Documentation.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

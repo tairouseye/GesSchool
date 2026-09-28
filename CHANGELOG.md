@@ -5,6 +5,21 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.220.0] — migration **159** · verser une pièce jointe au rayon réglementaire
+- **Parti d'une correction de l'utilisateur** : Tut'Tank *avait* publié son règlement intérieur, contrairement à ce que mon audit concluait. Vérifié : il est bien là, en pièce jointe d'une annonce du 28/09 — **ciblée sur le cycle Élémentaire**. Mon constat (« la tuile Règlement est vide ») était exact ; ma cause était fausse.
+- **Ce que la vérification a révélé**, et qui valait mieux que mon constat d'origine :
+
+| Cycle | Élèves inscrits | Reçoit le règlement |
+|---|---|---|
+| Élémentaire | 51 | ✅ |
+| Préscolaire | **45** | ❌ |
+
+- Les quatre parents qui ont un compte ont tous un enfant en Élémentaire, donc l'ont reçu — **par chance**. Et le document n'apparaissait dans aucune étagère consultable : une annonce se lit une fois, un règlement se consulte pendant des années.
+- **Ce n'était pas un défaut, c'était ma conception, et elle était trop raide.** Les migrations 150/151 ont posé deux endroits distincts, et ma **153** a exigé `annonce_id is null` pour la portée « familles ». Je fermais un vrai trou — une pièce jointe d'annonce ciblée qui, marquée « familles », fuyait au-delà de son audience. Mais je confondais **une portée posée par accident** (le trou) et **une portée posée volontairement par l'école** (une décision de publication légitime). Dans le second cas l'annonce reste ciblée ; seul le document devient public. C'est exactement ce qu'on attend d'un règlement : annoncé à une classe, opposable à tous.
+- **Comment distinguer l'accident de l'intention, puisque la base ne voit qu'une valeur de colonne ?** Par un **double verrou** que seule une démarche explicite franchit : la portée « familles » *et* une catégorie du rayon réglementaire — or `televerserFichier` force `'interne'` et `'annonce'` sur toute pièce jointe. Deux champs, deux gestes, aucun par défaut. La RPC `verser_au_rayon()` les pose ensemble sous contrôle de rôle : c'est la seule porte.
+- **Dans la Documentation** : une action « ⚖️ verser au rayon » sur chaque fichier, qui demande la nature du texte, sa référence et sa date ; et « retirer du rayon » sur les textes publiés — dépublier par erreur doit se défaire sans passer par l'éditeur SQL. Un retrait rend à une pièce jointe sa catégorie d'origine, sinon elle resterait classée « règlement » tout en sortant du rayon : invisible partout.
+- **Prévention, pour que le prochain règlement ne reparte pas sur un seul cycle** : en joignant un fichier à une annonce **ciblée**, la composition avertit désormais que la pièce ne parviendra qu'aux familles visées, et renvoie au rayon. L'école avait fait le geste évident ; rien ne l'en avertissait.
+
 ## [2.219.0] — migration **158** · audit de l'espace parent : trois corrections
 Audit demandé sur l'espace parent, en particulier la logique des menus à la première connexion. Tout ce qui suit a été constaté dans le code ou avec de vraies sessions parent.
 
