@@ -5,6 +5,25 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.221.0] — aucune migration · lot 1 de la visite d'établissement
+Suite à une visite sur site, 17 besoins ont été audités avant toute modification. Ce lot livre les corrections sans risque ; les évolutions de schéma suivront par lots séparés.
+
+### 🔴 Perte de données en production : refaire la feuille de présence effaçait les justifications
+- `enregistrerAppel` faisait un **DELETE** de toutes les absences de la classe pour la journée, puis un **INSERT** avec `statut: 'non_justifie'`. Un second passage, une correction, ou deux personnes qui saisissent la feuille **remettaient à zéro le travail du secrétariat** : le statut repassait à « non justifié » et la justification déposée par le parent (migration 024) disparaissait. Silencieux, irréversible.
+- L'enregistrement procède désormais par **différence**, ce qui le rend **idempotent** : rejouer la même feuille ne produit aucune écriture, et une erreur réseau en cours de route se répare en recommençant — c'est cette propriété qui remplace l'atomicité, sans migration.
+- Trois garanties nouvelles, chacune testée : `statut` et `justification` ne sont **jamais** touchés par l'appel (ils appartiennent au circuit de justification) ; passer d'absence à retard **modifie** la ligne au lieu de la recréer ; un élève **hors de la feuille** — désinscrit, ou absent via une autre classe ce jour-là — n'est plus emporté par un DELETE global. 8 tests.
+
+### 🔴 Un jour perdu sur les échéances d'emprunt à l'ouest de Greenwich
+- Trouvé parce que la suite est passée au rouge : `versISO()` repassait par `versDate()`, qui lit les composantes **locales** d'un `Date` déjà positionné à minuit **UTC**. Toute échéance calculée était donc décalée d'un jour en fuseau négatif.
+- Le Sénégal (UTC+0) et la RDC (UTC+1) n'étaient pas touchés — d'où un défaut resté dormant depuis la migration 118, révélé par le fuseau de la machine de build. La suite est maintenant vérifiée en UTC−3, UTC+0 et UTC+13.
+
+### Évolutions du lot
+- **« Appel » devient « Feuille de présence »** dans le menu, la page et l'onglet de Vie scolaire. Le responsable pédagogique y avait **déjà** accès (`ACCES.appel`) : rien à ouvrir.
+- **Pas de 15 minutes** sur les saisies horaires de l'emploi du temps (classes et supérieur) et sur l'éditeur de la grille de créneaux. **Pourquoi 15 et non un réglage 15/30** : un pas de 15 permet d'écrire 08:00–08:30 *comme* 08:00–08:15, donc les deux granularités demandées, alors qu'un pas de 30 interdirait les créneaux courts et invaliderait 140 créneaux déjà saisis. Vérifié : 100 % des créneaux existants tombent déjà sur un multiple de 15.
+- **Le nombre d'absences devient cliquable** dans Assiduité, et ouvre le détail : date, type, horaire, motif, état de justification. Aucune requête supplémentaire — les lignes brutes étaient déjà chargées. Le filtre par période existait déjà.
+- **Récapitulatif imprimable** des absences de la période (« Absences du 1er trimestre » se fabrique en choisissant les dates), avec en-tête à logo et emplacements de visa, sur le patron d'impression de la liste d'élèves.
+- **Logo de l'établissement** ajouté aux impressions des codes d'accès parents et étudiants — des feuilles qui circulent entre les mains des familles et ne portaient aucun repère.
+
 ## [2.220.0] — migration **159** · le rayon réglementaire porte une audience
 Deux corrections de l'utilisateur ont conduit ici, et **la seconde a renversé la première conclusion**. Le récit compte, parce qu'il explique la forme du correctif.
 

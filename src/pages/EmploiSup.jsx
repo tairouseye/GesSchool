@@ -277,8 +277,9 @@ function ModaleSeance({ seance, ecoleId, filiereId, semestreId, anneeId, maquett
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Champ label="Début" type="time" value={f.heure_debut} onChange={maj("heure_debut")} required />
-          <Champ label="Fin" type="time" value={f.heure_fin} onChange={maj("heure_fin")} required />
+          {/* Pas de 15 minutes, comme l'emploi du temps des classes. */}
+          <Champ label="Début" type="time" step={900} value={f.heure_debut} onChange={maj("heure_debut")} required />
+          <Champ label="Fin" type="time" step={900} value={f.heure_fin} onChange={maj("heure_fin")} required />
           <Champ label="Salle" value={f.salle} onChange={maj("salle")} placeholder="Amphi A" />
         </div>
 

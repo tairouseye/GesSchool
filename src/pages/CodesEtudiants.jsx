@@ -147,9 +147,19 @@ export default function CodesEtudiants() {
 
         <Carte className="overflow-hidden">
           <div className="zone-impression">
+            {/* Le logo identifie l'établissement sur une feuille qui circule
+                entre les mains des étudiants — son seul repère. */}
             <div className="hidden px-6 pt-6 print:block">
-              <h1 className="font-display text-lg font-bold text-navy-900">Codes d'accès étudiants — {ecoleNom}</h1>
-              <p className="text-xs text-navy-900/50">Édité le {new Date().toLocaleDateString("fr-FR")}</p>
+              <div className="flex items-center gap-3 border-b border-navy-900/15 pb-2">
+                {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-10 w-10 object-contain" />}
+                <div className="flex-1">
+                  <h1 className="font-display text-lg font-bold text-navy-900">Codes d&apos;accès étudiants — {ecoleNom}</h1>
+                  <p className="text-xs text-navy-900/50">
+                    {[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}
+                    {" · "}Édité le {new Date().toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
+              </div>
             </div>
             {chargement ? (
               <p className="p-6 text-sm text-navy-900/40">Chargement…</p>

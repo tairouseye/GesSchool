@@ -93,7 +93,7 @@ export const ESPACES = [
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
 
       // Au quotidien
-      { to: "/appel", label: "Appel", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/appel", label: "Feuille de présence", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
       // Deux pages pour un même besoin, parce que les modèles diffèrent :

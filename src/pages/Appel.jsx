@@ -82,12 +82,12 @@ export default function Appel() {
     finally { setEnCours(false); }
   }
 
-  if (chargement) return (<><EnTete titre="Appel" /><div className="p-8 text-navy-900/50">Chargement…</div></>);
+  if (chargement) return (<><EnTete titre="Feuille de présence" /><div className="p-8 text-navy-900/50">Chargement…</div></>);
 
   if (!enseignant) {
     return (
       <>
-        <EnTete titre="Appel" />
+        <EnTete titre="Feuille de présence" />
         <div className="p-8">
           <Carte className="p-6 text-sm text-navy-900/60">
             Ton compte n'est pas encore relié à une fiche enseignant.
@@ -102,7 +102,7 @@ export default function Appel() {
   return (
     <>
       <EnTete
-        titre="Appel"
+        titre="Feuille de présence"
         sousTitre={`${dateLisible()}`}
         action={classes.length > 1 && (
           <select value={classeId} onChange={(e) => setClasseId(e.target.value)}

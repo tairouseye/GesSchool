@@ -246,8 +246,13 @@ function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer 
     <Modale ouvert={jour != null} onFermer={onFermer} titre={`Créneau — ${label || ""}`}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!f.matiere_id) return; onCreer(f); }}>
         <div className="grid grid-cols-2 gap-4">
-          <Champ label="Début" type="time" value={f.heure_debut} onChange={(e) => maj("heure_debut", e.target.value)} />
-          <Champ label="Fin" type="time" value={f.heure_fin} onChange={(e) => maj("heure_fin", e.target.value)} />
+          {/* ⚠️ Pas de 15 minutes (step=900 s) : les horaires scolaires ne se
+              saisissent pas à la minute. Pourquoi 15 et non 30 : un pas de 15
+              permet d'écrire 08:00–08:30 COMME 08:00–08:15, donc les deux
+              granularités demandées ; un pas de 30 interdirait les créneaux
+              courts et invaliderait 140 créneaux déjà saisis (vérifié). */}
+          <Champ label="Début" type="time" step={900} value={f.heure_debut} onChange={(e) => maj("heure_debut", e.target.value)} />
+          <Champ label="Fin" type="time" step={900} value={f.heure_fin} onChange={(e) => maj("heure_fin", e.target.value)} />
         </div>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Matière *</span>
@@ -636,10 +641,10 @@ function PanneauGrille({ ecoleId, grille, onChange, onErreur }) {
         {lignes.length === 0 && <p className="text-sm text-navy-900/40">Aucun créneau ce jour.</p>}
         {lignes.map((l, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2 rounded-xl border border-navy-900/10 p-2">
-            <input type="time" value={l.heure_debut} onChange={(e) => maj(i, "heure_debut", e.target.value)}
+            <input type="time" step={900} value={l.heure_debut} onChange={(e) => maj(i, "heure_debut", e.target.value)}
               className="rounded-lg border border-navy-900/15 px-2 py-1.5 text-sm" />
             <span className="text-navy-900/30">→</span>
-            <input type="time" value={l.heure_fin} onChange={(e) => maj(i, "heure_fin", e.target.value)}
+            <input type="time" step={900} value={l.heure_fin} onChange={(e) => maj(i, "heure_fin", e.target.value)}
               className="rounded-lg border border-navy-900/15 px-2 py-1.5 text-sm" />
             <label className="ml-2 flex items-center gap-1.5 text-sm text-navy-900/60">
               <input type="checkbox" checked={l.pause} onChange={(e) => maj(i, "pause", e.target.checked)} /> pause

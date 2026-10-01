@@ -20,33 +20,90 @@ export async function getAbsencesJour(ecoleId, classeId, date) {
   return data ?? [];
 }
 
-// Enregistre l'appel : remplace les absences/retards de la classe pour la date.
+// Enregistre la feuille de présence du jour pour une classe.
 // entries: [{ eleve_id, etat: 'present'|'absence'|'retard', motif }]
+//
+// 🔴 CETTE FONCTION EFFAÇAIT LES JUSTIFICATIONS DÉJÀ SAISIES.
+// Elle faisait un DELETE de toutes les absences de la classe pour la journée,
+// puis un INSERT avec `statut: 'non_justifie'`. Conséquence : refaire la
+// feuille de présence — un second passage, une correction, deux personnes qui
+// la saisissent — remettait à zéro le travail du secrétariat. Le `statut`
+// repassait à « non justifié » et la `justification` déposée par le parent
+// (mig. 024) disparaissait. Perte silencieuse, irréversible.
+//
+// On procède désormais par DIFFÉRENCE, ce qui rend l'opération IDEMPOTENTE :
+// rejouer la même feuille ne change rien, et une erreur réseau en cours de
+// route se répare en recommençant. C'est cette propriété qui remplace
+// l'atomicité (on reste sur plusieurs appels, sans migration).
+// La différence est une fonction PURE, donc éprouvable sans base : c'est elle
+// qui garantit qu'une justification n'est jamais écrasée.
+// Rend { aSupprimer: [id], aMettreAJour: [{id, type, motif}], aInserer: [ligne] }.
+export function diffAppel({ ecoleId, classeId, date, entries = [], existantes = [], saisiPar = null }) {
+  const parEleve = new Map();
+  for (const a of existantes) {
+    if (!parEleve.has(a.eleve_id)) parEleve.set(a.eleve_id, []);
+    parEleve.get(a.eleve_id).push(a);
+  }
+
+  const aSupprimer = [];
+  const aInserer = [];
+  const aMettreAJour = [];
+
+  for (const e of entries) {
+    const lignes = parEleve.get(e.eleve_id) || [];
+    const absent = e.etat === "absence" || e.etat === "retard";
+
+    if (!absent) {
+      // Marqué présent : on retire ses lignes du jour (saisie corrigée).
+      aSupprimer.push(...lignes.map((x) => x.id));
+      continue;
+    }
+    if (lignes.length === 0) {
+      aInserer.push({
+        ecole_id: ecoleId, eleve_id: e.eleve_id, classe_id: classeId,
+        type: e.etat, date_abs: date, motif: e.motif || null,
+        statut: "non_justifie", saisi_par: saisiPar || null,
+      });
+      continue;
+    }
+    // Une ligne existe : on ne touche QUE le type et le motif. `statut` et
+    // `justification` appartiennent au circuit de justification, pas à l'appel.
+    const [garder, ...surplus] = lignes;
+    if (garder.type !== e.etat || (garder.motif || null) !== (e.motif || null)) {
+      aMettreAJour.push({ id: garder.id, type: e.etat, motif: e.motif || null });
+    }
+    aSupprimer.push(...surplus.map((x) => x.id));   // doublons éventuels
+  }
+  return { aSupprimer, aMettreAJour, aInserer };
+}
+
 export async function enregistrerAppel(ecoleId, classeId, date, entries, saisiPar) {
-  // 1) on efface l'existant de ce jour pour cette classe
-  const { error: eDel } = await supabase
+  // 1) L'existant du jour. La table n'a pas de contrainte d'unicité sur
+  //    (eleve, date) : un élève peut porter plusieurs lignes.
+  const { data: existantes, error: eLire } = await supabase
     .from("absences")
-    .delete()
+    .select("id, eleve_id, type, motif")
     .eq("ecole_id", ecoleId)
     .eq("classe_id", classeId)
     .eq("date_abs", date);
-  if (eDel) throw eDel;
+  if (eLire) throw eLire;
 
-  // 2) on insère les absents / retards
-  const lignes = entries
-    .filter((e) => e.etat === "absence" || e.etat === "retard")
-    .map((e) => ({
-      ecole_id: ecoleId,
-      eleve_id: e.eleve_id,
-      classe_id: classeId,
-      type: e.etat,
-      date_abs: date,
-      motif: e.motif || null,
-      statut: "non_justifie",
-      saisi_par: saisiPar || null,
-    }));
-  if (lignes.length) {
-    const { error } = await supabase.from("absences").insert(lignes);
+  const { aSupprimer, aMettreAJour, aInserer } =
+    diffAppel({ ecoleId, classeId, date, entries, existantes: existantes ?? [], saisiPar });
+
+  // Les élèves absents de `entries` (hors classe, désinscrits) ne sont pas
+  // touchés : on ne supprime que ce qu'on a explicitement remis à « présent ».
+  if (aSupprimer.length) {
+    const { error } = await supabase.from("absences").delete().in("id", aSupprimer);
+    if (error) throw error;
+  }
+  for (const m of aMettreAJour) {
+    const { error } = await supabase.from("absences")
+      .update({ type: m.type, motif: m.motif }).eq("id", m.id);
+    if (error) throw error;
+  }
+  if (aInserer.length) {
+    const { error } = await supabase.from("absences").insert(aInserer);
     if (error) throw error;
   }
 }

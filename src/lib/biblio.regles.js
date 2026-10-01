@@ -14,7 +14,24 @@ export function versDate(d) {
 }
 
 // Date -> "AAAA-MM-JJ"
+//
+// 🔴 CORRIGÉ le 01/10/2026 — un jour se perdait en fuseau NÉGATIF.
+// Cette fonction repassait par `versDate()`, qui lit les composantes LOCALES
+// d'un `Date`. Or les dates fabriquées ici sont déjà à minuit UTC :
+//     versDate("2026-09-19")  → 2026-09-19T00:00Z
+//     setUTCDate(+14)         → 2026-10-03T00:00Z
+//     versISO(Date)           → getDate() local = 2 oct  ✗  (en UTC−3)
+// Toute échéance d'emprunt était donc décalée d'un jour à l'ouest de
+// Greenwich. Le Sénégal (UTC+0) et la RDC (UTC+1) n'étaient pas touchés —
+// d'où un défaut resté dormant, révélé par le fuseau de la machine de build.
+//
+// Un `Date` est désormais formaté par ses composantes UTC, sans aller-retour.
+// `versDate()` garde en revanche sa lecture LOCALE d'un `Date`, qui est la
+// bonne pour un appelant passant `new Date()` au sens de « aujourd'hui ».
 export function versISO(d) {
+  if (d instanceof Date) {
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
   const dt = versDate(d);
   return dt ? dt.toISOString().slice(0, 10) : null;
 }

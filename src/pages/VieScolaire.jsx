@@ -44,7 +44,7 @@ export default function VieScolaire() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["appel", "Appel & absences"], ["incidents", "Incidents"]].map(([k, l]) => (
+          {[["appel", "Présences & absences"], ["incidents", "Incidents"]].map(([k, l]) => (
             <button key={k} onClick={() => setOnglet(k)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
               {l}
