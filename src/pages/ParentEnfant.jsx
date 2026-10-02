@@ -462,6 +462,28 @@ function BulletinParent({ b, lignes }) {
         </div>
       </div>
 
+      {/* Absences : affichées à partir du collège seulement. La règle n'est
+          PAS décidée ici — `affiche_absences` vient de la base (mig. 163),
+          pour que ce composant et celui du personnel ne divergent jamais.
+          Et `absences` à NULL signifie « période non datée » : on le dit,
+          on n'écrit pas 0, qui serait un mensonge rassurant. */}
+      {b.affiche_absences && (
+        <div className="mt-4 rounded-xl border border-navy-900/15 p-4 text-sm">
+          {b.absences == null ? (
+            <p className="text-navy-900/50">
+              Absences non comptabilisées : les dates de la période ne sont pas renseignées.
+            </p>
+          ) : (
+            <p className="text-navy-900/80">
+              <b className="text-navy-900/50">Absences :</b> {b.absences}
+              {Number(b.absences) > 0 && (
+                <span className="text-navy-900/55"> dont {b.absences_justifiees ?? 0} justifiée{Number(b.absences_justifiees) > 1 ? "s" : ""}</span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       {(b.appreciation || b.decision) && (
         <div className="mt-6 space-y-2 rounded-xl border border-navy-900/10 bg-creme/40 p-4 text-sm">
           {b.appreciation && <p className="text-navy-900/80"><b className="text-navy-900/50">Appréciation générale :</b> {b.appreciation}</p>}

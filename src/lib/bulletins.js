@@ -366,3 +366,33 @@ export async function calculerBulletins(ecoleId, classeId, anneeId, periodeId, m
 
   return { eleves: classes, effectif: eleves.length, evaluations: evals };
 }
+
+// --- Absences au bulletin (migration 163) ----------------------------------
+//
+// ⚠️ La règle « à partir du collège » n'est PAS écrite ici. Le bulletin
+// s'imprime depuis deux composants distincts — celui du personnel et celui
+// de l'espace parent — et l'école a demandé explicitement que la logique ne
+// soit pas codée en dur dans plusieurs endroits. Elle vit en base.
+export async function afficheAbsences(classeId) {
+  if (!classeId) return false;
+  const { data, error } = await supabase.rpc("bulletin_affiche_absences", { p_classe: classeId });
+  if (error) throw error;
+  return data === true;
+}
+
+// Compteurs de toute une classe en UN appel : une requête par élève serait
+// le patron N+1 que l'audit de performance a déjà corrigé ailleurs.
+// Rend {} si la période n'est pas datée — et c'est une information, pas un
+// échec : l'écran doit le dire au lieu d'afficher des zéros.
+export async function absencesClassePeriode(classeId, periodeId) {
+  if (!classeId || !periodeId) return {};
+  const { data, error } = await supabase.rpc("absences_classe_periode", {
+    p_classe: classeId, p_periode: periodeId,
+  });
+  if (error) throw error;
+  const par = {};
+  for (const l of data ?? []) {
+    par[l.eleve_id] = { absences: Number(l.absences) || 0, justifiees: Number(l.justifiees) || 0, retards: Number(l.retards) || 0 };
+  }
+  return par;
+}

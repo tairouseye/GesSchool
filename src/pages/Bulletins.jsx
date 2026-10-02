@@ -247,10 +247,35 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
   const [appMat, setAppMat] = useState({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  // Règle d'affichage et compteurs : lus en base, jamais déduits ici.
+  const [afficheAbs, setAfficheAbs] = useState(false);
+  const [abs, setAbs] = useState(null);
 
   useEffect(() => {
     if (resultat) { setAppGen(""); setDecision(""); setAppMat({}); setMsg(""); }
   }, [resultat]);
+
+  useEffect(() => {
+    if (!resultat || !classeId || !periodeId) { setAfficheAbs(false); setAbs(null); return; }
+    let vivant = true;
+    (async () => {
+      try {
+        const montre = await api.afficheAbsences(classeId);
+        if (!vivant) return;
+        setAfficheAbs(montre);
+        if (!montre) { setAbs(null); return; }
+        // Un seul appel pour toute la classe, même si la modale n'en affiche
+        // qu'un élève : la liste est déjà en mémoire et l'on passe d'un
+        // bulletin à l'autre sans relancer de requête.
+        const par = await api.absencesClassePeriode(classeId, periodeId);
+        if (!vivant) return;
+        // `{}` = période non datée → on laisse `null`, qui veut dire
+        // « on ne sait pas », et non « zéro ».
+        setAbs(Object.keys(par).length ? (par[resultat.eleve.id] || { absences: 0, justifiees: 0, retards: 0 }) : null);
+      } catch { if (vivant) { setAfficheAbs(false); setAbs(null); } }
+    })();
+    return () => { vivant = false; };
+  }, [resultat, classeId, periodeId]);
 
   if (!resultat) return null;
   const majMat = (id, v) => setAppMat((s) => ({ ...s, [id]: v }));
@@ -304,7 +329,7 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
 
       <BulletinImprimable ecole={ecole} classe={classe} periode={periode} annee={annee}
         resultat={resultat} appGen={appGen} decision={decision} appMat={appMat} notation={notation}
-        signataire={signataire} />
+        signataire={signataire} afficheAbs={afficheAbs} abs={abs} />
       <div className="no-print mt-5 flex justify-end gap-2">
         <Bouton variante="fantome" onClick={onFermer}>Fermer</Bouton>
         <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
@@ -329,7 +354,7 @@ function Sel({ label, value, onChange, options }) {
 }
 
 // Document bulletin (réutilisé pour l'aperçu ET l'impression PDF).
-function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {}, notation = api.DEFAUT_NOTATION, signataire = null }) {
+function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = "", decision = "", appMat = {}, notation = api.DEFAUT_NOTATION, signataire = null, afficheAbs = false, abs = null }) {
   const totalCoef = resultat.lignes.reduce((s, l) => s + l.coef, 0);
   return (
     <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
@@ -394,6 +419,29 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
           <p className="font-display text-xl font-bold text-navy-900">{resultat.mention}</p>
         </div>
       </div>
+
+      {/* Absences : à partir du collège seulement. La règle vient de la base
+          (`bulletin_affiche_absences`, mig. 163) — ce composant et celui de
+          l'espace parent la consomment, aucun des deux ne la redérive.
+          `abs` à null = période non datée : on le dit, on n'écrit pas 0. */}
+      {afficheAbs && (
+        <div className="mt-4 rounded-xl border border-navy-900/15 p-4 text-sm">
+          {!abs ? (
+            <p className="text-navy-900/50">
+              Absences non comptabilisées : les dates de la période ne sont pas renseignées
+              (Structure académique → Découpage de l&apos;année).
+            </p>
+          ) : (
+            <p className="text-navy-900/80">
+              <b className="text-navy-900/50">Absences :</b> {abs.absences}
+              {abs.absences > 0 && (
+                <span className="text-navy-900/55"> dont {abs.justifiees} justifiée{abs.justifiees > 1 ? "s" : ""}</span>
+              )}
+              {abs.retards > 0 && <span className="text-navy-900/55"> · {abs.retards} retard{abs.retards > 1 ? "s" : ""}</span>}
+            </p>
+          )}
+        </div>
+      )}
 
       {((notation.afficher_appreciations !== false && appGen) || (notation.afficher_decision !== false && decision)) && (
         <div className="mt-6 space-y-2 rounded-xl border border-navy-900/10 bg-creme/40 p-4 text-sm">

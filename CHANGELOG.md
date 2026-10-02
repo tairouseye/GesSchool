@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.226.0] — migration **163** · les absences sur le bulletin, à partir du collège
+- Demande de l'école, à la lettre : afficher le nombre d'absences **dès le collège**, et **pas** au préscolaire ni à l'élémentaire — « la logique doit être basée sur le niveau scolaire et non codée en dur dans plusieurs composants ».
+- **⚠️ Et elle l'aurait été.** Le bulletin s'imprime depuis **deux composants distincts** : `BulletinImprimable` côté personnel, et un composant inline dans l'espace parent. Y écrire deux fois « si le cycle n'est pas préscolaire… », c'est garantir qu'un jour les deux divergeront. La règle vit en base (`bulletin_affiche_absences`), et les deux côtés la **consomment** sans la redériver.
+- **Exclusion plutôt qu'inclusion** : on n'énumère pas les cycles qui affichent, mais les deux qui n'affichent pas. Un cycle ajouté demain — technique, professionnel — héritera du comportement attendu sans qu'on y pense.
+- **⚠️ Une période sans dates ne donne pas zéro, elle ne donne rien.** Compter « 0 absence » sur une période qu'on ne sait pas borner serait un mensonge, et le pire : celui qui rassure. Les compteurs valent `NULL`, et les deux écrans affichent alors « absences non comptabilisées », en renvoyant au Découpage de l'année.
+- Côté personnel, **un seul appel pour toute la classe** : une requête par élève aurait été le patron N+1 que l'audit de performance a déjà corrigé ailleurs. On passe d'un bulletin à l'autre sans relancer de requête.
+- Le comptage distingue les absences **justifiées**, et le bulletin du personnel ajoute les retards — l'information existe, autant la rendre.
+
 ## [2.225.0] — migration **162** · dater les périodes, et restreindre qui le peut
 - **Prérequis du point 9**, découvert en le préparant : compter les absences *d'un trimestre* suppose de savoir quand il commence et finit. Or **17 des 20 périodes en base n'ont aucune date**, et `periodes` n'était **jamais écrite** par l'application — aucun écran ne permettait de les saisir, elles naissent nulles à l'ouverture de l'année.
 - Un panneau **« Découpage de l'année »** rejoint Structure académique, à côté des niveaux et des matières. Les dates restent facultatives : une école peut ne renseigner que le trimestre en cours.
