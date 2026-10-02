@@ -5,6 +5,7 @@ import { Bouton, Carte, Alerte, Recherche } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getEtudiantsCodes, genererCodeEtudiant, setTelephoneEtudiant } from "@/lib/superieur.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
+import { couvreSuperieur } from "@/lib/paliers.js";
 
 function messageEtudiant(origin, ecoleNom, prenom, code) {
   return (
@@ -23,7 +24,7 @@ const FILTRES = [
 ];
 
 export default function CodesEtudiants() {
-  const { ecoleId, ecole, typeEtablissement } = useAuth();
+  const { ecoleId, ecole } = useAuth();
   const toast = useToast();
   const confirmer = useConfirm();
   const [rows, setRows] = useState([]);
@@ -122,8 +123,10 @@ export default function CodesEtudiants() {
 
       <div className="space-y-6 p-4 sm:p-8">
         {erreur && <Alerte>{erreur}</Alerte>}
-        {typeEtablissement !== "superieur" && (
-          <Alerte ton="info">Cet établissement n'est pas en mode « Supérieur ». Les comptes étudiants concernent l'enseignement supérieur.</Alerte>
+        {/*  Meme raison qu'en bibliotheque : c'est le PALIER qui decide
+             (mig. 168), pas une bascule binaire. */}
+        {!couvreSuperieur(ecole) && (
+          <Alerte ton="info">Cet établissement ne couvre pas le palier « Université ». Les comptes étudiants concernent l'enseignement supérieur.</Alerte>
         )}
         <p className="rounded-xl bg-creme/60 px-4 py-2.5 text-xs text-navy-900/60 print:hidden">
           Un code par étudiant. Générez-les, renseignez le <b>téléphone</b> si besoin, puis cliquez <b>« WhatsApp »</b> pour envoyer le message pré-rempli.

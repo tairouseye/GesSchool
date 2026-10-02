@@ -8,6 +8,7 @@ import { nbPages } from "@/lib/biblio.regles.js";
 import { moduleActif } from "@/lib/modules.js";
 import ModaleImportNotices from "@/composants/ModaleImportNotices.jsx";
 import SectionAuteurs from "@/composants/SectionAuteurs.jsx";
+import { couvreSuperieur } from "@/lib/paliers.js";
 
 const TAILLE = 20;
 const libType = (t) => api.TYPES.find(([v]) => v === t)?.[1] || t;
@@ -18,7 +19,7 @@ const auteursDe = (r) => (r.biblio_ressource_auteurs || [])
 const fmtTaille = (o) => (!o ? "—" : o > 1048576 ? `${(o / 1048576).toFixed(1)} Mo` : `${Math.round(o / 1024)} Ko`);
 
 export default function Bibliotheque() {
-  const { ecoleId, typeEtablissement, ecole } = useAuth();
+  const { ecoleId, ecole } = useAuth();
   const toast = useToast();
   const confirmer = useConfirm();
 
@@ -74,8 +75,12 @@ export default function Bibliotheque() {
 
       <div className="space-y-5 p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
-        {typeEtablissement !== "superieur" && (
-          <Alerte ton="info">La bibliothèque universitaire s'adresse aux établissements en mode « Supérieur ».</Alerte>
+        {/*  ⚠️ On demande si le palier UNIVERSITE est couvert, et non plus si
+             le type vaut « superieur » (mig. 168) : un etablissement qui va
+             de l'elementaire a l'universite a une bibliotheque universitaire,
+             et l'ancien test le lui refusait. */}
+        {!couvreSuperieur(ecole) && (
+          <Alerte ton="info">La bibliothèque universitaire s'adresse aux établissements qui couvrent le palier « Université ».</Alerte>
         )}
 
         <div className="flex gap-2">

@@ -105,7 +105,9 @@ function Rejoindre() {
 // Redirige vers l'espace d'accueil selon le rôle de l'utilisateur.
 function RedirectionAccueil() {
   const { roles, estPromoteur, modulesActifs, ecole } = useAuth();
-  const typeEtab = ecole?.type_etablissement;
+  //  On passe l'ECOLE, et non plus un type : le menu se decide desormais
+  //  sur les PALIERS couverts (mig. 168), qui peuvent etre plusieurs.
+  const typeEtab = ecole;
   // Un enseignant « pur » arrive directement sur l'appel de sa classe — mais
   // seulement si la page lui est réellement ouverte (module Vie scolaire actif)
   // et pertinente pour le type d'établissement (l'appel n'existe pas au supérieur).

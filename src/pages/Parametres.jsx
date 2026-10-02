@@ -12,6 +12,9 @@ import { getNotationConfig, setNotationConfig, DEFAUT_NOTATION } from "@/lib/bul
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as relancesApi from "@/lib/relances.js";
 import { pspEtat, setPspConfig, PRESTATAIRES } from "@/lib/paiementEnLigne.js";
+import { PALIERS, COMBINAISONS, PEDAGOGIES, paliersDeclares, resume as resumePaliers,
+         combinaisonDe, trou, pedagogiePertinente, couvreSuperieur,
+         profilAEnregistrer } from "@/lib/paliers.js";
 
 const DEVISES = ["XOF", "XAF", "CDF", "USD", "EUR", "GNF", "MAD", "MRU"];
 
@@ -200,6 +203,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
   const [f, setF] = useState({
     nom: "", sigle: "", devise: "XOF", pays: "Sénégal", ville: "", adresse: "",
     telephone: "", email: "", type_etablissement: "ecole",
+    paliers: [], pedagogie_elementaire: "",
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
   });
   const [up, setUp] = useState("");
@@ -210,6 +214,10 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       pays: ecole.pays || "Sénégal", ville: ecole.ville || "", adresse: ecole.adresse || "",
       telephone: ecole.telephone || "", email: ecole.email || "",
       type_etablissement: ecole.type_etablissement || "ecole",
+      //  On montre ce que l'ecole a DECLARE. Vide = non declare : on
+      //  n'affiche pas le repli du menu comme si c'etait sa reponse.
+      paliers: paliersDeclares(ecole),
+      pedagogie_elementaire: ecole.pedagogie_elementaire || "",
       couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
       couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
       logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
@@ -242,18 +250,13 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
         <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type d'établissement</span>
-          <select value={f.type_etablissement} onChange={(e) => maj("type_etablissement", e.target.value)}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-            <option value="ecole">École (préscolaire, primaire, secondaire)</option>
-            <option value="superieur">Enseignement supérieur (université — LMD)</option>
-          </select>
-          <span className="mt-1.5 block text-xs text-navy-900/45">
-            « Supérieur » bascule l'espace Pédagogie en mode LMD : Filières &amp; maquettes (UE, crédits, semestres)
-            remplacent Niveaux &amp; classes, Notes et Bulletins. Le reste (finances, communication, documents) est identique.
-          </span>
-        </label>
+        <div className="sm:col-span-2">
+          <ChoixPaliers
+            paliers={f.paliers} pedagogie={f.pedagogie_elementaire}
+            onPaliers={(v) => maj("paliers", v)}
+            onPedagogie={(v) => maj("pedagogie_elementaire", v)}
+          />
+        </div>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
           <select value={f.pays}
@@ -304,7 +307,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       </div>
 
       <div className="mt-4 flex justify-end">
-        <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
+        <Bouton onClick={() => onSave(profilAEnregistrer(f))}>Enregistrer</Bouton>
       </div>
     </Carte>
   );
@@ -752,5 +755,125 @@ function PaiementEnLigne({ onErreur }) {
         <Bouton variante="or" onClick={() => sauver(true)} disabled={envoi}>Enregistrer &amp; activer</Bouton>
       </div>
     </Carte>
+  );
+}
+
+// =====================================================================
+//  Ce que l'établissement couvre, et sa pédagogie (mig. 168)
+//
+//  Demandé : Élémentaire (incluant le préscolaire), Collège, Lycée,
+//  Université — ET leurs combinaisons, du plus simple au plus étendu.
+//
+//  ⚠️ COMMENT LE CHOIX EST RENDU AISÉ. Quinze combinaisons dans une liste
+//  déroulante serait illisible, et l'école devrait chercher la sienne. On
+//  propose donc les cas COURANTS en un clic — formulés comme l'école les
+//  dit — et les cases à cocher juste en dessous pour tout cas particulier.
+//  Les deux sont le même état : cliquer un cas courant coche les cases, et
+//  décocher une case fait simplement perdre le nom du cas courant.
+// =====================================================================
+function ChoixPaliers({ paliers, pedagogie, onPaliers, onPedagogie }) {
+  const actuel = combinaisonDe(paliers);
+  const manquant = trou(paliers);
+  const basculer = (cle) => onPaliers(
+    paliers.includes(cle) ? paliers.filter((p) => p !== cle) : [...paliers, cle]);
+
+  return (
+    <div className="rounded-xl border border-navy-900/10 p-4">
+      <span className="block text-sm font-medium text-navy-900/70">Ce que l&apos;établissement couvre</span>
+      <p className="mt-1 text-xs text-navy-900/45">
+        Du plus simple — l&apos;élémentaire seul — au plus étendu : élémentaire, collège, lycée et université.
+      </p>
+
+      {/* Les cas courants, en un clic. */}
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {COMBINAISONS.map((c) => (
+          <button key={c.cle} type="button" onClick={() => onPaliers([...c.paliers])}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${actuel?.cle === c.cle
+              ? "bg-navy-900 text-creme"
+              : "bg-navy-900/5 text-navy-900/70 hover:bg-navy-900/10"}`}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Et les cases à cocher pour l'exact. */}
+      <div className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {PALIERS.map((p) => {
+          const coche = paliers.includes(p.cle);
+          return (
+            <label key={p.cle}
+              className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 transition ${coche
+                ? "border-or-500/50 bg-or-500/[0.06]" : "border-navy-900/10 hover:bg-creme/60"}`}>
+              <input type="checkbox" checked={coche} onChange={() => basculer(p.cle)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-navy-900">{p.label}</span>
+                {p.detail && <span className="block text-xs text-navy-900/45">{p.detail}</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+
+      {/* Ce que l'école vient de déclarer, en une phrase. */}
+      <div className="mt-3 text-sm">
+        {paliers.length === 0 ? (
+          <span className="text-navy-900/45">
+            Rien de déclaré : l&apos;établissement continue de fonctionner comme aujourd&apos;hui.
+          </span>
+        ) : (
+          <span className="text-navy-900/70">
+            Déclaré : <b className="text-navy-900">{resumePaliers(paliers)}</b>
+          </span>
+        )}
+      </div>
+
+      {/* ⚠️ On SIGNALE un trou dans l'échelle, sans l'interdire : une école
+          peut fermer son collège le temps d'un chantier. */}
+      {manquant && (
+        <p className="mt-2 text-xs text-amber-600">
+          Le {manquant.toLowerCase()} est absent entre deux paliers déclarés. Si c&apos;est voulu, ignorez ce message.
+        </p>
+      )}
+
+      {couvreSuperieur({ paliers }) && (
+        <p className="mt-2 text-xs text-navy-900/45">
+          Le palier « Université » ouvre l&apos;espace LMD : filières et maquettes (UE, crédits, semestres),
+          inscriptions, délibérations. Il s&apos;ajoute aux pages scolaires si l&apos;établissement couvre aussi
+          l&apos;élémentaire, le collège ou le lycée.
+        </p>
+      )}
+
+      {/* La pédagogie : seulement si l'élémentaire est couvert. */}
+      {pedagogiePertinente(paliers) && (
+        <div className="mt-4 border-t border-navy-900/10 pt-3.5">
+          <span className="block text-sm font-medium text-navy-900/70">Pédagogie de l&apos;élémentaire</span>
+          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {PEDAGOGIES.map((pg) => (
+              <label key={pg.cle}
+                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 transition ${pedagogie === pg.cle
+                  ? "border-or-500/50 bg-or-500/[0.06]" : "border-navy-900/10 hover:bg-creme/60"}`}>
+                <input type="radio" name="pedagogie" checked={pedagogie === pg.cle}
+                  onChange={() => onPedagogie(pg.cle)} className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-navy-900">{pg.label}</span>
+                  <span className="block text-xs text-navy-900/45">{pg.detail}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {pedagogie === "montessori" && (
+            <p className="mt-2 text-xs text-navy-900/50">
+              Une classe Montessori réunit plusieurs niveaux. Précisez le niveau réel de chaque élève
+              avec les <b>sous-niveaux</b>, dans Structure → Niveaux &amp; classes.
+            </p>
+          )}
+          {pedagogie && (
+            <button type="button" onClick={() => onPedagogie("")}
+              className="mt-2 text-xs text-navy-900/40 hover:underline">ne pas préciser</button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

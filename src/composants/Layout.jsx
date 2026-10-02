@@ -13,6 +13,7 @@ import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
+import { typeDominant } from "@/lib/paliers.js";
 
 // Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
 function LogoEcole({ logoUrl, sigle, size }) {
@@ -165,10 +166,13 @@ export default function Layout() {
   // Menus d'un espace : uniquement les pages RÉELLEMENT ouvrables (rôle,
   // module actif, statut promoteur) — même critère que la garde de route,
   // pour ne jamais proposer un lien qui mènerait à un refus.
-  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole?.type_etablissement));
+  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole));
 
   // Libellé d'un item adapté au type d'établissement (ex. Élèves → Étudiants au supérieur).
-  const libItem = (it) => (it.labelSup && ecole?.type_etablissement === "superieur" ? it.labelSup : it.label);
+  //  L'intitule « Etudiants » ne vaut que pour un etablissement
+  //  exclusivement universitaire : dans un etablissement qui va de
+  //  l'elementaire a l'universite, on garde « Eleves » comme mot courant.
+  const libItem = (it) => (it.labelSup && typeDominant(ecole) === "superieur" ? it.labelSup : it.label);
 
   // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un menu.
   const accessibles = espacesAccessibles(roles, estPromoteur).filter((e) => menusDe(e).length > 0);

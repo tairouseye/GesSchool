@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase.js";
 import { appliquerAccent } from "@/lib/theme.js";
+import { typeDominant } from "@/lib/paliers.js";
 
 // GesSchool — contexte d'authentification.
 // Expose : session, profil applicatif, rôles, école courante + actions.
@@ -131,7 +132,11 @@ export function AuthProvider({ children }) {
     ecole,
     ecoleId: profil?.ecole_id ?? null,
     modulesActifs: ecole?.modules_actifs ?? null,
-    typeEtablissement: ecole?.type_etablissement ?? "ecole",
+    //  ⚠️ DERIVE, et non lu tel quel (mig. 168). Ce champ ne sert plus qu'au
+    //  VOCABULAIRE (« eleve » / « etudiant ») : pour savoir quelles pages
+    //  ouvrir, les consommateurs demandent si un PALIER est couvert, car un
+    //  etablissement peut couvrir l'elementaire ET l'universite.
+    typeEtablissement: typeDominant(ecole),
     ecolesPossedees,
     estPromoteur: ecolesPossedees.length > 0,
     estConnecte: !!session,

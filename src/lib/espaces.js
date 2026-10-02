@@ -4,6 +4,7 @@
 
 import { ROLES_COMPLETS, estRoleComplet, peutVoir } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
+import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
 
 // Chaque page (clé) appartient à un ou plusieurs espaces.
 // `roles` = rôles « métier » membres de l'espace (en plus des rôles complets).
@@ -215,9 +216,21 @@ export function normaliserType(typeEtab) {
   return typeEtab === "superieur" ? "superieur" : "ecole";
 }
 
-export function itemPourType(item, typeEtab) {
+//  ⚠️ LA BASCULE BINAIRE NE SUFFIT PLUS (mig. 168). Un établissement peut
+//  couvrir l'élémentaire ET l'université : il a alors besoin des DEUX jeux
+//  de pages. On ne demande donc plus « quel type ? » mais « ce palier est-il
+//  couvert ? ».
+//
+//  Le second paramètre accepte l'ÉCOLE ou, par tolérance, l'ancienne chaîne
+//  de type — pour qu'un appel oublié ne fasse pas disparaître un menu.
+export function itemPourType(item, ecoleOuType) {
   if (!item.types) return true;
-  return item.types.includes(normaliserType(typeEtab));
+  const ecole = typeof ecoleOuType === "string"
+    ? { type_etablissement: ecoleOuType }
+    : (ecoleOuType || {});
+  if (item.types.includes("ecole") && couvreScolaire(ecole)) return true;
+  if (item.types.includes("superieur") && couvreSuperieur(ecole)) return true;
+  return false;
 }
 
 // Première page réellement accessible, tous espaces confondus.
@@ -231,9 +244,9 @@ export function itemPourType(item, typeEtab) {
 // catalogue. Une page d'atterrissage doit être du TRAVAIL, pas un utilitaire
 // — d'où deux passes, et un ordre de menu désormais libre de changer sans
 // déplacer personne.
-export function premiereRoute(roles, estPromoteur, modulesActifs, typeEtab) {
+export function premiereRoute(roles, estPromoteur, modulesActifs, ecoleOuType) {
   const espaces = espacesAccessibles(roles, estPromoteur);
-  const ouvrable = (x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, typeEtab);
+  const ouvrable = (x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, ecoleOuType);
   for (const transverses of [false, true]) {
     for (const e of espaces) {
       const it = e.items.find((x) => !!x.transverse === transverses && ouvrable(x));
