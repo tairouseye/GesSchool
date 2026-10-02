@@ -21,7 +21,7 @@ import { chargerLib } from "./bundle.helper.mjs";
 
 const E = () => chargerLib("photoel", ['export { cheminPhoto } from "@/lib/eleves.js";']);
 
-const ECOLE = "72e0a623-1a12-4b57-b8c8-62e57b00fa61";
+const ECOLE = "11111111-2222-4333-8444-555555555555";
 const ELEVE = "6ae277b2-1111-4222-8333-944444444444";
 //  La MÊME expression que la fonction SQL `_photo_eleve`.
 const REGEX_SQL = /^[0-9a-fA-F-]{36}$/;
