@@ -208,12 +208,59 @@ export async function supprimerEleve(id) {
 
 // Téléverse une photo dans le bucket privé 'eleves' et renvoie son CHEMIN
 // (l'affichage se fait via une URL signée, cf. composant Photo).
+//
+// ⚠️ UN SEGMENT PAR IDENTIFIANT : `<ecole_id>/<eleve_id>/<horodatage>.<ext>`.
+// L'ancienne forme collait les deux — `<ecole_id>/<eleve_id>-<horodatage>` —
+// et devenait INANALYSABLE dans une policy : un UUID contient quatre tirets,
+// donc découper sur « - » ne permet pas de retrouver l'élève de façon fiable.
+// C'est précisément ce que la policy du parent doit savoir faire
+// (`_photo_eleve`, mig. 169). Corrigé sans migration de données parce
+// qu'aucune photo n'existait encore — l'occasion ne se représentera pas.
+// 🔴 CONTRAT AVEC LA POLICY SQL. `_photo_eleve` (mig. 169) lit le DEUXIÈME
+// segment du chemin et le valide par `^[0-9a-fA-F-]{36}$`. Si ce format
+// dérive, la policy rend NULL et le parent ne voit plus la photo de son
+// enfant — sans erreur, en silence. D'où une fonction PURE, éprouvée des
+// deux côtés du contrat.
+export function cheminPhoto(ecoleId, eleveId, nomFichier = "", horodatage = Date.now()) {
+  const ext = String(nomFichier).includes(".")
+    ? String(nomFichier).split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "")
+    : "";
+  return `${ecoleId}/${eleveId}/${horodatage}.${ext || "jpg"}`;
+}
+
 export async function televerserPhoto(ecoleId, eleveId, file) {
-  const ext = file.name.split(".").pop();
-  const chemin = `${ecoleId}/${eleveId}-${Date.now()}.${ext}`;
+  const chemin = cheminPhoto(ecoleId, eleveId, file.name);
   const { error } = await supabase.storage.from("eleves").upload(chemin, file, { upsert: true });
   if (error) throw error;
   return chemin;
+}
+
+// Retire la photo : le fichier ET la référence. Laisser l'un sans l'autre
+// produirait soit un objet orphelin, soit une image cassée.
+export async function retirerPhoto(eleveId, chemin) {
+  if (chemin) {
+    // ⚠️ La suppression unitaire renvoie 200 SANS supprimer (piège connu) :
+    // on passe par la forme en lot, qui supprime réellement.
+    await supabase.storage.from("eleves").remove([chemin]);
+  }
+  const { error } = await supabase.from("eleves").update({ photo_url: null }).eq("id", eleveId);
+  if (error) throw error;
+}
+
+// Les élèves d'une classe, avec leur photo — pour l'écran de prise de vue.
+export async function getElevesPourPhotos(ecoleId, classeId, anneeId) {
+  if (!classeId || !anneeId) return [];
+  const { data, error } = await supabase
+    .from("inscriptions")
+    .select("eleve_id, eleves(id, prenom, nom, matricule, photo_url)")
+    .eq("ecole_id", ecoleId)
+    .eq("classe_id", classeId)
+    .eq("annee_id", anneeId);
+  if (error) throw error;
+  return (data ?? [])
+    .map((i) => i.eleves)
+    .filter(Boolean)
+    .sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, "fr"));
 }
 
 // --- Inscriptions ---

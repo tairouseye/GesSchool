@@ -74,6 +74,11 @@ const ACCES = {
 
   // Élèves — présent en Pédagogie ET Gestion.
   eleves: ["direction", "surveillant", "enseignant", "comptable", "secretaire"],
+  //  Prendre les photos est un acte administratif sur le dossier de
+  //  l'enfant : direction et secretariat. Un enseignant tient sa classe,
+  //  il ne constitue pas les dossiers — et une photo d'enfant se confie au
+  //  moins de mains possible.
+  photos: ["direction", "secretaire"],
 
   // Codes d'accès parents (génération/envoi en masse) — mêmes rôles que la RPC
   // `generer_code_tuteur` : responsable pédagogique + côté Gestion.
@@ -116,6 +121,7 @@ const ACCES = {
 export const PAGES = [
   { cle: "dashboard", path: "/" },
   { cle: "eleves", path: "/eleves" },
+  { cle: "photos", path: "/photos" },
   { cle: "programmation", path: "/programmation" },
   { cle: "notes", path: "/notes" },
   { cle: "bulletins", path: "/bulletins" },

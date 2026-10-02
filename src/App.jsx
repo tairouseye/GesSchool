@@ -55,6 +55,7 @@ const EtudiantEmploi = lazy(() => import("@/pages/EtudiantEmploi.jsx"));
 const EtudiantMessagerie = lazy(() => import("@/pages/EtudiantMessagerie.jsx"));
 const TextesReference = lazy(() => import("@/composants/TextesReference.jsx"));
 const Eleves = lazy(() => import("@/pages/Eleves.jsx"));
+const Photos = lazy(() => import("@/pages/Photos.jsx"));
 const FicheEleve = lazy(() => import("@/pages/FicheEleve.jsx"));
 const Notes = lazy(() => import("@/pages/Notes.jsx"));
 const Bulletins = lazy(() => import("@/pages/Bulletins.jsx"));
@@ -264,6 +265,7 @@ export default function App() {
             <Route path="/assiduite" element={<Garde cle="assiduite"><Assiduite /></Garde>} />
             <Route path="/classement" element={<Garde cle="classement"><Classement /></Garde>} />
             <Route path="/eleves" element={<Garde cle="eleves"><Eleves /></Garde>} />
+            <Route path="/photos" element={<Garde cle="photos"><Photos /></Garde>} />
             <Route path="/eleves/:id" element={<Garde cle="eleves"><FicheEleve /></Garde>} />
             <Route path="/codes-parents" element={<Garde cle="codes_parents"><CodesParents /></Garde>} />
             <Route path="/notes" element={<Garde cle="notes"><Notes /></Garde>} />

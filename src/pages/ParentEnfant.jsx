@@ -19,6 +19,7 @@ import { Icone } from "@/composants/Icones.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codeBulletinId, codeFacture } from "@/lib/verification.js";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
+import Photo from "@/composants/Photo.jsx";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -157,10 +158,19 @@ export default function ParentEnfant() {
         <>
           {/* En-tête + grille de tuiles colorées (accueil de l'enfant) */}
           <div className="flex items-start justify-between gap-3 rounded-3xl bg-gradient-to-br from-navy-900 to-navy-700 p-5 text-creme">
-            <div className="min-w-0">
-              <p className="text-sm text-creme/60">Bonjour 👋</p>
-              <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
-              <p className="truncate text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              {/*  Rien ne s'affiche s'il n'y a pas de photo : pas de cadre
+                  vide ni d'icone generique, qui donneraient l'impression
+                  d'une image cassee. */}
+              {enfant?.photo && (
+                <Photo bucket="eleves" valeur={enfant.photo} alt=""
+                  className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-creme/25" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm text-creme/60">Bonjour 👋</p>
+                <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
+                <p className="truncate text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
+              </div>
             </div>
             {enfant?.logo && (
               <img src={enfant.logo} alt={enfant.ecole || "École"} title={enfant.ecole || ""}

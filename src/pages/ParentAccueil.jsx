@@ -4,6 +4,7 @@ import { mesEnfants, lierParent } from "@/lib/parent.js";
 import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
+import Photo from "@/composants/Photo.jsx";
 
 // Couleur d'avatar stable par enfant (dérivée de son id) — accord avec les tuiles.
 const AVATAR_COULEURS = ["bg-violet-500", "bg-rose-500", "bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-fuchsia-500", "bg-teal-500", "bg-indigo-500"];
@@ -64,9 +65,20 @@ export default function ParentAccueil() {
               className="group rounded-3xl border border-navy-900/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-or-500"
             >
               <div className="flex items-center gap-3">
-                <span className={`grid h-12 w-12 place-items-center rounded-2xl font-display text-lg font-bold text-white ${avatarColor(e.eleve_id)}`}>
-                  {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
-                </span>
+                {/*  La photo de SON enfant — et d'aucun autre : la policy de la
+                    migration 169 repose sur `_parent_possede`, pas sur
+                    l'appartenance a l'ecole. Sans photo, les initiales
+                    colorees restent : l'espace parent ne doit pas attendre
+                    que l'ecole ait photographie 96 enfants. */}
+                <Photo
+                  bucket="eleves" valeur={e.photo} alt=""
+                  className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+                  fallback={
+                    <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-display text-lg font-bold text-white ${avatarColor(e.eleve_id)}`}>
+                      {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
+                    </span>
+                  }
+                />
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold text-navy-900">{e.prenom} {e.nom}</p>
                   <p className="truncate text-sm text-navy-900/50">{e.classe || "—"} · {e.ecole || ""}</p>

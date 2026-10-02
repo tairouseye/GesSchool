@@ -106,6 +106,7 @@ export const ESPACES = [
 
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
+      { to: "/photos", label: "Photos des élèves", labelSup: "Photos des étudiants", icone: "📷", cle: "photos", groupe: "Élèves & structure" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Élèves & structure" },
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure" },
