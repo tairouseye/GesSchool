@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide, Modale } from "@/composants/ui.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
@@ -16,7 +16,7 @@ const auj = () => new Date().toISOString().slice(0, 10);
 const dateLisible = () => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
 
 export default function Appel() {
-  const { ecoleId, utilisateur, profil } = useAuth();
+  const { ecoleId, ecole, utilisateur, profil } = useAuth();
   const [annee, setAnnee] = useState(null);
   const [enseignant, setEnseignant] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -27,6 +27,7 @@ export default function Appel() {
   const [info, setInfo] = useState("");
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(false);
+  const [apercu, setApercu] = useState(false);   // feuille signée, imprimable
 
   // Initialisation : année, fiche enseignant, classes du prof
   useEffect(() => {
@@ -150,7 +151,11 @@ export default function Appel() {
               ))}
             </Carte>
 
-            <div className="sticky bottom-3 flex justify-end">
+            <div className="sticky bottom-3 flex justify-end gap-2">
+              <Bouton variante="fantome" onClick={() => setApercu(true)} disabled={eleves.length === 0}
+                className="px-4 py-3 shadow-lg">
+                🖨️ Imprimer
+              </Bouton>
               <Bouton onClick={valider} disabled={enCours || eleves.length === 0} className="px-6 py-3 shadow-lg">
                 {enCours ? "Validation…" : "Valider l'appel"}
               </Bouton>
@@ -158,6 +163,84 @@ export default function Appel() {
           </>
         )}
       </div>
+
+      <ModaleFeuille
+        ouvert={apercu} onFermer={() => setApercu(false)} ecole={ecole}
+        classe={classes.find((c) => c.id === classeId)?.libelle} annee={annee}
+        eleves={eleves} etats={etats} enseignant={enseignant}
+      />
     </>
+  );
+}
+
+// La feuille du jour, telle qu'elle a été saisie — à signer et à archiver.
+//
+// Elle complète le registre VIERGE imprimable depuis la liste d'élèves : ici
+// les états sont déjà renseignés, là-bas les colonnes sont à cocher au stylo.
+// Les deux ont leur usage, et l'école choisit.
+function ModaleFeuille({ ouvert, onFermer, ecole, classe, annee, eleves, etats, enseignant }) {
+  if (!ouvert) return null;
+  const etatDe = (id) => etats[id] || "present";
+  const LIB = { present: "Présent", absence: "Absent", retard: "Retard" };
+  const compte = (v) => eleves.filter((e) => etatDe(e.id) === v).length;
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Feuille de présence — impression" large>
+      <div className="zone-impression text-navy-900">
+        <div className="mb-3 flex items-center gap-3 border-b border-navy-900/15 pb-2">
+          {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-11 w-11 object-contain" />}
+          <div className="flex-1">
+            <p className="font-display text-base font-bold">{ecole?.nom}</p>
+            <p className="text-xs text-navy-900/50">{[ecole?.ville, ecole?.pays].filter(Boolean).join(" · ")}</p>
+          </div>
+          <p className="text-right text-xs text-navy-900/60">
+            Classe : <b>{classe || "—"}</b><br />
+            {annee?.libelle ? `Année ${annee.libelle}` : ""}
+          </p>
+        </div>
+        <h1 className="text-center font-display text-lg font-bold uppercase tracking-wide">Feuille de présence</h1>
+        <p className="mb-3 text-center text-xs capitalize text-navy-900/60">{dateLisible()}</p>
+
+        <table className="w-full border-collapse text-[11px]">
+          <thead>
+            <tr className="text-navy-900/50">
+              <th className="border border-navy-900/25 px-1 py-1">N°</th>
+              <th className="border border-navy-900/25 px-2 py-1 text-left">Nom et prénom</th>
+              <th className="border border-navy-900/25 px-2 py-1">État</th>
+              <th className="border border-navy-900/25 px-2 py-1 text-left">Observation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {eleves.map((e, i) => {
+              const et = etatDe(e.id);
+              return (
+                <tr key={e.id}>
+                  <td className="border border-navy-900/20 px-1 py-1.5 text-center">{i + 1}</td>
+                  <td className="border border-navy-900/20 px-2 py-1.5 font-medium">{e.nom} {e.prenom}</td>
+                  <td className={`border border-navy-900/20 px-2 py-1.5 text-center ${et === "present" ? "text-navy-900/45" : "font-semibold"}`}>
+                    {LIB[et]}
+                  </td>
+                  <td className="border border-navy-900/20 px-2 py-1.5"></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        <p className="mt-2 text-[11px] text-navy-900/60">
+          {eleves.length} élève(s) · présents <b>{compte("present")}</b> · absents <b>{compte("absence")}</b> · retards <b>{compte("retard")}</b>
+        </p>
+        <div className="mt-8 flex justify-between text-sm">
+          <span>
+            {enseignant ? `${enseignant.prenom} ${enseignant.nom}` : "L'enseignant(e)"}<br />
+            <span className="text-navy-900/30">_____________________</span>
+          </span>
+          <span className="text-right">Visa de la direction<br /><span className="text-navy-900/30">_____________________</span></span>
+        </div>
+      </div>
+      <div className="no-print mt-4 flex justify-end">
+        <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
+      </div>
+    </Modale>
   );
 }

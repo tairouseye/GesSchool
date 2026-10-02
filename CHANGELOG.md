@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.223.0] — aucune migration · feuille de présence imprimable
+- La feuille du jour s'imprime désormais **telle qu'elle a été saisie**, avec logo, effectifs et emplacements de signature pour l'enseignant et la direction.
+- Elle **complète** le registre vierge déjà imprimable depuis la liste d'élèves : ici les états sont renseignés, là-bas les colonnes sont à cocher au stylo. Les deux usages existent, l'école choisit.
+
+### 🔴 Blocage découvert : les absences au bulletin ne peuvent pas être calculées
+- Le point « afficher les absences sur le bulletin à partir du collège » supposait de compter les absences **sur la période**. Or **17 des 20 périodes en base n'ont aucune date** (`date_debut` et `date_fin` à NULL), et `periodes` n'est **jamais écrite** par l'application : aucun écran ne permet de saisir ces dates, elles naissent nulles à l'ouverture de l'année scolaire.
+- Livrer la fonctionnalité maintenant produirait un bulletin qui n'affiche rien pour 17 périodes sur 20, **sans que l'école puisse y remédier**. Afficher « 0 absence » serait pire : un mensonge, là où l'information n'existe pas.
+- Le prérequis est donc la **saisie des dates de période** — un écran absent, que mon audit avait manqué en classant ce point en « migration légère ». Il est reclassé.
+
 ## [2.222.0] — migration **160** · lot 2 (partiel) : évaluations, WhatsApp, fournitures
 
 ### 🔴 Supprimer une évaluation aurait effacé ses notes, sans retour
