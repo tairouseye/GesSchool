@@ -36,6 +36,12 @@ const ACCES = {
   _pedagogie: ["direction", "enseignant", "surveillant"], // accueil Pédagogie
   appel: ["direction", "enseignant", "surveillant"],
   cahier: ["direction", "enseignant", "surveillant"],
+  //  Importer la planification de l'IEF est un acte de STRUCTURE : elle est
+  //  partagée par toutes les classes d'un niveau. Si chaque enseignante
+  //  pouvait la réécrire, celle de CM1 A écraserait celle de CM1 B. Mêmes
+  //  rôles que la RLS de la migration 165 — le contrôle frontend ne fait que
+  //  refléter celui de la base, il ne le remplace pas.
+  programmation: ["direction"],
   progression: ["direction", "enseignant"],
   notes: ["direction", "enseignant"],
   bulletins: ["direction", "enseignant"],
@@ -110,6 +116,7 @@ const ACCES = {
 export const PAGES = [
   { cle: "dashboard", path: "/" },
   { cle: "eleves", path: "/eleves" },
+  { cle: "programmation", path: "/programmation" },
   { cle: "notes", path: "/notes" },
   { cle: "bulletins", path: "/bulletins" },
   { cle: "paiements", path: "/paiements" },

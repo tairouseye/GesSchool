@@ -29,6 +29,10 @@ export async function creerEntree(ecoleId, e) {
       contenu: e.contenu || null,
       devoirs: e.devoirs || null,
       date_pour: e.date_pour || null,
+      //  Lien FACULTATIF vers la ligne de programmation officielle reprise
+      //  (mig. 165) : il permet de savoir ce qui a été traité du programme.
+      //  Une séance improvisée, un rattrapage, une sortie n'en ont pas.
+      programmation_ligne_id: e.programmation_ligne_id || null,
     })
     .select()
     .single();

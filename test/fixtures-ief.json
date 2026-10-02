@@ -1,0 +1,503 @@
+{
+ "_source": "docs/CE1 juin.docx — planification mensuelle IEF de Sangalkam (CM1, avril).",
+ "_note": "Corpus EXTRAIT DU VRAI DOCUMENT par src/lib/docxTableaux.js, dont la lecture du XML est elle-meme testee independamment dans test/docxTableaux.test.mjs. Ne pas modifier a la main : regenerer depuis le document.",
+ "entete": "IEF DE SANGALKAM.ECOLE ELEMENTAIRE …………………………………………COURS………………………… CM1PLANIFICATION DU MOIS DE AVRIL ANNEE SCOLAIRE…………………………………………",
+ "rows": [
+  [
+   "Langue et communication",
+   "Semaine 1",
+   "Semaine 2",
+   "Semaine 3",
+   "Semaine 4"
+  ],
+  [
+   "Sous-domaine 1COMMUNICATION ORALE",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Expression orale",
+   "Palier 3 : intégrer le vocabulaire adéquat, les comportements non verbaux, le schéma intonatif et des règles syntaxiques dans des situations de transmission d’informations de type injonctif"
+  ],
+  [
+   "",
+   "OA Faire agir",
+   "OA Faire agir",
+   "OA Faire agir",
+   "Intégration"
+  ],
+  [
+   "",
+   "OS Donner des conseils pratiques pour balayer la classe",
+   "OS Donner des conseils pratiques pour nettoyer les toilettes",
+   "OS Donner des conseils pratiques avoir une école boisée",
+   "Amener les élèves à énumérer différentes actions action en vue de réussir une tâche."
+  ],
+  [
+   "Récitation",
+   "Apprendre une récitation sur l’environnement",
+   "Apprendre une récitation sur l’environnement",
+   "Apprendre une récitation sur l’environnement",
+   "Restituer la récitation sur l’environnement"
+  ],
+  [
+   "Sous -domaine 2",
+   "LECTURE DE TEXTES INJONCTIFS"
+  ],
+  [
+   "COMMUNICATION ECRITE",
+   ""
+  ],
+  [
+   "LECTURE",
+   ""
+  ],
+  [
+   "OA",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "Manifester sa compréhension d’un texte injonctif",
+   "- Cerner l’information importante dans chaque instruction / consigne d’un texte injonctif-Identifier l’ordre logique et la succession des actions à réaliser ou à respecter",
+   "- Identifier la complémentarité des informations fournies entre le texte et les supports iconiques (schémas, croquis, photos, illustrations, etc.) - Reformuler avec ses propres mots la procédure attendue et/ou les actions à accomplir",
+   "- Répondre à des questions en sélectionnant des informations dans un texte injonctif- Traiter efficacement les éléments d’information et les instructions d’un texte injonctif pour accomplir une tâche",
+   ""
+  ],
+  [
+   "Maîtriser des correspondances graphophonologiques",
+   "Renforcer la combinatoire à partir des difficultés constatées chez des élèves lors des leçons.",
+   "Renforcer la combinatoire à partir des difficultés constatées chez des élèves lors des leçons.",
+   "Renforcer la combinatoire à partir des difficultés constatées chez des élèves lors des leçons.",
+   ""
+  ],
+  [
+   "Identifier des mots fréquents",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Développer la fluidité de la lecture d’un texte injonctif",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "PRODUCTION DE TEXTES",
+   ""
+  ],
+  [
+   "OA1 : Maitriser les outils de langue",
+   "Semaine 1-",
+   "Semaine 2",
+   "Semaine 3",
+   "Semaine 4- Intégration"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "Vocabulaire",
+   "",
+   "- Acquérir le sens de mots liés au thème du texte à produire et les employer dans des phrases qui en illustrent le sens.- Acquérir la notion de préfixes et identifier le sens de quelques-uns : « in/im »- Employer des prépositions courantes - Se familiariser à l’utilisation du dictionnaire : rechercher un mot en se référant à l’ordre alphabétique",
+   "- Acquérir le sens de mots liés au thème du texte à produire et les employer dans des phrases qui en illustrent le sens.- Acquérir la notion de préfixes et identifier le sens de quelques-uns « re »- Employer des prépositions courantes - Se familiariser à l’utilisation du dictionnaire : rechercher un mot en se référant à l’ordre alphabétique",
+   ""
+  ],
+  [
+   "Grammaire",
+   "",
+   "- Employer une phrase infinitive- Modifier le sens d’un verbe en ajoutant un autre mot (approche de l’adverbe)",
+   "- Appliquer la règle de l’accord du verbe avec son sujet - Appliquer la règle de l’accord du verbe avec son sujet",
+   ""
+  ],
+  [
+   "Conjugaison",
+   "",
+   "- Employer l’impératif présent de verbes du premier groupe-Employer l’impératif présent de verbes du premier groupe",
+   "- Employer des déterminants démonstratifs- Transformer un texte en changeant le temps des verbes",
+   ""
+  ],
+  [
+   "Orthographe",
+   "",
+   "- Orthographier sans erreur des mots fréquents - Ecrire sous la dictée",
+   "- Orthographier sans erreur des mots fréquents - Ecrire sous la dictée",
+   ""
+  ],
+  [
+   "OA3",
+   "Copier des textes"
+  ],
+  [
+   "",
+   "Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)",
+   "Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)",
+   "Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)Copier le texte 1 dans les cahiers de production d’écrits (sans rature, sans mélange de cursives et de scripts et sans sortir des « chemins »)",
+   ""
+  ],
+  [
+   "OA 2",
+   "PRODUIRE DES TEXTES INJONCTIFS AVEC LE MODE IMPERATIF"
+  ],
+  [
+   "OS1 : Identifier les caractéristiques d’un texte injonctif",
+   "",
+   "",
+   "",
+   "(Lundi), Cet OS doit être évalué dans les cahiers de devoir après la leçon"
+  ],
+  [
+   "OS2 : Constituer un référentiel",
+   "",
+   "",
+   "",
+   "(Mardi), Cet OS doit être évalué dans les cahiers de devoir après la leçon"
+  ],
+  [
+   "OS3 : Etablir une fiche de critère de réussite",
+   "",
+   "",
+   "",
+   "(Mardi), Cet OS doit être évalué dans les cahiers de devoir après la leçon"
+  ],
+  [
+   "OS4 : S’exercer à rédiger des textes …",
+   "",
+   "",
+   "",
+   "Mercredi, jeudi et vendrediApprentissage de l’intégration"
+  ],
+  [
+   "DOMAINE",
+   "MATHEMATIQUES"
+  ],
+  [
+   "Activités numériques",
+   ""
+  ],
+  [
+   "",
+   "Découvrir les caractères de divisibilité par 5Découvrir les caractères de divisibilité par 10",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Calcul mental",
+   "A. Numériques",
+   ""
+  ],
+  [
+   "",
+   "A géométriques",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "A.de mesure",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "A. de résolution de problème",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Activités géométriques",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Activités de mesure",
+   "Palier 3 : Intégrer les notions de longueur et de monnaie ainsi que des techniques d’utilisation d’instruments conventionnels dans des situations de résolution de problèmes de calcul de périmètre et de prix."
+  ],
+  [
+   "",
+   "Intégration palier 3",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Résolution de problèmes",
+   "Palier"
+  ],
+  [
+   "",
+   "OA",
+   "OA",
+   "OA",
+   "OA"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "ESVS",
+   "SOUS-DOMMAINE 1 : DECOUVERTE DU MONDE"
+  ],
+  [
+   "Histoire",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Géographie",
+   "Programme épuisé"
+  ],
+  [
+   "",
+   "OA",
+   "OA",
+   "OA",
+   "OA"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "IST",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "ESVS",
+   "SOUS-DOMAINE2 : EDUCATION AU DEVELOPPEMENT DURABLE"
+  ],
+  [
+   "Vivre dans son milieu",
+   "Palier"
+  ],
+  [
+   "",
+   "OA",
+   "OA",
+   "OA",
+   "OA"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "Vivre ensemble",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "EPSA",
+   "SOUS DOMAINE 1 : Education physique et sportive"
+  ],
+  [
+   "Education physique et sportive",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "EPSA",
+   "SOUS DOMAINE 2 Education artistique"
+  ],
+  [
+   "Arts plastiques",
+   "Palier"
+  ],
+  [
+   "",
+   "OA",
+   "OA",
+   "OA",
+   "OA"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Education musicale",
+   "Palier"
+  ],
+  [
+   "",
+   "OA",
+   "OA",
+   "OA",
+   "OA"
+  ],
+  [
+   "",
+   "OS",
+   "OS",
+   "OS",
+   "OS"
+  ],
+  [
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Arts scéniques",
+   "PALIER 2 : intégrer les registres de la voix, des gestes, des attitudes, des mimes et des déguisements dans des situations de dramatisation de scènes de vie du milieu proche"
+  ],
+  [
+   "",
+   "Dramatiser une scène burlesque",
+   "Dramatiser une scène burlesque",
+   "Dramatiser une scène burlesque",
+   "INTEGRATION PALIER 2"
+  ],
+  [
+   "",
+   "Jouer le rôle d’un vantard",
+   "Jouer le rôle d’un vantard",
+   "Jouer le rôle d’un charlatan démasqué",
+   ""
+  ],
+  [
+   "",
+   "situations à construire : se vanter de n’avoir peur de rien quand tout à coup surgit un chien (le vantard qui s’enfuit) ; se vanter d’être le (la) premier(ère) à la composition sans se rendre compte que le (la) meilleur(e) élève de la classe est à l’écoute ; etc.- traits à traduire : maintien corporel, manières de parler, de regarder, de se déplacer, la gestuelle, expression du visage, la vanité, la suffisance, la prétention, etc.",
+   "situations à construire : se vanter de n’avoir peur de rien quand tout à coup surgit un chien (le vantard qui s’enfuit) ; se vanter d’être le (la) premier(ère) à la composition sans se rendre compte que le (la) meilleur(e) élève de la classe est à l’écoute ; etc.- traits à traduire : maintien corporel, manières de parler, de regarder, de se déplacer, la gestuelle, expression du visage, la vanité, la suffisance, la prétention, etc.",
+   "situations à construire : Situation 1 : le charlatan qui fait sa propre publicité (il vante ses pouvoirs, ses produits ; son héritage mystique ; qui énumère les personnes satisfaites de ses prestations...)Situations 2 et 3 (au choix) : - le charlatan rencontre dans la rue quelqu’un à qui il a promis, contre rétribution, des choses qui ne se sont pas réalisées - le charlatan vante ses pouvoirs avant d’être démasqué par une connaissance dans l’assistance ; etc.- sentiments à traduire : Situation 1 : l’assurance, l’audace, la véhémence, le ton péremptoire, la gestuelle autoritaire, les déplacements, le déguisementSituations 2 et 3 : la surprise, la peur, le désarroi, la crainte, la confusion, la honte, l’abattement, etc.",
+   ""
+  ]
+ ]
+}

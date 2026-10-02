@@ -22,9 +22,12 @@ export async function getMonEnseignant(ecoleId, profilId, email) {
 export async function getMesClasses(ecoleId, anneeId, ensId) {
   if (!ensId || !anneeId) return [];
   const [pp, aff] = await Promise.all([
-    supabase.from("classes").select("id, libelle")
+    //  `niveau_id` sert à retrouver la programmation officielle du niveau
+    //  (mig. 165) : elle est partagée par toutes les classes d'un même
+    //  niveau. Purement additif — les appelants ne lisent que id/libelle.
+    supabase.from("classes").select("id, libelle, niveau_id")
       .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("prof_principal_id", ensId),
-    supabase.from("affectations").select("classes(id, libelle)")
+    supabase.from("affectations").select("classes(id, libelle, niveau_id)")
       .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("enseignant_id", ensId),
   ]);
   const map = {};
