@@ -94,8 +94,8 @@ end $$;
 
 -- --- 4. La pédagogie de l'élémentaire -------------------------------------
 --  Remonté avec la demande : « pour l'élémentaire il y a le choix entre
---  classique et Montessori, et ce dernier est à l'image de l'école de
---  Mme Kane, elle est la pionnière au Sénégal. »
+--  classique et Montessori, et ce dernier est à l'image de notre école
+--  pionnière au Sénégal. »
 --
 --  NULL = non déclaré. On ne suppose pas « classique » par défaut : ce
 --  serait affirmer quelque chose de l'école qu'elle n'a pas dit. Le champ
