@@ -62,24 +62,36 @@ export async function getAffectations(ecoleId, anneeId) {
   return data ?? [];
 }
 
-// Upsert : une matière dans une classe (pour une année) = une affectation.
+// ⚠️ INSERT, et non plus UPSERT — le sens de l'acte a changé (migration 161).
+//
+// L'upsert portait sur (classe, matière, année) : affecter un enseignant à une
+// matière déjà pourvue REMPLAÇAIT silencieusement son collègue. C'était la
+// conséquence d'une contrainte qui faisait de l'affectation une propriété de
+// la matière. Maintenant que plusieurs enseignants peuvent partager une
+// matière, affecter doit AJOUTER — remplacer quelqu'un sans le dire serait
+// une perte de donnée déguisée en commodité.
+//
+// `matiere_id` à NULL = l'enseignant couvre toutes les matières de la classe.
 export async function creerAffectation(ecoleId, { enseignant_id, classe_id, matiere_id, coefficient, annee_id }) {
   const { data, error } = await supabase
     .from("affectations")
-    .upsert(
-      {
-        ecole_id: ecoleId,
-        enseignant_id,
-        classe_id,
-        matiere_id,
-        coefficient: Number(coefficient) || 1,
-        annee_id,
-      },
-      { onConflict: "classe_id,matiere_id,annee_id" }
-    )
+    .insert({
+      ecole_id: ecoleId,
+      enseignant_id,
+      classe_id,
+      matiere_id: matiere_id || null,
+      coefficient: Number(coefficient) || 1,
+      annee_id,
+    })
     .select()
     .single();
-  if (error) throw error;
+  // 23505 = doublon : le même enseignant est déjà sur cette classe/matière.
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Cet enseignant est déjà affecté à cette classe pour cette matière.");
+    }
+    throw error;
+  }
   return data;
 }
 

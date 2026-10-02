@@ -137,18 +137,26 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
   const [sel, setSel] = useState(() => new Set()); // classes cochées
   const [envoi, setEnvoi] = useState(false);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const pretAjout = enseignants.length && classes.length && matieres.length && annee;
+  // Les matières ne sont plus un pré-requis : au préscolaire on affecte une
+  // maîtresse à une classe sans qu'aucune matière soit créée.
+  const pretAjout = enseignants.length && classes.length && annee;
 
   const basculer = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toutes = () => setSel((s) => (s.size === classes.length ? new Set() : new Set(classes.map((c) => c.id))));
 
-  // Une matière déjà affectée dans une classe (unicité classe × matière × année).
-  const dejaPrise = (classeId) => affectations.some((a) => a.classe_id === classeId && a.matiere_id === f.matiere_id);
+  // ⚠️ Ce n'est plus la MATIÈRE qui est « prise », c'est le couple
+  // enseignant × matière : plusieurs enseignants peuvent désormais partager
+  // une matière dans une classe (migration 161). Seul le doublon pur gêne.
+  const dejaPrise = (classeId) => affectations.some((a) =>
+    a.classe_id === classeId && a.enseignant_id === f.enseignant_id
+    && (a.matiere_id || null) === (f.matiere_id || null));
 
   async function ajouter(e) {
     e.preventDefault();
     onErreur("");
-    if (!f.enseignant_id || !f.matiere_id) return onErreur("Choisissez l'enseignant et la matière.");
+    // La matière est FACULTATIVE : sans elle, l'enseignant couvre toutes les
+    // matières de la classe — le cas de la maîtresse de préscolaire.
+    if (!f.enseignant_id) return onErreur("Choisissez l'enseignant.");
     if (sel.size === 0) return onErreur("Cochez au moins une classe.");
     setEnvoi(true);
     let faites = 0, ignorees = 0;
@@ -174,13 +182,15 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
   return (
     <div className="space-y-5">
       <Carte className="p-6">
-        <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Affecter une matière</h3>
+        <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Affecter un enseignant</h3>
         <p className="mb-4 text-xs text-navy-900/50">
-          Le coefficient saisi ici sert au calcul de la <strong>moyenne générale</strong> des bulletins.
+          Laissez la matière sur <strong>« Toutes les matières »</strong> si l&apos;enseignant prend la
+          classe en entier — c&apos;est le cas au préscolaire et à l&apos;élémentaire. Une même classe peut
+          recevoir <strong>plusieurs enseignants</strong>. Le coefficient sert au calcul de la moyenne générale.
         </p>
         {!pretAjout ? (
           <p className="text-sm text-navy-900/50">
-            Pré-requis : au moins un enseignant, une classe et une matière (et une année courante).
+            Pré-requis : au moins un enseignant, une classe et une année courante.
           </p>
         ) : (
           <form onSubmit={ajouter} className="space-y-4">
@@ -188,7 +198,7 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
               <Sel label="Enseignant" value={f.enseignant_id} onChange={(v) => maj("enseignant_id", v)}
                 options={enseignants.map((e) => [e.id, `${e.prenom} ${e.nom}`])} />
               <Sel label="Matière" value={f.matiere_id} onChange={(v) => maj("matiere_id", v)}
-                options={matieres.map((m) => [m.id, m.libelle])} />
+                options={[["", "Toutes les matières"], ...matieres.map((m) => [m.id, m.libelle])]} />
               <div className="w-24"><Champ label="Coef." value={f.coefficient} onChange={(e) => maj("coefficient", e.target.value.replace(/[^0-9.]/g, ""))} /></div>
             </div>
 
@@ -203,10 +213,10 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 {classes.map((c) => {
-                  const prise = f.matiere_id && dejaPrise(c.id);
+                  const prise = f.enseignant_id && dejaPrise(c.id);
                   return (
                     <label key={c.id}
-                      title={prise ? "Cette matière est déjà affectée dans cette classe" : ""}
+                      title={prise ? "Cet enseignant est déjà affecté à cette classe pour cette matière" : ""}
                       className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
                         sel.has(c.id) ? "border-or-500 bg-or-500/5" : "border-navy-900/10"
                       } ${prise ? "opacity-50" : ""}`}>
@@ -230,7 +240,7 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
       </Carte>
 
       {Object.keys(parClasse).length === 0 ? (
-        <EtatVide icone="🗂️" titre="Aucune affectation">Affectez des matières aux enseignants avec le formulaire ci-dessus.</EtatVide>
+        <EtatVide icone="🗂️" titre="Aucune affectation">Affectez des enseignants aux classes avec le formulaire ci-dessus.</EtatVide>
       ) : (
         classes
           .filter((c) => parClasse[c.id])
@@ -244,7 +254,12 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
                 <tbody>
                   {parClasse[c.id].map((a) => (
                     <tr key={a.id} className="border-t border-navy-900/5">
-                      <td className="py-2 font-medium text-navy-900">{a.matieres?.libelle}</td>
+                      {/* Sans matière, l'enseignant couvre toute la classe :
+                          le dire explicitement évite de lire une case vide
+                          comme une donnée manquante (migration 161). */}
+                      <td className="py-2 font-medium text-navy-900">
+                        {a.matieres?.libelle || <span className="italic text-navy-900/55">Toutes les matières</span>}
+                      </td>
                       <td className="py-2 text-navy-900/70">{a.enseignants ? `${a.enseignants.prenom} ${a.enseignants.nom}` : "—"}</td>
                       <td className="py-2 text-center font-mono">{a.coefficient}</td>
                       <td className="py-2 text-right">

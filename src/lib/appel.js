@@ -43,8 +43,18 @@ export async function getMesMatieresParClasse(ecoleId, anneeId, ensId) {
     .select("classe_id, matiere_id")
     .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("enseignant_id", ensId);
   if (error) throw error;
+  // ⚠️ Une affectation SANS matière signifie « toutes les matières de cette
+  // classe » (migration 161). Pousser `null` dans la liste ferait exactement
+  // l'inverse : `matieresAutorisees` ne trouverait aucune correspondance et
+  // la maîtresse n'aurait PLUS AUCUNE matière. On retire donc la classe de
+  // la carte — une classe absente n'est pas restreinte, cf. ci-dessous.
   const map = {};
-  for (const a of data ?? []) (map[a.classe_id] ||= []).push(a.matiere_id);
+  const toutesMatieres = new Set();
+  for (const a of data ?? []) {
+    if (!a.matiere_id) { toutesMatieres.add(a.classe_id); continue; }
+    (map[a.classe_id] ||= []).push(a.matiere_id);
+  }
+  for (const cid of toutesMatieres) delete map[cid];
   return map;
 }
 

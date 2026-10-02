@@ -127,7 +127,12 @@ export async function getAffectationMap(ecoleId, anneeId) {
   const { data, error } = await q;
   if (error) throw error;
   const map = {};
-  for (const a of data ?? []) map[`${a.classe_id}:${a.matiere_id}`] = a.enseignant_id;
+  for (const a of data ?? []) {
+    // Une affectation « toutes matières » (migration 161) ne désigne pas une
+    // matière à placer dans la grille : la clé serait « classe:null ».
+    if (!a.matiere_id) continue;
+    map[`${a.classe_id}:${a.matiere_id}`] = a.enseignant_id;
+  }
   return map;
 }
 

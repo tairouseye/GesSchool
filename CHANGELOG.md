@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.224.0] — migration **161** · plusieurs enseignants par classe, et l'enseignant « toutes matières »
+- **Remonté en visite** : au préscolaire, une classe de TPS/PS compte jusqu'à **trois maîtresses**, et chacune enseigne l'ensemble des domaines. Au collège, l'affectation reste enseignant → matière → classe. Le modèle doit porter les deux.
+- **Correction de mon propre audit** : j'avais écrit que plusieurs enseignants par classe étaient impossibles. C'est faux — **12 classes sont déjà dans ce cas**, en se répartissant des matières différentes. Le modèle collège fonctionne. Ce qui était impossible, c'est le cas Montessori : des maîtresses qui ne se répartissent rien et font tout, ensemble.
+- **Deux verrous, dont un seul était visible.** `matiere_id NOT NULL` interdisait d'affecter une maîtresse « pour tout » (0 ligne de ce type en base, et pour cause). Et `unique (classe_id, matiere_id, annee_id)` n'autorisait **qu'un seul enseignant par matière** : deux maîtresses se partageant le Langage étaient refusées. Cette contrainte faisait de l'affectation une propriété de la **matière**, alors qu'elle décrit un lien entre une **personne** et une classe.
+- `matiere_id` à NULL signifie désormais « toutes les matières de cette classe ». Deux index partiels remplacent la contrainte et n'interdisent plus que le **doublon pur** : le même enseignant, deux fois, sur la même classe et la même matière. Les **134 affectations existantes sont intactes** — on ne fait que lever des interdits.
+- **🔴 Le point le plus délicat était invisible depuis l'interface.** `enseigne_classe_matiere()` exigeait `a.matiere_id = p_matiere` : une maîtresse affectée sans matière aurait obtenu la classe mais se serait vu **refuser notes, bulletins et cahier de textes**. La fonctionnalité aurait semblé livrée sans marcher. Une affectation sans matière couvre maintenant toutes les matières, comme le professeur principal.
+- **Quatre lectures du front adaptées**, chacune pour une raison distincte : la carte des matières d'un enseignant (où pousser `null` aurait privé la maîtresse de **toutes** ses matières — l'exact contraire de l'intention), le repli de coefficient des bulletins, la génération d'emploi du temps, et l'écran d'affectation.
+- **`creerAffectation` passe d'un `upsert` à un `insert`**, parce que le sens de l'acte a changé : l'upsert sur (classe, matière, année) **remplaçait silencieusement** le collègue déjà affecté. Maintenant qu'une matière peut être partagée, affecter doit **ajouter** — remplacer quelqu'un sans le dire serait une perte de donnée déguisée en commodité.
+- 6 tests sur la règle « toutes matières », dont celui des trois maîtresses d'une même classe.
+
 ## [2.223.0] — aucune migration · feuille de présence imprimable
 - La feuille du jour s'imprime désormais **telle qu'elle a été saisie**, avec logo, effectifs et emplacements de signature pour l'enseignant et la direction.
 - Elle **complète** le registre vierge déjà imprimable depuis la liste d'élèves : ici les états sont renseignés, là-bas les colonnes sont à cocher au stylo. Les deux usages existent, l'école choisit.

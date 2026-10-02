@@ -133,6 +133,9 @@ async function getCoefsMatiere(ecoleId, classeId, anneeId) {
     .eq("classe_id", classeId)
     .eq("annee_id", anneeId);
   for (const a of aff ?? []) {
+    // Une affectation « toutes matières » ne porte le coefficient d'aucune
+    // matière en particulier (migration 161) : elle n'alimente pas la grille.
+    if (!a.matiere_id) continue;
     if (map[a.matiere_id] == null) map[a.matiere_id] = Number(a.coefficient) || 1;
   }
   return map;
