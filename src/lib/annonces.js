@@ -80,6 +80,36 @@ export async function annoncesEnfant(eleveId) {
   return data ?? [];
 }
 
+// --- Relais WhatsApp (lot 2 de la visite) ----------------------------------
+//
+// ⚠️ LE MESSAGE NE TRANSPORTE PAS L'ANNONCE, IL Y RENVOIE.
+// Une annonce peut être ciblée (classe, niveau, cycle) et porter des pièces
+// jointes dont l'accès est contrôlé en base. La recopier dans WhatsApp, c'est
+// la sortir de ce contrôle : elle devient transférable à n'importe qui, et
+// l'école perd la trace de ce qui fait foi. Le relais sert donc à PRÉVENIR —
+// l'annonce officielle reste dans GesSchool, où le ciblage s'applique.
+//
+// On n'envoie ni le contenu, ni les pièces jointes : seulement le titre, pour
+// que le parent sache si cela le concerne, et l'invitation à se connecter.
+export function messageRelais(annonce, ecoleNom, origine) {
+  const lien = `${String(origine || "").replace(/\/+$/, "")}/#/parent`;
+  return [
+    `📣 Nouvelle annonce${ecoleNom ? ` — ${ecoleNom}` : ""}`,
+    "",
+    `« ${annonce?.titre || "Annonce"} »`,
+    "",
+    "Une nouvelle annonce est disponible dans votre espace GesSchool.",
+    "Connectez-vous à l'application pour la consulter :",
+    lien,
+  ].join("\n");
+}
+
+// Sans numéro : WhatsApp ouvre le sélecteur de contacts. L'école relaie
+// souvent dans un groupe de classe, qu'aucun numéro ne désigne.
+export function lienRelaisWhatsApp(annonce, ecoleNom, origine) {
+  return `https://wa.me/?text=${encodeURIComponent(messageRelais(annonce, ecoleNom, origine))}`;
+}
+
 // Intitulé de l'audience d'une annonce, côté personnel : « CM1 »,
 // « Élémentaire »… plutôt que le seul mot « classe ».
 export function libelleAudience(a) {

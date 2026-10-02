@@ -5,6 +5,26 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.222.0] — migration **160** · lot 2 (partiel) : évaluations, WhatsApp, fournitures
+
+### 🔴 Supprimer une évaluation aurait effacé ses notes, sans retour
+- La capacité n'existait pas dans l'interface, mais **un fusil chargé l'attendait dans la couche métier** : `supprimerEvaluation()` faisait un `delete` brut, sans aucun appelant. Or `notes.evaluation_id` est en **`on delete cascade`** (migration 001) : y brancher un bouton aurait suffi à perdre un trimestre. Mesuré : **28 évaluations sur 31 portent des notes**, 171 notes au total.
+- Règle retenue : **une évaluation notée ne se supprime pas, elle s'archive.** Seule une évaluation vierge — créée par erreur — part réellement. Le refus indique **combien** de notes bloquent : un refus qui n'explique pas pousse à chercher un contournement.
+- **Archiver a un effet réel sur les moyennes**, sinon le mot serait creux : `getEvaluations()` est le seul chemin vers les évaluations, pour la saisie comme pour `calculerBulletins()`. Y filtrer `actif` suffit. Les notes restent en base, et réactiver rend exactement la moyenne d'avant.
+- **Les deux RPC sont en `SECURITY INVOKER`, volontairement** : leur rôle est d'ajouter une règle métier, pas de contourner la RLS. Le droit d'écrire sur `evaluations` est déjà défini (migration 018) et l'enseignant est cloisonné à ses classes (migration 058) ; en `SECURITY DEFINER` ces deux garde-fous sauteraient — le défaut attrapé sur `_doc_peut_lire` en migration 150. On contrôle `found` : si la RLS masque la ligne, l'opération le **dit** au lieu de réussir en silence.
+
+### Annonce → WhatsApp : prévenir, pas transporter
+- Le message relaie **le titre et un lien vers l'espace parent**, jamais le contenu ni les pièces jointes. Une annonce peut être ciblée par classe, niveau ou cycle, et ses pièces jointes ont un accès contrôlé en base (migrations 152, 159) : la recopier dans WhatsApp la sortirait de ce contrôle, la rendrait transférable à n'importe qui, et l'école perdrait ce qui fait foi.
+- Sans numéro de destinataire : WhatsApp ouvre le sélecteur de contacts, parce qu'une école relaie dans un groupe de classe qu'aucun numéro ne désigne.
+
+### Fournitures : consultation par classe et liste pour les familles
+- Filtre **par classe** — le parent raisonne en classe, l'école range par niveau ; la classe se résout vers son niveau, sans colonne supplémentaire.
+- **« Tous niveaux » accompagne toujours** un filtre de classe : ces articles concernent tout le monde, et les omettre donnerait une liste incomplète — l'oubli se paierait à la rentrée.
+- **Impression destinée aux familles**, avec logo, quantités, articles optionnels et mention « fourni par l'école » — celle qui évite d'acheter deux fois.
+
+### Attrapé par le garde-fou
+- `Annonces.jsx` utilisait `ecole?.nom` sans que `ecole` soit destructuré de `useAuth()`. `vite build` passait ; `test/identifiants.test.mjs` a nommé la ligne exacte. Exactement le défaut qui avait fait exploser la page Annonces en 2.211.2 — cette fois il n'a pas atteint la production.
+
 ## [2.221.0] — aucune migration · lot 1 de la visite d'établissement
 Suite à une visite sur site, 17 besoins ont été audités avant toute modification. Ce lot livre les corrections sans risque ; les évolutions de schéma suivront par lots séparés.
 

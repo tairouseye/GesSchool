@@ -31,13 +31,19 @@ export async function getElevesClasse(ecoleId, classeId, anneeId) {
 }
 
 // --- Évaluations ---
-export async function getEvaluations(ecoleId, classeId, periodeId, matiereId) {
+//
+// ⚠️ `actif` est filtré ICI, et c'est ce qui donne son sens à l'archivage :
+// cette fonction est le SEUL chemin vers les évaluations, pour la saisie des
+// notes comme pour `calculerBulletins()`. Une évaluation archivée sort donc
+// des moyennes sans qu'on ait à y penser ailleurs (migration 160).
+export async function getEvaluations(ecoleId, classeId, periodeId, matiereId, { archivees = false } = {}) {
   let q = supabase
     .from("evaluations")
     .select("*")
     .eq("ecole_id", ecoleId)
     .eq("classe_id", classeId)
     .eq("periode_id", periodeId);
+  if (!archivees) q = q.eq("actif", true);
   if (matiereId) q = q.eq("matiere_id", matiereId);
   const { data, error } = await q.order("date_eval", { ascending: true, nullsFirst: true });
   if (error) throw error;
@@ -54,8 +60,20 @@ export async function creerEvaluation(ecoleId, ev) {
   return data;
 }
 
+// ⚠️ Passe par une RPC, et ce n'est pas un détail de style.
+// `notes.evaluation_id` est en `on delete cascade` : le `delete` brut qui
+// vivait ici — sans appelant, heureusement — effaçait toutes les notes de
+// l'évaluation, sans avertissement ni retour possible. La RPC REFUSE dès
+// qu'une note existe et dit combien (migration 160).
 export async function supprimerEvaluation(id) {
-  const { error } = await supabase.from("evaluations").delete().eq("id", id);
+  const { error } = await supabase.rpc("supprimer_evaluation", { p_eval: id });
+  if (error) throw error;
+}
+
+// Retirer une évaluation des moyennes SANS perdre ses notes. Réversible :
+// réactiver rend exactement la moyenne d'avant.
+export async function archiverEvaluation(id, actif = false) {
+  const { error } = await supabase.rpc("archiver_evaluation", { p_eval: id, p_actif: actif });
   if (error) throw error;
 }
 

@@ -19,7 +19,7 @@ const TONS_CIBLE = {
 };
 
 export default function Annonces() {
-  const { ecoleId, utilisateur } = useAuth();
+  const { ecoleId, ecole, utilisateur } = useAuth();
   const confirmer = useConfirm();
   const toast = useToast();
   const [annonces, setAnnonces] = useState([]);
@@ -120,12 +120,27 @@ export default function Annonces() {
                     {a.profils && ` · ${a.profils.prenom} ${a.profils.nom}`}
                   </p>
                 </div>
-                <button
-                  onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id), "Annonce supprimée."); }}
-                  className="shrink-0 text-xs text-rose-500 hover:underline"
-                >
-                  supprimer
-                </button>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  {/* Relais WhatsApp : PRÉVIENT, ne transporte pas. L'annonce
+                      peut être ciblée et porter des pièces jointes dont
+                      l'accès est contrôlé en base ; la recopier dans WhatsApp
+                      la sortirait de ce contrôle. On n'envoie que le titre et
+                      le lien vers l'espace parent. */}
+                  <a
+                    href={api.lienRelaisWhatsApp(a, ecole?.nom, window.location.origin)}
+                    target="_blank" rel="noopener noreferrer"
+                    title="Prévenir les familles — l'annonce reste dans GesSchool"
+                    className="whitespace-nowrap text-xs font-medium text-emerald-700 hover:underline"
+                  >
+                    WhatsApp
+                  </a>
+                  <button
+                    onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id), "Annonce supprimée."); }}
+                    className="text-xs text-rose-500 hover:underline"
+                  >
+                    supprimer
+                  </button>
+                </div>
               </div>
             </Carte>
           ))

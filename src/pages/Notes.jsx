@@ -6,6 +6,7 @@ import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses, getMesMatieresParClasse, matieresAutorisees } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 const TYPES = ["devoir", "composition", "examen", "interro", "tp", "oral", "projet"];
 
@@ -13,6 +14,10 @@ const TYPES = ["devoir", "composition", "examen", "interro", "tp", "oral", "proj
 export default function Notes() {
   const { ecoleId, roles, profil, utilisateur } = useAuth();
   const toutVoir = voitToutesClasses(roles);
+  const confirmer = useConfirm();
+  const toast = useToast();
+  // Afficher aussi les évaluations archivées, pour pouvoir les réactiver.
+  const [voirArchivees, setVoirArchivees] = useState(false);
   const [mesMatieres, setMesMatieres] = useState({});
   const [annee, setAnnee] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -71,11 +76,39 @@ export default function Notes() {
     }
     setErreur("");
     try {
-      setEvaluations(await api.getEvaluations(ecoleId, classeId, periodeId, matiereId));
+      setEvaluations(await api.getEvaluations(ecoleId, classeId, periodeId, matiereId, { archivees: voirArchivees }));
     } catch (e) {
       setErreur(e.message);
     }
-  }, [ecoleId, classeId, periodeId, matiereId]);
+  }, [ecoleId, classeId, periodeId, matiereId, voirArchivees]);
+
+  // Archiver retire des moyennes SANS perdre les notes ; c'est réversible.
+  async function basculerArchive(ev, actif) {
+    try {
+      await api.archiverEvaluation(ev.id, actif);
+      toast.succes(actif ? "Évaluation réactivée." : "Évaluation archivée — retirée des moyennes.");
+      if (evalActive?.id === ev.id) setEvalActive(null);
+      chargerEvals();
+    } catch (e) { toast.erreur(e); }
+  }
+
+  // Supprimer : la base REFUSE dès qu'une note existe et dit combien
+  // (migration 160). On n'anticipe pas ce refus côté écran — ce serait une
+  // seconde règle à maintenir, et c'est la base qui fait foi.
+  async function retirer(ev) {
+    const quoi = `${ev.type}${ev.libelle ? ` — ${ev.libelle}` : ""}`;
+    if (!(await confirmer({
+      titre: "Supprimer l'évaluation",
+      message: `« ${quoi} » sera définitivement supprimée. Si elle porte déjà des notes, la suppression sera refusée : archivez-la plutôt.`,
+      confirmer: "Supprimer",
+    }))) return;
+    try {
+      await api.supprimerEvaluation(ev.id);
+      toast.succes("Évaluation supprimée.");
+      if (evalActive?.id === ev.id) setEvalActive(null);
+      chargerEvals();
+    } catch (e) { toast.erreur(e); }
+  }
 
   useEffect(() => {
     setEvalActive(null);
@@ -112,16 +145,22 @@ export default function Notes() {
             <Carte className="p-5 lg:col-span-1">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-display font-semibold text-navy-900">Évaluations</h3>
-                <Bouton variante="fantome" className="px-3 py-1.5 text-xs" onClick={() => setModale(true)}>
-                  + Ajouter
-                </Bouton>
+                <div className="flex items-center gap-3">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-navy-900/50">
+                    <input type="checkbox" checked={voirArchivees} onChange={(e) => setVoirArchivees(e.target.checked)} />
+                    archivées
+                  </label>
+                  <Bouton variante="fantome" className="px-3 py-1.5 text-xs" onClick={() => setModale(true)}>
+                    + Ajouter
+                  </Bouton>
+                </div>
               </div>
               {evaluations.length === 0 ? (
                 <p className="text-sm text-navy-900/40">Aucune évaluation.</p>
               ) : (
                 <ul className="space-y-2">
                   {evaluations.map((ev) => (
-                    <li key={ev.id}>
+                    <li key={ev.id} className={ev.actif === false ? "opacity-60" : ""}>
                       <button
                         onClick={() => setEvalActive(ev)}
                         className={`w-full rounded-xl border p-3 text-left text-sm transition ${
@@ -129,12 +168,33 @@ export default function Notes() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium capitalize text-navy-900">{ev.type}</span>
+                          <span className="font-medium capitalize text-navy-900">
+                            {ev.type}
+                            {ev.actif === false && (
+                              <span className="ml-2 rounded-full bg-navy-900/10 px-2 py-0.5 text-[10px] font-medium text-navy-900/60">
+                                archivée
+                              </span>
+                            )}
+                          </span>
                           <span className="font-mono text-xs text-navy-900/50">/{ev.bareme} · coef {ev.coefficient}</span>
                         </div>
                         {ev.libelle && <p className="text-xs text-navy-900/50">{ev.libelle}</p>}
                         {ev.date_eval && <p className="font-mono text-[11px] text-navy-900/40">{ev.date_eval}</p>}
                       </button>
+                      <div className="mt-1 flex justify-end gap-3 px-1">
+                        {ev.actif === false ? (
+                          <button onClick={() => basculerArchive(ev, true)} className="text-[11px] font-medium text-emerald-700 hover:underline">
+                            réactiver
+                          </button>
+                        ) : (
+                          <button onClick={() => basculerArchive(ev, false)} className="text-[11px] text-navy-900/50 hover:text-navy-900">
+                            archiver
+                          </button>
+                        )}
+                        <button onClick={() => retirer(ev)} className="text-[11px] text-rose-500 hover:underline">
+                          supprimer
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
