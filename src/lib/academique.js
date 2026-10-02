@@ -469,3 +469,38 @@ export function sousNiveauxDeClasse(sousNiveaux = [], classes = [], classeId) {
   if (!niveauId) return [];
   return sousNiveaux.filter((s) => s.niveau_id === niveauId);
 }
+
+// ===================================================================
+//  Responsables pédagogiques de cycle (mig. 166)
+//
+//  ⚠️ POURQUOI UNE TABLE, ET NON UNE PORTÉE SUR LE RÔLE. Chez Tut'Tank il
+//  y a DEUX responsables pédagogiques — un pour le préscolaire, un pour
+//  l'élémentaire — et tout compte `direction` couvre l'école entière.
+//  `profil_roles` étant lu par la quasi-totalité des policies, y ajouter
+//  une portée aurait changé le sens de chaque appel existant. La
+//  désignation est un fait d'organisation : elle vit dans sa propre table.
+// ===================================================================
+
+export async function getResponsablesCycle(ecoleId) {
+  const { data, error } = await supabase
+    .from("responsables_cycle")
+    .select("id, cycle_id, profil_id, profils(prenom, nom, email)")
+    .eq("ecole_id", ecoleId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function designerResponsableCycle(ecoleId, cycleId, profilId) {
+  const { data, error } = await supabase
+    .from("responsables_cycle")
+    .insert({ ecole_id: ecoleId, cycle_id: cycleId, profil_id: profilId })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function retirerResponsableCycle(id) {
+  const { error } = await supabase.from("responsables_cycle").delete().eq("id", id);
+  if (error) throw error;
+}

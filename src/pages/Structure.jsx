@@ -5,10 +5,12 @@ import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/academique.js";
 import { getEnseignants } from "@/lib/enseignants.js";
+import { getMembres } from "@/lib/membres.js";
+import { estRoleComplet } from "@/lib/permissions.js";
 
 // Phase 0.5 — Structure académique : cycles → niveaux → classes + matières.
 export default function Structure() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, roles } = useAuth();
   const confirmer = useConfirm();
   const toast = useToast();
   const [annee, setAnnee] = useState(null);
@@ -20,6 +22,16 @@ export default function Structure() {
   const [series, setSeries] = useState([]);
   const [coefficients, setCoefficients] = useState([]);
   const [periodes, setPeriodes] = useState([]);
+  //  Responsables pédagogiques de cycle (mig. 166) : ils signent le PV du
+  //  conseil de classe des classes de LEUR cycle.
+  const [responsables, setResponsables] = useState([]);
+  const [membres, setMembres] = useState([]);
+  //  ⚠️ La migration 166 peut ne pas encore être appliquée : on n'affiche
+  //  pas un panneau qui paraîtrait fonctionnel et refuserait chaque action.
+  //  Le front doit pouvoir être déployé AVANT la migration — c'est l'ordre
+  //  sûr, puisque l'inverse laisserait des bulletins en brouillon sans
+  //  bouton pour les publier.
+  const [responsablesDispo, setResponsablesDispo] = useState(false);
   const [sousNiveaux, setSousNiveaux] = useState([]);
   const [config, setConfig] = useState(null);
   const [chargement, setChargement] = useState(true);
@@ -48,6 +60,12 @@ export default function Structure() {
       setEnseignants(en);
       setClasses(await api.getClasses(ecoleId, an?.id));
       setSousNiveaux(await api.getSousNiveaux(ecoleId));
+      //  Facultatifs : la page reste utilisable si la 166 n'est pas encore
+      //  appliquee, ou si `membres_ecole` echoue pour cet utilisateur.
+      api.getResponsablesCycle(ecoleId)
+        .then((r) => { setResponsables(r); setResponsablesDispo(true); })
+        .catch(() => { setResponsables([]); setResponsablesDispo(false); });
+      getMembres().then(setMembres).catch(() => setMembres([]));
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -148,6 +166,23 @@ export default function Structure() {
         </div>
 
         {/* Découpage de l'année */}
+        {/*  La désignation d'un responsable de cycle est un acte du
+             promoteur : si la direction pouvait se désigner elle-même, sa
+             signature sur le PV ne vaudrait plus rien (mig. 166). */}
+        <PanneauResponsables
+          cycles={responsablesDispo ? cycles : []} responsables={responsables} membres={membres}
+          peutModifier={estRoleComplet(roles)}
+          onDesigner={async (cycleId, profilId) => {
+            await wrap(() => api.designerResponsableCycle(ecoleId, cycleId, profilId), "Responsable désigné.");
+            api.getResponsablesCycle(ecoleId).then(setResponsables).catch(() => {});
+          }}
+          onRetirer={async (id) => {
+            if (!await confirmer("Retirer ce responsable du cycle ?")) return;
+            await wrap(() => api.retirerResponsableCycle(id), "Responsable retiré.");
+            api.getResponsablesCycle(ecoleId).then(setResponsables).catch(() => {});
+          }}
+        />
+
         <PanneauPeriodes
           periodes={periodes} annee={annee}
           onDater={async (id, dates) => {
@@ -775,6 +810,101 @@ function PanneauMatricule({ config, onEnregistrer }) {
         </p>
         <Bouton onClick={() => onEnregistrer({ prefixe, separateur, longueur })}>Enregistrer</Bouton>
       </div>
+    </Carte>
+  );
+}
+
+// =====================================================================
+//  Responsables pédagogiques de cycle (mig. 166)
+//
+//  Remonté en visite : « chez Tut'Tank il y a 2 responsables, un pour le
+//  préscolaire et un pour l'élémentaire ». Or tout compte `direction`
+//  couvre l'école entière : le système ne savait pas lequel des deux
+//  répondait de quel cycle, et le PV du conseil de classe exige
+//  précisément la signature du BON responsable.
+//
+//  ⚠️ ACTE DU PROMOTEUR. Si la direction pouvait se désigner elle-même,
+//  elle se décernerait son propre droit de signer, et la signature du PV
+//  ne vaudrait plus rien. La migration 166 le refuse en base ; cet écran
+//  ne fait que le refléter.
+// =====================================================================
+function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDesigner, onRetirer }) {
+  const [choix, setChoix] = useState({});
+  if (!cycles.length) return null;
+
+  const nom = (m) => `${m.prenom || ""} ${m.nom || ""}`.trim() || m.email;
+  //  On ne propose que le personnel qui a un compte : une signature est un
+  //  acte authentifié, pas une mention imprimée.
+  const candidats = membres.filter((m) => (m.roles || []).some(
+    (r) => ["direction", "admin_ecole", "secretaire"].includes(r)));
+
+  return (
+    <Carte className="p-5 sm:p-6">
+      <h3 className="font-display text-lg font-semibold text-navy-900">Responsables de cycle</h3>
+      <p className="mt-1.5 text-sm text-navy-900/60">
+        Qui répond de chaque cycle, et signe à ce titre le procès-verbal du conseil de classe.
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {cycles.map((c) => {
+          const liste = responsables.filter((r) => r.cycle_id === c.id);
+          const libres = candidats.filter((m) => !liste.some((r) => r.profil_id === m.id));
+          return (
+            <div key={c.id} className="rounded-xl border border-navy-900/10 p-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium text-navy-900">{c.libelle}</span>
+                {liste.length === 0 && (
+                  <span className="text-xs text-amber-600">aucun responsable désigné</span>
+                )}
+              </div>
+
+              {liste.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {liste.map((r) => (
+                    <li key={r.id}
+                      className="flex items-center gap-1.5 rounded-full bg-navy-900/5 px-2.5 py-1 text-xs text-navy-900/70">
+                      {`${r.profils?.prenom || ""} ${r.profils?.nom || ""}`.trim() || r.profils?.email || "—"}
+                      {peutModifier && (
+                        <button type="button" onClick={() => onRetirer(r.id)}
+                          className="text-rose-500 hover:text-rose-600" title="Retirer">✕</button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {peutModifier && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  <select value={choix[c.id] || ""}
+                    onChange={(e) => setChoix((s) => ({ ...s, [c.id]: e.target.value }))}
+                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+                    <option value="">— Désigner —</option>
+                    {libres.map((m) => <option key={m.id} value={m.id}>{nom(m)}</option>)}
+                  </select>
+                  <Bouton variante="fantome" type="button" disabled={!choix[c.id]}
+                    onClick={() => { onDesigner(c.id, choix[c.id]); setChoix((s) => ({ ...s, [c.id]: "" })); }}>
+                    Ajouter
+                  </Bouton>
+                  {libres.length === 0 && candidats.length === 0 && (
+                    /* ⚠️ Dire POURQUOI la liste est vide : sans compte, pas
+                       de signature possible. Une liste vide sans explication
+                       passe pour une panne. */
+                    <span className="text-xs text-navy-900/40">
+                      Aucun membre avec un compte « direction » ou « secrétariat ».
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {!peutModifier && (
+        <p className="mt-3 text-xs text-navy-900/40">
+          Seul le promoteur désigne les responsables de cycle.
+        </p>
+      )}
     </Carte>
   );
 }

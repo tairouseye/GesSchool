@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, EtatVide, Modale } from "@/composants/ui.jsx";
-import { getAnneeCourante } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getAbsencesJour, enregistrerAppel } from "@/lib/viescolaire.js";
 
@@ -16,7 +17,15 @@ const auj = () => new Date().toISOString().slice(0, 10);
 const dateLisible = () => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
 
 export default function Appel() {
-  const { ecoleId, ecole, utilisateur, profil } = useAuth();
+  const { ecoleId, ecole, utilisateur, profil, roles } = useAuth();
+  //  🔴 REMONTÉ PAR L'ÉCOLE : au préscolaire et à l'élémentaire, ce sont les
+  //  RESPONSABLES PÉDAGOGIQUES qui se substituent aux enseignants — tout le
+  //  travail de ces derniers est fait par eux. Or cette page était la SEULE
+  //  des sept pages de classe à ne pas prévoir ce cas : elle ne chargeait
+  //  les classes QUE si une fiche enseignant existait. Un responsable
+  //  pédagogique ne voyait donc aucune classe et ne pouvait pas faire
+  //  l'appel — la tâche la plus quotidienne de l'établissement.
+  const toutVoir = voitToutesClasses(roles);
   const [annee, setAnnee] = useState(null);
   const [enseignant, setEnseignant] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -37,15 +46,17 @@ export default function Appel() {
         setAnnee(an);
         const ens = await getMonEnseignant(ecoleId, profil?.id, utilisateur?.email);
         setEnseignant(ens);
-        if (ens) {
-          const cls = await getMesClasses(ecoleId, an?.id, ens.id);
-          setClasses(cls);
-          if (cls.length) setClasseId(cls[0].id);
-        }
+        //  La direction et le responsable pédagogique font l'appel de
+        //  n'importe quelle classe ; l'enseignant, seulement des siennes.
+        const cls = toutVoir
+          ? await getClasses(ecoleId, an?.id)
+          : ens ? await getMesClasses(ecoleId, an?.id, ens.id) : [];
+        setClasses(cls);
+        if (cls.length) setClasseId(cls[0].id);
       } catch (e) { setErreur(e.message); }
       finally { setChargement(false); }
     })();
-  }, [ecoleId, profil?.id, utilisateur?.email]);
+  }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
 
   // Charge le roster + l'appel déjà saisi du jour
   const chargerClasse = useCallback(async () => {
@@ -85,7 +96,10 @@ export default function Appel() {
 
   if (chargement) return (<><EnTete titre="Feuille de présence" /><div className="p-8 text-navy-900/50">Chargement…</div></>);
 
-  if (!enseignant) {
+  //  ⚠️ Ce message ne vaut que pour un ENSEIGNANT. L'adresser au
+  //  responsable pédagogique était une impasse : « demande à
+  //  l'administration » — alors que c'est lui.
+  if (!enseignant && !toutVoir) {
     return (
       <>
         <EnTete titre="Feuille de présence" />
@@ -118,7 +132,9 @@ export default function Appel() {
 
         {classes.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/60">
-            Aucune classe ne t'est attribuée pour cette année. (Prof principal ou affectation matière dans <b>Structure / RH</b>.)
+            {toutVoir
+              ? <>Aucune classe n'existe pour cette année. Créez-les dans <b>Structure → Niveaux &amp; classes</b>.</>
+              : <>Aucune classe ne t'est attribuée pour cette année. (Prof principal ou affectation matière dans <b>Structure / RH</b>.)</>}
           </Carte>
         ) : (
           <>
@@ -168,6 +184,11 @@ export default function Appel() {
         ouvert={apercu} onFermer={() => setApercu(false)} ecole={ecole}
         classe={classes.find((c) => c.id === classeId)?.libelle} annee={annee}
         eleves={eleves} etats={etats} enseignant={enseignant}
+        /*  Qui a réellement fait l'appel. Au préscolaire et à l'élémentaire
+            c'est le responsable pédagogique, qui n'a pas de fiche
+            enseignant : la feuille portait alors un « L'enseignant(e) »
+            anonyme au-dessus du trait de signature. */
+        parDefaut={`${profil?.prenom || ""} ${profil?.nom || ""}`.trim()}
       />
     </>
   );
@@ -178,7 +199,7 @@ export default function Appel() {
 // Elle complète le registre VIERGE imprimable depuis la liste d'élèves : ici
 // les états sont déjà renseignés, là-bas les colonnes sont à cocher au stylo.
 // Les deux ont leur usage, et l'école choisit.
-function ModaleFeuille({ ouvert, onFermer, ecole, classe, annee, eleves, etats, enseignant }) {
+function ModaleFeuille({ ouvert, onFermer, ecole, classe, annee, eleves, etats, enseignant, parDefaut }) {
   if (!ouvert) return null;
   const etatDe = (id) => etats[id] || "present";
   const LIB = { present: "Présent", absence: "Absent", retard: "Retard" };
@@ -232,7 +253,9 @@ function ModaleFeuille({ ouvert, onFermer, ecole, classe, annee, eleves, etats, 
         </p>
         <div className="mt-8 flex justify-between text-sm">
           <span>
-            {enseignant ? `${enseignant.prenom} ${enseignant.nom}` : "L'enseignant(e)"}<br />
+            {enseignant
+              ? `${enseignant.prenom} ${enseignant.nom}`
+              : parDefaut || "L'enseignant(e)"}<br />
             <span className="text-navy-900/30">_____________________</span>
           </span>
           <span className="text-right">Visa de la direction<br /><span className="text-navy-900/30">_____________________</span></span>

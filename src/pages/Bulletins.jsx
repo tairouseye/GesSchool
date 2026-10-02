@@ -5,9 +5,14 @@ import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants
 import * as api from "@/lib/bulletins.js";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codeBulletin } from "@/lib/verification.js";
-import { getAnneeCourante, getClasses, getMatieres, getSignataires } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getMatieres, getSignataires, getNiveaux,
+         getResponsablesCycle } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { actions as actionsCircuit, etatGlobal, etatSignatures, qualitesSignables,
+         LIBELLES, EXPLICATIONS, TON } from "@/lib/circuitBulletin.js";
+import { Badge } from "@/composants/ui.jsx";
+import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import { GESPRO } from "@/lib/gespro.js";
 
 // Signataire du bulletin : le responsable pédagogique en priorité, sinon le
@@ -36,16 +41,51 @@ export default function Bulletins() {
   const [enPublication, setEnPublication] = useState(false);
   const [notation, setNotation] = useState(api.DEFAUT_NOTATION);
   const [signataire, setSignataire] = useState(null);
+  //  Circuit du bulletin et PV du conseil (mig. 166).
+  const [etat, setEtat] = useState(null);
+  const [niveaux, setNiveaux] = useState([]);
+  const [responsables, setResponsables] = useState([]);
+  const confirmer = useConfirm();
+  const toast = useToast();
 
-  async function publier() {
+  //  ⚠️ CE BOUTON NE PUBLIE PLUS. Il ENREGISTRE les bulletins calculés, qui
+  //  naissent en brouillon — invisibles du parent (mig. 166). La diffusion
+  //  est un acte distinct, plus bas. Garder l intitule « Publier » ici
+  //  aurait fait croire a l ecole que les familles voient le bulletin.
+  async function enregistrer() {
     if (!resultats) return;
     setErreur(""); setPublication("");
     setEnPublication(true);
     try {
       const n = await api.publierBulletins(ecoleId, classeId, periodeId, resultats);
-      setPublication(`${n} bulletin(s) publié(s) — visibles par les parents.`);
+      setPublication(`${n} bulletin(s) enregistre(s). Ils restent en brouillon : utilisez « Publier aux parents » pour les diffuser.`);
+      await rechargerEtat();
     } catch (e) { setErreur(e.message); }
     finally { setEnPublication(false); }
+  }
+
+  async function rechargerEtat() {
+    if (!classeId || !periodeId) { setEtat(null); return; }
+    try { setEtat(await api.etatBulletins(classeId, periodeId)); }
+    catch { setEtat(null); }
+  }
+
+  async function avancer(statut, label) {
+    try {
+      const n = await api.avancerBulletins(classeId, periodeId, statut);
+      toast.succes(`${n} bulletin(s) — ${label}.`);
+      await rechargerEtat();
+    } catch (e) { toast.erreur(e.message); }
+  }
+
+  async function signer(qualite) {
+    try {
+      let id = etat?.conseilId;
+      if (!id) id = await api.ouvrirConseil(ecoleId, classeId, periodeId, new Date().toISOString().slice(0, 10));
+      await api.signerConseil(id, qualite);
+      toast.succes("Signature apposee.");
+      await rechargerEtat();
+    } catch (e) { toast.erreur(e.message); }
   }
 
   useEffect(() => {
@@ -68,11 +108,21 @@ export default function Bulletins() {
         setNotation(cfg);
         if (per[0]) setPeriodeId(per[0].id);
         try { setSignataire(signatairePedagogique(await getSignataires(ecoleId))); } catch { /* facultatif */ }
+        //  Pour savoir si JE suis responsable du cycle de la classe : la
+        //  reponse ne se deduit pas du role (tout compte `direction` couvre
+        //  l ecole entiere), elle vient de la table de designation.
+        try {
+          const [niv, resp] = await Promise.all([
+            getNiveaux(ecoleId), getResponsablesCycle(ecoleId)]);
+          setNiveaux(niv); setResponsables(resp);
+        } catch { /* le circuit s affichera sans la designation */ }
       } catch (e) {
         setErreur(e.message);
       }
     })();
   }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
+
+  useEffect(() => { rechargerEtat(); }, [classeId, periodeId]);
 
   async function calculer() {
     if (!classeId || !periodeId) return;
@@ -91,6 +141,13 @@ export default function Bulletins() {
 
   const classe = classes.find((c) => c.id === classeId);
   const periode = periodes.find((p) => p.id === periodeId);
+  //  classe -> niveau -> cycle, puis la table de designation. La base refait
+  //  ce meme chemin dans `signer_conseil` : ici on ne fait que decider quoi
+  //  PROPOSER, la verification qui compte est la-bas.
+  const cycleDeLaClasse = niveaux.find((n) => n.id === classe?.niveau_id)?.cycle_id || null;
+  const estResponsableDuCycle = Boolean(
+    cycleDeLaClasse && responsables.some(
+      (r) => r.cycle_id === cycleDeLaClasse && r.profil_id === profil?.id));
 
   return (
     <>
@@ -109,6 +166,25 @@ export default function Bulletins() {
 
         {publication && <Alerte ton="succes">{publication}</Alerte>}
 
+        {/*  Le circuit vit en dehors du calcul : une classe deja enregistree
+             s affiche meme sans avoir recalcule (mig. 166). */}
+        {etat && (etat.brouillon + etat.valide + etat.publie) > 0 && (
+          <PanneauCircuit
+            etat={etat}
+            peutAvancer={toutVoir}
+            estResponsableDuCycle={estResponsableDuCycle}
+            roles={roles}
+            profilId={profil?.id}
+            onAvancer={avancer}
+            onSigner={signer}
+            onRetirerSignature={async () => {
+              try { await api.retirerSignature(etat.conseilId, profil?.id); await rechargerEtat(); }
+              catch (e) { toast.erreur(e.message); }
+            }}
+            confirmer={confirmer}
+          />
+        )}
+
         {resultats && (
           <Carte className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 px-6 py-3 text-sm text-navy-900/60">
@@ -118,9 +194,9 @@ export default function Bulletins() {
               </span>
               {resultats.eleves.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Bouton onClick={() => setPvOuvert(true)}>🧾 PV du conseil</Bouton>
-                  <Bouton variante="or" onClick={publier} disabled={enPublication}>
-                    {enPublication ? "Publication…" : "📤 Publier aux parents"}
+                  <Bouton onClick={() => setPvOuvert(true)}>🧾 Imprimer le PV</Bouton>
+                  <Bouton variante="or" onClick={enregistrer} disabled={enPublication}>
+                    {enPublication ? "Enregistrement…" : "💾 Enregistrer les bulletins"}
                   </Bouton>
                 </div>
               )}
@@ -286,7 +362,13 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
       await api.publierUnBulletin(ecoleId, classeId, periodeId, resultat, {
         effectif, appreciation_generale: appGen, decision, appreciations: appMat,
       });
-      setMsg("Bulletin publié ✓ — visible par le parent.");
+      //  ⚠️ CE MESSAGE DISAIT « visible par le parent » : c'est devenu faux.
+      //  L'upsert n'envoie pas `statut` (mig. 166), donc un bulletin déjà
+      //  publié RESTE publié — corriger une appréciation ne le retire pas
+      //  des familles — mais un bulletin neuf naît en brouillon. Annoncer
+      //  une diffusion qui n'a pas eu lieu serait le pire des messages :
+      //  celui qui rassure à tort.
+      setMsg("Bulletin enregistré ✓ — la diffusion aux familles se fait depuis le panneau « Circuit ».");
     } catch (e) { onErreur(e.message); }
     finally { setSaving(false); }
   }
@@ -323,7 +405,7 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
         </div>
         {msg && <p className="text-sm text-emerald-600">{msg}</p>}
         <div className="flex justify-end gap-2">
-          <Bouton variante="or" onClick={publier} disabled={saving}>{saving ? "Publication…" : "📤 Enregistrer & publier"}</Bouton>
+          <Bouton variante="or" onClick={publier} disabled={saving}>{saving ? "Enregistrement…" : "💾 Enregistrer"}</Bouton>
         </div>
       </div>
 
@@ -473,5 +555,140 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
         <p className="mt-2 text-center text-[9px] text-navy-900/30">Solution développée par {GESPRO.nom}</p>
       )}
     </div>
+  );
+}
+
+// =====================================================================
+//  Le circuit du bulletin, et les deux signatures du PV (mig. 166)
+//
+//  Points 6 et 7 de la visite. Ce panneau répond à UNE question que
+//  l'école se posait sans pouvoir y répondre : « est-ce que les parents
+//  voient ce bulletin ? » Jusqu'ici, écrire un bulletin le rendait
+//  aussitôt visible, sans relecture possible.
+// =====================================================================
+function PanneauCircuit({ etat, peutAvancer, estResponsableDuCycle, roles, profilId,
+                          onAvancer, onSigner, onRetirerSignature, confirmer }) {
+  const compte = { brouillon: etat.brouillon, valide: etat.valide, publie: etat.publie };
+  const { etat: global, total, melange } = etatGlobal(compte);
+  const actes = actionsCircuit({ compte, peutAvancer, conseilComplet: etat.conseilComplet });
+  const sign = etatSignatures(etat.signatures);
+  const maSignature = (etat.signatures || []).find((x) => x.profil_id === profilId);
+  const signables = qualitesSignables({
+    roles, estResponsableDuCycle,
+    dejaSignePar: maSignature ? [maSignature.qualite] : [],
+  });
+
+  return (
+    <Carte className="p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-display text-lg font-semibold text-navy-900">Circuit</h3>
+          {melange ? (
+            <Badge ton="warning">{total} bulletins, états mélangés</Badge>
+          ) : (
+            <Badge ton={TON[global] || "neutre"}>{LIBELLES[global]} — {total} bulletin(s)</Badge>
+          )}
+        </div>
+        {etat.publie > 0 && (
+          <span className="text-xs text-navy-900/50">
+            {etat.consultes} consulté(s) par les familles sur {etat.publie} publié(s)
+          </span>
+        )}
+      </div>
+
+      {/* La seule question qui compte pour l'école : le parent le voit-il ? */}
+      <p className="mt-1.5 text-sm text-navy-900/60">
+        {melange
+          ? "Certains bulletins de cette classe sont visibles des familles, d'autres non."
+          : EXPLICATIONS[global]}
+      </p>
+
+      {melange && (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs text-navy-900/50">
+          {etat.brouillon > 0 && <span>{etat.brouillon} brouillon</span>}
+          {etat.valide > 0 && <span>· {etat.valide} validé(s)</span>}
+          {etat.publie > 0 && <span>· {etat.publie} publié(s)</span>}
+        </div>
+      )}
+
+      {/* --- Le procès-verbal et ses deux signatures --- */}
+      <div className="mt-4 rounded-xl border border-navy-900/10 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-medium text-navy-900/70">Procès-verbal du conseil de classe</span>
+          <Badge ton={sign.complet ? "success" : "warning"}>
+            {sign.complet ? "Signé" : `${sign.manquantes} signature(s) manquante(s)`}
+          </Badge>
+        </div>
+        <ul className="mt-2.5 space-y-1.5">
+          {sign.detail.map((d) => (
+            <li key={d.qualite} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className={d.signature ? "text-emerald-600" : "text-navy-900/30"}>
+                {d.signature ? "✓" : "○"}
+              </span>
+              <span className="text-navy-900/60">{d.label}</span>
+              {d.signature ? (
+                <span className="text-navy-900/80">
+                  — {d.signature.nom || "signé"}
+                  <span className="ml-1 text-xs text-navy-900/40">
+                    {d.signature.signe_le ? new Date(d.signature.signe_le).toLocaleDateString("fr-FR") : ""}
+                  </span>
+                </span>
+              ) : signables.includes(d.qualite) ? (
+                <button type="button" onClick={() => onSigner(d.qualite)}
+                  className="rounded-full border border-or-500/50 bg-or-500/10 px-2.5 py-0.5 text-xs font-medium text-or-600 hover:bg-or-500/20">
+                  Signer
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {maSignature && (
+          <button type="button"
+            onClick={async () => {
+              if (await confirmer("Retirer votre signature de ce procès-verbal ?")) onRetirerSignature();
+            }}
+            className="mt-2 text-xs text-rose-500 hover:underline">
+            retirer ma signature
+          </button>
+        )}
+        {!signables.length && !maSignature && !sign.complet && (
+          /* ⚠️ Dire POURQUOI on ne peut pas signer. Un bouton absent sans
+             explication passe pour une panne. */
+          <p className="mt-2 text-xs text-navy-900/40">
+            Les signatures appartiennent au responsable pédagogique du cycle de cette classe
+            et au responsable de la gestion. Un responsable se désigne dans
+            Structure → Responsables de cycle.
+          </p>
+        )}
+      </div>
+
+      {/* --- Faire avancer --- */}
+      {actes.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {actes.map((a) => (
+            <Bouton key={a.cle}
+              variante={a.cle === "publier" ? "or" : a.cle === "retirer" ? "fantome" : "primaire"}
+              onClick={async () => {
+                //  Un avertissement se CONFIRME : publier sans PV signé, ou
+                //  retirer un bulletin que des familles ont déjà lu, ne doit
+                //  pas partir sur un simple clic.
+                if (a.bloque && !await confirmer(`${a.bloque}\n\nContinuer ?`)) return;
+                onAvancer(a.statut, a.cle === "publier" ? "publié(s) aux parents"
+                  : a.cle === "valider" ? "validé(s)" : "retiré(s) de l'espace parent");
+              }}>
+              {a.cle === "publier" ? "📤 " : a.cle === "retirer" ? "↩️ " : "✓ "}{a.label}
+            </Bouton>
+          ))}
+          {actes.some((a) => a.cle === "publier" && a.bloque) && (
+            <span className="text-xs text-amber-600">PV non signé</span>
+          )}
+        </div>
+      )}
+      {!peutAvancer && (
+        <p className="mt-3 text-xs text-navy-900/40">
+          Seule la direction arrête et diffuse les bulletins.
+        </p>
+      )}
+    </Carte>
   );
 }

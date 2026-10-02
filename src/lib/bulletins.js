@@ -396,3 +396,84 @@ export async function absencesClassePeriode(classeId, periodeId) {
   }
   return par;
 }
+
+// ===================================================================
+//  Le circuit du bulletin et le PV du conseil de classe (mig. 166)
+//
+//  ⚠️ « Publier » ne veut plus dire « enregistrer ». `publierBulletins`
+//  ci-dessus PERSISTE les bulletins calculés — ils naissent en brouillon,
+//  invisibles du parent. La diffusion est un acte distinct, réservé à la
+//  direction, qui passe par `avancerBulletins`.
+// ===================================================================
+
+/** Où en est une classe : combien par état, le PV, ses signatures. */
+export async function etatBulletins(classeId, periodeId) {
+  if (!classeId || !periodeId) return null;
+  const { data, error } = await supabase.rpc("etat_bulletins", {
+    p_classe: classeId, p_periode: periodeId,
+  });
+  if (error) throw error;
+  const l = Array.isArray(data) ? data[0] : data;
+  if (!l) return null;
+  return {
+    brouillon: Number(l.brouillon) || 0,
+    valide: Number(l.valide) || 0,
+    publie: Number(l.publie) || 0,
+    consultes: Number(l.consultes) || 0,
+    conseilId: l.conseil_id || null,
+    conseilComplet: Boolean(l.conseil_complet),
+    signatures: Array.isArray(l.signatures) ? l.signatures : [],
+  };
+}
+
+/**
+ * Fait avancer TOUS les bulletins d'une classe et d'une période.
+ * Rend le nombre de bulletins touchés — l'écran doit pouvoir dire
+ * « 24 bulletins publiés » plutôt qu'un vague succès.
+ */
+export async function avancerBulletins(classeId, periodeId, statut) {
+  const { data, error } = await supabase.rpc("avancer_bulletins", {
+    p_classe: classeId, p_periode: periodeId, p_statut: statut,
+  });
+  if (error) throw error;
+  return Number(data) || 0;
+}
+
+/** Ouvre le PV du conseil de classe, ou retrouve celui qui existe déjà. */
+export async function ouvrirConseil(ecoleId, classeId, periodeId, tenuLe) {
+  const { data, error } = await supabase
+    .from("conseils_classe")
+    .upsert({
+      ecole_id: ecoleId, classe_id: classeId, periode_id: periodeId,
+      tenu_le: tenuLe || null,
+    }, { onConflict: "classe_id,periode_id" })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function majConseil(conseilId, champs) {
+  const { error } = await supabase.from("conseils_classe").update(champs).eq("id", conseilId);
+  if (error) throw error;
+}
+
+/**
+ * Appose une signature. La QUALITÉ est vérifiée côté base : le signataire
+ * pédagogique doit être responsable DU CYCLE de la classe, et la direction
+ * ne peut pas signer au titre de la gestion (mig. 166).
+ */
+export async function signerConseil(conseilId, qualite) {
+  const { error } = await supabase.rpc("signer_conseil", {
+    p_conseil: conseilId, p_qualite: qualite,
+  });
+  if (error) throw error;
+}
+
+/** Retire SA propre signature — une signature posée par erreur se reprend. */
+export async function retirerSignature(conseilId, profilId) {
+  const { error } = await supabase
+    .from("conseil_signatures").delete()
+    .eq("conseil_id", conseilId).eq("profil_id", profilId);
+  if (error) throw error;
+}
