@@ -16,25 +16,49 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # ⚠️ VERSION ÉPINGLÉE, pas `ubuntu-latest` : GitHub fait migrer ce label
+    # vers Ubuntu 26 à partir du 19/10/2026. Un changement de système sous
+    # une mise en production, sans qu'on l'ait demandé, est exactement le
+    # genre de surprise qu'on ne veut pas découvrir un jour de rentrée.
+    # Pour monter de version : on le fait ici, volontairement, et on vérifie.
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # La même version majeure que le poste de développement : un écart
+          # entre les deux ne produit que des défauts qui n'apparaissent QUE
+          # dans la chaîne d'intégration.
+          node-version: 24
           cache: npm
       - run: npm ci
+
+      # ⚠️ LES TESTS AVANT LA MISE EN LIGNE. La chaîne ne faisait que
+      # construire : une régression partait donc en production sans que rien
+      # ne l'arrête. La suite est déterministe et sans réseau — les épreuves
+      # qui demandent un vrai document ou une session Supabase s'écartent
+      # d'elles-mêmes quand leurs prérequis sont absents (c'est le cas ici :
+      # `docs/*.docx` n'est pas dans le dépôt).
+      - run: npm test
+
       - run: npm run build   # charge automatiquement .env.production
-      - uses: actions/upload-pages-artifact@v3
+
+      # ⚠️ v4 a introduit un changement CASSANT : les fichiers cachés
+      # (dotfiles) ne sont plus inclus dans l'artefact. Vérifié avant de
+      # monter de version : `dist/` n'en contient aucun, et le `CNAME` du
+      # domaine gesschool.gesprosn.org n'en est pas un — il est donc
+      # conservé. Si un `.nojekyll` devenait nécessaire un jour, il faudrait
+      # construire l'artefact autrement.
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
