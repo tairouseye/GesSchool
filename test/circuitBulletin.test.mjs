@@ -85,13 +85,13 @@ test("le PV attend DEUX signatures nommées", async () => {
   assert.equal(vide.manquantes, 2);
   assert.deepEqual(vide.detail.map((d) => d.qualite), ["pedagogique", "gestion"]);
 
-  const une = etatSignatures([{ qualite: "pedagogique", nom: "Mme Diop" }]);
+  const une = etatSignatures([{ qualite: "pedagogique", nom: "Mme Ndiaye" }]);
   assert.equal(une.complet, false);
   assert.equal(une.manquantes, 1);
 
   const deux = etatSignatures([
-    { qualite: "gestion", nom: "Mme Kane" },
-    { qualite: "pedagogique", nom: "Mme Diop" },
+    { qualite: "gestion", nom: "Mme Sarr" },
+    { qualite: "pedagogique", nom: "Mme Ndiaye" },
   ]);
   assert.equal(deux.complet, true);
   assert.equal(deux.manquantes, 0);
