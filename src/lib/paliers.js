@@ -184,7 +184,14 @@ export function pedagogiePertinente(paliers = []) {
  * ⚠️ Et tant qu'aucun palier n'est déclaré, on NE TOUCHE PAS au type :
  * l'école garde exactement le comportement qu'elle avait.
  */
-export function profilAEnregistrer(f = {}) {
+export function profilAEnregistrer(f = {}, colonnesDisponibles = true) {
+  //  ⚠️ Tant que la migration 168 n'est pas appliquee, ces deux colonnes
+  //  n'existent pas : les envoyer ferait echouer TOUT l'enregistrement de la
+  //  fiche etablissement. On les retire, et le reste s'enregistre.
+  if (!colonnesDisponibles) {
+    const { paliers: _p, pedagogie_elementaire: _pe, ...reste } = f;
+    return reste;
+  }
   const paliers = paliersDeclares({ paliers: f.paliers });
   const universitaireSeul = paliers.length > 0 && paliers.every((p) => p === "universite");
   return {

@@ -230,3 +230,19 @@ test("les paliers partent triés et dédoublonnés", async () => {
     profilAEnregistrer({ paliers: ["universite", "elementaire", "elementaire", "xxx"] }).paliers,
     ["elementaire", "universite"]);
 });
+
+test("🔴 l'ordre de mise en ligne ne doit pas compter", async () => {
+  const { profilAEnregistrer } = await P();
+  // Migration 168 PAS encore appliquée : les colonnes n'existent pas.
+  // Les envoyer ferait échouer TOUT l'enregistrement de la fiche
+  // établissement — le promoteur ne pourrait plus changer ni le nom, ni le
+  // logo, ni les couleurs.
+  const sans = profilAEnregistrer(
+    { nom: "École", paliers: ["elementaire"], pedagogie_elementaire: "montessori" }, false);
+  assert.ok(!("paliers" in sans), "`paliers` n'est pas envoyé");
+  assert.ok(!("pedagogie_elementaire" in sans), "`pedagogie_elementaire` non plus");
+  assert.equal(sans.nom, "École", "mais le reste de la fiche part normalement");
+  // Migration appliquée : tout part.
+  const avec = profilAEnregistrer({ nom: "École", paliers: ["elementaire"] }, true);
+  assert.deepEqual(avec.paliers, ["elementaire"]);
+});

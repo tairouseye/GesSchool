@@ -207,6 +207,13 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
   });
   const [up, setUp] = useState("");
+  //  ⚠️ L'ORDRE DE MISE EN LIGNE NE DOIT PAS COMPTER. Si la migration 168
+  //  n'est pas encore appliquee, les colonnes `paliers` et
+  //  `pedagogie_elementaire` n'existent pas : les envoyer ferait echouer
+  //  TOUT l'enregistrement de la fiche etablissement. On sonde leur
+  //  presence — un `select *` rend la cle des que la colonne existe, meme a
+  //  NULL — et on s'abstient tant qu'elle manque.
+  const paliersDispo = Boolean(ecole) && "paliers" in ecole;
   useEffect(() => {
     if (!ecole) return;
     setF({
@@ -250,13 +257,13 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
         <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
-        <div className="sm:col-span-2">
+        {paliersDispo && <div className="sm:col-span-2">
           <ChoixPaliers
             paliers={f.paliers} pedagogie={f.pedagogie_elementaire}
             onPaliers={(v) => maj("paliers", v)}
             onPedagogie={(v) => maj("pedagogie_elementaire", v)}
           />
-        </div>
+        </div>}
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
           <select value={f.pays}
@@ -307,7 +314,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       </div>
 
       <div className="mt-4 flex justify-end">
-        <Bouton onClick={() => onSave(profilAEnregistrer(f))}>Enregistrer</Bouton>
+        <Bouton onClick={() => onSave(profilAEnregistrer(f, paliersDispo))}>Enregistrer</Bouton>
       </div>
     </Carte>
   );
