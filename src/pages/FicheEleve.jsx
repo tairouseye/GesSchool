@@ -6,7 +6,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
-import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
+import { getAnneeCourante, getClasses, getChampsEleve, getSousNiveaux, sousNiveauxDeClasse } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -31,6 +31,7 @@ export default function FicheEleve() {
   const [chargement, setChargement] = useState(true);
   const [modaleTuteur, setModaleTuteur] = useState(false);
   const [modaleInscr, setModaleInscr] = useState(false);
+  const [sousNiveaux, setSousNiveaux] = useState([]);
   const [modaleEdit, setModaleEdit] = useState(false);
   const [carteOuverte, setCarteOuverte] = useState(false);
   const [photoEnCours, setPhotoEnCours] = useState(false);
@@ -42,18 +43,20 @@ export default function FicheEleve() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [el, tut, insc, cls, champs] = await Promise.all([
+      const [el, tut, insc, cls, champs, sn] = await Promise.all([
         api.getEleve(id),
         api.getTuteursEleve(id),
         api.getInscriptionsEleve(id),
         getClasses(ecoleId, an?.id),
         getChampsEleve(ecoleId),
+        getSousNiveaux(ecoleId).catch(() => []),
       ]);
       setEleve(el);
       setTuteurs(tut);
       setInscriptions(insc);
       setClasses(cls);
       setChampsPerso(champs);
+      setSousNiveaux(sn);
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -263,7 +266,16 @@ export default function FicheEleve() {
               <ul className="space-y-2">
                 {inscriptions.map((i) => (
                   <li key={i.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3 text-sm">
-                    <span className="font-medium text-navy-900">{i.classes?.libelle || "—"}</span>
+                    <span className="font-medium text-navy-900">
+                      {i.classes?.libelle || "—"}
+                      {/* Le niveau réel, quand la classe en regroupe plusieurs :
+                          « TPS/PS A · TPS ». Saisi sans être lu, il ne servirait à rien. */}
+                      {i.sous_niveaux?.libelle && (
+                        <span className="ml-1.5 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                          {i.sous_niveaux.libelle}
+                        </span>
+                      )}
+                    </span>
                     <span className="text-navy-900/50">{i.annees_scolaires?.libelle}</span>
                     <span className="rounded-full border border-navy-900/15 bg-navy-900/5 px-2.5 py-0.5 text-xs">{i.statut}</span>
                   </li>
@@ -295,9 +307,10 @@ export default function FicheEleve() {
         ouvert={modaleInscr}
         onFermer={() => setModaleInscr(false)}
         classes={classes}
+        sousNiveaux={sousNiveaux}
         annee={annee}
-        onInscrire={(classeId, redoublant) =>
-          wrap(async () => { await api.inscrire(ecoleId, id, classeId, annee.id, "inscrit", redoublant); setModaleInscr(false); })
+        onInscrire={(classeId, redoublant, sousNiveauId) =>
+          wrap(async () => { await api.inscrire(ecoleId, id, classeId, annee.id, "inscrit", redoublant, sousNiveauId); setModaleInscr(false); })
         }
       />
 
@@ -321,7 +334,11 @@ export default function FicheEleve() {
               <div className="min-w-0 text-xs text-navy-900/70">
                 <p className="text-sm font-bold text-navy-900">{eleve.nom} {eleve.prenom}</p>
                 <p className="mt-1"><span className="text-navy-900/40">Matricule :</span> {eleve.matricule || "—"}</p>
-                <p><span className="text-navy-900/40">Classe :</span> {inscriptions.find((i) => i.annee_id === annee?.id)?.classes?.libelle || "—"}</p>
+                <p><span className="text-navy-900/40">Classe :</span> {(() => {
+                  const i = inscriptions.find((x) => x.annee_id === annee?.id);
+                  if (!i) return "—";
+                  return `${i.classes?.libelle || "—"}${i.sous_niveaux?.libelle ? ` · ${i.sous_niveaux.libelle}` : ""}`;
+                })()}</p>
                 <p><span className="text-navy-900/40">Sexe :</span> {eleve.sexe === "F" ? "Féminin" : eleve.sexe === "M" ? "Masculin" : "—"}</p>
                 <p><span className="text-navy-900/40">Né(e) le :</span> {eleve.date_naissance ? new Date(eleve.date_naissance).toLocaleDateString("fr-FR") : "—"}</p>
               </div>
@@ -460,28 +477,47 @@ function ModaleTuteur({ ouvert, onFermer, onAjout }) {
   );
 }
 
-function ModaleInscription({ ouvert, onFermer, classes, annee, onInscrire }) {
+function ModaleInscription({ ouvert, onFermer, classes, sousNiveaux = [], annee, onInscrire }) {
   const [classeId, setClasseId] = useState("");
   const [redoublant, setRedoublant] = useState(false);
+  const [sousNiveauId, setSousNiveauId] = useState("");
+  // Sous-niveaux de la classe choisie — vide pour un niveau simple, et le
+  // champ n'apparaît alors pas du tout (migration 164).
+  const choix = sousNiveauxDeClasse(sousNiveaux, classes, classeId);
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre={`Inscription — ${annee?.libelle || ""}`}>
       <form
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (classeId) onInscrire(classeId, redoublant);
+          if (classeId) onInscrire(classeId, redoublant, sousNiveauId || null);
         }}
       >
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Classe *</span>
           <select
-            value={classeId} onChange={(e) => setClasseId(e.target.value)} required
+            value={classeId} onChange={(e) => { setClasseId(e.target.value); setSousNiveauId(""); }} required
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
           >
             <option value="">— Choisir —</option>
             {classes.map((c) => (<option key={c.id} value={c.id}>{c.libelle}</option>))}
           </select>
         </label>
+        {/* N'apparaît que si la classe regroupe plusieurs niveaux : « TPS/PS »
+            contient des TPS et des PS. Facultatif — sans choix, l'élève garde
+            le niveau de sa classe. */}
+        {choix.length > 0 && (
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
+              Niveau dans la classe <span className="font-normal text-navy-900/45">(facultatif)</span>
+            </span>
+            <select value={sousNiveauId} onChange={(e) => setSousNiveauId(e.target.value)}
+              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+              <option value="">— niveau de la classe —</option>
+              {choix.map((x) => (<option key={x.id} value={x.id}>{x.libelle}</option>))}
+            </select>
+          </label>
+        )}
         <label className="flex items-center gap-2 text-sm text-navy-900/70">
           <input type="checkbox" checked={redoublant} onChange={(e) => setRedoublant(e.target.checked)} />
           Redoublant

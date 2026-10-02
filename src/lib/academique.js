@@ -428,3 +428,44 @@ export function chevauchements(periodes = []) {
   }
   return paires;
 }
+
+// --- Sous-niveaux (classes multi-niveaux, migration 164) -------------------
+//
+// Chez Tut'Tank, « TPS/PS A » est UNE classe qui contient des élèves de TPS
+// et de PS. Le sous-niveau dit lequel. On ne l'a PAS mis dans `niveaux` :
+// six objets s'y accrochent — tarifs, coefficients, volumes horaires,
+// fournitures, ciblage des annonces et des textes — et un tarif posé sur
+// « TPS » au lieu de « TPS/PS » ne s'appliquerait plus à personne.
+export async function getSousNiveaux(ecoleId) {
+  const { data, error } = await supabase
+    .from("sous_niveaux")
+    .select("*")
+    .eq("ecole_id", ecoleId)
+    .order("ordre");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function creerSousNiveau(ecoleId, niveauId, libelle, ordre = 0) {
+  const { data, error } = await supabase
+    .from("sous_niveaux")
+    .insert({ ecole_id: ecoleId, niveau_id: niveauId, libelle: String(libelle || "").trim(), ordre })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function supprimerSousNiveau(id) {
+  const { error } = await supabase.from("sous_niveaux").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Les sous-niveaux d'une classe = ceux du niveau de cette classe. Rend un
+// tableau VIDE pour un niveau simple : l'écran n'affiche alors aucun choix,
+// et la fonctionnalité reste invisible là où elle n'a pas lieu d'être.
+export function sousNiveauxDeClasse(sousNiveaux = [], classes = [], classeId) {
+  const niveauId = classes.find((c) => c.id === classeId)?.niveau_id;
+  if (!niveauId) return [];
+  return sousNiveaux.filter((s) => s.niveau_id === niveauId);
+}

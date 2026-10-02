@@ -20,6 +20,7 @@ export default function Structure() {
   const [series, setSeries] = useState([]);
   const [coefficients, setCoefficients] = useState([]);
   const [periodes, setPeriodes] = useState([]);
+  const [sousNiveaux, setSousNiveaux] = useState([]);
   const [config, setConfig] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
@@ -46,6 +47,7 @@ export default function Structure() {
       setConfig(cf);
       setEnseignants(en);
       setClasses(await api.getClasses(ecoleId, an?.id));
+      setSousNiveaux(await api.getSousNiveaux(ecoleId));
     } catch (e) {
       setErreur(e.message);
     } finally {
@@ -113,6 +115,7 @@ export default function Structure() {
               cycle={cycle}
               niveaux={niveaux.filter((n) => n.cycle_id === cycle.id)}
               classes={classes}
+              sousNiveaux={sousNiveaux}
               enseignants={enseignants}
               series={series}
               annee={annee}
@@ -124,6 +127,18 @@ export default function Structure() {
                 wrap(() => api.creerClassesEnLot(ecoleId, niveauId, annee.id, libelles, eff, serieId))
               }
               onSupprClasse={async (id) => { if (await confirmer("Supprimer cette classe ?")) wrap(() => api.supprimerClasse(id), "Classe supprimée."); }}
+              onAjoutSousNiveau={async (niveauId, libelle) => {
+                await wrap(() => api.creerSousNiveau(ecoleId, niveauId, libelle, 0), "Sous-niveau ajouté.");
+                setSousNiveaux(await api.getSousNiveaux(ecoleId).catch(() => sousNiveaux));
+              }}
+              onSupprSousNiveau={async (id, libelle) => {
+                // Les inscriptions qui le portaient repassent au niveau de la
+                // classe (`on delete set null`) : rien n'est perdu, l'élève
+                // redevient simplement « TPS/PS » au lieu de « TPS ».
+                if (!(await confirmer(`Retirer le sous-niveau « ${libelle} » ? Les élèves concernés reprendront le niveau de leur classe.`))) return;
+                await wrap(() => api.supprimerSousNiveau(id), "Sous-niveau retiré.");
+                setSousNiveaux(await api.getSousNiveaux(ecoleId).catch(() => sousNiveaux));
+              }}
               onProfPrincipal={(classeId, ensId) =>
                 wrap(() => api.majClasse(classeId, { prof_principal_id: ensId || null }),
                   ensId ? "Professeur principal défini." : "Professeur principal retiré.")
@@ -176,7 +191,7 @@ export default function Structure() {
   );
 }
 
-function CarteCycle({ cycle, niveaux, classes, enseignants, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse, onProfPrincipal }) {
+function CarteCycle({ cycle, niveaux, classes, sousNiveaux = [], enseignants, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse, onProfPrincipal, onAjoutSousNiveau, onSupprSousNiveau }) {
   const [nouveauNiveau, setNouveauNiveau] = useState("");
   return (
     <Carte className="p-6">
@@ -222,6 +237,9 @@ function CarteCycle({ cycle, niveaux, classes, enseignants, series, annee, onAjo
             key={niveau.id}
             niveau={niveau}
             classes={classes.filter((c) => c.niveau_id === niveau.id)}
+            sousNiveaux={sousNiveaux.filter((x) => x.niveau_id === niveau.id)}
+            onAjoutSousNiveau={(lib) => onAjoutSousNiveau(niveau.id, lib)}
+            onSupprSousNiveau={onSupprSousNiveau}
             enseignants={enseignants}
             series={cycle.type === "lycee" ? series : []}
             annee={annee}
@@ -252,7 +270,8 @@ function construireLibelles(base, nombre, style) {
   return out;
 }
 
-function LigneNiveau({ niveau, classes, enseignants, series, annee, onSuppr, onGenerer, onSupprClasse, onProfPrincipal }) {
+function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, annee, onSuppr, onGenerer, onSupprClasse, onProfPrincipal, onAjoutSousNiveau, onSupprSousNiveau }) {
+  const [nouveauSN, setNouveauSN] = useState("");
   const [base, setBase] = useState(niveau.libelle);
   const [nombre, setNombre] = useState(1);
   const [style, setStyle] = useState("lettres"); // lettres | chiffres | aucun
@@ -276,10 +295,43 @@ function LigneNiveau({ niveau, classes, enseignants, series, annee, onSuppr, onG
   return (
     <div className="rounded-xl border border-navy-900/10 p-4">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-navy-900">{niveau.libelle}</span>
+        <span className="font-medium text-navy-900">
+          {niveau.libelle}
+          {sousNiveaux.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-navy-900/45">
+              {sousNiveaux.map((x) => x.libelle).join(" · ")}
+            </span>
+          )}
+        </span>
         <button onClick={onSuppr} className="text-xs text-rose-500 hover:underline">
           supprimer
         </button>
+      </div>
+
+      {/* Sous-niveaux : seulement si le niveau en regroupe plusieurs.
+          « TPS/PS » contient des élèves de TPS et de PS (Montessori) ; le
+          sous-niveau dit lequel, sans créer deux classes artificielles.
+          On ne les met PAS dans `niveaux` : six objets s'y accrochent
+          — tarifs, coefficients, volumes horaires, fournitures, ciblage des
+          annonces et des textes (migration 164). */}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {sousNiveaux.map((x) => (
+          <span key={x.id} className="inline-flex items-center gap-1.5 rounded-full border border-navy-900/15 px-2.5 py-0.5 text-xs text-navy-900/70">
+            {x.libelle}
+            <button onClick={() => onSupprSousNiveau(x.id, x.libelle)} className="text-rose-500 hover:text-rose-600" title="Retirer ce sous-niveau">×</button>
+          </span>
+        ))}
+        <form
+          onSubmit={(e) => { e.preventDefault(); const v = nouveauSN.trim(); if (!v) return; onAjoutSousNiveau(v); setNouveauSN(""); }}
+          className="inline-flex items-center gap-1.5"
+        >
+          <input value={nouveauSN} onChange={(e) => setNouveauSN(e.target.value)}
+            placeholder={sousNiveaux.length ? "+ sous-niveau" : "+ sous-niveau (ex. TPS)"}
+            className="w-36 rounded-full border border-dashed border-navy-900/25 bg-white px-2.5 py-0.5 text-xs outline-none focus:border-or-500" />
+          {nouveauSN.trim() && (
+            <button type="submit" className="text-xs font-medium text-navy-700 hover:text-or-600">ajouter</button>
+          )}
+        </form>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">

@@ -222,7 +222,7 @@ export async function getInscriptionsParEleve(ecoleId, anneeId) {
   if (!anneeId) return {};
   const { data, error } = await supabase
     .from("inscriptions")
-    .select("id, eleve_id, statut, classe_id, classes(libelle)")
+    .select("id, eleve_id, statut, classe_id, sous_niveau_id, classes(libelle), sous_niveaux(libelle)")
     .eq("ecole_id", ecoleId)
     .eq("annee_id", anneeId);
   if (error) throw error;
@@ -234,18 +234,27 @@ export async function getInscriptionsParEleve(ecoleId, anneeId) {
 export async function getInscriptionsEleve(eleveId) {
   const { data, error } = await supabase
     .from("inscriptions")
-    .select("id, statut, date_inscription, redoublant, classe_id, classes(libelle), annee_id, annees_scolaires(libelle)")
+    .select("id, statut, date_inscription, redoublant, classe_id, sous_niveau_id, classes(libelle), sous_niveaux(libelle), annee_id, annees_scolaires(libelle)")
     .eq("eleve_id", eleveId)
     .order("date_inscription", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function inscrire(ecoleId, eleveId, classeId, anneeId, statut = "inscrit", redoublant = false) {
+// `sousNiveauId` : le niveau RÉEL de l'élève quand la classe en regroupe
+// plusieurs — TPS ou PS dans une classe « TPS/PS » (migration 164).
+// Laissé à null, l'élève garde le niveau de sa classe : c'est le cas de tous
+// les niveaux simples, et la fonctionnalité reste donc invisible ailleurs.
+//
+// ⚠️ La cohérence (le sous-niveau appartient bien au niveau de la classe)
+// est vérifiée par un DÉCLENCHEUR, pas ici : une clé étrangère garantit que
+// le sous-niveau existe, pas qu'il a un sens pour cette classe.
+export async function inscrire(ecoleId, eleveId, classeId, anneeId, statut = "inscrit", redoublant = false, sousNiveauId = null) {
   const { data, error } = await supabase
     .from("inscriptions")
     .upsert(
-      { ecole_id: ecoleId, eleve_id: eleveId, classe_id: classeId, annee_id: anneeId, statut, redoublant },
+      { ecole_id: ecoleId, eleve_id: eleveId, classe_id: classeId, annee_id: anneeId, statut, redoublant,
+        sous_niveau_id: sousNiveauId || null },
       { onConflict: "eleve_id,annee_id" }
     )
     .select()
