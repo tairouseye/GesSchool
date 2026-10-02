@@ -19,6 +19,7 @@ export default function Structure() {
   const [matieres, setMatieres] = useState([]);
   const [series, setSeries] = useState([]);
   const [coefficients, setCoefficients] = useState([]);
+  const [periodes, setPeriodes] = useState([]);
   const [config, setConfig] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
@@ -55,6 +56,12 @@ export default function Structure() {
   useEffect(() => {
     recharger();
   }, [recharger]);
+
+  // Les périodes dépendent de l'année : second chargement, une fois connue.
+  useEffect(() => {
+    if (!ecoleId || !annee?.id) { setPeriodes([]); return; }
+    api.getPeriodesAnnee(ecoleId, annee.id).then(setPeriodes).catch(() => {});
+  }, [ecoleId, annee?.id]);
 
   const wrap = async (fn, msg) => {
     try {
@@ -124,6 +131,15 @@ export default function Structure() {
             />
           ))}
         </div>
+
+        {/* Découpage de l'année */}
+        <PanneauPeriodes
+          periodes={periodes} annee={annee}
+          onDater={async (id, dates) => {
+            await wrap(() => api.daterPeriode(id, dates), "Dates enregistrées.");
+            if (annee?.id) api.getPeriodesAnnee(ecoleId, annee.id).then(setPeriodes).catch(() => {});
+          }}
+        />
 
         {/* Matières */}
         <PanneauMatieres
@@ -373,6 +389,90 @@ function LigneNiveau({ niveau, classes, enseignants, series, annee, onSuppr, onG
         )}
       </p>
     </div>
+  );
+}
+
+// Dates des trimestres / semestres.
+//
+// ⚠️ Sans elles, rien ne peut être borné dans le temps — le comptage des
+// absences d'un trimestre en particulier. 17 des 20 périodes en base n'en
+// avaient aucune, faute d'écran pour les saisir (migration 162).
+function PanneauPeriodes({ periodes, annee, onDater }) {
+  const [edit, setEdit] = useState({});
+  const maj = (id, k, v) => setEdit((s) => ({ ...s, [id]: { ...(s[id] || {}), [k]: v } }));
+  const valeur = (p, k) => (edit[p.id]?.[k] !== undefined ? edit[p.id][k] : p[k] || "");
+  const modifiee = (p) =>
+    valeur(p, "date_debut") !== (p.date_debut || "") || valeur(p, "date_fin") !== (p.date_fin || "");
+  const incoherente = (p) => {
+    const d = valeur(p, "date_debut"), f = valeur(p, "date_fin");
+    return !!d && !!f && f < d;
+  };
+
+  const sansDates = periodes.filter((p) => !p.date_debut || !p.date_fin).length;
+  const paires = api.chevauchements(
+    periodes.map((p) => ({ ...p, date_debut: valeur(p, "date_debut") || null, date_fin: valeur(p, "date_fin") || null }))
+  );
+
+  if (!annee) return null;
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">
+        Découpage de l&apos;année {annee.libelle}
+      </h3>
+      <p className="mb-4 text-xs text-navy-900/50">
+        Les dates bornent ce qui se compte par période — les absences d&apos;un trimestre, par exemple.
+        Elles sont facultatives : renseignez au moins celles du trimestre en cours.
+      </p>
+
+      {periodes.length === 0 ? (
+        <p className="text-sm text-navy-900/50">Aucune période pour cette année.</p>
+      ) : (
+        <div className="space-y-2">
+          {periodes.map((p) => (
+            <div key={p.id} className="flex flex-wrap items-end gap-2 rounded-xl border border-navy-900/10 p-3">
+              <span className="min-w-32 flex-1 text-sm font-medium text-navy-900">
+                {p.libelle}
+                {(!p.date_debut || !p.date_fin) && (
+                  <span className="ml-2 rounded-full bg-or-500/15 px-2 py-0.5 text-[10px] font-medium text-or-600">
+                    sans dates
+                  </span>
+                )}
+              </span>
+              <div className="w-40">
+                <Champ label="Du" type="date" value={valeur(p, "date_debut")}
+                  onChange={(e) => maj(p.id, "date_debut", e.target.value)} />
+              </div>
+              <div className="w-40">
+                <Champ label="Au" type="date" value={valeur(p, "date_fin")}
+                  onChange={(e) => maj(p.id, "date_fin", e.target.value)} />
+              </div>
+              <Bouton variante="fantome" disabled={!modifiee(p) || incoherente(p)}
+                onClick={() => onDater(p.id, { date_debut: valeur(p, "date_debut"), date_fin: valeur(p, "date_fin") })}>
+                Enregistrer
+              </Bouton>
+              {incoherente(p) && (
+                <span className="w-full text-xs text-rose-600">La fin précède le début.</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sansDates > 0 && (
+        <p className="mt-3 text-xs text-navy-900/50">
+          {sansDates} période(s) sans dates : les absences ne pourront pas y être comptées.
+        </p>
+      )}
+      {/* On SIGNALE sans bloquer : deux périodes qui se chevauchent compteraient
+          deux fois la même absence, mais une école peut avoir une raison que
+          nous ignorons — un rattrapage, une session de reprise. */}
+      {paires.length > 0 && (
+        <p className="mt-2 rounded-lg border border-or-500/40 bg-or-500/5 px-3 py-2 text-xs text-navy-900/70">
+          Chevauchement : {paires.map(([a, b]) => `« ${a} » et « ${b} »`).join(", ")}. Une même absence
+          y serait comptée deux fois.
+        </p>
+      )}
+    </Carte>
   );
 }
 

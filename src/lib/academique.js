@@ -382,3 +382,49 @@ export async function supprimerFourniture(id) {
   const { error } = await supabase.from("fournitures").delete().eq("id", id);
   if (error) throw error;
 }
+
+// --- Périodes (découpage de l'année) ---------------------------------------
+//
+// ⚠️ Jusqu'ici `periodes` n'était JAMAIS écrite par l'application : les
+// trimestres naissaient sans dates à l'ouverture de l'année, et rien ne
+// permettait de les renseigner. Compter les absences d'un trimestre — ou
+// borner quoi que ce soit dans le temps — était donc impossible
+// (migration 162).
+export async function getPeriodesAnnee(ecoleId, anneeId) {
+  if (!anneeId) return [];
+  const { data, error } = await supabase
+    .from("periodes")
+    .select("*")
+    .eq("ecole_id", ecoleId)
+    .eq("annee_id", anneeId)
+    .order("ordre");
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Les dates sont facultatives : une école peut n'en renseigner aucune, ou
+// seulement celles du trimestre en cours. On n'impose rien, on rend possible.
+export async function daterPeriode(id, { date_debut, date_fin }) {
+  const { error } = await supabase
+    .from("periodes")
+    .update({ date_debut: date_debut || null, date_fin: date_fin || null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+// Deux trimestres qui se chevauchent compteraient deux fois la même absence.
+// La base ne peut pas l'interdire simplement (il y faudrait une contrainte
+// d'exclusion) : on le signale à la saisie, sans bloquer — une école peut
+// avoir une raison que nous ignorons.
+export function chevauchements(periodes = []) {
+  const datees = periodes
+    .filter((p) => p.date_debut && p.date_fin)
+    .sort((a, b) => String(a.date_debut).localeCompare(String(b.date_debut)));
+  const paires = [];
+  for (let i = 1; i < datees.length; i += 1) {
+    if (String(datees[i].date_debut) <= String(datees[i - 1].date_fin)) {
+      paires.push([datees[i - 1].libelle, datees[i].libelle]);
+    }
+  }
+  return paires;
+}

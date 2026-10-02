@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.225.0] — migration **162** · dater les périodes, et restreindre qui le peut
+- **Prérequis du point 9**, découvert en le préparant : compter les absences *d'un trimestre* suppose de savoir quand il commence et finit. Or **17 des 20 périodes en base n'ont aucune date**, et `periodes` n'était **jamais écrite** par l'application — aucun écran ne permettait de les saisir, elles naissent nulles à l'ouverture de l'année.
+- Un panneau **« Découpage de l'année »** rejoint Structure académique, à côté des niveaux et des matières. Les dates restent facultatives : une école peut ne renseigner que le trimestre en cours.
+- **🔴 Et en vérifiant les droits, un second défaut.** `periodes` ne portait que la policy générique de la migration 001 (`ecole_id = ecole_courante()`) : la 018 lui avait oublié ses policies par rôle. Mesuré avec de vraies sessions — le **responsable RH pouvait modifier le calendrier scolaire**, tout comme le comptable, le secrétaire, le surveillant et l'enseignant. Les parents étaient bien exclus (`ecole_courante()` est NULL pour eux) : pas de fuite vers les familles, mais une violation du moindre privilège — et je n'allais pas poser un écran de saisie par-dessus.
+- Le découpage de l'année devient un acte de **structure académique** : mêmes rôles que « Niveaux & classes ». La **lecture reste ouverte** à tout le personnel, dont notes, bulletins et progressions dépendent.
+- Garde-fous : une contrainte refuse une période dont la fin précède le début, et l'écran **signale les chevauchements sans bloquer** — deux trimestres qui se recouvrent compteraient deux fois la même absence, mais une école peut avoir une raison que nous ignorons. 6 tests, dont le cas des périodes incomplètes qu'il ne faut **pas** signaler à tort.
+
 ## [2.224.0] — migration **161** · plusieurs enseignants par classe, et l'enseignant « toutes matières »
 - **Remonté en visite** : au préscolaire, une classe de TPS/PS compte jusqu'à **trois maîtresses**, et chacune enseigne l'ensemble des domaines. Au collège, l'affectation reste enseignant → matière → classe. Le modèle doit porter les deux.
 - **Correction de mon propre audit** : j'avais écrit que plusieurs enseignants par classe étaient impossibles. C'est faux — **12 classes sont déjà dans ce cas**, en se répartissant des matières différentes. Le modèle collège fonctionne. Ce qui était impossible, c'est le cas Montessori : des maîtresses qui ne se répartissent rien et font tout, ensemble.
