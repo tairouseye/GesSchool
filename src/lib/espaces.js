@@ -98,6 +98,7 @@ export const ESPACES = [
       { to: "/appel-sup", label: "Présence par séance", icone: "✅", cle: "appel_sup", types: ["superieur"], groupe: "Au quotidien" },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/acquis", label: "Suivi des acquis", icone: "🧸", cle: "acquis", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/programmation", label: "Programmation officielle", icone: "📋", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },
       // Deux pages pour un même besoin, parce que les modèles diffèrent :
       // `emplois_du_temps` planifie par CLASSE (école), `emplois_sup` par

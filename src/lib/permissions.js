@@ -38,6 +38,9 @@ const ACCES = {
   //  Au superieur la presence se pointe par SEANCE (mig. 171) : memes
   //  roles, ecran distinct — la cle est la seance, pas la journee.
   appel_sup: ["direction", "enseignant", "surveillant"],
+  //  Suivi des acquis du prescolaire (mig. 172) : on y OBSERVE, on n y note
+  //  pas. Memes roles que les notes — c est le meme travail pedagogique.
+  acquis: ["direction", "enseignant"],
   cahier: ["direction", "enseignant", "surveillant"],
   //  Importer la planification de l'IEF est un acte de STRUCTURE : elle est
   //  partagée par toutes les classes d'un niveau. Si chaque enseignante
@@ -126,6 +129,7 @@ export const PAGES = [
   { cle: "eleves", path: "/eleves" },
   { cle: "photos", path: "/photos" },
   { cle: "appel_sup", path: "/appel-sup" },
+  { cle: "acquis", path: "/acquis" },
   { cle: "programmation", path: "/programmation" },
   { cle: "notes", path: "/notes" },
   { cle: "bulletins", path: "/bulletins" },

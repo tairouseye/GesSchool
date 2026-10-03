@@ -20,6 +20,8 @@ import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codeBulletinId, codeFacture } from "@/lib/verification.js";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import Photo from "@/composants/Photo.jsx";
+import { enfantAcquis } from "@/lib/acquis.js";
+import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -50,6 +52,8 @@ export default function ParentEnfant() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
+  const [acquis, setAcquis] = useState([]);   // suivi des acquis (préscolaire, mig. 172)
+  const [aDesAcquis, setADesAcquis] = useState(false);
   const [alertes, setAlertes] = useState({}); // pastilles « nouveau » par catégorie
   const [acces, setAcces] = useState({ requiert: false, statut: null }); // consentement notes (supérieur)
 
@@ -66,6 +70,9 @@ export default function ParentEnfant() {
         mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id), alertesEnfant(id), monAccesNotes(id),
       ]);
       setEnfant((enf || []).find((x) => x.eleve_id === id) || null);
+      //  Sonde discrète : si la RPC refuse (consentement non accordé) ou ne
+      //  rend rien, la tuile reste simplement absente.
+      enfantAcquis(id, null).then((a) => setADesAcquis((a || []).length > 0)).catch(() => setADesAcquis(false));
       setFactures(f); setDemandes(dem); setCantine(can); setTransport(tra); setAlertes(al || {}); setAcces(acc || { requiert: false, statut: null });
     } catch (e) { setErreur(e.message); }
   }, [id]);
@@ -80,6 +87,7 @@ export default function ParentEnfant() {
       else if (cle === "emploi") setEmploi(await enfantEmploi(id));
       else if (cle === "fournitures") setFournitures(await enfantFournitures(id));
       else if (cle === "absences") setAbsences(await enfantAbsences(id));
+      else if (cle === "acquis") setAcquis(await enfantAcquis(id, null));
       else if (cle === "cantine") setMenu(await enfantMenuCantine(id));
       else if (cle === "annonces") setAnnonces(await annoncesEnfant(id));
       else if (cle === "paiements") {
@@ -140,7 +148,13 @@ export default function ParentEnfant() {
   };
 
   // Sections disponibles (Cantine/Transport seulement si abonnement).
-  const tuiles = TUILES.filter((t) => (t.cle !== "cantine" || cantine) && (t.cle !== "transport" || transport));
+  //  La tuile « Suivi des acquis » n'apparaît que lorsque l'école a
+  //  observé quelque chose. On la sonde une fois, au chargement initial :
+  //  proposer une tuile vide ferait croire à un oubli de l'enseignante.
+  const tuiles = TUILES.filter((t) =>
+    (t.cle !== "cantine" || cantine)
+    && (t.cle !== "transport" || transport)
+    && (t.cle !== "acquis" || aDesAcquis));
   const sectionActive = TUILES.find((t) => t.cle === onglet);
 
   return (
@@ -210,6 +224,10 @@ export default function ParentEnfant() {
         notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Notes notes={notes} />
       ) : onglet === "bulletins" ? (
         notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Bulletins bulletins={bulletins} onErreur={setErreur} />
+      ) : onglet === "acquis" ? (
+        notesGatees
+          ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} />
+          : <Acquis lignes={acquis} />
       ) : onglet === "cahier" ? (
         <Cahier entrees={cahier} />
       ) : onglet === "emploi" ? (
@@ -238,6 +256,11 @@ export default function ParentEnfant() {
 // Sections de l'enfant, en tuiles « sombre élégant » (navy + icône dorée).
 const TUILES = [
   { cle: "notes",       label: "Notes" },
+  //  ⚠️ Au préscolaire on n'évalue pas, on OBSERVE : cette tuile remplace
+  //  « Notes » pour les plus petits. Elle n'apparaît que si l'école a
+  //  réellement enregistré des observations — une tuile vide inquiéterait
+  //  un parent sans rien lui apprendre (mig. 172).
+  { cle: "acquis",      label: "Suivi des acquis" },
   { cle: "bulletins",   label: "Bulletins" },
   { cle: "cahier",      label: "Cahier de textes" },
   { cle: "emploi",      label: "Emploi du temps" },
@@ -1137,5 +1160,64 @@ function ModaleJustif({ absence, onFermer, onEnvoyer }) {
         </div>
       </div>
     </Modale>
+  );
+}
+
+// Le suivi des acquis, tel que la famille le lit (mig. 172).
+//
+// ⚠️ ON NE MONTRE QUE CE QUI A ÉTÉ OBSERVÉ. Un référentiel de 60 items dont
+// 3 renseignés ne doit pas afficher 57 lignes vides : l'absence est déjà
+// une information, et l'étaler ferait passer un suivi en cours pour un
+// bilan accablant.
+function Acquis({ lignes = [] }) {
+  if (!lignes.length) {
+    return (
+      <p className="rounded-2xl bg-navy-900/[0.03] p-4 text-sm text-navy-900/60">
+        Aucune observation enregistrée pour le moment.
+      </p>
+    );
+  }
+  const groupes = [];
+  for (const l of lignes) {
+    let g = groupes.find((x) => x.domaine === l.domaine);
+    if (!g) { g = { domaine: l.domaine, lignes: [] }; groupes.push(g); }
+    g.lignes.push(l);
+  }
+  return (
+    <div className="space-y-4">
+      {groupes.map((g) => (
+        <div key={g.domaine} className="overflow-hidden rounded-2xl border border-navy-900/10">
+          <h3 className="border-b border-navy-900/10 bg-navy-900/[0.03] px-4 py-2.5 font-display text-sm font-semibold text-navy-900">
+            {g.domaine}
+          </h3>
+          <ul className="divide-y divide-navy-900/5">
+            {g.lignes.map((l, i) => {
+              const v = valeurAcquis(l.valeur);
+              return (
+                <li key={i} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0 text-sm text-navy-900/80">{l.libelle}</span>
+                    {v && (
+                      <span className="shrink-0 whitespace-nowrap text-xs font-medium text-navy-900/60">
+                        {v.pastille} {v.label}
+                      </span>
+                    )}
+                  </div>
+                  {l.observation && (
+                    <p className="mt-1 text-xs italic text-navy-900/50">{l.observation}</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {/* ⚠️ Dire ce que ce suivi EST, pour qu'il ne se lise pas comme un
+          bulletin chiffré. */}
+      <p className="text-xs text-navy-900/40">
+        Au préscolaire, l&apos;équipe observe les acquis plutôt que de donner des notes.
+        « Pas encore acquis » décrit une étape du parcours, pas un échec.
+      </p>
+    </div>
   );
 }
