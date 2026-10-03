@@ -5,6 +5,8 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 
 > **Version 2.235 · mise à jour du 3 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur.
 
+> **Vous ouvrez GesSchool pour la première fois ?** Allez directement à l'annexe **§28 — Votre première semaine, pas à pas**. Elle donne l'ordre dans lequel procéder, et les étapes qu'il ne faut pas sauter.
+
 **📑 Accès rapide** — cliquez sur une rubrique pour y aller directement :
 
 [SOMMAIRE]
@@ -110,13 +112,88 @@ En Montessori, précisez le **niveau réel** de chaque enfant avec les **sous-ni
 
 ## 3. Élèves & inscriptions (menu **Élèves**)
 
-- **+ Nouvel élève** : prénom, nom, sexe, naissance, classe, responsable optionnel, + vos **champs personnalisés**. **Matricule auto**.
-- **↑ Importer (Excel)** : fichier .xlsx/.csv → **associer chaque colonne** (Prénom & Nom obligatoires ; Sexe, Naissance, Matricule, Classe, **Parent/Tuteur + téléphone**, et vos **champs personnalisés**). L'app **devine** les colonnes par leur intitulé. La colonne **Classe** doit correspondre **exactement** au libellé d'une classe existante pour inscrire l'élève ; un **parent** renseigné est créé et rattaché automatiquement. Bilan : créés / inscrits / parents liés / ignorés.
-- **Recherche/filtres** : nom/matricule, classe, statut.
-- **Supprimer** : icône 🗑️ par ligne, ou **cases à cocher** + **« Supprimer la sélection »** pour plusieurs élèves. Une **confirmation** rappelle que toutes les données liées (inscriptions, notes, factures, absences…) seront perdues.
-- **Fiche élève** (clic) : état civil + **photo**, champs personnalisés, **Responsables** (+ bouton **Code parent**, §17), **Inscriptions**.
+C'est l'écran le plus utilisé de l'application. Tout part de là : les notes, les factures, les bulletins, l'accès des parents.
 
-> Édition (créer/importer/supprimer) réservée au promoteur, au comptable et à la secrétaire. Un **enseignant** ne voit que les élèves de **ses classes** ; direction, surveillant et gestion voient tout l'établissement.
+### 3.1 Ce que vous voyez
+
+Un tableau avec une ligne par élève : **photo** (ou ses initiales), **matricule**, **nom et prénom**, **sexe**, **classe**, **statut d'inscription**, et — si vous avez filtré sur une classe — une colonne **Paiement** (§19).
+
+Au-dessus, trois outils :
+
+| Outil | À quoi il sert |
+|---|---|
+| **Champ de recherche** | nom, prénom ou matricule. La recherche part après une courte pause de frappe, inutile de valider. |
+| **Toutes les classes** | n'afficher qu'une classe. C'est aussi ce qui fait apparaître la colonne Paiement. |
+| **Tous les statuts** | Inscrit · Réinscrit · Abandon · Non inscrit |
+
+> **« Non inscrit »** n'est pas une erreur : c'est un élève créé dans l'établissement mais pas encore rattaché à une classe pour l'année en cours. Cela arrive à l'import quand la colonne Classe ne correspond à aucune classe existante.
+
+### 3.2 Ajouter un élève un par un
+
+**+ Nouvel élève**, puis :
+
+| Champ | Obligatoire | Remarque |
+|---|---|---|
+| **Prénom**, **Nom** | oui | — |
+| **Sexe** | non | Masculin / Féminin — sert aux accords dans les documents (« né » / « née ») |
+| **Date** et **lieu de naissance** | non | nécessaires pour les certificats ; vous pouvez compléter plus tard |
+| **Matricule** | non | **laissez vide** : il est attribué automatiquement selon votre format (§2.2) |
+| **Classe** | non | inscrit l'élève pour l'année en cours |
+| **Responsable** | non | nom + téléphone. Crée le parent et le rattache à l'enfant |
+| Vos **champs personnalisés** | selon votre réglage | ceux que vous avez définis dans Paramètres |
+
+**Ce qui se passe ensuite** : l'élève apparaît dans la liste avec son matricule. S'il a une classe, il est **inscrit** ; sinon il reste **non inscrit** jusqu'à ce que vous l'inscriviez depuis sa fiche.
+
+### 3.3 Importer une liste (Excel ou CSV)
+
+C'est la bonne méthode pour une rentrée. Comptez une vingtaine de minutes pour 100 élèves, préparation du fichier comprise.
+
+**Avant d'importer** — et c'est l'étape qui fait échouer les imports :
+
+1. **Créez d'abord vos classes** (Structure, §2.1). Sans classes, les élèves seront créés mais **non inscrits**.
+2. Dans votre fichier, la colonne **Classe** doit contenir **exactement** le libellé de la classe, caractère pour caractère : `CI/CP A` et `CI-CP A` ne sont pas la même chose.
+
+**L'import, étape par étape :**
+
+1. **↑ Importer (Excel)** → choisissez votre fichier `.xlsx` ou `.csv`.
+2. L'application lit les en-têtes et **devine** à quoi correspond chaque colonne. Un écran vous montre son interprétation.
+3. **Vérifiez et corrigez** les associations. Seuls **Prénom** et **Nom** sont obligatoires ; vous pouvez associer Sexe, Date de naissance, Lieu de naissance, Matricule, Classe, **Parent/Tuteur**, **Téléphone du parent**, et vos champs personnalisés. Une colonne que vous laissez non associée est simplement ignorée.
+4. **Suivant →** puis **Terminer**.
+5. Un **bilan** s'affiche : combien d'élèves créés, combien inscrits en classe, combien de parents créés et rattachés, combien de lignes ignorées.
+
+**Lisez ce bilan.** C'est là que vous verrez, par exemple, « 96 créés, 88 inscrits » — les 8 manquants ont une classe qui ne correspond à rien.
+
+> Un **modèle de fichier** est fourni : `modele-import-eleves.csv`. Les colonnes attendues sont `prenom, nom, sexe, date_naissance, lieu_naissance, matricule, classe, parent_nom, parent_tel`. Le sexe s'écrit `M` ou `F`, la date au format `AAAA-MM-JJ`.
+
+### 3.4 La fiche d'un élève
+
+Cliquez sur une ligne. Vous y trouvez quatre parties :
+
+- **État civil** et **photo** — « Ajouter une photo » / « Changer la photo ». Pour photographier toute une classe, préférez l'écran dédié (§23).
+- **Vos champs personnalisés**.
+- **Responsables** : les parents rattachés. Le bouton **Code parent** génère le code qui permettra à la famille de créer son compte (§17.1).
+- **Inscriptions** : l'historique année par année, avec la classe et — en Montessori — le **sous-niveau** réel de l'enfant (§2.4).
+
+### 3.5 Supprimer
+
+Deux façons : l'icône **🗑️** sur une ligne, ou les **cases à cocher** puis **« Supprimer la sélection »** pour plusieurs élèves.
+
+> ⚠️ **La suppression emporte tout ce qui est rattaché à l'élève** : inscriptions, notes, bulletins, factures, paiements, absences, documents. Une confirmation le rappelle. S'il s'agit d'un élève qui a quitté l'école, préférez passer son inscription en **Abandon** : vous gardez son dossier et son historique.
+
+### 3.6 Qui peut quoi
+
+| | Voir | Créer, importer, supprimer |
+|---|---|---|
+| Promoteur, comptable, secrétariat | tout l'établissement | **oui** |
+| Responsable pédagogique, surveillant | tout l'établissement | non |
+| Enseignant | **ses classes seulement** | non |
+
+### 3.7 Si ça ne marche pas
+
+- **« L'import n'a inscrit personne en classe »** → la colonne Classe ne correspond pas aux libellés exacts. Corrigez le fichier et réimportez : les élèves déjà créés ne seront pas dupliqués si les matricules correspondent.
+- **« Impossible d'inscrire un élève »** → aucune classe n'existe pour l'année en cours. Créez-les dans Structure.
+- **« Un élève n'apparaît pas »** → vérifiez le filtre de statut : un « non inscrit » est masqué si vous filtrez sur « Inscrit ».
+- **« Je ne vois que quelques élèves »** → vous êtes connecté avec un compte enseignant, qui ne voit que ses classes.
 
 ---
 
@@ -161,22 +238,97 @@ La section **« Invitations en attente »** liste les codes non utilisés (Copie
 
 ## 5. Le quotidien de l'enseignant (espace Pédagogie)
 
-- **Feuille de présence** (anciennement « Appel ») : pointer **Présent / Absent / Retard** → **Valider**. Les absences partent à l'administration **et** aux **parents des absents** (🔔). La feuille est **imprimable** et porte le nom de qui l'a remplie. Au préscolaire et à l'élémentaire, la présence est **journalière** ; au supérieur, elle se pointe **par séance** (§22).
-  > La direction et le responsable pédagogique voient **toutes les classes** ; un enseignant, seulement les siennes. C'est utile là où les responsables pédagogiques font le travail des enseignants.
-- **Cahier de textes** : séance (date, matière, contenu, **devoirs** + « pour le… »). Visible des parents. Le bouton **📋 Reprendre la programmation** permet de **choisir un contenu officiel au lieu de le ressaisir** (§21).
-- **Progression** : planifier ses leçons (chapitre, période, date) et suivre **À faire / En cours / Fait**.
-- **Suivi des acquis** (préscolaire) : on y **observe** au lieu de noter (§20).
-- **Assiduité** : absences/retards **par élève** sur une période (≥ 5 incidents surlignés).
-- **Photos des élèves** : prise de vue classe par classe, au téléphone (§23).
+Quatre gestes, dans l'ordre d'une journée.
+
+### 5.1 Le matin : la feuille de présence
+
+*(Anciennement « Appel ».)*
+
+1. Choisissez votre **classe** dans le sélecteur en haut — s'il n'y en a qu'une, elle est déjà là.
+2. Pour chaque élève : **Présent** · **Absent** · **Retard**. **Tout le monde est présent par défaut**, vous ne marquez que les exceptions.
+3. **Valider**.
+
+**Ce qui se passe ensuite** : les absences partent à l'administration **et** aux **parents des absents** (🔔). Le parent peut alors justifier depuis son espace, et vous retrouverez sa réponse dans **Vie scolaire** (§13.1).
+
+**Deux points qui comptent :**
+
+- **Refaire l'appel du jour ne détruit rien.** Si vous vous êtes trompé, corrigez et revalidez : les **justifications** déjà saisies par les familles sont conservées. Seul le pointage change.
+- La feuille est **imprimable** et porte le nom de la personne qui l'a remplie — utile pour l'archivage papier ou une inspection.
+
+**Qui voit quoi** : la direction et le responsable pédagogique voient **toutes les classes** ; un enseignant, seulement les siennes. C'est ce qui permet, dans les écoles où les responsables pédagogiques font le travail des enseignantes, de faire l'appel de n'importe quelle classe.
+
+> Au **supérieur**, la présence ne se pointe pas par journée mais **par séance** (§22).
+
+### 5.2 Après la séance : le cahier de textes
+
+Une entrée par séance : **date**, **matière**, **contenu** de la séance, et si besoin les **devoirs** avec leur « pour le… ».
+
+- Le bouton **📋 Reprendre la programmation** ouvre les contenus officiels du mois pour le niveau de la classe, filtrables par domaine et par semaine. Un clic remplit le champ — **et le texte reste modifiable** (§21.2). C'est la différence entre choisir et ressaisir.
+- Les entrées sont **visibles des parents** : un enfant absent retrouve ce qui a été fait.
+
+### 5.3 Au fil des semaines : la progression
+
+Planifiez vos leçons à l'avance : un **titre** (chapitre, leçon), une **description**, une **période**, une **date prévue**, et un état — **À faire** · **En cours** · **Fait**.
+
+C'est ce qui permet, en conseil ou devant un inspecteur, de montrer où l'on en est du programme sans reconstituer l'historique de mémoire.
+
+### 5.4 Au préscolaire : observer plutôt que noter
+
+Les classes du préscolaire n'ont pas de notes. À la place, le **suivi des acquis** (§20) : pour chaque item observable, **acquis** · **en cours d'acquisition** · **pas encore**.
+
+### 5.5 Les deux écrans de suivi
+
+| Écran | Ce qu'il montre |
+|---|---|
+| **Assiduité** | absences et retards **par élève** sur une période ; les élèves à 5 incidents ou plus sont surlignés |
+| **Photos des élèves** | la prise de vue classe par classe, au téléphone (§23) — réservée à la direction et au secrétariat |
+
+### 5.6 Si ça ne marche pas
+
+- **« Je ne vois aucune classe »** → aucune classe ne vous est attribuée pour l'année en cours. Il faut être **professeur principal** ou avoir une **affectation** sur une matière de cette classe (Structure). Si vous êtes direction, vous devriez voir toutes les classes : vérifiez que l'année courante est bien ouverte.
+- **« Mon compte n'est pas relié à une fiche enseignant »** → l'administration doit renseigner votre **e-mail** sur votre fiche dans RH → Enseignants. Ce message ne concerne pas la direction, qui n'a pas besoin de fiche enseignant.
+- **« Le bouton Reprendre la programmation n'apparaît pas »** → la direction n'a pas encore déposé la planification du niveau (§21.1). Saisissez la séance à la main en attendant.
 
 ---
 
 ## 6. Notes (menu **Notes**)
-1. Choisir **Classe**, **Période**, **Matière**.
-2. **+ Ajouter** une évaluation : type, libellé, **barème**, **coefficient**, date.
-3. Cliquer l'évaluation → saisir les notes (cocher **Absent** si besoin) → **Enregistrer**.
 
-> Les notes sont ramenées sur le barème de l'école lors du calcul des bulletins.
+### 6.1 Le principe
+
+Une **note** appartient toujours à une **évaluation** : on ne saisit pas une note « en l'air ». Une évaluation, c'est un devoir, une composition, une interrogation — avec son barème, son coefficient et sa date. C'est ce qui permet au bulletin de calculer une moyenne qui veut dire quelque chose.
+
+### 6.2 Créer une évaluation
+
+1. Choisissez **Classe**, **Période**, **Matière** — les trois sont nécessaires.
+2. **+ Ajouter** :
+
+| Champ | Remarque |
+|---|---|
+| **Type** | devoir, composition, interrogation… |
+| **Libellé** | ce que l'élève reconnaîtra : « Devoir n°2 — fractions » |
+| **Barème** | sur combien l'évaluation est notée. Vous pouvez noter sur 10 ou sur 40 : le bulletin ramènera tout au barème de l'école (§2.2) |
+| **Coefficient** | le poids dans la moyenne de la matière |
+| **Date** | sert au classement chronologique et au suivi |
+
+### 6.3 Saisir les notes
+
+Cliquez l'évaluation : la liste des élèves de la classe apparaît.
+
+- Saisissez les notes **sur le barème de l'évaluation** (si elle est sur 40, saisissez sur 40).
+- Cochez **Absent** pour un élève qui n'a pas fait l'épreuve : il ne pèsera pas sur sa moyenne. **Une absence n'est pas un zéro** — un zéro fait chuter la moyenne, une absence est neutre. La distinction compte pour la famille.
+- **✓ Enregistré** s'affiche quand c'est écrit. Vous pouvez quitter et revenir : rien n'est perdu.
+
+### 6.4 Ce que cela change ailleurs
+
+- Les notes alimentent le **calcul des bulletins** (§7) et le **classement** (§8).
+- Chaque nouvelle note **notifie le parent** (🔔), s'il a activé les notifications.
+- Au **préscolaire**, on ne note pas : voyez le **suivi des acquis** (§20).
+
+### 6.5 Si ça ne marche pas
+
+- **« Aucune évaluation »** → vous n'en avez pas encore créé pour cette classe, cette période et cette matière. Les trois filtres comptent.
+- **« Inscrivez des élèves dans cette classe »** → la classe est vide pour l'année en cours.
+- **« Un enseignant ne voit pas la matière »** → il n'y est pas **affecté** (Structure → affectations). Un enseignant ne saisit les notes que des classes **et** matières qui lui sont attribuées.
 
 ---
 
@@ -224,37 +376,121 @@ Au **collège et au-delà**, le bulletin affiche aussi le **nombre d'absences** 
 ---
 
 ## 8. Classement & tableau d'honneur (menu **Classement**)
-Choisir **Classe + Période** → **Calculer** : classement complet (rang, moyenne), **distinctions automatiques** (Encouragements ≥12, Tableau d'honneur ≥14, Félicitations ≥16), **🖨️ Imprimer**.
+
+### 8.1 Obtenir le classement
+
+Choisissez **Classe** + **Période** → **Calculer**. Vous obtenez la liste complète, du premier au dernier : **rang**, **moyenne**, et les **distinctions** attribuées automatiquement.
+
+### 8.2 Les distinctions
+
+| Distinction | À partir de |
+|---|---|
+| **Encouragements** | 12 |
+| **Tableau d'honneur** | 14 |
+| **Félicitations** | 16 |
+
+Ces seuils suivent le barème de l'école (§2.2) : si vous notez sur 10, ils sont ramenés en proportion.
+
+### 8.3 Imprimer
+
+**🖨️ Imprimer** produit le palmarès, en-tête et logo de l'école compris — affichable au tableau ou remis au conseil.
+
+> Le classement se calcule à partir des **notes saisies**, indépendamment de l'état des bulletins : vous pouvez classer avant de publier.
 
 ---
 
 ## 9. Documents administratifs (espace Gestion)
 
-### 9.1 Certificats, attestations & validation (menu **Documents**)
-Choisir un **élève** + un **type** (certificat de scolarité, attestation d'inscription, de fréquentation) + **signataire** → le document part **pour validation** au signataire choisi. Le signataire retrouve sa file dans **« À signer »** (badge d'alerte) et **valide** (avec sa signature enregistrée) ou **rejette**. Une fois **validé**, le document est **imprimable / PDF** (infos remplies automatiquement, accords né/née, cachet).
+### 9.1 Produire un certificat ou une attestation (menu **Documents**)
 
-### 9.2 Demandes de documents (menu **Demandes**)
-File des demandes envoyées par les parents (§17) : **En cours / Marquer prêt / Rejeter** + une **réponse**. Le parent est **notifié** automatiquement.
+**Le principe** : un document officiel engage l'établissement. Il n'est donc pas imprimable directement — il passe par une **validation** par un signataire habilité.
+
+1. Choisissez l'**élève**, le **type** de document et le **signataire**.
+
+   Types disponibles : certificat de scolarité, attestation d'inscription, attestation de fréquentation, certificat de radiation ou de transfert, attestation de résultats, convocation, carte scolaire, registre ou liste d'élèves.
+
+2. Le document part **pour validation**. Le signataire le retrouve dans **« À signer »**, avec un badge d'alerte.
+3. Le signataire **valide** — sa signature enregistrée est apposée — ou **rejette**.
+4. Une fois validé, le document est **imprimable / PDF** : informations de l'élève remplies automatiquement, accords « né / née » selon le sexe, cachet de l'école.
+
+> **Préparez vos signataires d'abord** (Paramètres → Signataires, §2.2) : nom, fonction et signature, rattachés à un compte. Sans signataire déclaré, aucun document ne peut être validé.
+
+Chaque document validé porte un **QR code** d'authentification : le scanner permet de vérifier qu'il a bien été émis par l'établissement, et qu'il n'a pas été modifié.
+
+### 9.2 Répondre aux demandes des familles (menu **Demandes**)
+
+Les parents demandent leurs documents depuis leur espace (§17.2). Leurs demandes arrivent ici.
+
+Pour chacune : **En cours** · **Marquer prêt** · **Rejeter**, avec la possibilité d'écrire une **réponse**. Le parent est **notifié automatiquement** à chaque changement — inutile de l'appeler.
 
 ---
 
 ## 10. Paiements & recouvrement (espace Gestion)
 
-### 10.1 Grille tarifaire (**Paiements → Grille tarifaire**)
-Frais : libellé, montant, **portée** (toute l'école / **par cycle** — scolarité identique — / **par niveau** — classe d'examen), **Mensuel**, **Obligatoire**. Chaque frais est **modifiable** (bouton **modifier**) ou supprimable.
+L'écran **Paiements** a quatre onglets : **Factures**, **Paiements en ligne**, **Grille tarifaire**, **Paiement mobile**. L'ordre dans lequel on s'en sert est l'inverse : on règle d'abord la grille, puis on facture, puis on encaisse.
+
+### 10.1 La grille tarifaire (onglet **Grille tarifaire**)
+
+C'est le catalogue de ce que l'école facture. À faire **une fois** en début d'année.
+
+Pour chaque frais :
+
+| Champ | Ce qu'il faut savoir |
+|---|---|
+| **Libellé** | « Scolarité », « Inscription », « Tenue »… tel qu'il apparaîtra sur la facture |
+| **Montant** | dans la devise de l'école |
+| **Portée** | **toute l'école** · **par cycle** (une scolarité identique pour tout l'élémentaire) · **par niveau** (un tarif propre, par exemple une classe d'examen) |
+| **Mensuel** | le frais se répète chaque mois |
+| **Obligatoire** | il sera pré-coché à la facturation en lot |
+
+> ⚠️ **Attention à la portée en Montessori.** Si votre classe s'appelle « TPS/PS » et que vous posez le tarif sur « TPS », il ne s'appliquera **à personne** : c'est le niveau de la classe qui compte, pas le sous-niveau de l'enfant (§2.4).
+
+Chaque frais reste **modifiable** ou supprimable.
 
 ### 10.2 Facturer
-- **+ Nouvelle facture** (un élève, échéance, lignes).
-- **⚡ Générer en lot** (par niveau ; frais obligatoires — y compris ceux **du cycle** — pré-cochés ; pas de doublon).
+
+**Un élève à la fois** — **+ Nouvelle facture** : l'élève, une **date d'échéance**, puis les lignes (**+ Ajouter une ligne**, ou choisissez dans **Frais à facturer**).
+
+**Toute une promotion** — **⚡ Générer en lot** : choisissez le niveau ; les frais obligatoires sont pré-cochés, **y compris ceux définis au niveau du cycle**. L'application **ne crée pas de doublon** : un élève déjà facturé pour le même frais est ignoré.
+
+> **Mettez une date d'échéance.** Sans elle, une facture impayée n'est jamais comptée « en retard » (§19) et n'entre pas dans les relances. L'application ne devine pas une échéance que vous n'avez pas donnée.
 
 ### 10.3 Encaisser
-Cliquer une facture → **reçu imprimable** (avec le **logo** de l'école) + encaissements. Saisir montant, **mode** (Espèces, Wave, Orange Money, Virement, Chèque…), référence, date → **Encaisser** (statut recalculé automatiquement). Encaissements possibles en plusieurs fois.
 
-### 10.4 Déclarations de paiement mobile (onglet **Déclarations**)
-Les paiements déclarés par les parents apparaissent ici avec, le cas échéant, une **📎 preuve** jointe (capture Wave/OM, photo du bordereau) : cliquez **« Voir »** pour la vérifier, puis **valider** (solde la facture automatiquement) ou **rejeter**.
+Cliquez une facture : vous voyez son détail, ses encaissements, et un **reçu imprimable** avec le logo de l'école.
+
+**Encaisser un paiement** : montant, **mode** (espèces, Wave, Orange Money, Free Money, virement, chèque, carte), référence, date, et le **compte** d'encaissement si vous tenez la comptabilité.
+
+- Le **statut de la facture se recalcule tout seul** : émise → partiellement payée → payée. Vous n'avez pas à le changer à la main.
+- Les **paiements partiels** sont normaux : encaissez autant de fois que nécessaire.
+- **Annuler la facture** est possible : elle n'engage alors plus la famille et sort des comptes d'impayés.
+
+### 10.4 Les paiements déclarés par les familles (onglet **Paiement mobile**)
+
+Renseignez d'abord vos numéros **Wave / Orange Money / Free Money** : ils seront affichés aux parents.
+
+Un parent qui paie par mobile money **déclare** son paiement depuis son espace, en joignant une **preuve** (capture d'écran, photo du bordereau). Sa déclaration arrive ici.
+
+1. **« Voir »** la preuve — vérifiez le montant, la date et la référence.
+2. **Valider** : la facture est soldée automatiquement. Ou **rejeter**, en expliquant pourquoi.
+
+> C'est le point où l'on se fait avoir : **comparez toujours la référence de la transaction** avec celle de la preuve. Une capture d'écran se retouche.
 
 ### 10.5 Recouvrement (menu **Recouvrement**)
-Impayés (total, retards, contact), **Relancer** (notification/push), **WhatsApp**, historique. Relances récurrentes configurables (Paramètres).
+
+La liste des impayés : montant total, retard, contact de la famille.
+
+- **Relancer** envoie une notification (et un push si la famille l'a activé).
+- **WhatsApp** ouvre un message pré-rempli vers le numéro du parent — c'est le canal qui fonctionne le mieux au Sénégal.
+- L'**historique** des relances est conservé, ce qui évite de relancer deux fois la même famille le même jour.
+
+Des **relances récurrentes** se configurent dans Paramètres : des paliers (par exemple 7, 15 et 30 jours de retard) déclenchent automatiquement une notification chaque matin.
+
+### 10.6 Si ça ne marche pas
+
+- **« Aucun frais applicable à ce niveau »** → le frais est posé sur un autre cycle ou un autre niveau. Vérifiez sa portée.
+- **« Toutes les familles apparaissent en retard »** → regardez la pastille : ⚪ **Non facturé** n'est pas 🔴 **Retard** (§19).
+- **« Une facture reste "émise" après encaissement »** → le montant encaissé est inférieur au total : elle est partiellement payée, c'est normal.
 
 ---
 
@@ -274,27 +510,175 @@ GesSchool **génère automatiquement** les emplois du temps sous contraintes (au
 
 ## 12. Cantine & Transport (modules, espace Gestion)
 
-Modules activables par le promoteur (§2.2). Une fois actifs :
+Deux modules **activables par le promoteur** (Paramètres → Modules). Désactivés, ils disparaissent des menus — et des espaces parents.
 
-- **Cantine** : **Abonnés** (formule *mensuel* ou *prépayé au repas*, tarif, régime/allergies, **solde**), **Pointage du jour** (marquer les repas ; le solde prépayé est décrémenté, recharge possible), **Menu** de la semaine. Bouton **« Facturer le mois »** → génère les factures des abonnements.
-- **Transport** : **Circuits** (chauffeur, arrêts triés par heure), **Abonnés** (circuit, arrêt, trajet aller/retour, tarif), **Embarquement** (pointer les élèves pris en charge → notifie les parents). **« Facturer le mois »** disponible.
+### 12.1 Cantine
 
-Côté **parent**, si l'enfant a un abonnement, des onglets **🍽️ Cantine** et **🚌 Transport** apparaissent (formule, solde, menu, circuit/arrêt).
+Trois onglets, qui correspondent à trois moments différents.
+
+**Abonnés** — qui mange, et selon quelle formule.
+
+| Formule | Comment ça marche |
+|---|---|
+| **Mensuel** | un tarif fixe par mois, facturé d'avance |
+| **Prépayé au repas** | la famille crédite un **solde**, et chaque repas pointé le décrémente |
+
+Pour chaque abonné : la formule, le tarif, le **régime ou les allergies** (à renseigner — c'est ce que la cuisine consultera), et le solde s'il est en prépayé.
+
+**Pointage du jour** — marquez les repas effectivement pris. En prépayé, le solde diminue à chaque pointage ; une **recharge** se saisit au même endroit.
+
+**Menu** — le menu de la semaine, visible des familles dans leur espace.
+
+**« Facturer le mois »** génère les factures des abonnements mensuels. Comme partout, il n'y a pas de doublon : un abonné déjà facturé pour le mois est ignoré.
+
+> **Surveillez les soldes prépayés.** Un solde à zéro ne bloque pas le pointage — l'enfant mange — mais il passe en négatif et devra être régularisé. C'est voulu : on ne refuse pas un repas à un enfant pour un problème de caisse.
+
+### 12.2 Transport
+
+**Circuits** — chaque circuit a un **chauffeur** et une liste d'**arrêts**, triés par heure de passage. C'est à construire une fois, puis à ajuster.
+
+**Abonnés** — pour chaque élève : le circuit, son **arrêt**, le trajet (aller, retour, ou les deux), le tarif.
+
+**Embarquement** — pointez les élèves effectivement pris en charge. **Le parent est notifié**, ce qui répond à la question qu'il se pose chaque matin : « est-il bien monté ? »
+
+**« Facturer le mois »** fonctionne comme pour la cantine.
+
+### 12.3 Côté famille
+
+Si l'enfant a un abonnement, des onglets **🍽️ Cantine** et **🚌 Transport** apparaissent dans son espace : formule, solde, menu de la semaine, circuit et arrêt. Rien n'apparaît s'il n'est pas abonné — inutile de masquer quoi que ce soit.
 
 ---
 
-## 13. Vie scolaire, fournitures, communication
-- **Vie scolaire** (Pédagogie) : absences/retards + incidents. La **justification du parent** apparaît avec un statut à **valider** (Justifié / Non justifié).
-- **Fournitures** (Pédagogie) : liste par niveau, visible des parents.
-- **Annonces** (Gestion) : publier vers toute l'école / parents / une classe.
-- **Messagerie** (Gestion) : fil école ↔ parents. Accessible à la **direction, au comptable et à la secrétaire**. Pour écrire, **recherchez l'élève** (le parent avec un compte s'ouvre) — ou depuis la fiche élève, **✉️ Message**.
+## 13. Vie scolaire, fournitures & communication
+
+
+### 13.1 Absences, retards et justifications
+
+L'écran **Vie scolaire** rassemble ce que la **feuille de présence** (§5) a produit, et ce que les familles ont répondu.
+
+**Le circuit d'une absence :**
+
+1. L'enseignante ou le responsable pointe l'élève absent → **le parent est notifié**.
+2. Le parent **justifie** depuis son espace, en expliquant et, s'il le souhaite, en joignant un document.
+3. Sa justification apparaît ici avec un statut **à valider** : vous tranchez **Justifié** ou **Non justifié**.
+
+> ⚠️ **Le statut et la justification n'appartiennent pas à l'appel.** Refaire l'appel du jour ne les écrase pas : corriger une erreur de pointage ne détruit pas le travail de justification. C'est une protection délibérée.
+
+À partir du **collège**, le nombre d'absences de la période apparaît sur le **bulletin** — à condition que la période soit **datée** (§2.5).
+
+### 13.2 Incidents
+
+Au-delà des absences, l'écran enregistre les **incidents** : un **type** (observation, sanction, félicitation), une **gravité**, une description, une date.
+
+> **Ce n'est pas qu'un registre de sanctions.** Une **félicitation** s'y enregistre aussi, et c'est une bonne pratique : un dossier qui ne contient que des reproches donne une image fausse de l'enfant, et le conseil de classe s'appuie dessus.
+
+### 13.3 Assiduité (menu **Assiduité**)
+
+La vue par élève sur une période : absences, retards, justifiés ou non. Les élèves à **5 incidents ou plus** sont surlignés — c'est le seuil où une famille mérite d'être appelée.
+
+---
+
+### 13.4 Fournitures : constituer et remettre la liste
+Deux usages, dans le même écran.
+
+**Constituer la liste** — pour chaque article : le **libellé**, la **quantité**, s'il est **obligatoire** ou conseillé, une **note** libre, et le **niveau** concerné. Un article sans niveau concerne toute l'école.
+
+**Le cas qui compte** : le bouton **« école »** marque un article comme **fourni ou disponible à l'école**. Il apparaît alors **en rouge** chez le parent, avec sa note. C'est ce qui évite qu'une famille achète une blouse qu'elle pouvait prendre au secrétariat.
+
+**Remettre la liste aux familles** — choisissez une **classe** dans le sélecteur, puis **🖨️ Imprimer pour les parents**. La liste reprend le niveau de la classe **et** les articles « tous niveaux » : les omettre donnerait une liste incomplète, et c'est le genre d'oubli qui se paie à la rentrée.
+
+Les familles la retrouvent aussi dans leur espace, onglet **Fournitures**.
+
+---
+
+### 13.5 Annonces
+
+Une annonce est publiée vers une **audience** que vous choisissez :
+
+| Audience | Qui la voit |
+|---|---|
+| Toute l'école | le personnel et toutes les familles |
+| Les parents | toutes les familles |
+| Un **cycle** | les familles de ce cycle (le préscolaire sans l'élémentaire, par exemple) |
+| Un **niveau** | les familles de ce niveau |
+| Une **classe** | les familles de cette classe |
+
+Vous pouvez joindre une **pièce** (règlement intérieur, calendrier, circulaire). Un document joint peut être **versé au rayon réglementaire** : il devient alors un texte de référence consultable en permanence, au lieu de disparaître avec l'annonce.
+
+> ⚠️ **L'audience d'une pièce suit celle de son annonce.** Un règlement publié pour l'élémentaire n'est pas visible des familles du préscolaire. C'est délibéré : les deux cycles n'ont pas le même règlement.
+
+Côté parent, les annonces apparaissent **par enfant** — un parent de deux écoles ne voit pas les annonces mélangées — et les nouveautés des sept derniers jours sont signalées.
+
+### 13.6 Messagerie
+
+Un fil de discussion entre l'école et chaque famille. Accessible à la **direction**, au **comptable** et au **secrétariat**.
+
+Pour écrire : **recherchez l'élève** — le fil du parent qui a un compte s'ouvre. Ou depuis la fiche de l'élève, bouton **✉️ Message**.
+
+> Un parent qui a des enfants dans **plusieurs** de vos écoles a **un fil par école** : les établissements restent cloisonnés, même pour une même famille.
 
 ---
 
 ## 14. RH & Paie · Comptabilité
-- **RH & Paie** : fiches **personnel**, contrats, **fiches de paie** (« ⚡ Générer la paie » du mois ; un salaire « payé » crée une dépense en comptabilité et son **bulletin** est imprimable). Le tableau de bord RH met en avant salaires à payer, fiches à générer et **contrats à échéance** (§15).
-- **Enseignants** : annuaire + affectations + **codes d'accès** (§4).
-- **Comptabilité** (sous RH & Paie / Gestion) : recettes, **dépenses** (avec justificatif), trésorerie, synthèse/résultat.
+
+
+L'écran a quatre onglets : **Personnel**, **Paie**, **Congés & absences**, **Documents**.
+
+### 14.1 Personnel
+
+La fiche de chaque employé : état civil, **fonction**, **catégorie** (gestion, supervision, terrain), responsable hiérarchique, contrat, et ses **documents**.
+
+> Le **personnel** et les **enseignants** sont deux annuaires distincts. Un enseignant a une fiche pédagogique (affectations, classes) ; un employé a une fiche RH (contrat, salaire). La même personne peut avoir les deux, reliées par son compte.
+
+### 14.2 Paie
+
+**Deux régimes**, à choisir selon votre déclaration :
+
+| Régime | Pour qui |
+|---|---|
+| **Simplifié** | un net convenu, sans décomposition |
+| **Complet (cotisations + IR)** | le régime réel sénégalais : cotisations sociales, impôt sur le revenu au barème, TRIMF |
+
+En régime complet, le **barème** est chargé par école et paramétrable : il évolue, et il n'est pas le même partout.
+
+**Générer la paie du mois :**
+
+1. **⚡ Générer la paie** → un bulletin par employé, en **brouillon**.
+2. **Vérifiez** les montants, les primes et les retenues.
+3. **Valider** le bulletin — il n'est plus modifiable, et devient imprimable.
+4. **Payer** — l'opération crée automatiquement une **dépense en comptabilité**.
+
+> ⚠️ **Un bulletin validé ne se supprime plus.** C'est une garde volontaire : une paie versée est un fait comptable. Corrigez-la par une régularisation sur le mois suivant, comme vous le feriez sur papier.
+
+Le régime complet gère aussi la **régularisation annuelle** : l'impôt est retenu mensuellement, puis l'écart est régularisé en fin d'exercice.
+
+### 14.3 Congés & absences
+
+Les congés et absences du personnel, distincts de ceux des élèves. Ils alimentent le calcul de la paie.
+
+### 14.4 Le tableau de bord RH
+
+Il met en avant ce qui demande une action : **salaires à payer**, **fiches à générer**, et **contrats arrivant à échéance** — ce dernier point évitant de découvrir un contrat expiré après coup.
+
+---
+
+### 14.5 Comptabilité SYSCOHADA
+Une comptabilité **SYSCOHADA**, en six onglets.
+
+| Onglet | Ce qu'on y fait |
+|---|---|
+| **Synthèse** | le résultat de l'exercice, recettes moins dépenses |
+| **Trésorerie** | ce qu'il y a réellement en caisse et en banque |
+| **Recettes** | les encaissements, dont ceux venus des factures |
+| **Dépenses** | les sorties, avec **justificatif** à joindre |
+| **Plan comptable** | les comptes, selon le plan SYSCOHADA |
+| **Journal** | toutes les écritures, dans l'ordre |
+
+**Ce qui arrive tout seul** : un encaissement de facture (§10.3) et une paie payée (§14.2) créent leur écriture. Vous n'avez pas à les ressaisir.
+
+**Ce qui demande une saisie** : les dépenses propres à l'établissement — loyer, électricité, fournitures, carburant. Joignez le justificatif : c'est lui qui rend la dépense défendable.
+
+> **Distinguez « facturé » et « encaissé ».** Une facture émise n'est pas de l'argent reçu. La **Synthèse** raisonne sur le facturé, la **Trésorerie** sur l'encaissé — et l'écart, c'est exactement vos impayés.
 
 ---
 
@@ -509,6 +893,65 @@ Si votre établissement couvre le palier **Université** (§2.4), l'espace Péda
 - **« La génération d'emploi du temps laisse des heures non placées »** → voir la **raison** dans le rapport (grille trop petite, prof indisponible, pas d'affectation…) et corriger.
 - **« Je ne peux pas ouvrir la nouvelle année »** → réservé au **promoteur** (Pilotage → Passage d'année).
 - **Mot de passe oublié** → sur la page de connexion, saisir l'e-mail → un **code à 6–8 chiffres** est envoyé → le saisir + choisir un nouveau mot de passe (pensez aux spams).
+
+## 28. Annexe — Votre première semaine, pas à pas
+
+Si vous ouvrez GesSchool pour la première fois, suivez cet ordre. Il n'est pas arbitraire : chaque étape a besoin de la précédente, et sauter la première fait échouer la quatrième.
+
+### Jour 1 — L'établissement (≈ 1 h, promoteur)
+
+1. **Créez votre compte** et votre école (§1).
+2. **Paramètres → Établissement** : nom, sigle, devise, **logo** et **cachet**. Ils apparaîtront sur toutes les factures, bulletins et certificats — autant les mettre maintenant.
+3. **Déclarez vos paliers** (§2.4) : élémentaire seul, élémentaire et collège, jusqu'à l'université… C'est ce choix qui détermine les écrans que vous verrez. Et la **pédagogie** si vous couvrez l'élémentaire.
+4. **Paramètres → Matricule** : votre format (`CLB-26-0001`). Fixez l'**année** si toute une rentrée doit porter le même millésime.
+5. **Paramètres → Signataires** : qui signe les documents officiels, avec sa fonction et sa signature. **Sans cela, aucun certificat ne pourra être validé.**
+
+### Jour 2 — La structure académique (≈ 1 h 30, promoteur ou direction)
+
+1. **Structure → cycles, niveaux, classes** (§2.1). Créez les classes **avant** d'importer les élèves : c'est l'oubli numéro un.
+   - En **Montessori**, créez le niveau combiné (`TPS/PS`) puis ses **sous-niveaux** (TPS, PS) — §2.4.
+2. **Structure → Découpage de l'année** (§2.5) : les **dates** de chaque trimestre. Sans elles, les absences ne pourront pas être comptées sur les bulletins.
+3. **Structure → Responsables de cycle** (§2.5) : qui répond de chaque cycle. **Sans cela, personne ne pourra signer le procès-verbal du conseil de classe** — pas même la direction.
+4. **Matières**, puis **coefficients** si vous les personnalisez.
+
+### Jour 3 — Les élèves (≈ 2 h pour 100 élèves, secrétariat)
+
+1. Préparez votre fichier depuis `modele-import-eleves.csv`. Vérifiez **deux fois** la colonne Classe : elle doit correspondre au libellé exact.
+2. **Élèves → ↑ Importer** (§3.3). **Lisez le bilan** : « 96 créés, 96 inscrits » est ce que vous voulez voir. Si le second chiffre est plus petit, la colonne Classe ne correspond pas.
+3. Complétez ce qui manque : dates de naissance, téléphones des parents.
+4. **Photos** (§23) : au téléphone, classe par classe. Comptez 10 minutes par classe.
+
+### Jour 4 — L'argent (≈ 1 h, comptable)
+
+1. **Paiements → Grille tarifaire** (§10.1) : vos frais, avec leur **portée**. Attention à la portée en Montessori.
+2. **Paiements → Paiement mobile** : vos numéros Wave / Orange Money / Free Money.
+3. **⚡ Générer en lot** par niveau (§10.2) — **avec une date d'échéance**, sans quoi aucun retard ne sera jamais signalé.
+4. Vérifiez sur l'écran **Élèves**, en filtrant une classe : la colonne **Paiement** doit afficher ⚪ ou 🔴, pas du vide.
+
+### Jour 5 — L'équipe et les familles (≈ 1 h)
+
+1. **Membres → + Inviter un membre** (§4) : direction, comptable, secrétariat. Chacun gérera ensuite ses propres accès.
+2. **RH → Enseignants** : l'annuaire, puis les **affectations** (qui enseigne quoi, dans quelle classe).
+   > Si, comme dans beaucoup d'écoles, ce sont les **responsables pédagogiques** qui font le travail des enseignantes, vous n'avez pas besoin de créer de comptes enseignants : la direction voit toutes les classes.
+3. **Codes parents** : générez-les et envoyez-les (§17.1). Le code est ce qui permet à une famille de créer son compte.
+
+### Et ensuite, chaque jour
+
+| Qui | Quoi |
+|---|---|
+| Enseignante ou responsable | **Feuille de présence** le matin (§5) · **Cahier de textes** après la séance |
+| Secrétariat | **Encaissements** (§10.3) · **Déclarations** de paiement mobile · **Demandes** de documents |
+| Direction | ce que l'accueil met dans **« À traiter »** (§15) |
+
+### Chaque fin de trimestre
+
+1. **Notes** : vérifiez que toutes les évaluations sont saisies (§6).
+2. **Bulletins → Calculer** puis **💾 Enregistrer** (§7.1).
+3. Tenez le **conseil de classe**, ouvrez le **PV** et faites-le **signer** par les deux responsables (§7.3).
+4. **✓ Valider** puis **📤 Publier aux parents** (§7.2).
+5. **Classement** et palmarès à afficher (§8).
+
+> **Le repère le plus simple** : si une famille vous dit qu'elle ne voit pas le bulletin, c'est presque toujours qu'il n'a pas été **publié** — pas que l'application est en panne. Le panneau « Circuit » vous le dira en un regard.
 
 ---
 
