@@ -95,6 +95,7 @@ export const ESPACES = [
 
       // Au quotidien
       { to: "/appel", label: "Feuille de présence", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/appel-sup", label: "Présence par séance", icone: "✅", cle: "appel_sup", types: ["superieur"], groupe: "Au quotidien" },
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/programmation", label: "Programmation officielle", icone: "📋", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },

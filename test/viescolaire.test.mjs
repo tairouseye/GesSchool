@@ -113,3 +113,73 @@ test("feuille vide : aucune écriture, même avec de l'existant", async () => {
   const d = diffAppel({ ...CTX, existantes: [{ id: "a1", eleve_id: "e1", type: "absence" }], entries: [] });
   assert.deepEqual(d, { aSupprimer: [], aMettreAJour: [], aInserer: [] });
 });
+
+// =====================================================================
+//  La présence par SÉANCE, au supérieur (mig. 171)
+//
+//  Précisé par l'école : « journalière pour le préscolaire et
+//  l'élémentaire, par séance — donc par matière — pour le supérieur ».
+//  Ce n'est pas un second écran, c'est une CLÉ différente.
+// =====================================================================
+
+test("🔴 une ligne du supérieur se rattache à la SÉANCE, pas à la classe", async () => {
+  const { diffAppel } = await vie();
+  const r = diffAppel({
+    ecoleId: "E", date: "2026-10-03",
+    entries: [{ eleve_id: "a", etat: "absence" }],
+    existantes: [],
+    contexte: { seance_sup_id: "S1", classe_id: null },
+  });
+  assert.equal(r.aInserer.length, 1);
+  assert.equal(r.aInserer[0].seance_sup_id, "S1");
+  // 🔴 `classe_id` NULL est ce qui empêche l'appel d'une CLASSE de voir — et
+  // donc d'effacer — les lignes du supérieur. Les deux circuits coexistent
+  // parce qu'ils ne se reconnaissent pas.
+  assert.equal(r.aInserer[0].classe_id, null);
+});
+
+test("sans contexte, rien ne change pour l'appel d'une classe", async () => {
+  const { diffAppel } = await vie();
+  const r = diffAppel({
+    ecoleId: "E", classeId: "C1", date: "2026-10-03",
+    entries: [{ eleve_id: "a", etat: "retard" }],
+    existantes: [],
+  });
+  // La généralisation ne doit RIEN changer au circuit école, qui tourne en
+  // production depuis la correction de la perte de justifications.
+  assert.equal(r.aInserer[0].classe_id, "C1");
+  assert.ok(!("seance_sup_id" in r.aInserer[0]));
+});
+
+test("🔴 deux séances le même jour sont deux lignes distinctes", async () => {
+  const { diffAppel } = await vie();
+  // À l'école, un élève absent est absent de sa journée. À l'université il
+  // peut manquer le TD de 8 h et assister au CM de 14 h : confondre les
+  // deux fausserait tous les comptes d'assiduité.
+  const matin = diffAppel({
+    ecoleId: "E", date: "2026-10-03",
+    entries: [{ eleve_id: "a", etat: "absence" }], existantes: [],
+    contexte: { seance_sup_id: "S_matin", classe_id: null },
+  });
+  const aprem = diffAppel({
+    ecoleId: "E", date: "2026-10-03",
+    entries: [{ eleve_id: "a", etat: "absence" }], existantes: [],
+    contexte: { seance_sup_id: "S_aprem", classe_id: null },
+  });
+  assert.notEqual(matin.aInserer[0].seance_sup_id, aprem.aInserer[0].seance_sup_id);
+});
+
+test("corriger une séance ne touche que celle-là", async () => {
+  const { diffAppel } = await vie();
+  // `existantes` ne contient que les lignes DE CETTE SÉANCE (le lecteur
+  // filtre sur seance_sup_id) : remettre un étudiant présent ne peut donc
+  // pas effacer son absence d'un autre cours.
+  const r = diffAppel({
+    ecoleId: "E", date: "2026-10-03",
+    entries: [{ eleve_id: "a", etat: "present" }],
+    existantes: [{ id: "x1", eleve_id: "a", type: "absence", motif: null }],
+    contexte: { seance_sup_id: "S1", classe_id: null },
+  });
+  assert.deepEqual(r.aSupprimer, ["x1"]);
+  assert.equal(r.aInserer.length, 0);
+});

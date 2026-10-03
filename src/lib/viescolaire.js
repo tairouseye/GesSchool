@@ -38,7 +38,12 @@ export async function getAbsencesJour(ecoleId, classeId, date) {
 // La différence est une fonction PURE, donc éprouvable sans base : c'est elle
 // qui garantit qu'une justification n'est jamais écrasée.
 // Rend { aSupprimer: [id], aMettreAJour: [{id, type, motif}], aInserer: [ligne] }.
-export function diffAppel({ ecoleId, classeId, date, entries = [], existantes = [], saisiPar = null }) {
+// `contexte` : ce qui RATTACHE la ligne. Par defaut `{classe_id}` — l appel
+// journalier d une classe. Le superieur passe `{seance_sup_id}`, parce qu on
+// y pointe un etudiant pour UNE SEANCE et non pour une journee (mig. 171).
+// Les deux circuits ne se croisent jamais : les lignes du superieur ont
+// `classe_id` NULL, donc l appel d une classe ne les voit pas.
+export function diffAppel({ ecoleId, classeId, date, entries = [], existantes = [], saisiPar = null, contexte = null }) {
   const parEleve = new Map();
   for (const a of existantes) {
     if (!parEleve.has(a.eleve_id)) parEleve.set(a.eleve_id, []);
@@ -60,7 +65,8 @@ export function diffAppel({ ecoleId, classeId, date, entries = [], existantes = 
     }
     if (lignes.length === 0) {
       aInserer.push({
-        ecole_id: ecoleId, eleve_id: e.eleve_id, classe_id: classeId,
+        ecole_id: ecoleId, eleve_id: e.eleve_id,
+        ...(contexte || { classe_id: classeId }),
         type: e.etat, date_abs: date, motif: e.motif || null,
         statut: "non_justifie", saisi_par: saisiPar || null,
       });
@@ -160,4 +166,57 @@ export async function creerIncident(ecoleId, inc, saisiPar) {
 export async function supprimerIncident(id) {
   const { error } = await supabase.from("incidents").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ===================================================================
+//  Présence par SÉANCE, au supérieur (mig. 171)
+//
+//  ⚠️ CLÉ DIFFÉRENTE, PAS ÉCRAN DIFFÉRENT. À l'école on pointe un élève
+//  pour une JOURNÉE ; à l'université pour UNE SÉANCE (ce CM de ce jeudi,
+//  cette UE). On réutilise donc le même diff — éprouvé par 8 épreuves,
+//  dont celle qui garde les justifications — en changeant seulement ce qui
+//  rattache la ligne.
+// ===================================================================
+
+/** Qui doit être présent à cette séance (RPC, cf. mig. 171). */
+export async function etudiantsSeance(seanceId) {
+  if (!seanceId) return [];
+  const { data, error } = await supabase.rpc("etudiants_seance", { p_seance: seanceId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getAbsencesSeance(ecoleId, seanceId, date) {
+  if (!seanceId || !date) return [];
+  const { data, error } = await supabase
+    .from("absences")
+    .select("id, eleve_id, type, motif, statut")
+    .eq("ecole_id", ecoleId)
+    .eq("seance_sup_id", seanceId)
+    .eq("date_abs", date);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function enregistrerAppelSeance(ecoleId, seanceId, date, entries, saisiPar) {
+  const existantes = await getAbsencesSeance(ecoleId, seanceId, date);
+  const { aSupprimer, aMettreAJour, aInserer } = diffAppel({
+    ecoleId, date, entries, existantes, saisiPar,
+    //  Le rattachement : la séance, et non la classe.
+    contexte: { seance_sup_id: seanceId, classe_id: null },
+  });
+  if (aSupprimer.length) {
+    const { error } = await supabase.from("absences").delete().in("id", aSupprimer);
+    if (error) throw error;
+  }
+  for (const m of aMettreAJour) {
+    const { error } = await supabase.from("absences")
+      .update({ type: m.type, motif: m.motif }).eq("id", m.id);
+    if (error) throw error;
+  }
+  if (aInserer.length) {
+    const { error } = await supabase.from("absences").insert(aInserer);
+    if (error) throw error;
+  }
+  return { supprimees: aSupprimer.length, modifiees: aMettreAJour.length, ajoutees: aInserer.length };
 }

@@ -35,6 +35,9 @@ const ACCES = {
   // --- Espace Pédagogie — responsable : direction (voit tout l'espace) ---
   _pedagogie: ["direction", "enseignant", "surveillant"], // accueil Pédagogie
   appel: ["direction", "enseignant", "surveillant"],
+  //  Au superieur la presence se pointe par SEANCE (mig. 171) : memes
+  //  roles, ecran distinct — la cle est la seance, pas la journee.
+  appel_sup: ["direction", "enseignant", "surveillant"],
   cahier: ["direction", "enseignant", "surveillant"],
   //  Importer la planification de l'IEF est un acte de STRUCTURE : elle est
   //  partagée par toutes les classes d'un niveau. Si chaque enseignante
@@ -122,6 +125,7 @@ export const PAGES = [
   { cle: "dashboard", path: "/" },
   { cle: "eleves", path: "/eleves" },
   { cle: "photos", path: "/photos" },
+  { cle: "appel_sup", path: "/appel-sup" },
   { cle: "programmation", path: "/programmation" },
   { cle: "notes", path: "/notes" },
   { cle: "bulletins", path: "/bulletins" },

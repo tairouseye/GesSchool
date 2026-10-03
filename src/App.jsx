@@ -76,6 +76,7 @@ const JournalAudit = lazy(() => import("@/pages/JournalAudit.jsx"));
 const AccueilPedagogie = lazy(() => import("@/pages/AccueilPedagogie.jsx"));
 const Fournitures = lazy(() => import("@/pages/Fournitures.jsx"));
 const Appel = lazy(() => import("@/pages/Appel.jsx"));
+const AppelSup = lazy(() => import("@/pages/AppelSup.jsx"));
 const CahierTextes = lazy(() => import("@/pages/CahierTextes.jsx"));
 const Programmation = lazy(() => import("@/pages/Programmation.jsx"));
 const Progression = lazy(() => import("@/pages/Progression.jsx"));
@@ -259,6 +260,7 @@ export default function App() {
             <Route path="/vie-scolaire" element={<Garde cle="vie_scolaire"><VieScolaire /></Garde>} />
             <Route path="/fournitures" element={<Garde cle="fournitures"><Fournitures /></Garde>} />
             <Route path="/appel" element={<Garde cle="appel"><Appel /></Garde>} />
+            <Route path="/appel-sup" element={<Garde cle="appel_sup"><AppelSup /></Garde>} />
             <Route path="/cahier-textes" element={<Garde cle="cahier"><CahierTextes /></Garde>} />
             <Route path="/programmation" element={<Garde cle="programmation"><Programmation /></Garde>} />
             <Route path="/progression" element={<Garde cle="progression"><Progression /></Garde>} />
