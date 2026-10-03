@@ -350,3 +350,22 @@ export async function retirerLienTuteur(lienId) {
   const { error } = await supabase.from("eleve_tuteurs").delete().eq("id", lienId);
   if (error) throw error;
 }
+
+// L'état de paiement des familles d'une classe (mig. 170).
+//
+// ⚠️ NE REND QUE LE STATUT. La RPC est SECURITY DEFINER et vérifie elle-même
+// le rôle de l'appelant : ni montant, ni échéance, ni numéro de facture n'en
+// sort. La table `factures` reste fermée à la direction (mig. 133), et ce
+// n'est pas un oubli — c'est le moindre privilège.
+export async function statutPaiementClasse(classeId, anneeId) {
+  if (!classeId || !anneeId) return {};
+  const { data, error } = await supabase.rpc("statut_paiement_classe", {
+    p_classe: classeId, p_annee: anneeId,
+  });
+  if (error) throw error;
+  const par = {};
+  for (const l of data ?? []) {
+    par[l.eleve_id] = { statut: l.statut, factures: Number(l.factures) || 0, echues: Number(l.echues) || 0 };
+  }
+  return par;
+}

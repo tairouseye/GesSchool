@@ -12,6 +12,7 @@ import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { nbPages } from "@/lib/pagination.js";
 import Photo from "@/composants/Photo.jsx";
 import { urlsSignees } from "@/lib/stockage.js";
+import { etat as etatPaiement, resume as resumePaiements, phrase as phrasePaiements } from "@/lib/paiementStatut.js";
 
 // Phase 1 — Module Élèves & inscriptions : liste, recherche, création.
 export default function Eleves() {
@@ -31,6 +32,10 @@ export default function Eleves() {
   const [saisie, setSaisie] = useState("");        // ce que l'utilisateur tape
   const [recherche, setRecherche] = useState("");  // ce qui part au serveur
   const [filtreClasse, setFiltreClasse] = useState("");
+  //  État de paiement des familles (mig. 170). Chargé SEULEMENT quand une
+  //  classe est filtrée : la RPC est par classe, et interroger toute
+  //  l'école à chaque frappe de recherche serait inutilement lourd.
+  const [paiements, setPaiements] = useState({});
   const [filtreStatut, setFiltreStatut] = useState("");
   const [presenceOuverte, setPresenceOuverte] = useState(false);
   const [lotPresence, setLotPresence] = useState(null); // { lignes, total, complet }
@@ -90,6 +95,19 @@ export default function Eleves() {
       setChargement(false);
     }
   }, [ecoleId, vueGlobale, profil, recherche, filtreClasse, filtreStatut, page]);
+
+  //  ⚠️ Silencieux en cas de refus : un enseignant n'a PAS accès à cette
+  //  information (décision de la mig. 170 — savoir quelles familles sont en
+  //  retard crée un risque de traitement différencié de l'enfant). La
+  //  colonne disparaît alors, sans message d'erreur inutile.
+  useEffect(() => {
+    let vivant = true;
+    if (!filtreClasse || !annee?.id) { setPaiements({}); return undefined; }
+    api.statutPaiementClasse(filtreClasse, annee.id)
+      .then((p) => { if (vivant) setPaiements(p); })
+      .catch(() => { if (vivant) setPaiements({}); });
+    return () => { vivant = false; };
+  }, [filtreClasse, annee?.id]);
 
   useEffect(() => {
     recharger();
@@ -166,6 +184,11 @@ export default function Eleves() {
     } catch (err) { setErreur(err.message); }
   }
 
+  //  La colonne n'apparait que si la RPC a repondu : un enseignant ne la
+  //  voit donc jamais, sans message d'erreur ni colonne vide.
+  const aDesPaiements = Object.keys(paiements).length > 0;
+  const resumePaiement = aDesPaiements ? resumePaiements(Object.values(paiements)) : null;
+
   return (
     <>
       <EnTete
@@ -186,6 +209,23 @@ export default function Eleves() {
       />
       <div className="space-y-4 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
+
+        {/*  ⚠️ CE BANDEAU DIT CE QU'IL Y A A FAIRE, et du bon cote. Releve en
+             production : 8 factures pour 96 eleves inscrits. « 88 sans
+             facture » designe un travail de l'ECOLE ; un indicateur a deux
+             etats aurait affiche « 88 en retard » et accuse 88 familles. */}
+        {resumePaiement && resumePaiement.total > 0 && (
+          <Carte className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <span className="text-sm text-navy-900/70">
+              Paiements — <b className="text-navy-900">{phrasePaiements(resumePaiement)}</b>
+            </span>
+            <span className="flex flex-wrap items-center gap-3 text-xs text-navy-900/50">
+              <span>🔴 {resumePaiement.en_retard} en retard</span>
+              <span>🟢 {resumePaiement.a_jour} à jour</span>
+              <span>⚪ {resumePaiement.non_facture} sans facture</span>
+            </span>
+          </Carte>
+        )}
 
         <Carte className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 border-b border-navy-900/10 p-4">
@@ -265,6 +305,7 @@ export default function Eleves() {
                   <th className="px-6 py-3 font-medium">Sexe</th>
                   <th className="px-6 py-3 font-medium">Classe</th>
                   <th className="px-6 py-3 font-medium">Statut</th>
+                  {aDesPaiements && <th className="px-6 py-3 font-medium">Paiement</th>}
                   {peutEditer && <th className="px-6 py-3"></th>}
                 </tr>
               </thead>
@@ -312,6 +353,11 @@ export default function Eleves() {
                           <span className="text-xs text-navy-900/40">non inscrit</span>
                         )}
                       </td>
+                      {aDesPaiements && (
+                        <td className="px-6 py-4">
+                          <PastillePaiement etat={paiements[e.id]} />
+                        </td>
+                      )}
                       {peutEditer && (
                         <td className="px-6 py-4 text-right" onClick={(ev) => ev.stopPropagation()}>
                           <button onClick={() => supprimerUn(e)} title={`Supprimer l'${L.s}`}
@@ -697,5 +743,27 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
         </div>
       </form>
     </Modale>
+  );
+}
+
+// La pastille d'état de paiement (mig. 170).
+//
+// ⚠️ ELLE NE DIT JAMAIS UN MONTANT. La RPC ne rend que l'état : le
+// responsable pédagogique apprend qu'une famille est en retard, pas de
+// combien. La table `factures` lui reste fermée (mig. 133), et c'est voulu.
+function PastillePaiement({ etat: valeur }) {
+  if (!valeur) return <span className="text-xs text-navy-900/30">—</span>;
+  const e = etatPaiement(valeur.statut);
+  const tons = {
+    success: "bg-success-50 text-success-600 ring-success-500/25",
+    danger: "bg-danger-50 text-danger-600 ring-danger-500/25",
+    neutre: "bg-navy-900/5 text-navy-900/50 ring-navy-900/10",
+  };
+  return (
+    <span title={e.explication}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${tons[e.ton]}`}>
+      {e.court}
+      {valeur.echues > 1 && <span className="opacity-60">({valeur.echues})</span>}
+    </span>
   );
 }
