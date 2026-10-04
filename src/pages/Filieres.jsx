@@ -34,10 +34,20 @@ function ModaleForm({ kind, edit, onFermer, onValider }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, edit]);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  //  La modale reste ouverte pendant l'enregistrement : sans verrou, deux
+  //  appuis créent DEUX facultés (ou deux UE) identiques. Les autres
+  //  formulaires de l'application se vident à l'envoi, ce qui les protège
+  //  par effet de bord ; celui-ci, non.
+  const [envoi, setEnvoi] = useState(false);
 
   return (
     <Modale ouvert={!!kind} onFermer={onFermer} titre={`${edit ? "Modifier" : "Ajouter"} — ${TITRES[kind] || ""}`}>
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onValider(f); }}>
+      <form className="space-y-4" onSubmit={async (e) => {
+        e.preventDefault();
+        if (envoi) return;
+        setEnvoi(true);
+        try { await onValider(f); } finally { setEnvoi(false); }
+      }}>
         {champs.map(([k, label, type, requis]) => (
           type === "diplome" ? (
             <label key={k} className="block">
@@ -61,8 +71,10 @@ function ModaleForm({ kind, edit, onFermer, onValider }) {
           )
         ))}
         <div className="flex justify-end gap-2">
-          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit">{edit ? "Enregistrer" : "Ajouter"}</Bouton>
+          <Bouton type="button" variante="fantome" onClick={onFermer} disabled={envoi}>Annuler</Bouton>
+          <Bouton type="submit" disabled={envoi}>
+            {envoi ? "Enregistrement…" : edit ? "Enregistrer" : "Ajouter"}
+          </Bouton>
         </div>
       </form>
     </Modale>

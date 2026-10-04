@@ -406,6 +406,28 @@ export async function absencesClassePeriode(classeId, periodeId) {
 //  direction, qui passe par `avancerBulletins`.
 // ===================================================================
 
+/**
+ * Les bulletins DÉJÀ ENREGISTRÉS d'une classe et d'une période.
+ *
+ * Sert à comparer l'instantané stocké au calcul vivant (cf.
+ * `bulletinsPerimes` dans circuitBulletin.js) : un bulletin arrêté ou diffusé
+ * dont la note a été corrigée depuis n'affiche plus la vérité, et rien ne le
+ * signalait.
+ *
+ * Lecture légère et volontairement sans jointure : les noms viennent du
+ * calcul, qui a déjà la liste des élèves.
+ */
+export async function bulletinsEnregistres(classeId, periodeId) {
+  if (!classeId || !periodeId) return [];
+  const { data, error } = await supabase
+    .from("bulletins")
+    .select("eleve_id, moyenne_generale, rang, statut, genere_le, consulte_le")
+    .eq("classe_id", classeId)
+    .eq("periode_id", periodeId);
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Où en est une classe : combien par état, le PV, ses signatures. */
 export async function etatBulletins(classeId, periodeId) {
   if (!classeId || !periodeId) return null;

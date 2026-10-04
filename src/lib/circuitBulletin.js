@@ -92,6 +92,95 @@ export function actions({ compte = {}, peutAvancer = false, conseilComplet = fal
 }
 
 /**
+ * Les bulletins arrêtés ou diffusés qui ne correspondent PLUS aux notes.
+ *
+ * 🔴 POURQUOI CETTE FONCTION EXISTE.
+ * `bulletins` stocke un INSTANTANÉ : moyenne, rang, effectif, mention
+ * (migration 001). Le calcul, lui, vit dans `calculerBulletins` et se relance
+ * à la demande. Côté famille, l'espace parent sert les NOTES vivantes et le
+ * BULLETIN figé : une note corrigée après la diffusion fait donc apparaître la
+ * correction dans « Notes » et laisse l'ancienne moyenne dans « Bulletins ».
+ * Personne n'était prévenu — ni la famille, ni la direction, qui voyait
+ * pourtant les deux chiffres côte à côte sur le même écran sans qu'ils soient
+ * comparés.
+ *
+ * ⚠️ LA COMPARAISON SE FAIT ICI, PAS EN SQL. La règle de calcul (coefficients,
+ * barème de l'école, note absente neutre) n'existe qu'à un seul endroit :
+ * `calculerBulletins`. La réécrire en SQL pour comparer aurait créé deux
+ * implémentations de la même règle, donc deux vérités à maintenir.
+ *
+ * Un BROUILLON périmé n'est pas signalé : rien n'a été arrêté ni diffusé, et
+ * le recalculer est le geste normal. Ce qui compte, c'est ce que l'école a
+ * arrêté (`valide`) ou montré aux familles (`publie`).
+ *
+ * @param {object} o
+ * @param {Array<{eleve:object, moyenne:number|null, rang:number|null}>} o.calculs
+ *        sortie de `calculerBulletins` (`.eleves`)
+ * @param {Array<{eleve_id:string, moyenne_generale:number|null, rang:number|null, statut:string, consulte_le?:string|null}>} o.enregistres
+ * @returns {{nb:number, publies:number, consultes:number, detail:Array, manquants:number}}
+ */
+export function bulletinsPerimes({ calculs = [], enregistres = [] } = {}) {
+  const parEleve = new Map((enregistres || []).map((b) => [b.eleve_id, b]));
+  const detail = [];
+  let manquants = 0;
+
+  for (const c of calculs || []) {
+    const id = c?.eleve?.id;
+    if (!id) continue;
+    const b = parEleve.get(id);
+    //  Pas encore enregistré : ce n'est pas « périmé », c'est « jamais écrit ».
+    //  Les compteurs du circuit disent déjà combien de bulletins existent.
+    if (!b) { manquants++; continue; }
+    if (b.statut !== "valide" && b.statut !== "publie") continue;
+
+    const ecarts = [];
+    if (!memeNombre(b.moyenne_generale, c.moyenne)) {
+      ecarts.push({ champ: "moyenne", stocke: nombreOuNull(b.moyenne_generale), calcule: nombreOuNull(c.moyenne) });
+    }
+    //  Le rang peut changer SANS que la note de l'élève bouge : il suffit
+    //  qu'un camarade soit corrigé. Un rang faux sur un bulletin imprimé est
+    //  une erreur au même titre qu'une moyenne fausse.
+    if (!memeNombre(b.rang, c.rang)) {
+      ecarts.push({ champ: "rang", stocke: nombreOuNull(b.rang), calcule: nombreOuNull(c.rang) });
+    }
+    if (ecarts.length === 0) continue;
+
+    detail.push({
+      eleve_id: id,
+      nom: `${c.eleve?.prenom || ""} ${c.eleve?.nom || ""}`.trim() || "—",
+      statut: b.statut,
+      consulte: !!b.consulte_le,
+      ecarts,
+    });
+  }
+
+  return {
+    nb: detail.length,
+    publies: detail.filter((d) => d.statut === "publie").length,
+    //  Les familles qui ont DÉJÀ lu le mauvais chiffre : ce sont celles qu'il
+    //  faudra prévenir, et le nombre qui doit décider d'agir tout de suite.
+    consultes: detail.filter((d) => d.consulte).length,
+    detail,
+    manquants,
+  };
+}
+
+//  `numeric(5,2)` en base contre un arrondi JavaScript : on compare à 0,01
+//  près, sinon 12.34 et 12.340000000000001 passeraient pour un écart.
+function memeNombre(a, b) {
+  const x = nombreOuNull(a);
+  const y = nombreOuNull(b);
+  if (x === null || y === null) return x === y;
+  return Math.abs(x - y) < 0.005;
+}
+
+function nombreOuNull(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
  * Les deux signatures attendues sur le procès-verbal, et leur état.
  * L'école a été explicite : « il faut 2 signatures » — le responsable
  * pédagogique DU CYCLE, et le responsable de la Gestion.

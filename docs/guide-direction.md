@@ -66,6 +66,8 @@ Il répond à la seule question qui compte : *est-ce que les familles le voient 
 
 - **✓ Valider** puis **📤 Publier aux parents** font avancer **toute la classe**.
 - **↩️ Retirer de l'espace parent** ramène en brouillon, en vous prévenant que les familles qui l'ont lu ne le verront plus.
+
+> **Si une note change après la diffusion**, le panneau vous le dit de lui-même, en rouge : « 3 bulletins ne correspondent plus aux notes actuelles », avec les noms, l'ancienne et la nouvelle valeur, et combien de familles ont déjà lu le chiffre dépassé. Pour corriger : **Calculer**, puis **Enregistrer**. Les bulletins publiés le restent — la correction part aussitôt.
 - Le panneau indique **combien de familles ont consulté** le bulletin.
 - Une classe aux **états mélangés** est signalée comme telle : on ne vous dira pas « publié » si trois élèves sont restés en brouillon.
 

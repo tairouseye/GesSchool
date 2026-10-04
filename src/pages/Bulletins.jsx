@@ -10,7 +10,7 @@ import { getAnneeCourante, getClasses, getMatieres, getSignataires, getNiveaux,
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
 import { actions as actionsCircuit, etatGlobal, etatSignatures, qualitesSignables,
-         LIBELLES, EXPLICATIONS, TON } from "@/lib/circuitBulletin.js";
+         bulletinsPerimes, LIBELLES, EXPLICATIONS, TON } from "@/lib/circuitBulletin.js";
 import { Badge } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import { GESPRO } from "@/lib/gespro.js";
@@ -43,6 +43,9 @@ export default function Bulletins() {
   const [signataire, setSignataire] = useState(null);
   //  Circuit du bulletin et PV du conseil (mig. 166).
   const [etat, setEtat] = useState(null);
+  //  Les bulletins arrêtés ou diffusés qui ne correspondent plus aux notes
+  //  (null = pas encore vérifié, ou rien d'arrêté à vérifier).
+  const [perimes, setPerimes] = useState(null);
   const [niveaux, setNiveaux] = useState([]);
   const [responsables, setResponsables] = useState([]);
   const confirmer = useConfirm();
@@ -124,6 +127,41 @@ export default function Bulletins() {
 
   useEffect(() => { rechargerEtat(); }, [classeId, periodeId]);
 
+  //  🔴 LE BULLETIN PUBLIÉ EST UN INSTANTANÉ, LES NOTES SONT VIVANTES.
+  //  L'espace parent sert les deux : une note corrigée après diffusion
+  //  laisse l'ancienne moyenne dans « Bulletins » et montre la correction
+  //  dans « Notes ». Cet écran affichait déjà les deux chiffres côte à côte
+  //  sans jamais les comparer ; il les compare maintenant, tout seul —
+  //  attendre un clic sur « Calculer » reviendrait à exiger qu'on devine.
+  //
+  //  ⚠️ On ne calcule QUE si quelque chose a été arrêté ou diffusé : un
+  //  brouillon périmé n'est pas un problème, et le calcul coûte quatre
+  //  requêtes. Et on exige `matieres` : sans elles, le calcul rendrait des
+  //  moyennes vides et l'écran crierait à l'écart pour rien.
+  useEffect(() => {
+    let vivant = true;
+    const arretes = (etat?.valide || 0) + (etat?.publie || 0);
+    if (!classeId || !periodeId || !annee?.id || matieres.length === 0 || arretes === 0) {
+      setPerimes(null);
+      return undefined;
+    }
+    (async () => {
+      try {
+        const [res, enregistres] = await Promise.all([
+          api.calculerBulletins(ecoleId, classeId, annee.id, periodeId, matieres, notation),
+          api.bulletinsEnregistres(classeId, periodeId),
+        ]);
+        if (vivant) setPerimes(bulletinsPerimes({ calculs: res.eleves, enregistres }));
+      } catch {
+        //  Un échec de vérification ne doit pas masquer l'écran : on se
+        //  tait plutôt que d'afficher une alerte dont on n'est pas sûr.
+        if (vivant) setPerimes(null);
+      }
+    })();
+    return () => { vivant = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecoleId, classeId, periodeId, annee?.id, matieres.length, notation?.bareme, etat?.valide, etat?.publie]);
+
   async function calculer() {
     if (!classeId || !periodeId) return;
     setErreur("");
@@ -171,6 +209,7 @@ export default function Bulletins() {
         {etat && (etat.brouillon + etat.valide + etat.publie) > 0 && (
           <PanneauCircuit
             etat={etat}
+            perimes={perimes}
             peutAvancer={toutVoir}
             estResponsableDuCycle={estResponsableDuCycle}
             roles={roles}
@@ -566,7 +605,7 @@ function BulletinImprimable({ ecole, classe, periode, annee, resultat, appGen = 
 //  voient ce bulletin ? » Jusqu'ici, écrire un bulletin le rendait
 //  aussitôt visible, sans relecture possible.
 // =====================================================================
-function PanneauCircuit({ etat, peutAvancer, estResponsableDuCycle, roles, profilId,
+function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, roles, profilId,
                           onAvancer, onSigner, onRetirerSignature, confirmer }) {
   const compte = { brouillon: etat.brouillon, valide: etat.valide, publie: etat.publie };
   const { etat: global, total, melange } = etatGlobal(compte);
@@ -608,6 +647,57 @@ function PanneauCircuit({ etat, peutAvancer, estResponsableDuCycle, roles, profi
           {etat.brouillon > 0 && <span>{etat.brouillon} brouillon</span>}
           {etat.valide > 0 && <span>· {etat.valide} validé(s)</span>}
           {etat.publie > 0 && <span>· {etat.publie} publié(s)</span>}
+        </div>
+      )}
+
+      {/*  🔴 LE BULLETIN NE DIT PLUS LA MÊME CHOSE QUE LES NOTES.
+           Le bulletin est un instantané ; les notes, elles, continuent de
+           vivre. Une correction après diffusion fait donc diverger l'onglet
+           « Notes » et l'onglet « Bulletins » de l'espace parent, sans que
+           personne en soit averti. On nomme les élèves concernés : « 3
+           bulletins » n'aide pas à agir, trois noms oui. */}
+      {perimes && perimes.nb > 0 && (
+        <div className="mt-4 rounded-xl border border-rose-300 bg-rose-50 p-4">
+          <p className="text-sm font-semibold text-rose-700">
+            ⚠️ {perimes.nb} bulletin(s) ne correspondent plus aux notes actuelles
+          </p>
+          <p className="mt-1 text-sm text-rose-700/90">
+            {perimes.publies > 0
+              ? `${perimes.publies} ${perimes.publies > 1 ? "sont visibles" : "est visible"} des familles avec une valeur dépassée.`
+              : "Ils ont été arrêtés avant la dernière correction de note."}
+            {perimes.consultes > 0 && (
+              <>
+                {" "}
+                <b>{perimes.consultes} famille(s) {perimes.consultes > 1 ? "ont" : "a"} déjà consulté</b> le chiffre dépassé.
+              </>
+            )}
+          </p>
+          <ul className="mt-2.5 space-y-1 text-sm text-rose-700/90">
+            {perimes.detail.slice(0, 8).map((d) => (
+              <li key={d.eleve_id} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium">{d.nom}</span>
+                {d.ecarts.map((e) => (
+                  <span key={e.champ} className="text-xs">
+                    {e.champ === "moyenne" ? "moyenne" : "rang"}{" "}
+                    <span className="font-mono tabular-nums">{e.stocke ?? "—"}</span>
+                    {" → "}
+                    <span className="font-mono font-semibold tabular-nums">{e.calcule ?? "—"}</span>
+                  </span>
+                ))}
+                {d.consulte && <span className="text-xs text-rose-700/60">· déjà lu</span>}
+              </li>
+            ))}
+            {perimes.detail.length > 8 && (
+              <li className="text-xs text-rose-700/60">… et {perimes.detail.length - 8} autre(s)</li>
+            )}
+          </ul>
+          {/*  Dire le geste exact, et ce qu'il produit : réenregistrer ne
+               remet PAS en brouillon (l'upsert ne touche pas au statut), donc
+               la correction part aussitôt aux familles. */}
+          <p className="mt-2.5 text-xs text-rose-700/80">
+            Pour corriger : <b>Calculer les bulletins</b>, puis <b>Enregistrer les bulletins</b>.
+            Ceux qui sont publiés le restent — la correction parvient aussitôt aux familles.
+          </p>
         </div>
       )}
 

@@ -110,7 +110,7 @@ export default function Enseignants() {
           <PanneauAffectations
             ecoleId={ecoleId} annee={annee}
             enseignants={enseignants} classes={classes} matieres={matieres} affectations={affectations}
-            onChange={recharger} onErreur={setErreur}
+            onChange={recharger} onErreur={setErreur} confirmer={confirmer}
           />
         )}
       </div>
@@ -131,7 +131,7 @@ export default function Enseignants() {
   );
 }
 
-function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, affectations, onChange, onErreur }) {
+function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, affectations, onChange, onErreur, confirmer }) {
   const toast = useToast();
   const [f, setF] = useState({ enseignant_id: "", matiere_id: "", coefficient: "1" });
   const [sel, setSel] = useState(() => new Set()); // classes cochées
@@ -263,7 +263,20 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
                       <td className="py-2 text-navy-900/70">{a.enseignants ? `${a.enseignants.prenom} ${a.enseignants.nom}` : "—"}</td>
                       <td className="py-2 text-center font-mono">{a.coefficient}</td>
                       <td className="py-2 text-right">
-                        <button onClick={async () => { try { await api.supprimerAffectation(a.id); onChange(); } catch (e) { onErreur(e.message); } }}
+                        {/*  ⚠️ CE RETRAIT N'EST PAS ANODIN, d'où la confirmation.
+                             Une affectation commande l'emploi du temps ET le
+                             droit de l'enseignant à saisir les notes de cette
+                             matière (`enseigne_classe`, mig. 058) : la retirer
+                             coupe un accès. C'était jusqu'ici un clic unique,
+                             sans retour en arrière. */}
+                        <button onClick={async () => {
+                          const qui = a.enseignants ? `${a.enseignants.prenom} ${a.enseignants.nom}` : "cet enseignant";
+                          //  Sans matière, l'affectation couvre TOUTE la classe : le dire,
+                          //  sinon on croit ne retirer qu'une matière.
+                          const quoi = a.matieres?.libelle ? ` en ${a.matieres.libelle}` : " (toutes les matières)";
+                          if (!(await confirmer(`Retirer ${qui}${quoi} de la classe ${c.libelle} ? Il ne pourra plus y saisir de notes.`))) return;
+                          try { await api.supprimerAffectation(a.id); onChange(); } catch (e) { onErreur(e.message); }
+                        }}
                           className="text-xs text-rose-500 hover:underline">retirer</button>
                       </td>
                     </tr>

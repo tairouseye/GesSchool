@@ -150,3 +150,105 @@ test("les libellés disent au parent ce qu'il voit, ou non", async () => {
   assert.match(EXPLICATIONS.valide, /pas encore/);
   assert.match(EXPLICATIONS.publie, /espace parent/);
 });
+
+// =====================================================================
+//  Le bulletin diffusé correspond-il encore aux notes ?
+//
+//  🔴 `bulletins` stocke un INSTANTANÉ (moyenne, rang, mention). L'espace
+//  parent sert les NOTES vivantes et le BULLETIN figé : une note corrigée
+//  après diffusion fait apparaître la correction dans « Notes » et laisse
+//  l'ancienne moyenne dans « Bulletins ». Mesuré en base au moment d'écrire
+//  ces lignes : 32 bulletins publiés, dont 6 déjà consultés par une famille.
+// =====================================================================
+
+const eleve = (id, prenom, nom) => ({ id, prenom, nom });
+
+test("un bulletin publié dont la note a changé est signalé", async () => {
+  const { bulletinsPerimes } = await C();
+  const r = bulletinsPerimes({
+    calculs: [{ eleve: eleve("e1", "Awa", "DIOP"), moyenne: 14.5, rang: 1 }],
+    enregistres: [{ eleve_id: "e1", moyenne_generale: 12.25, rang: 1, statut: "publie", consulte_le: "2026-10-01" }],
+  });
+  assert.equal(r.nb, 1);
+  assert.equal(r.publies, 1);
+  //  Le nombre de familles qui ont DÉJÀ lu le mauvais chiffre : c'est lui qui
+  //  doit décider d'agir tout de suite plutôt qu'au prochain conseil.
+  assert.equal(r.consultes, 1);
+  assert.deepEqual(r.detail[0].ecarts, [{ champ: "moyenne", stocke: 12.25, calcule: 14.5 }]);
+  assert.equal(r.detail[0].nom, "Awa DIOP");
+});
+
+test("🔴 un BROUILLON périmé n'est pas signalé : rien n'a été diffusé", async () => {
+  const { bulletinsPerimes } = await C();
+  const r = bulletinsPerimes({
+    calculs: [{ eleve: eleve("e1", "Awa", "DIOP"), moyenne: 14.5, rang: 1 }],
+    enregistres: [{ eleve_id: "e1", moyenne_generale: 2, rang: 9, statut: "brouillon" }],
+  });
+  //  Le recalculer est le geste normal avant de valider : avertir ici
+  //  reviendrait à crier à chaque saisie de note.
+  assert.equal(r.nb, 0);
+});
+
+test("un bulletin conforme ne déclenche rien, malgré les arrondis", async () => {
+  const { bulletinsPerimes } = await C();
+  const r = bulletinsPerimes({
+    calculs: [
+      { eleve: eleve("e1", "Awa", "DIOP"), moyenne: 12.34, rang: 1 },
+      { eleve: eleve("e2", "Moussa", "FALL"), moyenne: null, rang: null },
+    ],
+    enregistres: [
+      //  `numeric(5,2)` revient parfois en chaîne : la comparaison doit tenir.
+      { eleve_id: "e1", moyenne_generale: "12.34", rang: 1, statut: "publie" },
+      { eleve_id: "e2", moyenne_generale: null, rang: null, statut: "publie" },
+    ],
+  });
+  assert.equal(r.nb, 0, JSON.stringify(r.detail));
+});
+
+test("🔴 le RANG seul suffit : un camarade corrigé fausse le bulletin des autres", async () => {
+  const { bulletinsPerimes } = await C();
+  //  La moyenne d'Awa n'a pas bougé, mais Moussa l'a dépassée : son bulletin
+  //  imprimé annonce « 1er » alors qu'elle est 2e. C'est faux de la même
+  //  manière qu'une moyenne fausse.
+  const r = bulletinsPerimes({
+    calculs: [{ eleve: eleve("e1", "Awa", "DIOP"), moyenne: 14.5, rang: 2 }],
+    enregistres: [{ eleve_id: "e1", moyenne_generale: 14.5, rang: 1, statut: "publie" }],
+  });
+  assert.equal(r.nb, 1);
+  assert.deepEqual(r.detail[0].ecarts, [{ champ: "rang", stocke: 1, calcule: 2 }]);
+});
+
+test("une note AJOUTÉE après diffusion compte comme un écart", async () => {
+  const { bulletinsPerimes } = await C();
+  //  Bulletin publié sans moyenne (aucune évaluation à l'époque), puis les
+  //  notes arrivent : la famille voit un bulletin vide et des notes remplies.
+  const r = bulletinsPerimes({
+    calculs: [{ eleve: eleve("e1", "Awa", "DIOP"), moyenne: 11, rang: 1 }],
+    enregistres: [{ eleve_id: "e1", moyenne_generale: null, rang: null, statut: "publie" }],
+  });
+  assert.equal(r.nb, 1);
+  assert.equal(r.detail[0].ecarts.length, 2); // moyenne ET rang
+});
+
+test("un élève sans bulletin est « jamais écrit », pas « périmé »", async () => {
+  const { bulletinsPerimes } = await C();
+  //  Un élève arrivé en cours de trimestre : ne pas le compter comme une
+  //  incohérence, sinon l'avertissement perd son sens.
+  const r = bulletinsPerimes({
+    calculs: [
+      { eleve: eleve("e1", "Awa", "DIOP"), moyenne: 14, rang: 1 },
+      { eleve: eleve("e2", "Nouveau", "VENU"), moyenne: 13, rang: 2 },
+    ],
+    enregistres: [{ eleve_id: "e1", moyenne_generale: 14, rang: 1, statut: "publie" }],
+  });
+  assert.equal(r.nb, 0);
+  assert.equal(r.manquants, 1);
+});
+
+test("entrées vides : aucune alerte, aucune exception", async () => {
+  const { bulletinsPerimes } = await C();
+  for (const arg of [undefined, {}, { calculs: [], enregistres: [] }, { calculs: [{}] }]) {
+    const r = bulletinsPerimes(arg);
+    assert.equal(r.nb, 0);
+  }
+});

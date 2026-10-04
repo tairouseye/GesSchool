@@ -8,6 +8,7 @@ import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { useConfirm } from "@/composants/Feedback.jsx";
 
 const aujourdHui = () => new Date().toISOString().slice(0, 10);
 const TYPES_INCIDENT = [
@@ -208,6 +209,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
 }
 
 function Incidents({ ecoleId, onErreur }) {
+  const confirmer = useConfirm();
   const { utilisateur } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [eleves, setEleves] = useState([]);
@@ -245,7 +247,17 @@ function Incidents({ ecoleId, onErreur }) {
                   <td className={`px-6 py-2 font-medium capitalize ${couleur(i.type)}`}>{(TYPES_INCIDENT.find((t) => t[0] === i.type) || [])[1] || i.type}</td>
                   <td className="px-6 py-2 text-navy-900/70">{i.description}</td>
                   <td className="px-6 py-2 text-right">
-                    <button onClick={async () => { try { await api.supprimerIncident(i.id); recharger(); } catch (e) { onErreur(e.message); } }}
+                    {/*  ON NE SUPPRIME PAS UN DOSSIER DISCIPLINAIRE D'UN CLIC.
+                         C'était pourtant le cas : un seul appui, sans
+                         confirmation ni retour en arrière, sur la pièce qui
+                         justifie une sanction devant une famille. */}
+                    <button onClick={async () => {
+                      const qui = `${i.eleves?.prenom || ""} ${i.eleves?.nom || ""}`.trim();
+                      if (!(await confirmer(
+                        `Supprimer définitivement cet incident${qui ? ` concernant ${qui}` : ""} du ${i.date_incident} ?`
+                      ))) return;
+                      try { await api.supprimerIncident(i.id); recharger(); } catch (e) { onErreur(e.message); }
+                    }}
                       className="text-xs text-rose-500 hover:underline">supprimer</button>
                   </td>
                 </tr>

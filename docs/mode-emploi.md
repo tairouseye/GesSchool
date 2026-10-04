@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.238 · mise à jour du 4 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.239 · mise à jour du 4 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -363,6 +363,20 @@ Il apparaît dès qu'une classe a des bulletins et répond à la seule question 
 - Le panneau indique **combien de familles ont consulté** le bulletin (« 7 consultés sur 12 publiés »).
 - Une classe dont les bulletins sont **dispersés entre deux états** est signalée comme telle : on ne vous dira pas « publié » si trois élèves sont restés en brouillon.
 - **Seule la direction** arrête et diffuse. Un enseignant voit l'état de sa classe mais n'a aucun bouton — et cela vaut aussi par l'API, pas seulement à l'écran.
+
+#### Si un bulletin ne correspond plus aux notes
+
+Un bulletin enregistré est une **photographie** : moyenne, rang, mention sont figés au moment du calcul. Les **notes**, elles, continuent de vivre. Si une note est corrigée après la diffusion, la famille voit la correction dans « Notes » et l'ancienne moyenne dans « Bulletins ».
+
+Le panneau « Circuit » **le détecte seul** et affiche un encadré rouge :
+
+> ⚠️ 3 bulletin(s) ne correspondent plus aux notes actuelles — avec le **nom** de chaque élève, l'ancienne et la nouvelle valeur (`12.25 → 14.5`), et le nombre de **familles qui ont déjà consulté** le chiffre dépassé.
+
+**Pour corriger** : **Calculer les bulletins**, puis **💾 Enregistrer les bulletins**. Ceux qui sont déjà publiés **le restent** — la correction parvient aussitôt aux familles, sans avoir à republier.
+
+Deux précisions :
+- Un **brouillon** périmé n'est jamais signalé : rien n'a été arrêté ni diffusé, et le recalculer est le geste normal.
+- Le **rang** compte autant que la moyenne : il suffit qu'un camarade soit corrigé pour que le rang imprimé sur le bulletin d'un autre devienne faux.
 
 ### 7.3 Le procès-verbal du conseil de classe
 Dans le même panneau, le **PV** attend **deux signatures** :
