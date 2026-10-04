@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Carte, Alerte, Bouton } from "@/composants/ui.jsx";
+import { Carte, Alerte, Bouton, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/messagerie.js";
 import { getEleves, getTuteursEleve, chercherEleves } from "@/lib/eleves.js";
@@ -43,15 +43,22 @@ export default function Messagerie() {
   const [selEleve, setSelEleve] = useState(null);
 
   const [messages, setMessages] = useState([]);
+  //  Les deux listes annonçaient « Aucune conversation » pendant leur propre
+  //  chargement : un état vide affirme quelque chose de faux. Un témoin par
+  //  liste, parce qu'elles se chargent indépendamment.
+  const [chargConvs, setChargConvs] = useState(true);
+  const [chargConvsEt, setChargConvsEt] = useState(true);
 
   const rechargerConvs = useCallback(async () => {
     try { setConvs(await api.getConversations()); }
     catch (e) { setErreur(e.message); }
+    finally { setChargConvs(false); }
   }, []);
   const rechargerConvsEt = useCallback(async () => {
-    if (!sup) return;
+    if (!sup) { setChargConvsEt(false); return; }
     try { setConvsEt(await api.getConversationsEtudiants()); }
     catch (e) { setErreur(e.message); }
+    finally { setChargConvsEt(false); }
   }, [sup]);
 
   useEffect(() => { rechargerConvs(); }, [rechargerConvs]);
@@ -214,7 +221,9 @@ export default function Messagerie() {
               ) : (
                 <ul className="overflow-y-auto">
                   <li className="px-4 py-2 text-[11px] uppercase tracking-wide text-navy-900/40">Conversations</li>
-                  {convsEt.length === 0 ? (
+                  {chargConvsEt ? (
+                    <li className="px-4 pb-4"><SkeletonListe lignes={3} /></li>
+                  ) : convsEt.length === 0 ? (
                     <li className="px-4 pb-4 text-sm text-navy-900/40">
                       Aucune conversation. Recherchez un étudiant ci-dessus pour lui écrire.
                     </li>
@@ -271,7 +280,9 @@ export default function Messagerie() {
               /* Conversations existantes */
               <ul className="overflow-y-auto">
                 <li className="px-4 py-2 text-[11px] uppercase tracking-wide text-navy-900/40">Conversations</li>
-                {convs.length === 0 ? (
+                {chargConvs ? (
+                  <li className="px-4 pb-4"><SkeletonListe lignes={3} /></li>
+                ) : convs.length === 0 ? (
                   <li className="px-4 pb-4 text-sm text-navy-900/40">Aucune conversation. Recherchez un élève ci‑dessus pour écrire à son parent.</li>
                 ) : (
                   convs.map((c) => (

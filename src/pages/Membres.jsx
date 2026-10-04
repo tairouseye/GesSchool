@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
 import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
-import { EtatVide } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Membres() {
@@ -17,6 +16,7 @@ export default function Membres() {
   const [membres, setMembres] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [erreur, setErreur] = useState("");
+  const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
   const [q, setQ] = useState("");
 
@@ -33,6 +33,7 @@ export default function Membres() {
       setMembres(m);
       setInvitations(inv);
     } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, []);
 
   useEffect(() => { charger(); }, [charger]);
@@ -94,7 +95,12 @@ export default function Membres() {
           <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un membre (nom, e-mail, rôle)…" className="max-w-sm" />
         )}
 
-        {membres.length === 0 ? (
+        {/*  ⚠️ L'ÉTAT VIDE DOIT ATTENDRE LA RÉPONSE. Sans ce témoin, la page
+            annonçait « Aucun membre » pendant tout le chargement : un état
+            vide affirme quelque chose de faux, c'est pire qu'une attente. */}
+        {chargement ? (
+          <SkeletonListe lignes={4} />
+        ) : membres.length === 0 ? (
           <EtatVide icone="👥" titre="Aucun membre"
             action={invitables.length > 0 ? <Bouton onClick={() => setModale(true)}>+ Inviter un membre</Bouton> : null}>
             Invitez les responsables et le personnel de votre établissement pour qu'ils accèdent à leur espace.

@@ -37,7 +37,7 @@ export default function Connexion() {
         else setInfo("Compte créé. Vérifiez votre e-mail pour confirmer, puis connectez-vous.");
       }
     } catch (err) {
-      setErreur(traduireErreur(err.message));
+      setErreur(messageErreur(err));
     } finally {
       setEnCours(false);
     }
@@ -121,8 +121,4 @@ export default function Connexion() {
       </div>
     </div>
   );
-}
-
-function traduireErreur(msg = "") {
-  return messageErreur(msg);
 }

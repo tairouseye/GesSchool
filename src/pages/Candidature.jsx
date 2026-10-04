@@ -3,6 +3,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import Logo from "@/composants/Logo.jsx";
 import { GESPRO } from "@/lib/gespro.js";
 import { campagnePublique, deposerCandidature, suivreCandidature, libStatut } from "@/lib/admissions.js";
+//  Page publique : elle garde son propre habillage (son `Champ` local), mais
+//  un candidat ne doit pas plus lire un message Postgres qu'une directrice.
+import { messageErreur } from "@/lib/erreurs.js";
 
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : null);
 const montant = (n, devise) => (n == null ? null : `${new Intl.NumberFormat("fr-FR").format(Number(n))} ${devise || ""}`.trim());
@@ -236,7 +239,7 @@ function Formulaire({ pub }) {
         </Champ>
       </section>
 
-      {erreur && <p className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">{erreur}</p>}
+      {erreur && <p className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">{messageErreur(erreur)}</p>}
 
       <button type="submit" disabled={envoi}
         className="w-full rounded-xl bg-navy-900 px-4 py-3 text-sm font-semibold text-creme transition hover:bg-navy-800 disabled:opacity-50">

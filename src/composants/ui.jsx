@@ -1,6 +1,7 @@
 // GesSchool — primitives UI partagées (identité navy/or).
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { messageErreur } from "@/lib/erreurs.js";
 
 // --- Indicateur clé (KPI) : valeur + libellé + sous-texte optionnel ---
 // ton : navy | or | vert | rouge ; tonValeur : classe couleur explicite (prioritaire).
@@ -334,8 +335,27 @@ export function SkeletonListe({ lignes = 5, className = "" }) {
   );
 }
 
+// Bandeau d'information, d'avertissement ou d'erreur.
+//
+// 🔴 IL TRADUIT LES MESSAGES TECHNIQUES, et c'est le cœur du correctif.
+// `messageErreur` n'était branché que sur les toasts (Feedback.jsx) : la même
+// panne annonçait « Vous n'avez pas les droits pour cette action. » dans un
+// toast et `new row violates row-level security policy for table "factures"`
+// dans un bandeau — 152 appels à `setErreur(e.message)` dans 68 pages. Une
+// directrice lisait la seconde phrase, qui en prime nomme les tables.
+//
+// On traduit ICI plutôt qu'aux 152 appels : un seul endroit, et tout
+// `setErreur` à venir est correct sans que personne ait à y penser. L'état
+// garde le message brut, utile au diagnostic ; seul l'affichage est traduit.
+//
+// Deux garde-fous : uniquement sur le ton « erreur » (un bandeau d'info n'est
+// pas une panne), et uniquement sur du texte (les enfants peuvent être du JSX).
+// ⚠️ Les phrases françaises de l'application passent par là aussi : voir
+// l'en-tête de `erreurs.js` et `test/erreurs.test.mjs`, qui vérifient qu'aucune
+// règle ne les réécrit.
 export function Alerte({ ton = "erreur", children }) {
   if (!children) return null;
+  const contenu = ton === "erreur" && typeof children === "string" ? messageErreur(children) : children;
   const tons = {
     erreur: "border-rose-300 bg-rose-50 text-rose-700",
     succes: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -344,6 +364,6 @@ export function Alerte({ ton = "erreur", children }) {
     info: "border-navy-900/15 bg-creme text-navy-900/70",
   };
   return (
-    <div className={`rounded-xl border px-4 py-3 text-sm ${tons[ton]}`}>{children}</div>
+    <div className={`rounded-xl border px-4 py-3 text-sm ${tons[ton]}`}>{contenu}</div>
   );
 }

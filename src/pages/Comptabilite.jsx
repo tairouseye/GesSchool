@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table, SkeletonListe } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
@@ -40,6 +40,10 @@ export default function Comptabilite() {
   const [pieces, setPieces] = useState([]);
   const [params, setParams] = useState({ compta_active: false });
   const [exercices, setExercices] = useState([]);
+  //  Sept requêtes au montage, dont les soldes de trésorerie : sans témoin,
+  //  la synthèse affichait des zéros avant de se remplir — on lisait donc
+  //  « 0 F de trésorerie », ce qui est pire qu'attendre.
+  const [chargement, setChargement] = useState(true);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -62,6 +66,8 @@ export default function Comptabilite() {
       setDettes(det);
     } catch (e) {
       setErreur(e.message);
+    } finally {
+      setChargement(false);
     }
   }, [ecoleId, debut, fin]);
 
@@ -151,7 +157,9 @@ export default function Comptabilite() {
           )}
         </div>
 
-        {onglet === "synthese" && (
+        {chargement && <SkeletonListe lignes={4} />}
+
+        {!chargement && onglet === "synthese" && (
           <Synthese
             devise={devise} tresorerie={tresorerie} scolarite={scolarite}
             soldeCaisse={soldeCaisse} soldeBanque={soldeBanque} soldeMobile={soldeMobile} salairesMois={salairesMois}
@@ -161,18 +169,18 @@ export default function Comptabilite() {
           />
         )}
 
-        {onglet === "tresorerie" && (
+        {!chargement && onglet === "tresorerie" && (
           <Tresorerie soldes={soldes} devise={devise} onSuppr={async (id) => { if (await confirmer("Supprimer ce compte ?")) wrap(() => api.supprimerCompte(id), "Compte supprimé."); }} />
         )}
 
-        {onglet === "recettes" && (
+        {!chargement && onglet === "recettes" && (
           <Mouvements
             type="recette" items={recettes} devise={devise}
             onSuppr={async (id) => { if (await confirmer("Supprimer cette recette ?")) wrap(() => api.supprimerRecette(id), "Recette supprimée."); }}
           />
         )}
 
-        {onglet === "depenses" && (
+        {!chargement && onglet === "depenses" && (
           <Mouvements
             type="depense" items={depenses} devise={devise} onRecu={setRecu}
             onSuppr={async (id) => { if (await confirmer("Supprimer cette dépense ?")) wrap(() => api.supprimerDepense(id), "Dépense supprimée."); }}

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets, SkeletonListe } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
@@ -41,6 +41,11 @@ export default function Paiements() {
   const [pageFac, setPageFac] = useState(0);
   const [totalFac, setTotalFac] = useState(0);
   const [saisie, setSaisie] = useState("");
+  //  Neuf requêtes partent au montage : sans ce témoin, l'écran reste vide
+  //  et muet plusieurs secondes sur une connexion lente, et l'on croit que
+  //  c'est cassé. Il ne repasse jamais à `true` : une recherche ne doit pas
+  //  faire clignoter la liste déjà affichée.
+  const [chargement, setChargement] = useState(true);
 
   // La recherche part au serveur : sans anti-rebond, une requête par frappe.
   useEffect(() => {
@@ -76,6 +81,8 @@ export default function Paiements() {
       setIdentite(idl);
     } catch (e) {
       setErreur(e.message);
+    } finally {
+      setChargement(false);
     }
   }, [ecoleId, recherche, pageFac]);
 
@@ -125,7 +132,9 @@ export default function Paiements() {
                 className="w-full max-w-md rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
               />
             </div>
-            {facturesFiltrees.length === 0 ? (
+            {chargement ? (
+              <div className="p-4"><SkeletonListe lignes={6} /></div>
+            ) : facturesFiltrees.length === 0 ? (
               <p className="p-8 text-sm text-navy-900/50">
                 {factures.length === 0 ? "Aucune facture. Créez-en une avec « + Nouvelle facture »." : "Aucun résultat."}
               </p>

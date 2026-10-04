@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte, Table } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Kpi, TuileAlerte, Onglets, Recherche, filtreTexte, Table, SkeletonListe } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/rh.js";
@@ -59,6 +59,10 @@ export default function RH() {
   const [signataires, setSignataires] = useState([]);
   // Compte de trésorerie + mode utilisés pour régler les salaires de la période.
   const [reglement, setReglement] = useState({ compte_id: "", mode: "" });
+  //  La page la plus lourde de l'application (125 ko de code, une douzaine
+  //  de requêtes au montage) était aussi la seule sans aucun témoin de
+  //  chargement : écran vide et muet, et l'on re-clique.
+  const [chargement, setChargement] = useState(true);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -79,6 +83,8 @@ export default function RH() {
       api.getRegimes(ecoleId).then(setRegimes).catch(() => setRegimes([]));
     } catch (e) {
       setErreur(e.message);
+    } finally {
+      setChargement(false);
     }
   }, [ecoleId]);
 
@@ -233,7 +239,9 @@ export default function RH() {
 
         <Onglets items={[["personnel", "Personnel"], ["paie", "Paie"], ["conges", "Congés & absences"], ["documents", "Documents"]]} actif={onglet} onChange={setOnglet} />
 
-        {onglet === "conges" ? (
+        {chargement ? (
+          <SkeletonListe lignes={6} />
+        ) : onglet === "conges" ? (
           <PanneauConges
             conges={conges} soldesConges={soldesConges} congesJoursAn={congesJoursAn} personnels={personnels} absences={absencesRh}
             onCreer={(c) => wrap(async () => { await api.creerConge(ecoleId, c, utilisateur?.id); await rechargerConges(); }, false, "Demande enregistrée.")}
