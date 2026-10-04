@@ -3,7 +3,9 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.235 · mise à jour du 3 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur.
+> **Version 2.236 · mise à jour du 3 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+>
+> **Où le retrouver** : dans l'application, lien **📖 Mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone).
 
 > **Vous ouvrez GesSchool pour la première fois ?** Allez directement à l'annexe **§28 — Votre première semaine, pas à pas**. Elle donne l'ordre dans lequel procéder, et les étapes qu'il ne faut pas sauter.
 
@@ -839,26 +841,82 @@ Conçu pour le **téléphone**, debout, en classe : choisissez une classe, **tou
 
 Si votre établissement couvre le palier **Université** (§2.4), l'espace Pédagogie bascule sur le modèle **LMD**.
 
+### 24.1 La structure, et ce qu'elle remplace
+
 | Écran | À quoi il sert |
 |---|---|
 | **Filières & maquettes** | Facultés, départements, filières, **semestres**, **UE / ECUE**, crédits — remplace « Niveaux & classes » |
-| **Admissions** | Dossiers de candidature |
-| **Inscriptions LMD** | Inscrire un étudiant dans une filière et un semestre, puis à ses **UE** |
-| **Notes LMD** | Notes par UE/ECUE, avec les crédits |
-| **Délibérations** | Validation des semestres, relevés de notes |
-| **Codes étudiants** | Donner à chaque étudiant son code d'activation |
-| **Emploi du temps** | Planification par **filière et semestre** (et non par classe) |
-| **Bibliothèque** | Catalogue, prêts et retours, fonds numérique, dépôt de mémoires et thèses |
+| **Admissions** | Dossiers de candidature, de la réception à la décision |
+| **Inscriptions LMD** | Inscrire un étudiant dans une filière et un semestre, puis **à ses UE** |
+| **Codes étudiants** | Le code d'activation de chaque étudiant, à lui transmettre |
+| **Emploi du temps** | Planification par **filière et semestre**, et non par classe |
+| **Présence par séance** | Le pointage par cours (§22) |
 
-- Le vocabulaire passe à **« étudiant »** dans un établissement **exclusivement** universitaire. Dans un établissement qui va de l'élémentaire à l'université, on garde « élève » comme mot courant — dire « étudiant » au préscolaire serait absurde — et les écrans du supérieur portent leurs propres intitulés.
-- Les étudiants ont leur **propre espace** : relevés, emploi du temps, bibliothèque, carte d'étudiant.
-- ⚠️ **L'accès d'un étudiant à ses notes passe par un consentement** : il le demande, l'établissement l'accorde.
+> **Inscrivez les étudiants à leurs UE**, pas seulement à leur filière. C'est l'inscription à l'UE qui détermine qui est convoqué à une séance (§22) et qui apparaît dans les notes de cette UE.
+
+### 24.2 Notes, délibérations et relevés
+
+- **Notes LMD** : les notes par UE et par ECUE, avec leurs crédits.
+- **Délibérations & relevés** : la validation des semestres — crédits acquis, compensations, décision de jury — puis l'édition des **relevés de notes**, qui portent un **QR code** d'authentification comme les autres documents officiels (§9.1).
+
+### 24.3 La bibliothèque universitaire
+
+Quatre écrans, qui correspondent à quatre métiers.
+
+| Écran | Ce qu'on y fait |
+|---|---|
+| **Catalogue** | les notices, les auteurs, les exemplaires, les cotes, et la recherche |
+| **Prêts & retours** | le poste de circulation : emprunter, rendre, renouveler, voir les retards |
+| **Acquisitions** | les commandes, les fournisseurs, les suggestions d'achat |
+| **Inventaire** | les campagnes de récolement, et les écarts constatés |
+| **Mémoires & thèses** | le dépôt institutionnel : soumission, vérification, validation, publication |
+
+Un étudiant accède depuis son espace au catalogue, à ses emprunts, à ses réservations et au fonds numérique. Un document numérique **restreint** n'est lisible que par les étudiants qu'il cible — la règle est appliquée côté serveur, pas seulement masquée à l'écran.
+
+### 24.4 Le vocabulaire et les comptes
+
+- On dit **« étudiant »** dans un établissement **exclusivement** universitaire. Dans un établissement qui va de l'élémentaire à l'université, on garde « élève » comme mot courant — dire « étudiant » au préscolaire serait absurde — et les écrans du supérieur portent leurs propres intitulés.
+- ⚠️ **L'accès d'un étudiant à ses notes passe par un consentement** : il le demande depuis son espace, l'établissement l'accorde. Tant qu'il n'est pas accordé, les notes et les relevés ne lui sont pas servis.
 
 ---
 
-## 25. Console super-admin & Pilotage
-- **🛠️ Console super-admin** (réservée au propriétaire du SaaS) : toutes les écoles clientes, leur **plan/abonnement**, **statut**, **modules**, et le **nombre de comptes** (personnel + parents) par école.
-- **Pilotage** (promoteur multi-écoles) : **synthèse consolidée** (effectifs, recouvrement, trésorerie, masse salariale), **checklist de mise en route**, **passage d'année**, et **« Gérer cette école »**.
+## 25. Pilotage & console super-admin
+
+### 25.1 Vue d'ensemble (menu **Vue d'ensemble**, promoteur)
+
+La synthèse de **toutes vos écoles** : effectifs, recouvrement, trésorerie, masse salariale.
+
+Deux précisions qui évitent les mauvaises lectures :
+
+- Les écoles marquées **démonstration** sont **exclues des totaux**. Sans cela, des chiffres fictifs viendraient gonfler votre consolidé.
+- Quand vous entrez dans une école par **« Gérer cette école »**, la vue se **cloisonne à cette école** : vous ne voyez plus le consolidé, mais l'établissement où vous travaillez.
+
+### 25.2 Organigramme (menu **Organigramme**, promoteur)
+
+Généré **automatiquement** depuis **Membres** et **RH** : promoteur en tête, puis les responsables de chaque pôle et leurs équipes. Les personnes sans compte (personnel RH seulement) y figurent, discrètement marquées.
+
+> Il n'y a rien à saisir ici. **Changez un rôle dans Membres, l'organigramme suit.** C'est pour cela qu'il n'est pas modifiable : une organisation saisie deux fois finit par se contredire.
+
+### 25.3 Documentation (menu **Documentation**, promoteur)
+
+Le recensement des documents que l'établissement peut produire, par famille — scolarité, pédagogie, finances, RH — avec, pour chacun, l'écran où il s'obtient et s'il est déjà disponible. Sert à répondre à « est-ce que l'application sait faire tel papier ? » sans chercher dans tous les menus.
+
+### 25.4 Journal des actes (menu **Journal des actes**, promoteur)
+
+La trace des **actes sensibles** : qui a modifié une note, une facture, un paiement, un bulletin — et quand. C'est ce qui permet de répondre à une contestation, et de restaurer une valeur effacée par erreur.
+
+### 25.5 Mise en route et passage d'année
+
+- **Mise en route** : la liste de ce qui reste à configurer, dans l'ordre (§15). Pour une école neuve, suivez plutôt l'annexe §28.
+- **Passage d'année** : ouvrir l'année suivante et promouvoir les élèves (§16).
+
+### 25.6 Mon abonnement (menu **Mon abonnement**, promoteur)
+
+Votre formule, son **palier d'effectif**, sa date d'échéance, et la liste des **modules** : ✓ ceux que vous avez, 🔒 ceux qu'une formule supérieure débloquerait. Sert à savoir ce que vous payez et ce que vous pourriez activer, sans avoir à nous appeler.
+
+### 25.7 Console super-admin (réservée à l'éditeur)
+
+Toutes les écoles clientes, leur **plan d'abonnement**, leur **statut**, leurs **modules actifs** et le **nombre de comptes** (personnel et parents). Sert au support et à la facturation du logiciel, pas à la gestion d'une école.
 
 ---
 
