@@ -3,9 +3,13 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.236 · mise à jour du 3 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.237 · mise à jour du 3 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
-> **Où le retrouver** : dans l'application, lien **📖 Mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone).
+> **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
+
+> **Vous cherchez juste à faire votre travail ?** Ce manuel décrit **tous** les écrans ; votre métier n'en utilise qu'une partie. Quatre guides courts, imprimables, en extraient l'essentiel :
+> **[Enseignante](guide-enseignant.html)** · **[Direction](guide-direction.html)** · **[Gestion](guide-gestion.html)** · **[Parent](guide-parent.html)**.
+> Ils sont rassemblés sur la **[page d'aide](aide.html)**, c'est-à-dire exactement ce qu'ouvre le lien **📖 Aide & mode d'emploi** de l'application.
 
 > **Vous ouvrez GesSchool pour la première fois ?** Allez directement à l'annexe **§28 — Votre première semaine, pas à pas**. Elle donne l'ordre dans lequel procéder, et les étapes qu'il ne faut pas sauter.
 

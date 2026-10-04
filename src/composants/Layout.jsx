@@ -389,13 +389,17 @@ export default function Layout() {
           )}
           {/*  ⚠️ LE MANUEL DOIT ETRE ATTEIGNABLE, sinon il n'existe pas.
                Il a longtemps vecu dans `docs/`, c'est-a-dire nulle part pour
-               une directrice. Il est desormais servi avec l'application
-               (public/mode-emploi.html) et accessible a TOUS les roles :
-               une enseignante en a autant besoin qu'un promoteur.
+               une directrice. Il est desormais servi avec l'application et
+               accessible a TOUS les roles : une enseignante en a autant
+               besoin qu'un promoteur.
+               ⚠️ ON POINTE VERS `aide.html`, ET NON VERS LE MANUEL : celui-ci
+               fait plus de mille lignes. La page d'aide laisse choisir son
+               guide de role — une enseignante qui cherche comment faire
+               l'appel n'a pas a traverser la comptabilite.
                `target="_blank"` pour ne pas perdre le travail en cours. */}
-          <a href="mode-emploi.html" target="_blank" rel="noopener noreferrer"
+          <a href="aide.html" target="_blank" rel="noopener noreferrer"
             className="mt-3 block rounded-lg border border-creme/20 px-3 py-1.5 text-center text-xs text-creme/80 hover:bg-navy-800">
-            📖 Mode d&apos;emploi
+            📖 Aide &amp; mode d&apos;emploi
           </a>
           <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
@@ -447,9 +451,9 @@ export default function Layout() {
                   <Link to="/super-admin" onClick={() => setCompte(false)}
                     className="block rounded-lg bg-or-500/15 px-3 py-2 text-center text-sm font-medium text-or-600">🛠️ Console super-admin</Link>
                 )}
-                <a href="mode-emploi.html" target="_blank" rel="noopener noreferrer"
+                <a href="aide.html" target="_blank" rel="noopener noreferrer"
                   onClick={() => setCompte(false)}
-                  className="block rounded-lg border border-navy-900/15 px-3 py-2 text-center text-sm text-navy-900/80">📖 Mode d&apos;emploi</a>
+                  className="block rounded-lg border border-navy-900/15 px-3 py-2 text-center text-sm text-navy-900/80">📖 Aide &amp; mode d&apos;emploi</a>
                 <button onClick={() => { setCompte(false); setTour(true); }}
                   className="w-full rounded-lg border border-navy-900/15 px-3 py-2 text-sm text-navy-900/80">❓ Visite guidée</button>
                 <button onClick={deconnexion}

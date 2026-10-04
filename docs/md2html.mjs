@@ -22,10 +22,23 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
-const SOURCE = join(ICI, "mode-emploi.md");
-const SORTIE = join(ICI, "..", "public", "mode-emploi.html");
 
-const md = readFileSync(SOURCE, "utf8").replace(new RegExp(String.fromCharCode(13), "g"), "");
+//  ⚠️ PLUSIEURS DOCUMENTS, UN SEUL CONVERTISSEUR. Le manuel complet fait
+//  plus de mille lignes : une enseignante qui cherche comment faire l'appel
+//  n'a pas à le traverser. Les guides par rôle en extraient l'essentiel,
+//  et partagent la même mise en forme — d'où la boucle plutôt qu'un script
+//  par document, qui aurait divergé.
+const DOCUMENTS = [
+  { source: "mode-emploi.md",      sortie: "mode-emploi.html",      titre: "GesSchool — Mode d'emploi",  sous: "Guide complet d'utilisation" },
+  { source: "aide.md",             sortie: "aide.html",             titre: "GesSchool — Aide",            sous: "Par où commencer" },
+  { source: "guide-direction.md",  sortie: "guide-direction.html",  titre: "Guide — Direction",           sous: "Responsable pédagogique & promoteur" },
+  { source: "guide-enseignant.md", sortie: "guide-enseignant.html", titre: "Guide — Enseignante",         sous: "Votre journée, écran par écran" },
+  { source: "guide-gestion.md",    sortie: "guide-gestion.html",    titre: "Guide — Gestion",             sous: "Comptable & secrétariat" },
+  { source: "guide-parent.md",     sortie: "guide-parent.html",     titre: "Guide — Parent",              sous: "Suivre la scolarité de son enfant" },
+];
+
+for (const DOC of DOCUMENTS) {
+const md = readFileSync(join(ICI, DOC.source), "utf8").replace(new RegExp(String.fromCharCode(13), "g"), "");
 const style = `<style>
   @page { size: A4; margin: 18mm 16mm; }
   :root { --navy:#0B1F3A; --or:#C9A227; --creme:#FBF7EF; --ink:#1c2733; }
@@ -162,16 +175,17 @@ let body = out.join("\n").replace("[[TOC]]", tocHtml);
 
 const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"/>
-<title>GesSchool — Mode d'emploi</title>
+<title>${DOC.titre}</title>
 ${style}
 </head>
 <body>
-  <div class="cover"><div class="seal">GS</div><div><h1>GesSchool — Mode d'emploi</h1><p>Guide complet d'utilisation</p></div></div>
+  <div class="cover"><div class="seal">GS</div><div><h1>${DOC.titre}</h1><p>${DOC.sous}</p></div></div>
   <main>
 ${body}
   </main>
 </body></html>`;
 
-writeFileSync(SORTIE, html, "utf8");
-console.log("public/mode-emploi.html régénéré :", html.length, "octets ·", toc.length, "entrées de sommaire");
-console.log("→ servi par l'application à /mode-emploi.html après « npm run build ».");
+writeFileSync(join(ICI, "..", "public", DOC.sortie), html, "utf8");
+console.log(`  public/${DOC.sortie} — ${html.length} o · ${toc.length} entrée(s) de sommaire`);
+}
+console.log("→ servis par l'application après « npm run build » : /mode-emploi.html, /aide.html, /guide-*.html");
