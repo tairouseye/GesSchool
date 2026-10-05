@@ -151,7 +151,9 @@ Chaque responsable est **cloisonné à son domaine** et gère ensuite ses propre
 | Comptable / Gestion | secrétaire / caisse |
 | Responsable RH | secrétaire / caisse |
 
-> Le cloisonnement est réel, pas cosmétique : un responsable pédagogique n'accède **pas** aux factures, même par un appel direct à l'application. Et vous, promoteur, ne voyez pas les notes si vous n'avez pas le rôle pédagogique.
+> Le cloisonnement est réel, pas cosmétique, et il va **dans les deux sens** : un responsable pédagogique n'accède **pas** aux factures, même par un appel direct à l'application — et le côté Gestion (comptable, secrétariat, RH) n'accède **pas** aux notes, aux évaluations ni aux bulletins, de la même façon. Et vous, promoteur, ne voyez pas les notes si vous n'avez pas le rôle pédagogique.
+>
+> Un **enseignant** ne lit que les classes qui lui sont attribuées : les notes et les bulletins des autres classes lui sont fermés, y compris par un appel direct.
 
 ---
 

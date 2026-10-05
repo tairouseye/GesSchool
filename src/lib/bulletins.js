@@ -142,16 +142,30 @@ async function getCoefsMatiere(ecoleId, classeId, anneeId) {
 }
 
 // Dernier bulletin (période la plus avancée) d'un élève sur une année.
-// Sert à l'attestation de résultats.
+// Sert à l'« attestation de résultats » du secrétariat.
+//
+// ⚠️ PASSE PAR UNE RPC, ET PLUS PAR LA TABLE (migration 173). La lecture de
+// `bulletins` est désormais réservée à la direction et à l'enseignant de la
+// classe : le secrétariat, qui délivre pourtant l'attestation, ne lit plus la
+// table. Il obtient donc ces six champs — et rien d'autre — par une fonction
+// qui vérifie elle-même l'établissement et le rôle.
+//
+// Avant, cette page lisait TOUS les bulletins de l'élève puis triait côté
+// client ; c'était la seule raison pour laquelle toute la Gestion avait accès
+// au dossier pédagogique complet.
 export async function getDernierBulletin(eleveId, anneeId) {
-  const { data, error } = await supabase
-    .from("bulletins")
-    .select("moyenne_generale, mention, decision, rang, effectif, periodes(libelle, ordre, annee_id)")
-    .eq("eleve_id", eleveId);
+  if (!eleveId) return null;
+  const { data, error } = await supabase.rpc("bulletin_pour_attestation", {
+    p_eleve: eleveId,
+    p_annee: anneeId || null,
+  });
   if (error) throw error;
-  const list = (data ?? []).filter((b) => !anneeId || b.periodes?.annee_id === anneeId);
-  list.sort((a, b) => (b.periodes?.ordre || 0) - (a.periodes?.ordre || 0));
-  return list[0] || null;
+  const l = Array.isArray(data) ? data[0] : data;
+  //  Vérifié avant de changer la forme : l'attestation ne lit que
+  //  `moyenne_generale`, `mention`, `rang`, `effectif` et `decision`
+  //  (Certificats.jsx:113-116). Le libellé de période arrive en clair sous
+  //  `periode`, et non plus dans un objet imbriqué.
+  return l || null;
 }
 
 // Publie (persiste) les bulletins calculés → visibles par les parents.

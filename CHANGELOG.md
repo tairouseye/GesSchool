@@ -5,6 +5,30 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.240.0] — le dossier pédagogique ne se lit plus par tout le personnel (migration 173)
+- **Trouvé en travaillant sur le lot 2**, en lisant les policies de `bulletins`. Les **quatre** policies de lecture du dossier pédagogique — `notes`, `evaluations`, `bulletins`, `bulletin_lignes` — valaient `est_super_admin() or ecole_id = ecole_courante()` : **aucun prédicat de rôle**. Tout membre actif de l'école (comptable, secrétaire, **responsable RH**, surveillant, bibliothécaire) pouvait donc lire par l'API toutes les notes et tous les bulletins de tous les élèves. L'interface le leur cachait : c'était un contrôle **frontend** pris pour une sécurité.
+- **Et un enseignant lisait toute l'école.** La migration 058 avait cloisonné l'ÉCRITURE à ses propres classes, jamais la lecture : un enseignant de CI pouvait lire les notes et les bulletins du CM2.
+- **Le guide promettait déjà ce qui n'était pas vrai** : « la gestion n'accède pas au pédagogique ». Le code honore maintenant la promesse, et les deux guides le disent dans les **deux** sens.
+- **Lecture = écriture, désormais.** Les nouvelles policies reprennent exactement les prédicats de la migration 058 (`est_gestion()`, `enseigne_classe()`), déjà éprouvés en production côté écriture.
+- **⚠️ La lecture est au niveau de la CLASSE, pas de la matière**, alors que l'écriture est au niveau de la matière. Un enseignant qui ouvre Bulletins ou Classement fait calculer la moyenne **par le client**, à partir des notes de toutes les matières : une policy limitée à sa matière lui aurait renvoyé un sous-ensemble sans rien dire, et il aurait imprimé un bulletin **faux**. On ne fait jamais calculer au client ce que la RLS lui cache.
+- **Une seule exception légitime, traitée comme telle** : le secrétariat a besoin de la moyenne pour l'**attestation de résultats**. Plutôt que de rouvrir tout le dossier à la Gestion, la RPC `bulletin_pour_attestation` ne rend que **moyenne, mention, rang, effectif, décision** pour **un** élève. SECURITY DEFINER, donc le cloisonnement y est **écrit à la main** (leçon de la migration 167) : session, établissement, puis rôle — fail-closed à chaque étape.
+- **Vérifié avant d'écrire la migration** : les chemins parent (`enfant_bulletins`, `enfant_bulletin_lignes`) et le QR d'authenticité (`verifier_document`) sont SECURITY DEFINER, donc insensibles au durcissement ; les deux seules fonctions INVOKER (`etat_bulletins`, `avancer_bulletins`) restent appelées par des rôles autorisés.
+- **🔴 Éprouvé avec de VRAIES sessions, pas en lisant la policy** :
+  - **RH de Tut'Tank** : `notes=0 · evaluations=0 · bulletins=0 · bulletin_lignes=0`. La même session lit encore `classes=8` et `eleves=96` (policies restées larges) — preuve que la session est valide et que l'ancien prédicat accordait bien.
+  - **Direction** : lit ses 12 bulletins et ses 4 évaluations, et obtient l'attestation (1 ligne).
+  - **Enseignant** : **1** bulletin sur sa classe, **0** sur une autre classe de la même école.
+  - **Enseignant d'une AUTRE école**, affecté de force à une classe voisine : **0**. Le `ecole_courante()` l'emporte sur l'affectation — le cloisonnement inter-écoles tient.
+  - **Parent** : `enfant_bulletins` rend toujours son bulletin publié (moyenne 17,08, rang 1) et `enfant_notes` ses 4 notes, tandis que la lecture directe des tables lui rend **0**.
+  - **Anonyme** : `HTTP 401` sur la table comme sur la RPC.
+- Les mesures sur l'enseignant ont été prises dans une **transaction annulée** (liaison temporaire puis `raise exception`) : vérifié après coup, aucune fiche enseignant n'est restée liée.
+- *Constat au passage* : **aucune fiche enseignant de la base n'est reliée à un compte** (`enseignants.profil_id` est null partout). Les comptes enseignants ne pouvaient donc déjà rien saisir — la branche « enseignant » de la policy ne s'activera qu'une fois la liaison faite dans RH → Enseignants.
+
+## [2.239.1] — nettoyage des données de test de Tut'Tank
+- **Demandé** : supprimer les notes et absences de test de la **vraie** école de Mme Kane (pas la démo).
+- Supprimé : **38 notes** et **3 absences** (CE1/CE2, toutes du 23/09). Sauvegarde JSON des lignes écrite **hors du dépôt** (`SupabaseBackups/sauvegardes/`) — elle contient des identifiants d'élèves réels.
+- **Vérifié après coup** : Tut'Tank conserve ses **96 élèves et 96 inscriptions**, ses 8 factures et ses 12 bulletins ; **TutTank_Demo n'a pas été touchée** (108 notes, 10 absences intactes), ni aucune autre école.
+- **Resté en place, par choix explicite de l'utilisateur** : les 4 évaluations et les **12 bulletins publiés sans aucune moyenne** de CE1/CE2 — ces 12 bulletins sont donc toujours diffusés aux familles, qui les ouvrent vides. Aucune ne les a encore consultés.
+
 ## [2.239.0] — le bulletin diffusé ne peut plus mentir en silence (lot 2 de l'audit)
 - **Audit du 04/10, lot 2** : réparer ce qui est déjà entre les mains des familles.
 - **🔴 Le bulletin est une photographie, les notes continuent de vivre.** `bulletins` stocke moyenne, rang, effectif et mention ; l'espace parent sert les **notes vivantes** d'un côté et le **bulletin figé** de l'autre. Une note corrigée après diffusion faisait donc apparaître la correction dans « Notes » et laissait l'ancienne moyenne dans « Bulletins ». Personne n'était prévenu — et l'écran de la direction affichait pourtant **les deux chiffres côte à côte sans jamais les comparer**. Mesuré en base : **32 bulletins publiés, dont 6 déjà consultés par une famille**.

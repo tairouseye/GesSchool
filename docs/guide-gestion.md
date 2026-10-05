@@ -132,7 +132,9 @@ Un document officiel engage l'établissement : il passe donc par une **validatio
 
 **« L'import n'a inscrit personne »** → la colonne Classe ne correspond pas. Corrigez le fichier et réimportez.
 
-**« Je ne vois pas les bulletins / les notes »** → c'est voulu : la gestion n'accède pas au pédagogique, et réciproquement la direction n'accède pas aux factures.
+**« Je ne vois pas les bulletins / les notes »** → c'est voulu, et c'est tenu **par la base de données**, pas seulement par l'écran : la gestion n'accède pas au dossier pédagogique, et réciproquement la direction n'accède pas aux factures.
+
+> **L'attestation de résultats fait exception, et elle seule.** Pour la délivrer, vous avez besoin de la moyenne : l'application vous donne donc, pour l'élève choisi, **la moyenne, la mention, le rang et la décision du conseil** — et rien d'autre du dossier.
 
 ---
 
