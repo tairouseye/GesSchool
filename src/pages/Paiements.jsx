@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
+import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets, SkeletonListe } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
@@ -9,7 +10,6 @@ import * as api from "@/lib/paiements.js";
 import { codeFacture } from "@/lib/verification.js";
 import { GESPRO } from "@/lib/gespro.js";
 import { getTransactions, LIBELLE_STATUT_TX } from "@/lib/paiementEnLigne.js";
-import { getEleves } from "@/lib/eleves.js";
 import { nbPages } from "@/lib/pagination.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
@@ -25,7 +25,6 @@ export default function Paiements() {
   const [annee, setAnnee] = useState(null);
   const [factures, setFactures] = useState([]);
   const [frais, setFrais] = useState([]);
-  const [eleves, setEleves] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
   const [cycles, setCycles] = useState([]);
   const [inscrits, setInscrits] = useState([]);
@@ -53,15 +52,22 @@ export default function Paiements() {
     return () => clearTimeout(t);
   }, [saisie]);
 
-  const recharger = useCallback(async () => {
+  //  🔴 DEUX CHARGEMENTS, ET C'EST TOUT L'OBJET DU DÉCOUPAGE.
+  //  Il n'y en avait qu'un, et il dépendait de la recherche : taper un nom
+  //  relançait les HUIT requêtes de référentiel — frais, niveaux, cycles,
+  //  inscrits, déclarations, mobile money, identité légale — alors qu'aucune
+  //  ne dépend du texte cherché. L'anti-rebond limitait la fréquence, pas le
+  //  volume : sur une connexion lente, chercher « Diop » coûtait tout
+  //  l'écran. Seule la liste paginée a besoin de repartir.
+
+  //  Le référentiel : ne dépend QUE de l'établissement.
+  const chargerReferentiel = useCallback(async () => {
     setErreur("");
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [fac, fr, els, niv, cyc, ins, decl, mob, idl] = await Promise.all([
-        api.getFactures(ecoleId, { anneeId: an?.id, q: recherche, page: pageFac, taille: 25 }),
+      const [fr, niv, cyc, ins, decl, mob, idl] = await Promise.all([
         api.getFrais(ecoleId, an?.id),
-        getEleves(ecoleId),
         getNiveaux(ecoleId),
         getCycles(ecoleId),
         api.getInscritsAvecNiveau(ecoleId, an?.id),
@@ -69,24 +75,39 @@ export default function Paiements() {
         api.getPaiementMobile(ecoleId),
         api.getIdentiteLegale(ecoleId),
       ]);
-      setFactures(fac.lignes);
-      setTotalFac(fac.total);
       setFrais(fr);
-      setEleves(els);
       setNiveaux(niv);
       setCycles(cyc);
       setInscrits(ins);
       setDeclarations(decl);
       setMobileInfos(mob);
       setIdentite(idl);
-    } catch (e) {
-      setErreur(e.message);
-    } finally {
-      setChargement(false);
-    }
+      return an;
+    } catch (e) { setErreur(e.message); return null; }
+  }, [ecoleId]);
+
+  //  La liste : elle, suit la recherche et la page.
+  const chargerFactures = useCallback(async (anneeId) => {
+    try {
+      const fac = await api.getFactures(ecoleId, { anneeId, q: recherche, page: pageFac, taille: 25 });
+      setFactures(fac.lignes);
+      setTotalFac(fac.total);
+    } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [ecoleId, recherche, pageFac]);
 
-  useEffect(() => { recharger(); }, [recharger]);
+  //  Après une écriture, tout peut avoir bougé (un frais créé, une
+  //  déclaration validée) : on recharge les deux.
+  const recharger = useCallback(async () => {
+    const an = await chargerReferentiel();
+    await chargerFactures(an?.id ?? annee?.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chargerReferentiel, chargerFactures]);
+
+  useEffect(() => { chargerReferentiel(); }, [chargerReferentiel]);
+  //  ⚠️ `annee?.id` et non `annee` : l'objet est recréé à chaque chargement
+  //  du référentiel, ce qui relancerait la liste en boucle.
+  useEffect(() => { chargerFactures(annee?.id); }, [chargerFactures, annee?.id]);
 
   const wrap = async (fn, msg) => {
     try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
@@ -108,7 +129,7 @@ export default function Paiements() {
               <Bouton variante="fantome" onClick={() => setModaleLot(true)} disabled={inscrits.length === 0 || frais.length === 0}>
                 ⚡ Générer en lot
               </Bouton>
-              <Bouton onClick={() => setModaleNouvelle(true)} disabled={eleves.length === 0}>
+              <Bouton onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
                 + Nouvelle facture
               </Bouton>
             </div>
@@ -216,7 +237,7 @@ export default function Paiements() {
       <ModaleNouvelleFacture
         ouvert={modaleNouvelle}
         onFermer={() => setModaleNouvelle(false)}
-        ecoleId={ecoleId} annee={annee} eleves={eleves} frais={frais} devise={devise}
+        ecoleId={ecoleId} annee={annee} frais={frais} devise={devise}
         onCree={() => { setModaleNouvelle(false); recharger(); toast.succes("Facture créée."); }}
         onErreur={setErreur}
       />
@@ -517,7 +538,7 @@ function PanneauMobile({ infos, identite, onSave, onSaveIdentite, ecoleStyle }) 
   );
 }
 
-function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais, devise, onCree, onErreur }) {
+function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, frais, devise, onCree, onErreur }) {
   const [eleveId, setEleveId] = useState("");
   const [echeance, setEcheance] = useState("");
   const [lignes, setLignes] = useState([{ libelle: "", quantite: "1", prix_unitaire: "", frais_id: "" }]);
@@ -554,14 +575,13 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, eleves, frais
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouvelle facture" large>
       <form onSubmit={soumettre} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élève *</span>
-            <select value={eleveId} onChange={(e) => setEleveId(e.target.value)} required
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-              <option value="">— Choisir —</option>
-              {eleves.map((e) => <option key={e.id} value={e.id}>{e.prenom} {e.nom} — {e.matricule}</option>)}
-            </select>
-          </label>
+          {/*  🔴 UNE <option> PAR ÉLÈVE : c'est le motif que `SelecteurEleve`
+               a été écrit pour remplacer. « Indolore à 96 élèves, impraticable
+               à 10 000 », dit son en-tête — et au-delà de 1 000, l'élève
+               n'était même PAS dans la liste, le chargement étant plafonné
+               sans le dire. On tape, le serveur renvoie huit résultats. */}
+          <SelecteurEleve value={eleveId} anneeId={annee?.id}
+            onChange={(id) => setEleveId(id)} label="Élève *" requis />
           <Champ label="Échéance" type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
         </div>
 

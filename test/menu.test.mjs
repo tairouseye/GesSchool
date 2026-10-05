@@ -128,3 +128,43 @@ test("l'épreuve des libellés détecte bien ce qu'elle traque", () => {
   const libs = faux.map((i) => libelleItem(i, ETABLISSEMENTS[2].ecole));
   assert.equal(libs[0], libs[1], "deux entrées sans labelMixte restent indiscernables");
 });
+
+test("🔴 aucune page ne devient gratuite par oubli", () => {
+  //  `moduleActif` répond `true` pour une clé inconnue de `MODULES` : une
+  //  page sans module est donc une page « cœur », toujours offerte et jamais
+  //  facturable. C'est volontaire pour les accueils et les utilitaires —
+  //  mais douze clés du supérieur s'y sont retrouvées par simple oubli, si
+  //  bien qu'une université en formule d'entrée reçoit filières, admissions,
+  //  inscriptions, notes et délibérations gratuitement, pendant qu'une école
+  //  élémentaire paie « Vie scolaire » pour faire l'appel.
+  //
+  //  ⚠️ CETTE ÉPREUVE NE TRANCHE PAS LA QUESTION COMMERCIALE : rattacher ces
+  //  clés verrouillerait des pages aujourd'hui ouvertes à sept écoles, et
+  //  cela se décide avec la grille de prix université. Elle FIGE l'existant :
+  //  toute NOUVELLE page devra être rattachée à un module, ou ajoutée ici
+  //  avec sa raison. C'est l'oubli silencieux qu'on interdit, pas le choix.
+  const COEUR_ASSUME = [
+    //  Utilitaires et accueils : jamais facturables, par nature.
+    "membres", "signatures", "parametres",
+    "_pilotage", "_gestion", "_pedagogie", "_passage_annee",
+    "_abonnement", "_organigramme", "_documentation", "_journal",
+    //  Scolarité : indissociables du socle (un élève a des parents, une photo).
+    "codes_parents", "photos",
+    //  ⬜ DETTE CONNUE — branche « supérieur » et deux écrans d'école, hors
+    //  module par oubli. Voir l'audit du 04/10 (point C3), à traiter avec la
+    //  tarification université.
+    "acquis", "programmation",
+    "appel_sup", "emploi_sup", "codes_etudiants", "filieres",
+    "admissions", "inscriptions_sup", "notes_lmd", "deliberations_sup",
+  ];
+  const cles = [...new Set(ESPACES.flatMap((e) => e.items.map((i) => i.cle)))];
+  const sansModule = cles.filter((c) => !P.moduleDeCle(c));
+  const nouvelles = sansModule.filter((c) => !COEUR_ASSUME.includes(c));
+  assert.deepEqual(nouvelles, [],
+    "page(s) sans module : rattachez-les dans modules.js, ou inscrivez-les dans "
+    + "COEUR_ASSUME avec la raison");
+  //  Et symétriquement : une clé retirée du menu doit sortir de cette liste,
+  //  sinon elle masque un futur oubli.
+  const obsoletes = COEUR_ASSUME.filter((c) => !cles.includes(c));
+  assert.deepEqual(obsoletes, [], "clé(s) absente(s) du menu à retirer de COEUR_ASSUME");
+});

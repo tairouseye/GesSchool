@@ -3,7 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
-import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
+import { getInscriptionsParEleve } from "@/lib/eleves.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { facturerAbonnements } from "@/lib/paiements.js";
@@ -26,7 +26,6 @@ export default function Transport() {
   const [mois, setMois] = useState(moisCourant());
   const [circuits, setCircuits] = useState([]);
   const [abonnes, setAbonnes] = useState([]);
-  const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
   const [erreur, setErreur] = useState("");
 
@@ -35,10 +34,14 @@ export default function Transport() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [cir, abo, els, insc] = await Promise.all([
-        api.getCircuits(ecoleId), api.getAbonnements(ecoleId), getEleves(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
+      //  (La liste complète des élèves n'est plus chargée : le choix passe par
+      //   `SelecteurEleve`, qui cherche au SERVEUR, et les noms affichés viennent
+      //   de la jointure sur l'abonnement. Elle était plafonnée à 1 000 lignes
+      //   sans le dire — au-delà, un élève devenait introuvable en silence.)
+      const [cir, abo, insc] = await Promise.all([
+        api.getCircuits(ecoleId), api.getAbonnements(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
       ]);
-      setCircuits(cir); setAbonnes(abo); setEleves(els); setInscriptions(insc);
+      setCircuits(cir); setAbonnes(abo); setInscriptions(insc);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId]);
   useEffect(() => { recharger(); }, [recharger]);
@@ -83,7 +86,7 @@ export default function Transport() {
               <Champ label="Mois à facturer" type="month" value={mois} onChange={(e) => setMois(e.target.value)} />
               <Bouton variante="fantome" onClick={facturer}>Facturer le mois</Bouton>
             </div>
-            <Abonnes ecoleId={ecoleId} abonnes={abonnes} circuits={circuits} eleves={eleves} classe={classe} devise={devise} wrap={wrap} confirmer={confirmer} />
+            <Abonnes ecoleId={ecoleId} abonnes={abonnes} circuits={circuits} classe={classe} devise={devise} wrap={wrap} confirmer={confirmer} />
           </>
         )}
         {onglet === "embarquement" && <Embarquement ecoleId={ecoleId} circuits={circuits} abonnes={actifs} classe={classe} toast={toast} />}
@@ -201,7 +204,7 @@ function ModaleCircuit({ ouvert, circuit, onFermer, onValider }) {
 }
 
 // ---- Abonnés ----
-function Abonnes({ ecoleId, abonnes, circuits, eleves, classe, devise, wrap, confirmer }) {
+function Abonnes({ ecoleId, abonnes, circuits, classe, devise, wrap, confirmer }) {
   const [modale, setModale] = useState(null);
   return (
     <>
@@ -233,13 +236,13 @@ function Abonnes({ ecoleId, abonnes, circuits, eleves, classe, devise, wrap, con
           </table>
         </Carte>
       )}
-      <ModaleAbonne ouvert={!!modale} abo={modale} eleves={eleves} abonnes={abonnes} circuits={circuits} classe={classe} devise={devise}
+      <ModaleAbonne ouvert={!!modale} abo={modale} abonnes={abonnes} circuits={circuits} classe={classe} devise={devise}
         onFermer={() => setModale(null)} onValider={(a) => wrap(async () => { await api.enregistrerAbonnement(ecoleId, a); setModale(null); }, "Abonné enregistré.")} />
     </>
   );
 }
 
-function ModaleAbonne({ ouvert, abo, eleves, abonnes, circuits, classe, devise, onFermer, onValider }) {
+function ModaleAbonne({ ouvert, abo, abonnes, circuits, classe, devise, onFermer, onValider }) {
   const [f, setF] = useState({});
   useEffect(() => {
     setF(abo?.id

@@ -4,10 +4,10 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/viescolaire.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
-import { getEleves } from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { useConfirm } from "@/composants/Feedback.jsx";
 
 const aujourdHui = () => new Date().toISOString().slice(0, 10);
@@ -212,13 +212,14 @@ function Incidents({ ecoleId, onErreur }) {
   const confirmer = useConfirm();
   const { utilisateur } = useAuth();
   const [incidents, setIncidents] = useState([]);
-  const [eleves, setEleves] = useState([]);
   const [modale, setModale] = useState(false);
 
   const recharger = useCallback(async () => {
     try {
-      const [inc, els] = await Promise.all([api.getIncidents(ecoleId), getEleves(ecoleId)]);
-      setIncidents(inc); setEleves(els);
+      //  Les noms affichés viennent de la jointure sur l'incident, et le choix
+      //  d'un élève passe par `SelecteurEleve` : la liste complète — plafonnée
+      //  à 1 000 lignes sans le dire — n'a plus de raison d'être téléchargée.
+      setIncidents(await api.getIncidents(ecoleId));
     } catch (e) { onErreur(e.message); }
   }, [ecoleId, onErreur]);
 
@@ -229,7 +230,7 @@ function Incidents({ ecoleId, onErreur }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Bouton onClick={() => setModale(true)} disabled={eleves.length === 0}>+ Nouvel incident</Bouton>
+        <Bouton onClick={() => setModale(true)}>+ Nouvel incident</Bouton>
       </div>
       <Carte className="overflow-hidden">
         {incidents.length === 0 ? (
@@ -268,27 +269,24 @@ function Incidents({ ecoleId, onErreur }) {
       </Carte>
 
       <ModaleIncident
-        ouvert={modale} onFermer={() => setModale(false)} eleves={eleves}
+        ouvert={modale} onFermer={() => setModale(false)}
         onCreer={async (inc) => { try { await api.creerIncident(ecoleId, inc, utilisateur?.id); setModale(false); recharger(); } catch (e) { onErreur(e.message); } }}
       />
     </div>
   );
 }
 
-function ModaleIncident({ ouvert, onFermer, eleves, onCreer }) {
+function ModaleIncident({ ouvert, onFermer, onCreer }) {
   const [f, setF] = useState({ eleve_id: "", type: "observation", gravite: "", description: "", date_incident: aujourdHui() });
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Nouvel incident">
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!f.eleve_id || !f.description.trim()) return; onCreer({ eleve_id: f.eleve_id, type: f.type, gravite: f.gravite ? Number(f.gravite) : null, description: f.description.trim(), date_incident: f.date_incident }); }}>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Élève *</span>
-          <select value={f.eleve_id} onChange={(e) => maj("eleve_id", e.target.value)} required
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-            <option value="">— Choisir —</option>
-            {eleves.map((e) => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
-          </select>
-        </label>
+        {/*  Recherche au serveur, au lieu d'une <option> par élève : la
+             liste complète était plafonnée à 1 000 lignes sans le dire, donc
+             un élève au-delà ne pouvait pas recevoir d'incident. */}
+        <SelecteurEleve value={f.eleve_id}
+          onChange={(id) => maj("eleve_id", id)} label="Élève *" requis />
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>

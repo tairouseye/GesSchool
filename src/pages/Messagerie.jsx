@@ -5,7 +5,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte, Bouton, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/messagerie.js";
-import { getEleves, getTuteursEleve, chercherEleves } from "@/lib/eleves.js";
+import { getTuteursEleve, chercherEleves } from "@/lib/eleves.js";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
@@ -27,7 +27,7 @@ export default function Messagerie() {
 
   // --- Fils PARENTS (existant) ---
   const [convs, setConvs] = useState([]);
-  const [eleves, setEleves] = useState([]);
+  const [resultats, setResultats] = useState([]);
   const [recherche, setRecherche] = useState("");
   const [choixParents, setChoixParents] = useState(null); // { eleve, parents } si plusieurs
   // La cle du fil parent est le PROFIL de la personne, plus une de ses
@@ -63,10 +63,27 @@ export default function Messagerie() {
 
   useEffect(() => { rechargerConvs(); }, [rechargerConvs]);
   useEffect(() => { rechargerConvsEt(); }, [rechargerConvsEt]);
-  useEffect(() => { getEleves(ecoleId).then(setEleves).catch((e) => setErreur(e.message)); }, [ecoleId]);
 
-  // Recherche d'étudiant CÔTÉ SERVEUR (au plus 8 résultats) : la liste
-  // complète chargée pour l'onglet parent ne passerait pas à l'échelle.
+  //  🔴 RECHERCHE D'ÉLÈVE CÔTÉ SERVEUR (onglet parents).
+  //  Elle se faisait EN MÉMOIRE sur la liste complète des élèves — liste
+  //  plafonnée à 1 000 lignes sans le dire, donc au-delà de ce seuil on ne
+  //  pouvait plus écrire au parent d'un élève situé en fin d'alphabet. Le
+  //  commentaire d'à côté l'annonçait déjà pour les étudiants : « la liste
+  //  complète chargée pour l'onglet parent ne passerait pas à l'échelle. »
+  useEffect(() => {
+    const q = recherche.trim();
+    if (q.length < 2) { setResultats([]); return undefined; }
+    let vivant = true;
+    const t = setTimeout(async () => {
+      try {
+        const r = await chercherEleves(ecoleId, q, { limite: 8 });
+        if (vivant) setResultats(r);
+      } catch { if (vivant) setResultats([]); }
+    }, 250);
+    return () => { vivant = false; clearTimeout(t); };
+  }, [ecoleId, recherche]);
+
+  // Recherche d'étudiant CÔTÉ SERVEUR (au plus 8 résultats).
   useEffect(() => {
     const q = rechercheEt.trim();
     if (q.length < 2) { setResultatsEt([]); return undefined; }
@@ -120,6 +137,7 @@ export default function Messagerie() {
     setParentId(pid);
     setSelInfo(nom ? { nom, eleve: eleveNom } : null);
     setRecherche("");
+    setResultats([]);
     setChoixParents(null);
   }
   function ouvrirEtudiant(el) {
@@ -134,11 +152,6 @@ export default function Messagerie() {
     setErreur("");
   }
 
-  // --- Onglet parents : recherche en mémoire (liste déjà chargée) ---
-  const q = recherche.trim().toLowerCase();
-  const resultats = q
-    ? eleves.filter((e) => `${e.prenom} ${e.nom} ${e.matricule || ""}`.toLowerCase().includes(q)).slice(0, 30)
-    : [];
 
   async function choisirEleve(el) {
     try {
@@ -256,7 +269,7 @@ export default function Messagerie() {
                   </button>
                 ))}
               </div>
-            ) : q ? (
+            ) : recherche.trim() ? (
               /* Résultats de recherche d'élèves */
               <ul className="overflow-y-auto">
                 {resultats.length === 0 ? (

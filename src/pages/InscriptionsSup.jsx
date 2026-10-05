@@ -4,7 +4,7 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/superieur.js";
-import { getEleves, creerEleve } from "@/lib/eleves.js";
+import { creerEleve } from "@/lib/eleves.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { creerFacture } from "@/lib/paiements.js";
@@ -15,7 +15,7 @@ const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) ||
 const nomEleve = (e) => (e ? `${e.prenom} ${e.nom}` : "—");
 
 // --- Modale : inscription administrative (rattache un étudiant à une filière) ---
-function ModaleIA({ ouvert, onFermer, filieres, eleves, filiereDefaut, niveauDefaut, devise, onValider }) {
+function ModaleIA({ ouvert, onFermer, filieres, filiereDefaut, niveauDefaut, devise, onValider }) {
   const [nouveau, setNouveau] = useState(false);
   const [eleveId, setEleveId] = useState("");
   const [neo, setNeo] = useState({ prenom: "", nom: "", sexe: "M" });
@@ -184,7 +184,6 @@ export default function InscriptionsSup() {
 
   const [annee, setAnnee] = useState(null);
   const [filieres, setFilieres] = useState([]);
-  const [eleves, setEleves] = useState([]);
   const [fFiliere, setFFiliere] = useState("");
   const [fNiveau, setFNiveau] = useState("");
   const [liste, setListe] = useState([]);
@@ -196,7 +195,6 @@ export default function InscriptionsSup() {
     if (!ecoleId) return;
     getAnneeCourante(ecoleId).then(setAnnee).catch(() => {});
     api.getFilieres(ecoleId).then(setFilieres).catch((e) => setErreur(e.message));
-    getEleves(ecoleId).then(setEleves).catch(() => {});
   }, [ecoleId]);
 
   const recharger = useCallback(() => {
@@ -215,7 +213,8 @@ export default function InscriptionsSup() {
         if (!neo.prenom.trim() || !neo.nom.trim()) throw new Error("Prénom et nom requis.");
         const e = await creerEleve(ecoleId, { prenom: neo.prenom.trim(), nom: neo.nom.trim(), sexe: neo.sexe });
         eid = e.id;
-        setEleves((s) => [...s, e]);
+        //  (Plus de liste locale à alimenter : le sélecteur cherche au serveur,
+        //   où l'étudiant qu'on vient de créer est déjà présent.)
       }
       if (!eid) throw new Error("Choisissez un étudiant.");
       const insc = await api.creerInscription(ecoleId, { eleve_id: eid, filiere_id: filiereId, niveau, annee_id: annee?.id });
@@ -309,7 +308,7 @@ export default function InscriptionsSup() {
       </div>
 
       <ModaleIA ouvert={iaOuvert} onFermer={() => setIaOuvert(false)}
-        filieres={filieres} eleves={eleves} filiereDefaut={fFiliere} niveauDefaut={fNiveau || "L1"} devise={devise}
+        filieres={filieres} filiereDefaut={fFiliere} niveauDefaut={fNiveau || "L1"} devise={devise}
         onValider={inscrire} />
       <ModaleIP inscription={ip} ecoleId={ecoleId} onFermer={() => setIp(null)} onEnregistre={recharger} />
     </>

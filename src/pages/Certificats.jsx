@@ -5,7 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { codeDoc } from "@/lib/verification.js";
-import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
+import { getInscriptionsEleve } from "@/lib/eleves.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante, getSignataires } from "@/lib/academique.js";
 import { getDernierBulletin } from "@/lib/bulletins.js";
@@ -42,8 +42,8 @@ export default function Certificats() {
   const toast = useToast();
   const confirmer = useConfirm();
   const [annee, setAnnee] = useState(null);
-  const [eleves, setEleves] = useState([]);
-  const [inscriptions, setInscriptions] = useState({});
+  const [eleve, setEleve] = useState(null);
+  const [classeEleve, setClasseEleve] = useState("");
   const [signataires, setSignataires] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [eleveId, setEleveId] = useState("");
@@ -65,10 +65,14 @@ export default function Certificats() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [els, insc, sig, docs] = await Promise.all([
-        getEleves(ecoleId), getInscriptionsParEleve(ecoleId, an?.id), getSignataires(ecoleId), api.getDocuments(ecoleId),
-      ]);
-      setEleves(els); setInscriptions(insc); setSignataires(sig); setDocuments(docs);
+      //  On ne charge plus NI la liste des élèves NI toutes les inscriptions
+      //  de l'année : le sélecteur cherche au serveur et rend la fiche
+      //  complète de l'élève choisi, et sa classe se lit à l'unité.
+      //  ⚠️ Les deux lectures étaient plafonnées à 1 000 lignes SANS LE DIRE :
+      //  au-delà, un élève était introuvable et son attestation impossible à
+      //  délivrer, sans un mot d'explication.
+      const [sig, docs] = await Promise.all([getSignataires(ecoleId), api.getDocuments(ecoleId)]);
+      setSignataires(sig); setDocuments(docs);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId]);
   useEffect(() => { recharger(); }, [recharger]);
@@ -83,17 +87,27 @@ export default function Certificats() {
   useEffect(() => { if (ecole?.ville && !ville) setVille(ecole.ville); }, [ecole]); // eslint-disable-line
 
   // Résultats + paiement de l'élève (pour les attestations de résultats / paiement).
+  //  Et sa CLASSE : elle figure sur presque tous les documents. On la lit pour
+  //  CET élève seulement, au lieu de télécharger toutes les inscriptions de
+  //  l'année pour n'en garder qu'une.
   useEffect(() => {
-    if (!eleveId || !annee) { setExtra({ resultat: null, paiement: null }); return; }
+    if (!eleveId || !annee) { setExtra({ resultat: null, paiement: null }); setClasseEleve(""); return; }
     let vivant = true;
     Promise.all([
       getDernierBulletin(eleveId, annee.id).catch(() => null),
       getResumePaiementEleve(ecoleId, eleveId, annee.id).catch(() => null),
-    ]).then(([resultat, paiement]) => { if (vivant) setExtra({ resultat, paiement }); });
+      getInscriptionsEleve(eleveId).catch(() => []),
+    ]).then(([resultat, paiement, inscs]) => {
+      if (!vivant) return;
+      setExtra({ resultat, paiement });
+      //  L'inscription de l'année courante ; sinon la plus récente, pour que
+      //  le document d'un élève sorti porte tout de même sa dernière classe.
+      const i = (inscs || []).find((x) => x.annee_id === annee.id) || (inscs || [])[0];
+      setClasseEleve(i?.classes?.libelle || "");
+    });
     return () => { vivant = false; };
   }, [eleveId, annee, ecoleId]);
 
-  const eleve = eleves.find((e) => e.id === eleveId);
   const modele = MODELES.find((m) => m.id === modeleId);
   const sig = signataires[sigIdx];
 
@@ -107,7 +121,7 @@ export default function Certificats() {
     dateNaiss: eleve.date_naissance ? dateLisible(eleve.date_naissance) : "—",
     lieuNaiss: eleve.lieu_naissance,
     matricule: eleve.matricule || "—",
-    classe: inscriptions[eleve.id]?.classes?.libelle || "—",
+    classe: classeEleve || "—",
     annee: annee?.libelle || "—",
     devise: ecole?.devise || "XOF",
     moyenne: extra.resultat?.moyenne_generale != null ? fmt(extra.resultat.moyenne_generale) : "—",
@@ -154,7 +168,7 @@ export default function Certificats() {
             {/* Pas de <label> englobant : le sélecteur pose le sien, et des
                 labels imbriqués détourneraient le clic sur les résultats. */}
             <SelecteurEleve value={eleveId}
-              onChange={(id) => setEleveId(id)} label="Élève" />
+              onChange={(id, el) => { setEleveId(id); setEleve(el || null); }} label="Élève" />
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type de document</span>
               <select value={modeleId} onChange={(e) => setModeleId(e.target.value)}

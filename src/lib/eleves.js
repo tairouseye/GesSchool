@@ -138,16 +138,23 @@ function requeteEleves(ecoleId, { anneeId, q, classeId, statut, classesAutorisee
   return req.order("nom").order("prenom");
 }
 
-// ⚠️ CONTRAT PRÉSERVÉ : renvoie un TABLEAU. Sept pages s'en servent pour
-// alimenter des sélecteurs d'élèves (Cantine, Certificats, Inscriptions,
-// Messagerie, Paiements, Transport, Vie scolaire). En changer la forme les
-// casserait toutes en silence — le build ne vérifie pas les formes d'objet.
-// La liste paginée porte un autre nom : `getElevesPage`.
-export async function getEleves(ecoleId, options = {}) {
-  const { data, error } = await requeteEleves(ecoleId, options).range(0, PLAFOND_LOT - 1);
-  if (error) throw error;
-  return data ?? [];
-}
+//  🔴 `getEleves` A ÉTÉ SUPPRIMÉE, VOLONTAIREMENT. Elle lisait « tous les
+//  élèves » — en réalité au plus `PLAFOND_LOT` (1 000) lignes, triées par nom,
+//  SANS JAMAIS DIRE qu'elle tronquait. Les sept pages qui s'en servaient pour
+//  alimenter un sélecteur devenaient donc, au-delà de ce seuil, incapables de
+//  trouver un élève en fin d'alphabet : pas de facture, pas d'attestation, pas
+//  de message à son parent, et aucune explication à l'écran.
+//
+//  Ce qui la remplace, selon le besoin réel :
+//   - CHOISIR un élève  → `SelecteurEleve` (cherche au serveur, 8 résultats) ;
+//   - AFFICHER un nom   → la jointure de la requête qui porte la ligne
+//                         (`abonnements.eleves`, `factures.eleves`…) ;
+//   - une LISTE écran   → `getElevesPage` (pagination serveur) ;
+//   - un LOT assumé     → `getElevesLot`, qui rend `complet` pour qu'on
+//                         puisse prévenir quand la borne est atteinte.
+//
+//  ⚠️ Ne pas la réintroduire : une lecture « complète » silencieusement
+//  plafonnée est exactement le défaut que ce lot a corrigé.
 
 // Recherche bornée, pour les sélecteurs d'élève. Rend au plus `limite`
 // résultats : un menu déroulant contenant 10 000 options n'est ni chargeable

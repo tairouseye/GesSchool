@@ -30,6 +30,8 @@ Cochez **Mensuel** si le frais se répète chaque mois, et **Obligatoire** pour 
 
 **Un élève** — **+ Nouvelle facture** : l'élève, l'échéance, puis les lignes.
 
+> **Pour désigner un élève, tapez deux lettres** de son nom ou de son matricule : la recherche part au serveur. Ne cherchez plus une liste déroulante — elle existait, mais s'arrêtait à 1 000 noms sans le dire.
+
 > ⚠️ **Mettez toujours une date d'échéance.** Sans elle, une facture impayée n'est **jamais** comptée en retard et n'entre pas dans les relances. L'application ne devine pas une échéance que vous n'avez pas donnée.
 
 ---

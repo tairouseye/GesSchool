@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.241 · mise à jour du 5 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.242 · mise à jour du 5 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -470,6 +470,8 @@ Chaque frais reste **modifiable** ou supprimable.
 ### 10.2 Facturer
 
 **Un élève à la fois** — **+ Nouvelle facture** : l'élève, une **date d'échéance**, puis les lignes (**+ Ajouter une ligne**, ou choisissez dans **Frais à facturer**).
+
+> **On CHERCHE l'élève, on ne le déroule plus.** Tapez deux lettres du nom, du prénom ou du matricule : l'application interroge le serveur et propose huit résultats. C'était une liste déroulante jusqu'à la version 2.242 — praticable à cent élèves, impossible à dix mille, et surtout **plafonnée à 1 000 noms sans le dire** : au-delà, un élève en fin d'alphabet était absent de la liste, donc impossible à facturer. Le même champ de recherche sert maintenant partout où l'on désigne un élève : facture, incident de vie scolaire, document, cantine, transport, messagerie.
 
 **Toute une promotion** — **⚡ Générer en lot** : choisissez le niveau ; les frais obligatoires sont pré-cochés, **y compris ceux définis au niveau du cycle**. L'application **ne crée pas de doublon** : un élève déjà facturé pour le même frais est ignoré.
 

@@ -5,6 +5,20 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.242.0] — tenir l'échelle (lot 4 de l'audit, dernier)
+- **Audit du 04/10, lot 4** : ce qui tenait à 96 élèves et cédait à 1 000.
+- **🔴 `getEleves()` promettait « tous les élèves » et en rendait mille.** Plafonnée à `PLAFOND_LOT`, triée par nom, **sans jamais dire qu'elle tronquait** — contrairement à `getElevesLot`, qui rend `complet`. Sept pages s'en servaient pour alimenter un sélecteur. Au-delà du seuil, un élève en fin d'alphabet devenait **introuvable** : pas de facture, pas d'attestation, pas de message à son parent, et **aucune explication à l'écran**.
+- **La fonction est supprimée**, et son emplacement porte désormais la raison et les quatre remplacements légitimes. *Mesuré avant correction : plus grande école 96 élèves — rien n'était cassé. Mais le prospect de Kinshasa est annoncé à plus de 1 000 élèves : il franchit exactement cette borne.*
+- **Les sept pages, une par une** :
+  - **Cantine**, **Transport**, **Inscriptions (sup.)** : le prop `eleves` était **vestigial** — déclaré dans la signature des modales, jamais lu. Les noms venaient déjà de la jointure sur l'abonnement, et le choix de `SelecteurEleve`. Trois requêtes supprimées sans toucher à une ligne d'affichage.
+  - **Documents** : la fiche de l'élève choisi vient du sélecteur (il la rend déjà), et sa classe se lit **à l'unité** au lieu de télécharger **toutes les inscriptions de l'année** pour n'en garder qu'une.
+  - **Paiements** et **Vie scolaire** : les deux derniers `<select>` rendant **une `<option>` par élève** passent à `SelecteurEleve` — le motif même que ce composant avait été écrit pour remplacer (« indolore à 96 élèves, impraticable à 10 000 », dit son en-tête).
+  - **Messagerie** : la recherche de l'onglet parents se faisait **en mémoire** sur la liste tronquée. Elle part au serveur, comme celle des étudiants juste à côté — dont le commentaire annonçait déjà le problème : « la liste complète chargée pour l'onglet parent ne passerait pas à l'échelle ».
+- **Paiements ne relance plus huit requêtes par frappe.** Un seul chargement dépendait de la recherche : taper un nom rechargeait frais, niveaux, cycles, inscrits, déclarations, mobile money et identité légale — dont **aucun** ne dépend du texte cherché. L'anti-rebond limitait la fréquence, pas le volume. Deux chargements désormais : le référentiel (clé : l'établissement) et la liste paginée (clé : recherche + page).
+- **🔴 `test/identifiants.test.mjs` m'a attrapé trois fois** pendant ce lot : `setEleves` dans Inscriptions, `q` dans Messagerie, `eleves` dans Vie scolaire — trois identifiants devenus orphelins que **le build ne voit pas** et qui auraient fait écran blanc à l'ouverture. C'est précisément son rôle.
+- **Deux garde-fous neufs** : `test/echelle.test.mjs` (4 épreuves) refuse le retour de `getEleves`, interdit qu'une page rende une `<option>` par élève, vérifie que le sélecteur cherche bien au serveur **et de façon bornée**, et que le référentiel de Paiements ne dépende plus de la recherche. Et dans `test/menu.test.mjs`, une épreuve **fige** la liste des pages hors module : la dette commerciale connue (douze clés du supérieur, gratuites par oubli) est inscrite avec sa raison, mais **toute nouvelle page devra être rattachée**. Elle ne tranche pas la question du prix — elle interdit l'oubli silencieux.
+- Manuel et guide Gestion mis à jour : on **cherche** un élève, on ne le déroule plus. **Suite : 286 épreuves.**
+
 ## [2.241.0] — finir ce qui avait été commencé (lot 3 de l'audit)
 - **Audit du 04/10, lot 3** : les fonctions livrées le plus récemment, celles qu'on va montrer.
 

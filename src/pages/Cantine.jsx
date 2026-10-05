@@ -3,7 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
-import { getEleves, getInscriptionsParEleve } from "@/lib/eleves.js";
+import { getInscriptionsParEleve } from "@/lib/eleves.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { facturerAbonnements } from "@/lib/paiements.js";
@@ -26,7 +26,6 @@ export default function Cantine() {
   const [annee, setAnnee] = useState(null);
   const [mois, setMois] = useState(moisCourant());
   const [abonnes, setAbonnes] = useState([]);
-  const [eleves, setEleves] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
   const [erreur, setErreur] = useState("");
   const [modale, setModale] = useState(null);
@@ -37,10 +36,14 @@ export default function Cantine() {
     try {
       const an = await getAnneeCourante(ecoleId);
       setAnnee(an);
-      const [abo, els, insc] = await Promise.all([
-        api.getAbonnements(ecoleId), getEleves(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
+      //  (La liste complète des élèves n'est plus chargée : le choix passe par
+      //   `SelecteurEleve`, qui cherche au SERVEUR, et les noms affichés viennent
+      //   de la jointure sur l'abonnement. Elle était plafonnée à 1 000 lignes
+      //   sans le dire — au-delà, un élève devenait introuvable en silence.)
+      const [abo, insc] = await Promise.all([
+        api.getAbonnements(ecoleId), getInscriptionsParEleve(ecoleId, an?.id),
       ]);
-      setAbonnes(abo); setEleves(els); setInscriptions(insc);
+      setAbonnes(abo); setInscriptions(insc);
     } catch (e) { setErreur(e.message); }
   }, [ecoleId]);
   useEffect(() => { recharger(); }, [recharger]);
@@ -131,7 +134,7 @@ export default function Cantine() {
         {onglet === "menu" && <Menu ecoleId={ecoleId} toast={toast} />}
       </div>
 
-      <ModaleAbonne ouvert={!!modale} abo={modale} eleves={eleves} abonnes={abonnes} classe={classe} devise={devise}
+      <ModaleAbonne ouvert={!!modale} abo={modale} abonnes={abonnes} classe={classe} devise={devise}
         onFermer={() => setModale(null)}
         onValider={(a) => wrap(async () => { await api.enregistrerAbonnement(ecoleId, a); setModale(null); }, "Abonné enregistré.")} />
 
@@ -234,7 +237,7 @@ function Menu({ ecoleId, toast }) {
   );
 }
 
-function ModaleAbonne({ ouvert, abo, eleves, abonnes, classe, devise, onFermer, onValider }) {
+function ModaleAbonne({ ouvert, abo, abonnes, classe, devise, onFermer, onValider }) {
   const [f, setF] = useState({});
   useEffect(() => {
     setF(abo?.id
