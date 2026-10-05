@@ -4,7 +4,7 @@
 
 import { ROLES_COMPLETS, estRoleComplet, peutVoir } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
-import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
+import { couvreScolaire, couvreSuperieur, typeDominant } from "@/lib/paliers.js";
 
 // Chaque page (clé) appartient à un ou plusieurs espaces.
 // `roles` = rôles « métier » membres de l'espace (en plus des rôles complets).
@@ -71,8 +71,8 @@ export const ESPACES = [
       // portent prix et fournisseurs, l'inventaire compte des biens. Le
       // catalogue est repris ici pour que le secrétariat puisse chercher.
       { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], groupe: "Bibliothèque" },
-      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🧾", cle: "biblio_acquisitions", types: ["superieur"], groupe: "Bibliothèque" },
-      { to: "/biblio-inventaire", label: "Inventaire", icone: "📋", cle: "biblio_inventaire", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-acquisitions", label: "Acquisitions", icone: "🛒", cle: "biblio_acquisitions", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-inventaire", label: "Inventaire", icone: "📦", cle: "biblio_inventaire", types: ["superieur"], groupe: "Bibliothèque" },
 
     ],
   },
@@ -99,12 +99,12 @@ export const ESPACES = [
       { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/acquis", label: "Suivi des acquis", icone: "🧸", cle: "acquis", types: ["ecole"], groupe: "Au quotidien" },
-      { to: "/programmation", label: "Programmation officielle", icone: "📋", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/programmation", label: "Programmation officielle", icone: "📑", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },
       // Deux pages pour un même besoin, parce que les modèles diffèrent :
       // `emplois_du_temps` planifie par CLASSE (école), `emplois_sup` par
       // FILIÈRE et SEMESTRE (université, migration 138). D'où le gating.
-      { to: "/emploi-du-temps", label: "Emploi du temps", icone: "🗓️", cle: "emploi", types: ["ecole"], groupe: "Au quotidien" },
-      { to: "/emploi-sup", label: "Emploi du temps", icone: "🗓️", cle: "emploi_sup", types: ["superieur"], groupe: "Au quotidien" },
+      { to: "/emploi-du-temps", label: "Emploi du temps", labelMixte: "Emploi du temps (classes)", icone: "🗓️", cle: "emploi", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/emploi-sup", label: "Emploi du temps", labelMixte: "Emploi du temps (filières)", icone: "🗓️", cle: "emploi_sup", types: ["superieur"], groupe: "Au quotidien" },
 
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
@@ -118,17 +118,17 @@ export const ESPACES = [
       { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Élèves & structure" },
 
       // Évaluation
-      { to: "/notes", label: "Notes", icone: "✎", cle: "notes", types: ["ecole"], groupe: "Évaluation" },
+      { to: "/notes", label: "Notes", labelMixte: "Notes (classes)", icone: "✎", cle: "notes", types: ["ecole"], groupe: "Évaluation" },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"], groupe: "Évaluation" },
       { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"], groupe: "Évaluation" },
-      { to: "/notes-lmd", label: "Notes", icone: "✎", cle: "notes_lmd", types: ["superieur"], groupe: "Évaluation" },
+      { to: "/notes-lmd", label: "Notes", labelMixte: "Notes (UE)", icone: "✎", cle: "notes_lmd", types: ["superieur"], groupe: "Évaluation" },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"], groupe: "Évaluation" },
 
       // Bibliothèque — versant pédagogique : ce qui se consulte, se prête
       // et se publie. Le versant achats/patrimoine est dans Gestion.
       { to: "/bibliotheque", label: "Catalogue", icone: "📚", cle: "bibliotheque", types: ["superieur"], groupe: "Bibliothèque" },
       { to: "/biblio-circulation", label: "Prêts & retours", icone: "🔄", cle: "biblio_circulation", types: ["superieur"], groupe: "Bibliothèque" },
-      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "🎓", cle: "biblio_depots", types: ["superieur"], groupe: "Bibliothèque" },
+      { to: "/biblio-depots", label: "Mémoires & thèses", icone: "📜", cle: "biblio_depots", types: ["superieur"], groupe: "Bibliothèque" },
 
       // Vie scolaire
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
@@ -236,6 +236,32 @@ export function itemPourType(item, ecoleOuType) {
   return false;
 }
 
+/**
+ * L'intitulé d'une entrée de menu, pour CET établissement.
+ *
+ * 🔴 POURQUOI CETTE FONCTION EXISTE. Depuis qu'un établissement peut couvrir
+ * l'élémentaire ET l'université (migration 168), le menu Pédagogie affiche
+ * côte à côte DEUX entrées « Notes » et DEUX entrées « Emploi du temps », avec
+ * la même icône : l'une planifie par classe, l'autre par filière et semestre.
+ * Rien ne permettait de les distinguer — il fallait cliquer pour savoir.
+ *
+ * ⚠️ On ne précise QUE si les deux paliers sont couverts. Une université seule
+ * dit « Notes », pas « Notes (UE) » : une précision qui ne lève aucune
+ * ambiguïté est du bruit.
+ *
+ * `labelSup` répond à une autre question (élève / étudiant) et reste géré par
+ * `typeDominant`, qui ne bascule que pour un établissement exclusivement
+ * universitaire.
+ */
+export function libelleItem(item, ecole) {
+  if (!item) return "";
+  const e = typeof ecole === "string" ? { type_etablissement: ecole } : (ecole || {});
+  const mixte = couvreScolaire(e) && couvreSuperieur(e);
+  if (mixte && item.labelMixte) return item.labelMixte;
+  if (item.labelSup && typeDominant(e) === "superieur") return item.labelSup;
+  return item.label;
+}
+
 // Première page réellement accessible, tous espaces confondus.
 // Renvoie `null` si l'utilisateur n'a accès à RIEN : l'appelant doit alors
 // afficher un écran explicite plutôt que de rediriger indéfiniment.
@@ -249,12 +275,36 @@ export function itemPourType(item, ecoleOuType) {
 // déplacer personne.
 export function premiereRoute(roles, estPromoteur, modulesActifs, ecoleOuType) {
   const espaces = espacesAccessibles(roles, estPromoteur);
+  for (const e of espaces) {
+    const to = routeDAtterrissage(e, roles, estPromoteur, modulesActifs, ecoleOuType);
+    if (to) return to;
+  }
+  return null;
+}
+
+/**
+ * Où atterrir DANS UN ESPACE donné — même règle que `premiereRoute`.
+ *
+ * 🔴 CETTE FONCTION A ÉTÉ EXTRAITE PARCE QUE LA RÈGLE ÉTAIT APPLIQUÉE À UN
+ * SEUL ENDROIT. `premiereRoute` savait qu'une page d'atterrissage doit être du
+ * TRAVAIL et non un utilitaire ; mais le changement d'espace, lui, prenait
+ * simplement la première entrée du menu (`Layout.jsx`). Résultat mesuré : un
+ * bibliothécaire atterrissait sur son **catalogue** à la connexion, et sur
+ * **« À signer »** s'il changeait d'espace — deux réponses à la même question.
+ *
+ * Pire, « À signer » ne s'affiche que s'il reste des documents en attente :
+ * on atterrissait donc, le plus souvent, sur une page absente du menu.
+ *
+ * D'où les deux passes : les pages de travail d'abord, les transverses
+ * (accueil d'espace, Membres, À signer, Paramètres) seulement s'il n'y a rien
+ * d'autre. L'ordre du menu reste ainsi libre de changer sans déplacer personne.
+ */
+export function routeDAtterrissage(espace, roles, estPromoteur, modulesActifs, ecoleOuType) {
+  if (!espace) return null;
   const ouvrable = (x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, ecoleOuType);
   for (const transverses of [false, true]) {
-    for (const e of espaces) {
-      const it = e.items.find((x) => !!x.transverse === transverses && ouvrable(x));
-      if (it) return it.to;
-    }
+    const it = (espace.items || []).find((x) => !!x.transverse === transverses && ouvrable(x));
+    if (it) return it.to;
   }
   return null;
 }

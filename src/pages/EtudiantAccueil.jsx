@@ -5,12 +5,21 @@ import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
 import { mesDemandesAcces, deciderAcces, mesMessagesNonLus } from "@/lib/etudiant.js";
+import { moduleActif } from "@/lib/modules.js";
 
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé", revoque: "Révoqué" };
 
 // Menu principal en tuiles — même traitement que l'espace parent
 // (navy sombre, icône dorée), pour que les deux espaces se ressemblent.
+//
+// 🔴 `cle` N'EST PAS DÉCORATIF. Il portait jusqu'ici l'icône et la pastille,
+// et rien d'autre : l'étudiant voyait donc « Bibliothèque » et « Mon dépôt »
+// même si l'établissement n'avait acheté ni l'un ni l'autre — la tuile
+// s'ouvrait sur un écran vide, la RLS faisant son travail trop tard. Le même
+// champ sert maintenant de verrou (`moduleActif`), comme dans le menu du
+// personnel. Une clé inconnue de `MODULES` reste une page « cœur », toujours
+// ouverte : c'est le cas de `_documentation` et de `carte_etudiant`.
 const TUILES = [
   { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
   { to: "/etudiant/emploi", cle: "emploi_sup", label: "Emploi du temps" },
@@ -26,7 +35,7 @@ const TUILES = [
 
 // Accueil étudiant : gestion du consentement d'accès parent aux notes.
 export default function EtudiantAccueil() {
-  const { profil } = useAuth();
+  const { profil, modulesActifs } = useAuth();
   const toast = useToast();
   const confirmer = useConfirm();
   const [demandes, setDemandes] = useState([]);
@@ -52,6 +61,9 @@ export default function EtudiantAccueil() {
     catch (e) { toast.erreur(e.message); }
   }
 
+  //  Les tuiles que l'établissement a réellement achetées.
+  const tuiles = TUILES.filter((t) => moduleActif(modulesActifs, t.cle));
+
   const enAttente = demandes.filter((d) => d.statut === "en_attente");
   const traitees = demandes.filter((d) => d.statut !== "en_attente");
 
@@ -65,7 +77,7 @@ export default function EtudiantAccueil() {
 
       {/* Menu en tuiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {TUILES.map((t) => (
+        {tuiles.map((t) => (
           <Link
             key={t.to}
             to={t.to}

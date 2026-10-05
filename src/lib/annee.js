@@ -1,3 +1,4 @@
+import { prochaineEtape } from "@/lib/promotion.js";
 import { supabase } from "@/lib/supabase.js";
 
 // GesSchool — passage d'année scolaire : années, ouverture, promotion des élèves.
@@ -66,20 +67,26 @@ function section(libelle) {
 // niveau supérieur (ordre +1), même section si une classe correspond ; les
 // élèves du plus haut niveau (sans niveau au-dessus) sont proposés « sortants ».
 export async function proposerPromotions(ecoleId, sourceId, cibleId) {
-  const [niveaux, insc, classesCible] = await Promise.all([
+  //  ⚠️ `sous_niveau_id` EST LU ICI, et c'est tout l'objet du correctif : dans
+  //  une classe « TPS/PS A », le TPS et le PS ne vont PAS au même endroit.
+  //  Sans cette colonne, les deux recevaient la même proposition et l'enfant
+  //  de TPS sautait une année (cf. `promotion.js`).
+  const [niveaux, sousNiveaux, insc, classesCible] = await Promise.all([
     supabase.from("niveaux").select("id, libelle, ordre").eq("ecole_id", ecoleId),
+    supabase.from("sous_niveaux").select("id, niveau_id, libelle, ordre, created_at").eq("ecole_id", ecoleId),
     supabase.from("inscriptions")
-      .select("eleve_id, statut, eleves(prenom, nom, matricule), classes(id, libelle, niveau_id, serie_id)")
+      .select("eleve_id, statut, sous_niveau_id, eleves(prenom, nom, matricule), classes(id, libelle, niveau_id, serie_id)")
       .eq("ecole_id", ecoleId).eq("annee_id", sourceId).in("statut", ["inscrit", "reinscrit"]),
     supabase.from("classes").select("id, libelle, niveau_id, serie_id").eq("ecole_id", ecoleId).eq("annee_id", cibleId),
   ]);
   if (niveaux.error) throw niveaux.error;
+  if (sousNiveaux.error) throw sousNiveaux.error;
   if (insc.error) throw insc.error;
   if (classesCible.error) throw classesCible.error;
 
   const niv = niveaux.data ?? [];
-  const ordreDe = Object.fromEntries(niv.map((n) => [n.id, n.ordre]));
-  const parOrdre = {}; for (const n of niv) parOrdre[n.ordre] = n;
+  //  (`ordreDe` / `parOrdre` ont disparu : la progression par ordre vit
+  //   désormais dans `prochaineEtape`, qui sait aussi gérer les sous-niveaux.)
   const cibles = classesCible.data ?? [];
 
   const trouverCible = (niveauId, sect, serieId) => {
@@ -93,19 +100,39 @@ export async function proposerPromotions(ecoleId, sourceId, cibleId) {
     return choix?.id || "";
   };
 
+  const sousListe = sousNiveaux.data ?? [];
+  const libSous = Object.fromEntries(sousListe.map((s) => [s.id, s.libelle]));
+  const libNiv = Object.fromEntries(niv.map((n) => [n.id, n.libelle]));
+
   const props = [];
   for (const i of insc.data ?? []) {
     const c = i.classes;
-    const ordre = ordreDe[c?.niveau_id];
-    const suiv = parOrdre[(ordre ?? -99) + 1];
-    const sortant = !suiv;
+    //  La règle de progression vit dans `promotion.js` : elle est pure, donc
+    //  éprouvable sans base. Ici on ne fait que la nourrir.
+    const etape = prochaineEtape({
+      niveauId: c?.niveau_id,
+      sousNiveauId: i.sous_niveau_id || null,
+      niveaux: niv,
+      sousNiveaux: sousListe,
+    });
+    const sortant = etape.sortant;
     props.push({
       eleve_id: i.eleve_id,
       nom: `${i.eleves?.prenom || ""} ${i.eleves?.nom || ""}`.trim() || "—",
       matricule: i.eleves?.matricule || "",
       classe_source: c?.libelle || "—",
-      cible_classe_id: suiv ? trouverCible(suiv.id, section(c?.libelle), c?.serie_id) : "",
-      niveau_cible: suiv?.libelle || "",
+      //  Son niveau RÉEL de départ, quand il est connu : c'est lui qui rend
+      //  la proposition lisible (« TPS → PS » et non « TPS/PS → TPS/PS »).
+      sous_niveau_source: libSous[i.sous_niveau_id] || "",
+      //  Conservé tel quel pour le redoublant : il reste où il est.
+      sous_niveau_source_id: i.sous_niveau_id || null,
+      cible_classe_id: sortant ? "" : trouverCible(etape.niveau_id, section(c?.libelle), c?.serie_id),
+      niveau_cible: sortant ? "" : (libNiv[etape.niveau_id] || ""),
+      //  ⚠️ REPORTÉ SUR LA NOUVELLE INSCRIPTION (voir appliquerPromotions) :
+      //  sans lui, le niveau réel saisi l'an passé était effacé chaque année.
+      sous_niveau_cible_id: etape.sous_niveau_id || null,
+      sous_niveau_cible: libSous[etape.sous_niveau_id] || "",
+      meme_niveau: etape.memeNiveau,
       redoublant: false,
       sortant,
       inclure: !sortant,
@@ -123,6 +150,13 @@ export async function appliquerPromotions(ecoleId, cibleId, promotions) {
     .map((p) => ({
       ecole_id: ecoleId, eleve_id: p.eleve_id, classe_id: p.cible_classe_id,
       annee_id: cibleId, statut: "reinscrit", redoublant: !!p.redoublant,
+      //  🔴 LA COLONNE QUI ÉTAIT OUBLIÉE. Un redoublant garde son niveau
+      //  réel de départ ; les autres prennent celui que la règle a calculé.
+      //  Sans cette ligne, « TPS/PS A » perdait la distinction TPS / PS à
+      //  chaque passage d'année, et la fonction se vidait d'elle-même.
+      sous_niveau_id: p.redoublant
+        ? (p.sous_niveau_source_id ?? null)
+        : (p.sous_niveau_cible_id ?? null),
     }));
   if (rows.length === 0) return { reinscrits: 0 };
   const { error } = await supabase

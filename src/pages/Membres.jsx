@@ -10,7 +10,9 @@ export default function Membres() {
   const { roles, ecole, profil } = useAuth();
   const confirmer = useConfirm();
   const toast = useToast();
-  const invitables = rolesInvitables(roles); // rôles que je peux déléguer
+  //  L'établissement est passé : on ne propose pas « Bibliothécaire » à une
+  //  école élémentaire, dont aucun écran de bibliothèque n'est ouvert.
+  const invitables = rolesInvitables(roles, ecole); // rôles que je peux déléguer
   const complet = estRoleComplet(roles);
 
   const [membres, setMembres] = useState([]);

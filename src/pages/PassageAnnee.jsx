@@ -315,11 +315,31 @@ function PanneauPromotion({ ecoleId, annees, courante, onErreur }) {
                               <td className="px-3 py-2">
                                 <span className="font-medium text-navy-900">{p.nom}</span>
                                 <span className="ml-2 font-mono text-[11px] text-navy-900/40">{p.matricule}</span>
+                                {/*  Dans une classe multi-niveaux, le niveau RÉEL de
+                                     l'enfant est la seule information qui rend la
+                                     proposition lisible : « TPS/PS A » ne dit pas
+                                     si l'on a devant soi un TPS ou un PS. */}
+                                {p.sous_niveau_source && (
+                                  <span className="ml-2 rounded-full bg-navy-900/5 px-2 py-0.5 text-[11px] font-medium text-navy-900/60">
+                                    {p.sous_niveau_source}
+                                  </span>
+                                )}
                               </td>
                               <td className="px-3 py-2">
                                 <select value={decision(p)} onChange={(e) => setDecision(i, e.target.value)}
                                   className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs outline-none focus:border-or-500">
-                                  <option value="passe">Passe{p.niveau_cible ? ` en ${p.niveau_cible}` : ""}</option>
+                                  {/*  « Passe en PS » plutôt que « Passe en TPS/PS » :
+                                       quand l'enfant reste dans la même classe et
+                                       avance d'un cran, c'est le cran qu'il faut
+                                       nommer, sinon la proposition paraît immobile. */}
+                                  <option value="passe">
+                                    Passe
+                                    {p.meme_niveau && p.sous_niveau_cible
+                                      ? ` en ${p.sous_niveau_cible} (même classe)`
+                                      : p.niveau_cible
+                                        ? ` en ${p.niveau_cible}${p.sous_niveau_cible ? ` · ${p.sous_niveau_cible}` : ""}`
+                                        : ""}
+                                  </option>
                                   <option value="redouble">Redouble</option>
                                   <option value="sort">Sort de l'école</option>
                                 </select>

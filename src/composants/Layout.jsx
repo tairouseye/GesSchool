@@ -4,7 +4,8 @@ import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
-import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType, grouperItems } from "@/lib/espaces.js";
+import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType, grouperItems,
+         routeDAtterrissage, libelleItem } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -13,7 +14,6 @@ import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
-import { typeDominant } from "@/lib/paliers.js";
 
 // Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
 function LogoEcole({ logoUrl, sigle, size }) {
@@ -168,11 +168,10 @@ export default function Layout() {
   // pour ne jamais proposer un lien qui mènerait à un refus.
   const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole));
 
-  // Libellé d'un item adapté au type d'établissement (ex. Élèves → Étudiants au supérieur).
-  //  L'intitule « Etudiants » ne vaut que pour un etablissement
-  //  exclusivement universitaire : dans un etablissement qui va de
-  //  l'elementaire a l'universite, on garde « Eleves » comme mot courant.
-  const libItem = (it) => (it.labelSup && typeDominant(ecole) === "superieur" ? it.labelSup : it.label);
+  //  Libellé d'un item pour CET établissement : « Élèves » ou « Étudiants »,
+  //  et « Notes (classes) » ou « Notes (UE) » quand les deux paliers
+  //  cohabitent. La règle vit dans espaces.js, avec son explication.
+  const libItem = (it) => libelleItem(it, ecole);
 
   // Espaces accessibles (par rôle), restreints à ceux qui ont au moins un menu.
   const accessibles = espacesAccessibles(roles, estPromoteur).filter((e) => menusDe(e).length > 0);
@@ -201,7 +200,12 @@ export default function Layout() {
     // Mobile : on atterrit sur la grille de tuiles de l'espace. Desktop :
     // les tuiles sont masquées, on ouvre directement la 1re page.
     setTuiles(true);
-    navigate(menusDe(e)[0]?.to || e.accueil);
+    //  ⚠️ PAS `menusDe(e)[0]` : la première entrée du menu est souvent un
+    //  utilitaire (« À signer », Membres), et « À signer » est même masqué
+    //  quand il n'y a rien à signer — on atterrissait donc sur une page
+    //  absente du menu. `routeDAtterrissage` applique ici la règle que la
+    //  connexion applique déjà : du travail d'abord.
+    navigate(routeDAtterrissage(e, roles, estPromoteur, modulesActifs, ecole) || e.accueil);
   };
 
   // Ouvrir une page depuis une tuile (mobile) : referme la grille.
@@ -325,6 +329,17 @@ export default function Layout() {
         )}
 
         <nav className="mt-1 flex-1 space-y-1 overflow-y-auto px-3" data-tour="menu">
+          {/*  Un menu vide ne doit pas ressembler à une panne. Le cas se
+               produit quand tout ce qui était ouvert à ce rôle est masqué :
+               module désactivé, palier non couvert, ou « À signer » seul et
+               rien a signer. On le DIT, au lieu de laisser un bandeau noir. */}
+          {items.length === 0 && (
+            <p className="px-4 py-3 text-xs leading-relaxed text-creme/50">
+              Aucun écran n&apos;est ouvert ici pour votre rôle.
+              Demandez au promoteur de vérifier vos accès, ou les modules actifs
+              de l&apos;établissement.
+            </p>
+          )}
           {grouperItems(items).map((sec, si) => (
             <Section key={sec.groupe || `libre-${si}`} titre={sec.groupe}
               actif={sec.items.some((x) => x.to === location.pathname)}

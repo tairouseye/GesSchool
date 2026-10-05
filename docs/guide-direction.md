@@ -38,6 +38,8 @@ Les cas courants en un clic : « Élémentaire », « Élémentaire et Collège 
 
 **Pédagogie de l'élémentaire** — **Classique** (un niveau par classe) ou **Montessori** (classes multi-niveaux). En Montessori, précisez le niveau réel de chaque enfant avec les **sous-niveaux** : la classe s'appelle « TPS/PS A », et chaque enfant y est TPS ou PS.
 
+> **Au passage d'année, la proposition suit ce niveau réel.** Un TPS devient **PS et reste dans sa classe** ; un PS passe au niveau combiné suivant et y entre par son premier cran. Un redoublant garde son niveau. Saisissez les sous-niveaux **dans l'ordre** où les enfants les traversent — TPS avant PS : c'est cet ordre qui décide de la progression.
+
 ---
 
 ## 3. Le bulletin suit un circuit
@@ -162,7 +164,7 @@ Chaque responsable est **cloisonné à son domaine** et gère ensuite ses propre
 **Pilotage → Passage d'année**
 
 1. **Nouvelle année** : libellé et dates. Choisissez ce qui est **recopié** — structure, affectations, grille tarifaire, emplois du temps. Un récapitulatif confirme avant d'ouvrir.
-2. **Promotion** : **Calculer les propositions** → chaque élève est proposé au niveau supérieur. Ajustez : **Passe** / **Redouble** / **Sort de l'école**. **Réinscrire** applique le tout, et se relance sans créer de doublon.
+2. **Promotion** : **Calculer les propositions** → chaque élève est proposé au niveau supérieur — ou au **cran suivant de sa classe** s'il est dans une classe multi-niveaux. Ajustez : **Passe** / **Redouble** / **Sort de l'école**. **Réinscrire** applique le tout, et se relance sans créer de doublon.
 3. Une année ouverte par erreur et **vide** peut être supprimée : l'ancienne redevient courante.
 
 Ce qui **persiste** et n'est pas à refaire : niveaux, cycles, matières, coefficients, personnels, salles, membres et rôles.

@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.240 · mise à jour du 4 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.241 · mise à jour du 5 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -719,6 +719,12 @@ En fin d'année, ouvrez la suivante sans tout ressaisir :
 
 1. **Nouvelle année** : libellé (ex. 2026-2027) + dates. Choisissez ce qui est **recopié** depuis l'année en cours — **Structure (classes)**, **Affectations profs**, **Grille tarifaire**, **Emplois du temps** — les **compteurs** indiquent le volume. Un **récapitulatif** confirme avant d'ouvrir. L'ancienne année reste **archivée** ; la nouvelle devient **courante**.
 2. **Promotion des élèves** : **Calculer les propositions** → chaque élève est proposé au **niveau supérieur** (même section si elle existe). Ajustez au cas par cas : **Passe** / **Redouble** / **Sort de l'école**, et la classe cible. **Réinscrire** applique le tout (relançable sans doublon).
+
+   **En Montessori, la proposition suit le niveau RÉEL de l'enfant, pas celui de la classe.** Dans « TPS/PS A », un TPS devient **PS et reste dans la même classe** ; un PS, lui, passe au niveau combiné suivant et y entre par son **premier cran** (en CI dans « CI/CP »). L'écran l'écrit ainsi : le niveau réel de départ apparaît à côté du nom, et la proposition dit « Passe en PS (même classe) ».
+
+   > ⚠️ **Ce n'était pas le cas avant la version 2.241.** Le TPS et le PS recevaient la même proposition — l'enfant de TPS sautait une année — et la réinscription **effaçait** le niveau réel saisi l'année précédente. Si vous avez déjà fait un passage d'année avec des sous-niveaux, vérifiez-les sur les fiches élèves.
+
+   Un **redoublant** garde son niveau réel. Un élève dont le sous-niveau n'a jamais été renseigné se comporte comme avant : l'application ne devine pas un niveau qu'on ne lui a pas donné.
 3. **Filet de sécurité** : une année **vide** (0 inscription) ouverte par erreur peut être **supprimée** (l'ancienne redevient courante). L'**enchaînement des niveaux** est affiché, avec une alerte si l'ordre est incohérent.
 
 Ce qui **persiste** d'une année à l'autre (à ne pas refaire) : niveaux, cycles, matières, séries, coefficients, personnels/enseignants, salles, volumes horaires, membres/rôles.
@@ -891,7 +897,27 @@ Quatre écrans, qui correspondent à quatre métiers.
 
 Un étudiant accède depuis son espace au catalogue, à ses emprunts, à ses réservations et au fonds numérique. Un document numérique **restreint** n'est lisible que par les étudiants qu'il cible — la règle est appliquée côté serveur, pas seulement masquée à l'écran.
 
-### 24.4 Le vocabulaire et les comptes
+### 24.4 L'espace de l'étudiant
+
+Il fonctionne comme l'espace parent : des **tuiles** à l'accueil, et un lien **« ← Accueil »** pour y revenir.
+
+| Tuile | Ce qu'il y trouve |
+|---|---|
+| **Mes résultats** | ses notes par UE, et ses relevés |
+| **Emploi du temps** | ses séances |
+| **Ma scolarité** | ses frais, ce qu'il reste à payer |
+| **Mes documents** | ses attestations, et ses demandes |
+| **Messagerie** · **Actualités** | l'échange avec la scolarité, les annonces |
+| **Bibliothèque** · **Mon dépôt** | le catalogue, ses emprunts, le dépôt de son mémoire |
+| **Ma carte** · **Textes de référence** | sa carte d'étudiant, les règlements |
+
+En haut, en permanence : **💬 Messagerie** et **🔔 Alertes**, chacune avec son compteur de non-lus.
+
+> ⚠️ **Les tuiles suivent les modules achetés.** « Bibliothèque » et « Mon dépôt » n'apparaissent que si l'établissement a souscrit les modules correspondants — avant la version 2.241, elles s'affichaient toujours et s'ouvraient sur un écran vide.
+
+**🔔 Les alertes** — écran **Mes alertes** : nouvelle note, relevé disponible, échéance de scolarité, document prêt, message de la scolarité. Un bouton y propose d'activer les **notifications sur le téléphone**, et sur iPhone l'écran explique qu'il faut d'abord installer l'application sur l'écran d'accueil. *Cet écran n'existait pas avant la version 2.241 : un étudiant n'était prévenu de rien.*
+
+### 24.5 Le vocabulaire et les comptes
 
 - On dit **« étudiant »** dans un établissement **exclusivement** universitaire. Dans un établissement qui va de l'élémentaire à l'université, on garde « élève » comme mot courant — dire « étudiant » au préscolaire serait absurde — et les écrans du supérieur portent leurs propres intitulés.
 - ⚠️ **L'accès d'un étudiant à ses notes passe par un consentement** : il le demande depuis son espace, l'établissement l'accorde. Tant qu'il n'est pas accordé, les notes et les relevés ne lui sont pas servis.

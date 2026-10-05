@@ -5,6 +5,35 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.241.0] — finir ce qui avait été commencé (lot 3 de l'audit)
+- **Audit du 04/10, lot 3** : les fonctions livrées le plus récemment, celles qu'on va montrer.
+
+### 🔴 Montessori : la fonction se vidait d'elle-même tous les ans
+- `inscriptions.sous_niveau_id` dit le niveau **réel** de l'enfant dans une classe combinée (« TPS/PS A » contient des TPS **et** des PS). Le passage d'année ignorait complètement cette colonne : il lisait le niveau de la **classe** et proposait le niveau d'ordre suivant — **le TPS et le PS recevaient donc la même proposition, et l'enfant de TPS sautait une année**. Pire, la réinscription n'écrivait pas la colonne : le niveau saisi l'an passé était **effacé** à chaque changement d'année.
+- La règle vit maintenant dans `src/lib/promotion.js`, **module pur** : un TPS devient **PS et reste dans sa classe** ; un PS passe au niveau combiné suivant et y entre par son **premier cran** (en CI dans « CI/CP ») ; au dernier niveau, il sort. Un **redoublant** garde son niveau réel.
+- **⚠️ Le piège qu'une épreuve a attrapé pendant l'écriture** : la migration 164 laisse `ordre` à 0 par défaut, et l'alphabet met « PS » **avant** « TPS ». Mon premier départage était alphabétique — il aurait fait du PS le premier cran et promu les TPS de deux crans d'un coup. Le départage suit désormais l'**ordre de création**, puis l'identifiant : jamais le libellé.
+- **Un élève sans sous-niveau se comporte exactement comme avant** : l'application ne devine pas un niveau qu'on ne lui a pas donné. Aucune donnée existante ne change de comportement.
+- L'écran de passage d'année **montre** enfin le niveau réel à côté du nom, et dit « Passe en PS (même classe) » au lieu de « Passe en TPS/PS ». Sans cela, la correction serait restée invisible.
+- **9 épreuves** dans `test/promotion.test.mjs`. *Mesuré en base : 0 sous-niveau défini — la fonction n'avait donc jamais produit d'effet, et c'est à la première utilisation qu'elle aurait déçu, chez la cliente qui l'a demandée.*
+
+### Deux « Notes » et deux « Emploi du temps » dans le même menu
+- Depuis qu'un établissement peut couvrir l'élémentaire **et** l'université (mig. 168), le menu Pédagogie affichait deux entrées **au libellé et à l'icône identiques** : l'une planifie par classe, l'autre par filière et semestre. Il fallait cliquer pour savoir.
+- `libelleItem()` précise désormais — « Notes (classes) » / « Notes (UE) », « Emploi du temps (classes) » / « (filières) » — **uniquement quand les deux paliers sont couverts**. Une université seule dit « Notes » : une précision qui ne lève aucune ambiguïté est du bruit.
+- Icônes homonymes dans un même espace, corrigées : 🧾 Documents **vs** Acquisitions (🛒), 🎓 Bulletins **vs** Mémoires & thèses (📜), 📋 Vie scolaire **vs** Programmation officielle (📑) et Inventaire (📦).
+
+### Le bibliothécaire atterrissait à deux endroits différents
+- À la connexion il arrivait sur son **catalogue** ; en changeant d'espace, sur **« À signer »** — page qui, le plus souvent, n'est même pas dans le menu puisqu'elle se masque quand il n'y a rien à signer. La règle « une page d'atterrissage est du **travail**, pas un utilitaire » n'était écrite que dans `premiereRoute` ; `Layout` prenait la première entrée du menu. Elle est extraite dans `routeDAtterrissage()`, et les deux chemins l'appellent.
+- **Le rôle n'est plus proposé là où il ne sert à rien** : dans une école élémentaire, un bibliothécaire invité se connectait pour trouver une barre latérale **vide** — ses quatre écrans sont tous réservés au supérieur. `rolesInvitables(roles, ecole)` l'écarte. L'erreur se rattrape à l'invitation, plus devant un écran blanc.
+- Et un menu vide **se dit** maintenant, au lieu de ressembler à une panne.
+
+### L'espace étudiant avait été oublié
+- **Ni centre d'alertes, ni invitation à activer les notifications**, alors que le parent et le personnel avaient les deux. Un étudiant n'était prévenu de rien, et ne pouvait pas savoir qu'il aurait pu l'être. Nouvel écran **Mes alertes** (`/etudiant/notifications`) + **💬** et **🔔** en permanence dans l'en-tête, avec leurs compteurs. Aucune migration : la policy `notifications_self` porte sur `destinataire_id = auth.uid()`, elle ne suppose aucun rôle.
+- L'interrupteur de notifications est **mutualisé** (`ActivationPush`) plutôt que recopié : sa partie délicate est le cas iPhone, qui exige l'installation de la PWA.
+- **Les tuiles étudiant sont enfin verrouillées par module.** Leur champ `cle` *ressemblait* à un verrou — c'est ce nom qui sert partout ailleurs — mais ne portait que l'icône : « Bibliothèque » et « Mon dépôt » s'affichaient même sans le module, et s'ouvraient sur un écran vide.
+
+### Garde-fous
+- **5 épreuves** dans `test/menu.test.mjs`, sur les quatre formes d'établissement × huit rôles : aucun libellé en double dans un même groupe · une précision n'apparaît que si elle lève une ambiguïté · **`routeDAtterrissage` et `premiereRoute` répondent pareil**, et n'atterrissent sur un utilitaire que s'il n'y a rien d'autre · un rôle n'est pas proposé à un établissement qui ne peut pas l'utiliser. **Suite : 281 épreuves.**
+
 ## [2.240.0] — le dossier pédagogique ne se lit plus par tout le personnel (migration 173)
 - **Trouvé en travaillant sur le lot 2**, en lisant les policies de `bulletins`. Les **quatre** policies de lecture du dossier pédagogique — `notes`, `evaluations`, `bulletins`, `bulletin_lignes` — valaient `est_super_admin() or ecole_id = ecole_courante()` : **aucun prédicat de rôle**. Tout membre actif de l'école (comptable, secrétaire, **responsable RH**, surveillant, bibliothécaire) pouvait donc lire par l'API toutes les notes et tous les bulletins de tous les élèves. L'interface le leur cachait : c'était un contrôle **frontend** pris pour une sécurité.
 - **Et un enseignant lisait toute l'école.** La migration 058 avait cloisonné l'ÉCRITURE à ses propres classes, jamais la lecture : un enseignant de CI pouvait lire les notes et les bulletins du CM2.

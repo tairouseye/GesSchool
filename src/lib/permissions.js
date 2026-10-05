@@ -8,6 +8,8 @@
 //   - rh         = Responsable RH & Paie.
 //   - secretaire = Secrétaire / Caisse (opérationnel Gestion).
 
+import { couvreSuperieur } from "@/lib/paliers.js";
+
 // Les « rôles complets » voient tout. NB : `direction` N'EST PLUS complet — il
 // est désormais responsable pédagogique cloisonné.
 export const ROLES_COMPLETS = ["super_admin", "admin_ecole"];
@@ -229,10 +231,25 @@ export const ROLES_INVITABLES = {
   comptable: ["secretaire"],
 };
 
+//  Rôles qui n'ont de sens que dans un établissement couvrant le supérieur.
+//
+//  🔴 POURQUOI CE FILTRE. `bibliothecaire` était proposé à l'invitation sans
+//  condition de type. Mesuré : dans une école élémentaire, un bibliothécaire
+//  invité se connectait pour trouver une barre latérale VIDE — ses quatre
+//  écrans (catalogue, prêts, dépôts, acquisitions) sont tous réservés au
+//  supérieur. On ne propose plus un rôle que l'établissement ne peut pas
+//  utiliser : c'est au moment de l'invitation que l'erreur se rattrape, pas
+//  après, devant un écran blanc.
+const ROLES_SUPERIEUR = ["bibliothecaire"];
+
 // Union des rôles qu'un utilisateur (avec ces rôles) peut inviter/gérer.
-export function rolesInvitables(roles) {
+//
+// `ecole` est optionnel : sans elle, aucun rôle n'est retiré (les appels
+// existants gardent leur comportement).
+export function rolesInvitables(roles, ecole = null) {
   const set = new Set();
   (roles || []).forEach((r) => (ROLES_INVITABLES[r] || []).forEach((x) => set.add(x)));
+  if (ecole && !couvreSuperieur(ecole)) ROLES_SUPERIEUR.forEach((r) => set.delete(r));
   return [...set];
 }
 
