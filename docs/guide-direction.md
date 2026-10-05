@@ -145,6 +145,8 @@ Les écoles marquées **démonstration** sont **exclues des totaux** : des chiff
 
 **Menu Membres → + Inviter un membre**
 
+> **La personne est déjà dans l'application ?** Ne lui renvoyez pas de code. Sur sa ligne dans **Membres**, **« + Donner un accès… »** élargit ce qu'elle peut faire **sans rien lui retirer** — une responsable pédagogique à qui vous donnez « Comptable / Gestion » garde ses notes et ses bulletins. Réservé au promoteur.
+
 Chaque responsable est **cloisonné à son domaine** et gère ensuite ses propres accès :
 
 | Vous invitez | Qui peut inviter à son tour |

@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.243 · mise à jour du 5 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.244 · mise à jour du 5 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -229,15 +229,25 @@ Promoteur                → configure l'école, garde un raccourci total
 
 > 🔒 **Verrouillage par e-mail (optionnel)** : si vous renseignez l'e-mail, l'invitation n'est utilisable **que** par un compte créé avec **cette** adresse. Laissez vide pour un code utilisable par tout destinataire. Transmettez le code **en privé**.
 
-### 4.3 Rejoindre (côté invité)
+### 4.3 Donner un accès à quelqu'un qui est **déjà** dans l'application
+
+C'est le cas le plus fréquent au bout de quelques mois : la personne travaille déjà avec vous, et vous voulez simplement **élargir** ce qu'elle peut faire. Il ne faut **pas** lui renvoyer un code d'invitation.
+
+**Membres** → sur sa ligne → **« + Donner un accès… »** → choisir l'accès → confirmer.
+
+> **Ses accès actuels sont conservés.** Donner « Comptable / Gestion » à une responsable pédagogique ne lui retire rien : elle garde ses notes, ses bulletins et ses classes, et gagne Paiements, Recouvrement, Comptabilité, Documents, Cantine et Transport. C'est exactement le cas d'une école où les responsables de cycle tiennent aussi la gestion.
+
+**Seul le promoteur** peut le faire — et la base le refuse aux autres, pas seulement l'écran. Pour retirer un accès, la croix **✕** à côté de son nom.
+
+### 4.4 Rejoindre (côté invité)
 L'invité crée un compte, choisit **« 🧑‍💼 Je suis un membre du personnel »** et saisit le code — ou ouvre le **lien d'invitation** (code pré-rempli). ✅ Son compte est créé avec le bon rôle.
 
-### 4.4 Enseignants reliés à leur fiche
+### 4.5 Enseignants reliés à leur fiche
 Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doit correspondre à sa **fiche** :
 1. **Enseignants** → ouvrir la fiche (e-mail conseillé) → **« Code d'accès »** → l'enseignant choisit **« 🧑‍🏫 Je suis un enseignant »** et le saisit. *Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.*
 2. **Affectations** : relier enseignant × classe × matière (alimente coefficients **et** la génération d'emploi du temps).
 
-### 4.5 Invitations en attente & 4.6 Révoquer/suspendre
+### 4.6 Invitations en attente & 4.7 Révoquer/suspendre
 La section **« Invitations en attente »** liste les codes non utilisés (Copier le lien / Annuler). Sur chaque personne gérée : **✕** retire un rôle ; **Suspendre** bloque l'accès (« Compte suspendu »), **Réactiver** le rétablit.
 
 ---
@@ -986,7 +996,7 @@ Toutes les écoles clientes, leur **plan d'abonnement**, leur **statut**, leurs 
 ## 27. Dépannage rapide
 - **« Je ne vois pas un menu »** → module désactivé (Paramètres → Modules, promoteur) ou rôle sans accès.
 - **« Une page ne s'ouvre pas / reste blanche »** → cache de l'app dépassé après une mise à jour : l'appli se recharge normalement toute seule ; sinon **rechargez** (Ctrl+Maj+R), ou ouvrez en **navigation privée**, ou réinstallez la PWA.
-- **« Comment ajouter un responsable / une secrétaire ? »** → **Membres → + Inviter un membre** (§4).
+- **« Comment ajouter un responsable / une secrétaire ? »** → **Membres → + Inviter un membre** (§4). Si la personne a **déjà** un compte, ne lui renvoyez pas de code : **Membres → sa ligne → + Donner un accès…** (§4.3).
 - **« Le parent ne voit pas le bulletin »** → il est probablement en **brouillon** ou **validé** : ouvrez **Bulletins**, choisissez la classe, et utilisez **📤 Publier aux parents** dans le panneau « Circuit » (§7.2).
 - **« Personne ne peut signer le procès-verbal »** → aucun **responsable de cycle** n’est désigné. Le promoteur le fait dans **Structure → Responsables de cycle** (§2.5). La direction elle-même est refusée tant qu’elle n’est pas désignée.
 - **« Les absences ne sont pas comptées sur le bulletin »** → la période n’a pas de **dates** : **Structure → Découpage de l’année** (§2.5). L’application préfère ne rien afficher plutôt qu’un zéro faux.

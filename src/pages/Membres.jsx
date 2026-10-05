@@ -3,7 +3,8 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
-import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation } from "@/lib/membres.js";
+import { MODELES } from "@/lib/acces.js";
+import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation, accorderModele } from "@/lib/membres.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Membres() {
@@ -49,6 +50,22 @@ export default function Membres() {
     try {
       await revoquerRole(m.id, r);
       toast.succes("Rôle retiré.");
+      await charger();
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
+  }
+
+  //  Accorder un accès à un membre qui est déjà là — sans code, sans
+  //  réinscription. Réservé au promoteur, comme la base l'exige.
+  async function accorder(m, modele) {
+    const lib = MODELES.find((x) => x.id === modele)?.label || modele;
+    if (!(await confirmer({
+      message: `Donner à ${m.prenom} ${m.nom} l'accès « ${lib} » ? Ses accès actuels sont conservés.`,
+      confirmer: "Donner l'accès",
+    }))) return;
+    setErreur("");
+    try {
+      await accorderModele(m.id, modele);
+      toast.succes(`Accès « ${lib} » accordé.`);
       await charger();
     } catch (e) { setErreur(e.message); toast.erreur(e.message); }
   }
@@ -139,7 +156,22 @@ export default function Membres() {
                     </div>
                   </div>
                   {peutGerer && (
-                    <div className="flex shrink-0 gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      {/*  ⚠️ LE PROMOTEUR SEUL, parce que la base le refuse aux
+                           autres : proposer le choix à la direction la mènerait
+                           à un message d'erreur, pas à un accès. */}
+                      {complet && (() => {
+                        const aDonner = MODELES.filter((x) => !(m.roles || []).includes(x.id));
+                        if (!aDonner.length) return null;
+                        return (
+                          <select defaultValue="" onChange={(e) => { const v = e.target.value; e.target.value = ""; if (v) accorder(m, v); }}
+                            className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs text-navy-900 outline-none focus:border-or-500"
+                            aria-label={`Donner un accès à ${m.prenom} ${m.nom}`}>
+                            <option value="">+ Donner un accès…</option>
+                            {aDonner.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                          </select>
+                        );
+                      })()}
                       {m.actif === false ? (
                         <Bouton variante="fantome" className="!py-1.5 text-xs" onClick={() => suspendre(m, false)}>Réactiver</Bouton>
                       ) : (

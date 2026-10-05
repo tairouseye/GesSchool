@@ -35,6 +35,28 @@ export async function suspendreMembre(profilId, suspendu) {
   if (error) throw error;
 }
 
+/**
+ * Accorde un accès à quelqu'un qui est DÉJÀ membre de l'établissement.
+ *
+ * 🔴 POURQUOI CETTE FONCTION EXISTE. La page savait retirer un accès mais
+ * pas en accorder un : le seul chemin était d'émettre un code d'invitation
+ * et de demander à la personne de le saisir. Or les responsables de
+ * l'école sont dans l'application depuis des mois — leur renvoyer un code
+ * pour « rejoindre » l'établissement où elles travaillent n'avait aucun
+ * sens. Le promoteur accorde maintenant l'accès directement.
+ *
+ * La RPC (mig. 176) écrit les DEUX représentations — le rôle, qui tient les
+ * droits aujourd'hui, et les cases, qui les tiendront après la bascule —
+ * pour qu'aucun accès ne se perde en route. Rend le nombre de cases.
+ */
+export async function accorderModele(profilId, modele) {
+  const { data, error } = await supabase.rpc("accorder_modele", {
+    p_profil: profilId, p_modele: modele,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // Liste des invitations en attente (codes générés non utilisés).
 export async function getInvitations() {
   const { data, error } = await supabase.rpc("invitations_ecole");

@@ -5,6 +5,21 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.244.0] — le promoteur donne un accès sans renvoyer de code (migration 176)
+- **Retour du promoteur, et il annule mon étape 0** : « je ne veux pas renvoyer un autre code pour le volet gestion, ils ont déjà accès à l'appli — il faut juste que le promoteur leur donne l'accès au module gestion. » Il avait raison : renvoyer un code d'invitation à quelqu'un qui travaille dans l'établissement depuis des mois, pour qu'il « rejoigne » cet établissement, n'a aucun sens.
+- **🔴 Le défaut : la page savait retirer un accès, pas en accorder un.** La croix ✕ révoquait un rôle, mais le seul chemin pour en donner un était d'émettre un code et de demander à la personne de le saisir. **Membres → sa ligne → « + Donner un accès… »** le fait maintenant directement.
+- **Ses accès actuels sont conservés** : donner « Comptable / Gestion » à une responsable pédagogique ne lui retire rien. Mesuré sur le cas réel de Tut'Tank — **32 cases → 41**, les deux rôles côte à côte, et `a_acces` rend vrai pour Paiements, Comptabilité **et** Notes.
+- **⚠️ La RPC écrit les DEUX représentations**, et c'est délibéré : le **rôle**, qui tient les droits aujourd'hui, et les **cases** (mig. 175), qui les tiendront après la bascule. Sans cela, un accès accordé pendant la transition se perdrait le jour du basculement. À l'étape 3, on retirera simplement l'écriture du rôle.
+- **Les cases suivent les rôles quoi qu'il arrive** : un déclencheur sur `profil_roles` recalcule l'ensemble à chaque insertion ou suppression — octroi, invitation, retrait, ou correction à la main dans l'éditeur SQL. Et c'est un **recalcul**, pas un ajout : retirer « Comptable » à quelqu'un qui est aussi « Responsable pédagogique » ne lui enlève pas Élèves ou Membres, que les deux modèles partagent.
+- **Le promoteur seul**, et tenu par la base : vérifié en sessions réelles — la direction et la RH reçoivent « Seul le promoteur accorde un accès », et `admin_ecole`, `parent` ou un libellé fantaisiste reçoivent « Accès inconnu ». On n'enrôle personne par ce guichet non plus : la cible doit déjà être un membre actif de l'établissement.
+- Le cas favorable a été éprouvé dans une **transaction annulée** sur la vraie école, puis vérifié : rien n'est resté. C'est au promoteur de le faire depuis l'écran.
+- Manuel : nouvelle section **§4.3** et renvoi depuis le dépannage ; guide Direction complété.
+
+## [2.243.1] — les trimestres de Tut'Tank sont datés
+- **Donné par le promoteur** : trimestre 1 = octobre-décembre, 2 = janvier-mars, 3 = avril-juin. Appliqué sur l'année courante 2026-2027 : **01/10→31/12**, **01/01→31/03**, **01/04→30/06**.
+- **Ce que cela débloque** : `absences_classe_periode` rendait **0 ligne** pour toute la classe — non pas « aucune absence », mais « on ne peut pas savoir », parce que la fonction refuse de compter sur une période non datée (mig. 163). Elle rend maintenant **12 lignes** de vrais zéros pour CE1/CE2. Les absences peuvent donc enfin figurer sur les bulletins.
+- *C'était le point relevé au lot 2 de l'audit* (« les absences ne sont pas comptées sur le bulletin → la période n'a pas de dates »), et il concernait la vraie école.
+
 ## [2.243.0] — les accès du personnel deviennent des cases à cocher (socle, inerte)
 - **Demandé** : ne plus choisir un **rôle** dans une liste, mais inviter un **membre du personnel** puis **cocher** ce à quoi il a droit — l'arbre des espaces (Gestion, Pédagogie, RH & Paie) avec leurs sous-menus. **Les enseignants font partie du personnel.** Les **parents** et les **étudiants** n'en font pas partie : ils ont leur propre porte, et on n'y touche pas.
 - **⚠️ CETTE LIVRAISON NE CHANGE AUCUN DROIT, et c'est le point le plus important.** Elle pose les tables, les fonctions et les données ; **aucune policy n'est modifiée**. La bascule se fera domaine par domaine, en **remplaçant** `a_role('x')` par `a_acces('clé')` — jamais en ajoutant l'un à côté de l'autre. Garder les deux ferait que décocher une case masquerait l'écran pendant que la base continuerait d'autoriser : le défaut corrigé par la migration 173 et par les lots 1 et 2 de l'audit. Une épreuve vérifie que la migration ne touche que ses propres policies.
