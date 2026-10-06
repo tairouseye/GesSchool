@@ -5,6 +5,27 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.254.0] — cinq tables sensibles fermées, et 🔴 UN INCIDENT QUE J'AI CAUSÉ (migrations 191-192)
+### 🔴 L'incident, en premier
+- **En éprouvant la migration 191, j'ai supprimé 82 lignes du journal d'audit de l'école cliente.** J'ai lancé, depuis une vraie session de la responsable, un `DELETE /rest/v1/journal_audit` **en supposant qu'il serait refusé**. Il ne l'a pas été.
+- **15 lignes ont été restaurées** depuis la sauvegarde du 2026-09-23. **67 sont perdues** — celles du 12/09 au 05/10 : la dernière sauvegarde exploitable date du 23/09.
+- **🔴 ET LE SCRIPT DE SAUVEGARDE ÉCHOUE DEPUIS LE 2 OCTOBRE**, à chaque exécution (`backup.log` : « ERREUR : node:internal/modules/run_main:107 » aux lancements du 02, 03, 04, 05 et 06/10). Sans cela, la perte aurait été nulle. **À réparer en priorité, indépendamment de tout le reste.**
+- **Ce que l'incident dit de ma méthode** : partout ailleurs dans ce chantier j'ai éprouvé les écritures dans une **transaction annulée**, précisément pour ne rien casser. Ici j'ai lancé un appel HTTP destructif en supposant son échec. Une supposition n'est pas une vérification — c'est la règle que j'applique au code depuis le début, et je ne l'avais pas appliquée à mes propres essais.
+
+### Le défaut que l'incident a révélé (migration 192)
+- **`journal_audit` était `for all`.** Sa garde de RÔLE était correcte (`est_gestion() or rh or comptable`) — et c'est exactement ce qui rendait le défaut invisible : la table **avait l'air** protégée. Mais `for all` comprend `delete` et `update` : **les personnes dont le journal enregistre les actes pouvaient effacer leurs propres traces.**
+- **Un journal d'audit n'a qu'une propriété utile : être append-only.** Désormais : lecture inchangée pour la gestion, **aucune** écriture, mise à jour ni suppression côté client. Éprouvé par l'API avec la session de la même responsable : `GET` 15 lignes, `DELETE` 0 ligne, `PATCH` 0 ligne, `POST` **403**.
+- **Et les déclencheurs écrivent toujours** — vérifié, parce qu'une protection qui rend le journal muet ne protège rien : 15 → 16 lignes après une suppression tracée.
+- **⚠⚠ Et j'ai failli conclure l'inverse.** Mon premier essai montrait le journal immobile, et j'ai écrit « la protection a cassé la journalisation ». Faux : la ligne que j'avais supprimée était de nature `cotisation`, que le déclencheur ignore **exprès** (les cotisations sont calculées, pas saisies). Rejoué sur une ligne de nature `base` : le déclencheur écrit.
+
+### Cinq tables qu'aucun écran n'écrit, et que tout le monde pouvait écrire (migration 191)
+- **`audit_log`** → supprimer une piste d'audit. ⚠️ Table **morte** : 0 ligne, aucun écrivain, aucun lecteur — remplacée par `journal_audit` (mig. 134). Verrouillée, pas supprimée : effacer une table n'est pas la même décision que la fermer.
+- **`abonnements`** → changer l'abonnement de son école, donc **débloquer les modules payants** ou repousser la date de fin. Écriture rendue à la console.
+- **`annees_scolaires`** → supprimer une année scolaire, en cascade. ⚠️ La **lecture reste large** : l'année courante est lue par presque tous les écrans, la fermer casserait l'application. L'écriture revient au promoteur.
+- **`notifications`** → lire **toutes** les notifications de l'école, y compris celles adressées aux familles : « votre enfant a obtenu 12/20 », « 45 000 F restent dus », les faits de discipline. Chacun ne lit plus que les siennes. Éprouvé : l'enseignant passe de 7 à **0**, le parent voit ses **3** et **0** de quelqu'un d'autre.
+- **`matricule_compteurs`** → réinitialiser la numérotation, donc faire doublonner des matricules.
+- **Vérifié avant de fermer**, mesuré et non supposé : aucun écran n'écrit dans ces tables (zéro occurrence pour trois d'entre elles, deux `.select("*")` pour `annees_scolaires`, et les lectures de `notifications` toujours bornées à `destinataire_id = auth.uid()`). Les 15 écrivains légitimes sont tous `security definer`.
+
 ## [2.253.0] — ÉTAPE 4 : le cloisonnement par cycle, le besoin d'origine (migrations 188-190)
 - **Demandé le 05/10/2026** : « les responsables du préscolaire et de l'élémentaire jouent aussi le rôle de gestionnaire — je voudrais que chacune n'ait accès qu'au niveau qui la concerne. » Les huit bascules (177→186) étaient le prérequis : tant que la base décidait par rôle, il n'y avait aucun endroit pour accrocher un périmètre.
 - **Trois helpers, source unique de vérité** : `cycles_autorises()`, `classes_autorisees()`, `peut_voir_eleve()`. Greffés sur **51 policies de 22 tables** — élèves, inscriptions, classes, bulletins, notes, absences, incidents, factures, lignes de facture, documents, tuteurs, cantine, transport.

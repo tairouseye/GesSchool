@@ -930,3 +930,35 @@ test("🔴 les RPC `security definer` sont cloisonnées elles aussi", () => {
       + " des lignes aux non-cloisonnés");
   }
 });
+
+test("🔴 le journal d'audit est APPEND-ONLY : personne ne peut effacer ses traces", () => {
+  //  🔴 CE GARDE-FOU EXISTE PARCE QUE J'AI CAUSÉ L'INCIDENT (mig. 192).
+  //  En éprouvant la migration 191, j'ai lancé depuis une vraie session un
+  //  `DELETE /rest/v1/journal_audit` **en supposant qu'il serait refusé**. Il
+  //  ne l'a pas été : 82 lignes du journal de l'école cliente ont été
+  //  supprimées, dont 67 définitivement perdues (dernière sauvegarde
+  //  exploitable : 23/09).
+  //
+  //  La cause : `journal_audit_tenant` était `for all`. Sa garde de RÔLE était
+  //  pourtant correcte — et c'est ce qui rendait le défaut invisible : la
+  //  table AVAIT L'AIR protégée. Mais `for all` comprend `delete`, donc les
+  //  personnes dont le journal enregistre les actes pouvaient les effacer.
+  //
+  //  ⚠️ UN JOURNAL D'AUDIT N'A QU'UNE PROPRIÉTÉ UTILE : être append-only.
+  //  S'il peut être vidé par ceux qu'il surveille, il n'atteste plus rien.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "192_journal_audit_append_only.sql"), "utf8"));
+  //  La lecture reste ouverte à la gestion…
+  const lecture = sql.slice(sql.indexOf("create policy journal_audit_select"));
+  assert.match(lecture.slice(0, lecture.indexOf(";")), /for select/,
+    "la lecture du journal doit rester possible : Pilotage → Journal en dépend");
+  //  …mais AUCUNE policy d'écriture ne doit mentionner l'établissement.
+  for (const m of sql.matchAll(/create policy journal_audit_\w+[\s\S]*?;/g)) {
+    const p = m[0];
+    if (!/for all|for delete|for update|for insert/.test(p)) continue;
+    assert.ok(!p.includes("ecole_courante"),
+      "une policy d'écriture bornée à l'établissement redonne à la gestion le"
+      + " droit de vider son propre journal d'audit — le défaut de la mig. 192 :"
+      + String.fromCharCode(10) + p);
+  }
+});
