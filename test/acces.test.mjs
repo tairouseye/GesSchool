@@ -719,3 +719,125 @@ test("notes et bulletins : policies HOISTÉES (les tables qui grandiront le plus
       "les policies doivent appeler " + appel + " en sous-requête scalaire");
   }
 });
+
+test("🔴 la structure ne s'écrit que par sa case, mais se LIT largement", () => {
+  //  🔴 LE TROU LE PLUS LARGE DU CHANTIER (mig. 186). `classes`,
+  //  `niveaux`, `matieres`, `series`, `enseignants` et `affectations`
+  //  portaient UNE policy `for all` avec pour seul prédicat
+  //  `ecole_id = ecole_courante()`. N'importe quel membre du personnel — un
+  //  enseignant, un surveillant, un bibliothécaire — pouvait donc **créer,
+  //  modifier et SUPPRIMER** toute la structure de l'établissement, alors que
+  //  l'écran Structure est réservé à la direction. La migration 174 avait
+  //  verrouillé `cycles` pour cette raison ; ces six-là avaient été oubliées.
+  //  Éprouvé : un enseignant qui tente de supprimer une classe touche
+  //  **0 ligne**.
+  //
+  //  ⚠️ ET LA LECTURE RESTE LARGE, DÉLIBÉRÉMENT : le sélecteur de classe est
+  //  sur presque tous les écrans. La fermer à une case viderait des listes
+  //  déroulantes partout, en silence.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "186_bascule_eleves_structure.sql"), "utf8"));
+  assert.match(sql, /a_acces\(%2\$L\)/,
+    "les six tables de structure doivent recevoir leur case d'écriture");
+  assert.match(sql, /'structure'/, "classes, niveaux, matières, séries → case `structure`");
+  assert.match(sql, /'enseignants'/, "enseignants, affectations → case `enseignants`");
+  //  La policy de LECTURE de la structure ne doit PAS citer de case.
+  //  ⚠️ ON PART DU BLOC DE LA STRUCTURE, et pas du premier `_select` du
+  //  fichier : celui-là appartient au bloc des élèves, qui cite bien
+  //  `a_acces('eleves')`. Première version de cette épreuve, elle échouait
+  //  sur la bonne policy en lisant la mauvaise.
+  const bloc = sql.indexOf("'classes', 'niveaux'");
+  assert.ok(bloc > 0, "le bloc des tables de structure a disparu");
+  const i = sql.indexOf("%1$s_select on public.%1$I for select", bloc);
+  assert.ok(i > 0, "la policy de lecture de la structure a disparu");
+  const lecture = sql.slice(i, sql.indexOf("$p$,", i));
+  assert.ok(!lecture.includes("a_acces"),
+    "la lecture de la structure reste ouverte au personnel : le sélecteur de"
+    + " classe est partout, et le fermer viderait des listes en silence");
+});
+
+test("🔴 le SIGB garde sa lecture des élèves", () => {
+  //  🔴 LA DÉPENDANCE QUI A FAILLI M'ÉCHAPPER (mig. 186).
+  //  `src/lib/bibliotheque.js` lit `eleves` pour afficher le nom de
+  //  l'emprunteur et pour le CHERCHER (`chercherEtudiants`). Or le
+  //  bibliothécaire ne détient PAS la case `eleves` : fermer la lecture à
+  //  cette seule case aurait vidé la liste des prêts et rendu la recherche
+  //  d'emprunteur muette — **sans aucune erreur à l'écran**.
+  //  Vérifié : la bibliothèque ne lit NI inscriptions, NI tuteurs, NI
+  //  documents_eleve, donc ceux-là restent à la seule case `eleves`.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "186_bascule_eleves_structure.sql"), "utf8"));
+  const i = sql.indexOf("create policy eleves_select");
+  assert.ok(i > 0, "la policy de lecture des élèves a disparu");
+  const p = sql.slice(i, sql.indexOf(";", i));
+  assert.ok(p.includes("a_acces('eleves')") && p.includes("a_acces('biblio_circulation')"),
+    "eleves_select doit rester ouverte à `biblio_circulation` : sinon le prêt"
+    + " de livres à un élève cesse de fonctionner, en silence");
+  //  Et le bibliothécaire ne doit PAS gagner la case `eleves` au passage.
+  assert.ok(!boitesDuModele("bibliothecaire").includes("eleves"),
+    "le bibliothécaire lit les élèves par `biblio_circulation`, pas par la case"
+    + " `eleves` — il n'a pas à ouvrir l'écran Élèves");
+});
+
+test("🔴 le matricule couvre SES DEUX chemins d'appel", () => {
+  //  🔴 UNE VÉRIFICATION QUI A CHANGÉ MA RÉPONSE (mig. 186).
+  //  `prochain_matricule` n'avait qu'un contrôle d'établissement : tout membre
+  //  du personnel pouvait consommer des numéros. La fermer à
+  //  `p_eleves_editer` semblait évident — mais `convertir_candidature`
+  //  L'APPELLE, et cette fonction est ouverte à la **direction**, qui n'a pas
+  //  `p_eleves_editer`. Convertir une candidature aurait donc échoué pour la
+  //  direction, sur une erreur venue d'une fonction qu'elle n'appelle pas
+  //  elle-même. Toujours chercher les appelants INTERNES avant de garder une
+  //  fonction utilitaire.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "186_bascule_eleves_structure.sql"), "utf8"));
+  const i = sql.indexOf("'prochain_matricule'");
+  assert.ok(i > 0, "la paire de prochain_matricule a disparu");
+  const bloc = sql.slice(i, sql.indexOf("];", i));
+  for (const boite of ["p_eleves_editer", "admissions"]) {
+    assert.ok(bloc.includes("a_acces(''" + boite + "'')"),
+      "prochain_matricule doit couvrir le chemin `" + boite + "`");
+  }
+  //  Et la direction, qui convertit les candidatures, doit bien avoir `admissions`.
+  assert.ok(boitesDuModele("direction").includes("admissions"),
+    "la direction convertit les candidatures : elle doit garder la case `admissions`");
+});
+
+test("🔴 personne ne peut s'accorder un rôle : l'escalade reste fermée", () => {
+  //  🔴 LE DÉFAUT LE PLUS GRAVE DU CHANTIER (mig. 187), et il annulait
+  //  TOUT le reste. `profil_roles` portait une policy `for all` avec pour seul
+  //  prédicat `ecole_id = ecole_courante()` : tout membre du personnel pouvait
+  //  écrire dans la table qui DÉFINIT les rôles, donc s'accorder le sien.
+  //
+  //  Éprouvé avant correction, session d'un simple enseignant :
+  //      insert into profil_roles values (auth.uid(), <son école>, 'admin_ecole')
+  //      → PASSE. Il obtenait aussitôt 4 salaires et 14 832 lignes de barème.
+  //  Et il n'avait même pas besoin des cases : `a_acces()` commence par
+  //  `est_super_admin() or a_role('admin_ecole')` — le rôle de promoteur ouvre
+  //  tout. Les huit migrations de bascule reposaient donc sur une table que
+  //  leurs propres utilisateurs pouvaient réécrire.
+  //
+  //  Éprouvé après, par l'API : HTTP 403 « new row violates row-level security
+  //  policy », et les PATCH rendent un corps vide (0 ligne).
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "187_fermer_escalade_profil_roles.sql"), "utf8"));
+  for (const t of ["profil_roles", "profils"]) {
+    const i = sql.indexOf("create policy " + t + "_ecrire");
+    assert.ok(i > 0, "la policy d'écriture de " + t + " a disparu");
+    const p = sql.slice(i, sql.indexOf(";", i));
+    assert.ok(!p.includes("ecole_courante"),
+      t + " : une écriture bornée au seul établissement vaut escalade de"
+      + " privilèges — c'est exactement le défaut que la 187 ferme");
+    assert.match(p, /est_super_admin\(\)/,
+      t + " : l'écriture directe est réservée à la console de la plateforme ;"
+      + " tout le reste passe par des fonctions security definer");
+  }
+  //  Et la LECTURE doit rester ouverte, sinon l'application ne sait plus qui
+  //  est connecté (`AuthContext` lit son profil et ses rôles au démarrage).
+  for (const t of ["profil_roles", "profils"]) {
+    const i = sql.indexOf("create policy " + t + "_select");
+    assert.ok(i > 0, "la policy de lecture de " + t + " a disparu");
+    assert.match(sql.slice(i, sql.indexOf(";", i)), /auth\.uid\(\)/,
+      t + " : chacun doit pouvoir lire SON profil, sinon la connexion échoue");
+  }
+});
