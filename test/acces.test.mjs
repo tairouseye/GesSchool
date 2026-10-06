@@ -645,3 +645,77 @@ test("🔴 absences et incidents : policies HOISTÉES (tables qui grandissent)",
       "la policy doit appeler " + appel + " en sous-requête scalaire");
   }
 });
+
+test("🔴 les gardes factorisées gardent le cloisonnement par classe ET par matière", () => {
+  //  🔴 LE MÊME PIÈGE QU'À LA 184, EN PLUS GRAVE (mig. 185). Tout le
+  //  domaine Notes & bulletins porte le motif
+  //      est_gestion() OR (a_role('enseignant') AND <cloisonnement>)
+  //  et `est_gestion()` = {promoteur, direction} = `p_toutes_classes`.
+  //  Traduire la première branche par `a_acces('notes_bulletins')` aurait
+  //  donné toutes les classes à TOUT enseignant, qui détient cette case :
+  //  le cloisonnement des migrations 058 et 173 aurait disparu.
+  //
+  //  Éprouvé en base, dans une transaction annulée : le même enseignant voit
+  //  0 note SANS affectation, et 1 note APRÈS avoir été affecté à la classe.
+  //  C'est bien `enseigne_classe` qui travaille.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "185_bascule_notes_bulletins.sql"), "utf8"));
+  for (const fn of ["peut_noter_evaluation", "peut_editer_bulletin"]) {
+    const i = sql.indexOf("function public." + fn);
+    assert.ok(i > 0, fn + " a disparu de la migration 185");
+    const corps = sql.slice(i, sql.indexOf("$fn$;", i));
+    assert.match(corps, /a_acces\('p_toutes_classes'\)/,
+      fn + " : l'administration passe par `p_toutes_classes`, pas par `notes_bulletins`");
+    assert.match(corps, /enseigne_classe/,
+      fn + " : le cloisonnement par classe doit survivre à la bascule");
+  }
+  //  ⚠️ ET LA DISTINCTION CLASSE / MATIÈRE NE DOIT PAS ÊTRE UNIFORMISÉE :
+  //  un enseignant VOIT les évaluations de sa classe (pour s'y situer) mais ne
+  //  NOTE que sa matière. C'est une décision de la migration 058.
+  assert.match(sql, /enseigne_classe_matiere\(classe_id, matiere_id\)/,
+    "l'écriture des évaluations reste bornée à la MATIÈRE de l'enseignant");
+  assert.match(sql, /enseigne_classe\(classe_id\)/,
+    "la lecture des évaluations reste bornée à la CLASSE, pas à la matière");
+});
+
+test("🔴 le procès-verbal garde ses DEUX signatures distinctes", () => {
+  //  🔴 CE QUE CETTE ÉPREUVE PROTÈGE (mig. 185). `signer_conseil` exclut
+  //  DÉLIBÉRÉMENT `est_gestion()` de la signature « gestion », avec un
+  //  commentaire qui le dit : ce helper vaut vrai pour `direction`, et un
+  //  responsable pédagogique aurait alors pu fournir les DEUX signatures — le
+  //  « PV à deux signatures » n'en aurait exigé qu'une.
+  //
+  //  En cases : comptable et secrétariat partagent `_gestion`, que la
+  //  direction N'A PAS. La traduction conserve donc la propriété. Si quelqu'un
+  //  remplaçait `_gestion` par une case que la direction détient, le PV
+  //  perdrait sa raison d'être.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "185_bascule_notes_bulletins.sql"), "utf8"));
+  const i = sql.indexOf("'signer_conseil'");
+  assert.ok(i > 0, "la paire de signer_conseil a disparu");
+  const ligne = sql.slice(i, sql.indexOf("]", i));
+  const boite = (ligne.match(/a_acces\(''([a-z_]+)''\)/) || [])[1];
+  assert.ok(boite, "signer_conseil doit recevoir une case");
+  assert.ok(!boitesDuModele("direction").includes(boite),
+    "la signature « gestion » passerait par `" + boite + "`, que la direction"
+    + " détient : elle pourrait alors fournir les DEUX signatures du PV");
+  for (const m of ["comptable", "secretaire"]) {
+    assert.ok(boitesDuModele(m).includes(boite),
+      "« " + m + " » doit pouvoir apposer la signature « gestion »");
+  }
+});
+
+test("notes et bulletins : policies HOISTÉES (les tables qui grandiront le plus)", () => {
+  //  ⚠️ `notes` est la table qui grandira le plus vite de l'application : une
+  //  école de 1 000 élèves × 10 matières × 3 trimestres × 3 devoirs fait
+  //  90 000 lignes. La leçon de la 183 (29 secondes sur 59 346 lignes)
+  //  s'applique donc ici avant même que le problème se pose.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "185_bascule_notes_bulletins.sql"), "utf8"));
+  for (const appel of ["(select est_super_admin())", "(select ecole_courante())",
+                       "(select a_acces('p_toutes_classes'))",
+                       "(select a_acces('notes_bulletins'))"]) {
+    assert.ok(sql.includes(appel),
+      "les policies doivent appeler " + appel + " en sous-requête scalaire");
+  }
+});
