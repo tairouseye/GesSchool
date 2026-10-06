@@ -384,3 +384,65 @@ test("la bascule Cantine / Transport garde les deux cases séparées", () => {
   assert.ok(!/a_acces\('cantine_transport'\)|a_acces\('services'\)/.test(sql),
     "les deux cases ont été fusionnées : ce n'est pas le modèle");
 });
+
+test("🔴 toute case nommée dans une bascule nomme une case qui existe", () => {
+  //  🔴 LE DÉFAUT QUE CETTE ÉPREUVE REND IMPOSSIBLE. `boite_de_cle()` rend
+  //  son argument tel quel quand elle ne le connaît pas : en base,
+  //  `boite_de_cle('inexistant')` vaut `'inexistant'`. Donc une faute de
+  //  frappe dans une policy — `a_acces('encaissements')` au pluriel, par
+  //  exemple — ne lève AUCUNE erreur : elle cherche une case que personne ne
+  //  possède, et verrouille l'écran pour tout le monde, en silence. C'est le
+  //  pire mode de panne : la migration s'applique, les épreuves passent, et
+  //  un écran devient inaccessible sans message.
+  const connues = new Set([
+    ...MODELES.flatMap((m) => boitesDuModele(m.id)),
+    ...boitesDeLArbre(arbreDesCases(MIXTE)),
+    ...POUVOIRS.map((p) => p.id),
+  ]);
+  for (const f of MIGRATIONS_BASCULE) {
+    const sql = lireBascule(f);
+    const citees = [...sql.matchAll(/a_acces\('([a-z_]+)'\)/g)].map((m) => m[1]);
+    assert.ok(citees.length > 0, f + " : une migration de bascule qui ne cite aucune case ?");
+    const inconnues = [...new Set(citees)].filter((c) => !connues.has(boiteDeCle(c)));
+    assert.deepEqual(inconnues, [],
+      f + " : case(s) inexistante(s) — elles n'accorderaient rien à personne et"
+        + " verrouilleraient l'écran sans erreur");
+  }
+});
+
+test("🔴 un document ne naît jamais déjà authentifiable", () => {
+  //  🔴 TROUVÉ EN BASCULANT LE DOMAINE Documents (mig. 179).
+  //  `verifier_document()` — le QR public d'authenticité — déclare authentique
+  //  tout document dont le statut vaut `valide`, `archive` ou `genere`. Or
+  //  l'insertion dans `documents` est volontairement LARGE (l'archivage GED
+  //  vient des bulletins, des paiements et de la paie), et elle n'avait
+  //  aucune contrainte de statut : un appel REST direct permettait à un
+  //  enseignant de créer un document déjà « validé », titre et montant
+  //  choisis, que le QR présentait comme officiel.
+  //
+  //  Aucun chemin légitime n'insère `valide` ni `genere` : `creerDocument`
+  //  laisse le défaut `en_attente`, `archiverDocument` pose `archive`, et la
+  //  validation est un UPDATE réservé au signataire. Cette épreuve interdit
+  //  qu'on rouvre la porte par inadvertance en réécrivant la policy.
+  const sql = lireBascule("179_bascule_documents_demandes.sql");
+  const m = sql.match(/create policy documents_insert[\s\S]*?;/i);
+  assert.ok(m, "la policy documents_insert a disparu de la migration 179");
+  assert.match(m[0], /statut in \('en_attente', 'archive'\)/,
+    "documents_insert doit interdire de créer un document déjà authentifiable"
+    + " (`valide`, `genere`)");
+});
+
+test("l'archivage GED reste ouvert à ses quatre domaines", () => {
+  //  L'archivage est appelé SANS `await` et ses erreurs sont AVALÉES
+  //  (`archiverDocument`, best-effort). Le resserrer à la seule case
+  //  `certificats` n'aurait produit aucun message : l'archivage des bulletins
+  //  et de la paie se serait arrêté en silence. Les quatre cases
+  //  correspondent aux quatre écrans qui archivent.
+  const sql = lireBascule("179_bascule_documents_demandes.sql");
+  const m = sql.match(/create policy documents_insert[\s\S]*?;/i);
+  for (const boite of ["certificats", "rh", "notes_bulletins", "encaissement"]) {
+    assert.ok(m[0].includes("a_acces('" + boite + "')"),
+      "documents_insert doit rester ouverte à la case `" + boite + "` : un des"
+      + " quatre écrans qui archivent (certificats, paie, bulletins, factures)");
+  }
+});
