@@ -29,11 +29,11 @@ import { chargerLib } from "./bundle.helper.mjs";
 const A = await chargerLib("acces", [
   'export * from "@/lib/acces.js";',
   'export { ESPACES, itemPourType } from "@/lib/espaces.js";',
-  'export { peutVoir } from "@/lib/permissions.js";',
+  'export { peutVoir, voitToutesClasses } from "@/lib/permissions.js";',
 ]);
 const { FUSIONS, DERIVEES, POUVOIRS, MODELES, ESPACES_SANS_CASES,
         boiteDeCle, clesDeBoite, arbreDesCases, boitesDeLArbre, boitesDuModele,
-        aAcces, aPouvoir, ESPACES, itemPourType, peutVoir } = A;
+        aAcces, aPouvoir, ESPACES, itemPourType, peutVoir, voitToutesClasses } = A;
 
 const SAUT = String.fromCharCode(10);
 const DOSSIER_MIG = path.join(process.cwd(), "supabase", "migrations");
@@ -585,5 +585,63 @@ test("🔴 la policy du barème reste HOISTÉE, sinon elle met 29 secondes", () 
     assert.ok(policy.includes(appel),
       "la policy doit appeler " + appel + " en sous-requête scalaire : un appel nu"
       + " ramènerait la lecture du barème à 29 secondes");
+  }
+});
+
+test("🔴 p_toutes_classes reproduit `voitToutesClasses`, ni plus ni moins", () => {
+  //  🔴 CE POUVOIR COMBLE UN MANQUE DE LA BASE (mig. 184). La notion
+  //  « voit toutes les classes, pas seulement les siennes » n'existait que dans
+  //  le front (`voitToutesClasses`) : neuf écrans s'en servent, mais les gardes
+  //  SQL qui en avaient besoin énuméraient des rôles à la main.
+  //
+  //  Il doit coïncider EXACTEMENT avec la fonction du front : sinon l'écran et
+  //  la base ne diraient pas la même chose, et c'est précisément le défaut que
+  //  tout ce chantier corrige.
+  for (const m of MODELES) {
+    assert.equal(
+      boitesDuModele(m.id).includes("p_toutes_classes"),
+      voitToutesClasses([m.id]),
+      "« " + m.id + " » : `p_toutes_classes` et `voitToutesClasses()` divergent");
+  }
+});
+
+test("🔴 la bascule des absences NE SUPPRIME PAS le cloisonnement par classe", () => {
+  //  🔴 LA FAUTE QUE CETTE ÉPREUVE REND IMPOSSIBLE (mig. 184).
+  //  `absences_classe_periode` gardait :
+  //      est_admin() or direction or comptable or secretaire
+  //      or enseigne_classe(p_classe)
+  //  — l'administration voit TOUTES les classes, l'enseignant seulement
+  //  CELLES QU'IL ENSEIGNE (cloisonnement de la migration 058).
+  //
+  //  Remplaçer la liste de rôles par `a_acces('presence_vie')` aurait été une
+  //  faute grave : l'enseignant DÉTIENT cette case, il aurait donc obtenu
+  //  toutes les classes. La bascule aurait supprimé le cloisonnement en
+  //  croyant le traduire. Éprouvé en base, même classe et même période :
+  //  enseignante sans `p_toutes_classes` → 0 élève, direction → 16.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "184_bascule_presence_vie_scolaire.sql"), "utf8"));
+  assert.match(sql, /enseigne_classe\(p_classe\)/,
+    "le cloisonnement `enseigne_classe` doit survivre à la bascule");
+  assert.match(sql, /a_acces\(''p_toutes_classes''\)/,
+    "l'administration doit passer par `p_toutes_classes`, pas par `presence_vie`"
+    + " — que l'enseignant détient aussi");
+  //  Et la case `presence_vie` ne doit JAMAIS servir à ouvrir toutes les
+  //  classes dans cette migration.
+  assert.ok(!/a_acces\(''presence_vie''\)[^;]{0,80}enseigne_classe/.test(sql),
+    "`presence_vie` ne remplace pas `p_toutes_classes` dans la garde par classe");
+});
+
+test("🔴 absences et incidents : policies HOISTÉES (tables qui grandissent)", () => {
+  //  ⚠️ LEÇON DE LA MIGRATION 183, APPLIQUÉE AVANT D'EN AVOIR BESOIN.
+  //  `absences` grandit avec les effectifs : une ligne par absence et par
+  //  élève. Un prédicat qui mêle un terme dépendant de la ligne à des appels de
+  //  fonction est réévalué PAR LIGNE — c'est ce qui faisait mettre 29 secondes
+  //  à la lecture du barème. On ne recommence pas sur une table qui grossit.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "184_bascule_presence_vie_scolaire.sql"), "utf8"));
+  for (const appel of ["(select est_super_admin())", "(select ecole_courante())",
+                       "(select a_acces('presence_vie'))"]) {
+    assert.ok(sql.includes(appel),
+      "la policy doit appeler " + appel + " en sous-requête scalaire");
   }
 });

@@ -138,6 +138,25 @@ export const POUVOIRS = [
   //  familles sont en retard de paiement.
   { id: "p_voir_impayes", label: "Voir l'état de paiement des familles",
     aide: "Afficher, dans la liste des élèves, qui est à jour et qui a des factures échues." },
+  //  🔴 CELUI-CI COMBLE UN MANQUE, pas seulement une bascule (mig. 184). La
+  //  notion « voit toutes les classes, pas seulement les siennes » existait
+  //  SEULEMENT dans le front (`voitToutesClasses`, permissions.js) : neuf
+  //  écrans s'en servent pour choisir entre `getClasses` et `getMesClasses`,
+  //  mais la base ne la connaissait pas. Les gardes qui en avaient besoin
+  //  énuméraient donc des rôles à la main — et énumérer des rôles est
+  //  précisément ce que ce chantier remplace.
+  //
+  //  Il reproduit `voitToutesClasses` : promoteur et direction, ni
+  //  l'enseignant ni le surveillant, qui restent bornés par
+  //  `enseigne_classe()`. Sans lui, remplacer la liste de rôles de
+  //  `absences_classe_periode` par la case `presence_vie` aurait donné
+  //  TOUTES les classes à TOUT enseignant — c'est-à-dire supprimé le
+  //  cloisonnement de la migration 058 en croyant le traduire.
+  //
+  //  C'est aussi le point d'accroche de l'étape 4 : le périmètre par cycle
+  //  viendra RESTREINDRE ce pouvoir, pas le contourner.
+  { id: "p_toutes_classes", label: "Voir toutes les classes",
+    aide: "Accéder aux classes de tout l'établissement, et pas seulement à celles où l'on enseigne." },
 ];
 
 const IDS_POUVOIRS = POUVOIRS.map((p) => p.id);
@@ -257,7 +276,9 @@ export function boitesDuModele(modele) {
   //  direction, comptable, secrétariat — mais ni l'enseignant ni le
   //  surveillant, qui n'ont pas à savoir quelle famille est en retard.
   const pouvoirs = [];
-  if (modele === "direction") pouvoirs.push("p_bulletins_diffuser", "p_codes_parents", "p_voir_impayes");
+  //  `p_toutes_classes` reproduit `voitToutesClasses()` : la direction seule
+  //  (le promoteur l'a de toute façon par `a_acces`).
+  if (modele === "direction") pouvoirs.push("p_bulletins_diffuser", "p_codes_parents", "p_voir_impayes", "p_toutes_classes");
   if (modele === "comptable") pouvoirs.push("p_eleves_editer", "p_relancer", "p_frais", "p_voir_impayes");
   if (modele === "secretaire") pouvoirs.push("p_eleves_editer", "p_voir_impayes");
   return [...boites.filter((b) => !IDS_POUVOIRS.includes(b)), ...pouvoirs];
