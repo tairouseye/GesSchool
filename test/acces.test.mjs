@@ -426,8 +426,33 @@ test("🔴 toute case nommée dans une bascule nomme une case qui existe", () =>
   ]);
   for (const f of MIGRATIONS_BASCULE) {
     const sql = lireBascule(f);
-    const citees = [...sql.matchAll(/a_acces\('([a-z_]+)'\)/g)].map((m) => m[1]);
-    assert.ok(citees.length > 0, f + " : une migration de bascule qui ne cite aucune case ?");
+    //  ⚠️ TROIS FORMES, et les deux dernières sont venues d'un angle mort que
+    //  cette épreuve a elle-même révélé. Elle ne connaissait que la citation
+    //  littérale `a_acces('x')`, et a donc échoué sur la migration 193 — qui
+    //  construit ses policies depuis une CARTE (table → case), où les noms de
+    //  cases sont des paramètres de `format()`, pas des littéraux. Le reproche
+    //  était juste dans sa forme (« elle ne cite aucune case ») et faux dans
+    //  son fond. L'élargir lui fait vérifier 14 noms de plus.
+    const citees = [
+      //  a) citation directe dans une policy
+      ...[...sql.matchAll(/a_acces\('([a-z_]+)'\)/g)].map((m) => m[1]),
+      //  b) citation DANS une chaîne SQL (guillemets doublés) : les blocs de
+      //     substitution des gardes de RPC
+      ...[...sql.matchAll(/a_acces\(''([a-z_]+)''\)/g)].map((m) => m[1]),
+    ];
+    //  ⚠️ PAS DE TROISIÈME FORME, et c'est une marche arrière assumée. J'avais
+    //  ajouté « deuxième colonne d'une carte `array['table', 'case', …]` » pour
+    //  couvrir la migration 193 — mais une carte (table, case, prédicat) et une
+    //  simple LISTE de tables (`array['depenses', 'recettes', 'ecritures', …]`,
+    //  migrations 177 et 178) sont indistinguables par la forme. L'épreuve
+    //  croyait donc que `recettes` était une case inexistante. Les cartes ont
+    //  leur propre épreuve, juste en dessous.
+    //
+    //  Une migration qui construit ses policies par `format(%L)` ne cite aucune
+    //  case littéralement : on ne l'exige donc que des autres.
+    if (!sql.includes("%2$L") && !sql.includes("a_acces(%")) {
+      assert.ok(citees.length > 0, f + " : une migration de bascule qui ne cite aucune case ?");
+    }
     const inconnues = [...new Set(citees)].filter((c) => !connues.has(boiteDeCle(c)));
     assert.deepEqual(inconnues, [],
       f + " : case(s) inexistante(s) — elles n'accorderaient rien à personne et"
@@ -961,4 +986,45 @@ test("🔴 le journal d'audit est APPEND-ONLY : personne ne peut effacer ses tra
       + " droit de vider son propre journal d'audit — le défaut de la mig. 192 :"
       + String.fromCharCode(10) + p);
   }
+});
+
+test("🔴 la carte de la pédagogie ne nomme que des cases qui existent", () => {
+  //  🔴 LE MÊME RISQUE QUE L'ÉPREUVE GÉNÉRIQUE, par un autre chemin.
+  //  La migration 193 ne cite pas ses cases littéralement : elle construit ses
+  //  14 policies depuis une CARTE (table → case → prédicat) passée à
+  //  `format(%L)`. L'épreuve générique ne les voyait donc pas — et quand je
+  //  l'ai élargie pour les voir, elle a pris les simples LISTES de tables des
+  //  migrations 177 et 178 pour des cartes de cases. D'où cette épreuve-ci,
+  //  qui connaît la forme exacte de cette carte.
+  //
+  //  L'enjeu est le même : `boite_de_cle()` rend son argument tel quel, donc
+  //  une faute de frappe (`cahiers` au pluriel) ne lève aucune erreur — elle
+  //  verrouille l'écran pour tout le monde, en silence.
+  const connues = new Set([
+    ...MODELES.flatMap((m) => boitesDuModele(m.id)),
+    ...boitesDeLArbre(arbreDesCases(MIXTE)),
+    ...POUVOIRS.map((p) => p.id),
+  ]);
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "193_bascule_pedagogie_calendrier.sql"), "utf8"));
+  //  Les deux cartes de cette migration : (table, case, prédicat) pour le
+  //  contenu, (table, case, mode) pour les référentiels. Même forme à trois
+  //  colonnes, donc une seule lecture suffit.
+  const paires = [...sql.matchAll(/array\['([a-z_]+)',\s*'([a-z_]+)',/g)]
+    .map((m) => ({ table: m[1], boite: m[2] }));
+  assert.equal(paires.length, 14,
+    "la carte ne compte plus 14 tables : ajustez cette épreuve en même temps"
+    + " que la migration, pour qu'elle les vérifie TOUTES");
+  const inconnues = paires.filter((p) => !connues.has(boiteDeCle(p.boite)));
+  assert.deepEqual(inconnues.map((p) => p.table + " → " + p.boite), [],
+    "case(s) inexistante(s) : elles n'accorderaient rien à personne et"
+    + " verrouilleraient l'écran sans aucune erreur");
+  //  Et deux correspondances qu'il ne faut pas confondre, parce qu'elles
+  //  déplaceraient des moyennes ou ouvriraient le cahier d'un collègue.
+  const par = Object.fromEntries(paires.map((p) => [p.table, p.boite]));
+  assert.equal(par["coefficients_matieres"], "structure",
+    "les coefficients de matières déplacent toutes les moyennes : ils"
+    + " appartiennent à la case `structure`, que la direction seule détient");
+  assert.equal(par["cahier_textes"], "cahier",
+    "le cahier de textes appartient à la case de son écran");
 });
