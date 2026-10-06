@@ -266,8 +266,15 @@ test("🔴 le SQL EN VIGUEUR reproduit exactement la carte et les modèles du JS
   };
 
   //  a) la carte clé → boîte
-  const carte = derniere(/when '[a-z_]+' then '[a-z_]+'/);
-  assert.ok(carte, "aucune migration ne porte la carte clé → boîte");
+  //
+  //  ⚠️ ON S'ANCRE SUR LE NOM DE LA FONCTION, et pas sur la forme
+  //  `when 'x' then 'y'`. Première version : ce motif a fini par attraper
+  //  `case r.polcmd when 'r' then 'select' when 'a' then 'insert' …` de la
+  //  migration 188, qui n'a rien à voir avec la carte des cases. L'épreuve
+  //  échouait en lisant le mauvais bloc — un faux positif, mais elle avait
+  //  raison de crier : c'est bien son heuristique qui était trop large.
+  const carte = derniere(/function public\.boite_de_cle/);
+  assert.ok(carte, "aucune migration ne définit `boite_de_cle`");
   const paires = [...carte.sql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => [m[1], m[2]]);
   const attendu = FUSIONS.flatMap((f) => f.cles.map((c) => [c, f.id]));
   assert.deepEqual(
@@ -839,5 +846,87 @@ test("🔴 personne ne peut s'accorder un rôle : l'escalade reste fermée", () 
     assert.ok(i > 0, "la policy de lecture de " + t + " a disparu");
     assert.match(sql.slice(i, sql.indexOf(";", i)), /auth\.uid\(\)/,
       t + " : chacun doit pouvoir lire SON profil, sinon la connexion échoue");
+  }
+});
+
+test("🔴 aucune ligne de périmètre = aucune restriction (la migration est inerte)", () => {
+  //  🔴 LA PROPRIÉTÉ QUI REND L'ÉTAPE 4 DÉPLOYABLE (mig. 188). Le
+  //  périmètre touche 51 policies sur 22 tables : s'il n'était pas inerte par
+  //  défaut, la mise en ligne aurait changé ce que voient sept écoles d'un
+  //  coup. Chaque conjonction DOIT donc commencer par un test de nullité, et
+  //  les helpers doivent rendre NULL quand personne n'est cloisonné.
+  //
+  //  Éprouvé en base avant d'activer quoi que ce soit : responsable 96/96,
+  //  promoteur 50/50, enseignant 1/1, parent 4/4 notes. Rien n'avait changé.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "188_perimetre_par_cycle.sql"), "utf8"));
+  //  Chaque prédicat de la carte est soit `peut_voir_eleve(...)` — qui porte
+  //  le test en elle — soit préfixé de `classes_autorisees() is null or`.
+  //  ⚠️ MOTIF SOUPLE, et le compte EXACT. Première version : un motif plus
+  //  strict n'attrapait que 19 des 22 entrées — et mon seuil était à 20, donc
+  //  l'épreuve échouait en croyant la carte changée. Exiger le compte exact
+  //  vaut mieux qu'un seuil : si la carte gagne une table, l'épreuve le dit
+  //  au lieu de la vérifier à moitié.
+  const predicats = [...sql.matchAll(/array\[\s*'[a-z_]+'\s*,\s*'([\s\S]*?)'\s*\]/g)].map((m) => m[1]);
+  assert.equal(predicats.length, 22,
+    "la carte table → prédicat ne compte plus 22 entrées : ajustez cette épreuve"
+    + " en même temps que la migration, pour qu'elle les vérifie TOUTES");
+  for (const p of predicats) {
+    assert.ok(p.includes("peut_voir_eleve") || p.includes("is null or"),
+      "prédicat sans porte de sortie : « " + p + " ». Sans `is null or`, le"
+      + " périmètre cloisonnerait TOUT LE MONDE dès la mise en ligne.");
+  }
+});
+
+test("🔴 le promoteur et la RH ne peuvent pas être cloisonnés", () => {
+  //  🔴 LE VERROU DE SÉCURITÉ DU MÉCANISME (mig. 188). Si le promoteur
+  //  pouvait se verrouiller lui-même — ou être verrouillé — il perdrait la
+  //  main sur son propre établissement sans moyen de revenir. C'est écrit
+  //  DANS le helper, pas chez l'appelant, pour qu'aucune policy ne puisse
+  //  l'oublier. Éprouvé : même DÉSIGNÉ sur un cycle, `cycles_autorises()`
+  //  lui rend NULL.
+  //
+  //  La RH de même : la paie et le personnel ne se découpent pas par cycle
+  //  (décision du promoteur, 05/10/2026).
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "188_perimetre_par_cycle.sql"), "utf8"));
+  const i = sql.indexOf("function public.cycles_autorises");
+  assert.ok(i > 0, "`cycles_autorises` a disparu");
+  const corps = sql.slice(i, sql.indexOf("$fn$;", i));
+  assert.match(corps, /est_super_admin\(\) or a_role\('admin_ecole'\) or a_role\('rh'\)[\s\S]{0,40}return null/,
+    "le promoteur et la RH doivent rendre NULL — inconditionnellement, dans le helper");
+  //  Et le fail-closed : pas de session, aucun cycle (et non « tous »).
+  assert.match(corps, /auth\.uid\(\) is null then return '\{\}'/,
+    "sans session, le périmètre doit être VIDE, pas absent de restriction");
+});
+
+test("🔴 les RPC `security definer` sont cloisonnées elles aussi", () => {
+  //  🔴 SANS ÇA, LE PÉRIMÈTRE ÉTAIT UN TROMPE-L'ŒIL (mig. 189). Une
+  //  fonction `security definer` ne passe pas par la RLS : la liste des
+  //  factures et les totaux du tableau de bord auraient continué de compter
+  //  toute l'école, juste au-dessus d'une liste d'élèves cloisonnée. C'est
+  //  exactement le défaut corrigé au lot 2 : un nombre derrière lequel on ne
+  //  peut pas regarder.
+  //
+  //  Éprouvé : responsable cloisonnée préscolaire → `factures_paginees`
+  //  total 0 et `tableau_bord_finances` 0/0, alors que l'école a 8 factures.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "189_perimetre_dans_les_rpc.sql"), "utf8"));
+  for (const fn of ["factures_paginees", "tableau_bord_finances", "statut_paiement_classe",
+                    "absences_classe_periode", "moyenne_notes_ecole", "moyenne_notes_par_niveau",
+                    "bulletin_pour_attestation", "relancer_eleve", "relancer_facture",
+                    "supprimer_facture"]) {
+    assert.ok(sql.includes("'" + fn + "'"),
+      "`" + fn + "` contourne la RLS : elle doit porter le périmètre à la main");
+  }
+  //  ⚠️ ET CHAQUE `exists` DOIT ÊTRE PRÉCÉDÉ DE LA PORTE DE SORTIE. Sans
+  //  elle, une ligne dont le rattachement est absent (un paiement sans
+  //  facture) disparaîtrait AUSSI pour les non-cloisonnés — une régression
+  //  pour tout le monde au lieu d'un cloisonnement pour quelques-uns.
+  for (const m of sql.matchAll(/exists \(select 1 from factures/g)) {
+    const avant = sql.slice(Math.max(0, m.index - 60), m.index);
+    assert.ok(avant.includes("classes_autorisees() is null or"),
+      "un `exists` sans `classes_autorisees() is null or` devant : il cacherait"
+      + " des lignes aux non-cloisonnés");
   }
 });

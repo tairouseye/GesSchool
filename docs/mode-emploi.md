@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.252 · mise à jour du 6 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.253 · mise à jour du 6 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur. Les **51 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -239,15 +239,29 @@ C'est le cas le plus fréquent au bout de quelques mois : la personne travaille 
 
 **Seul le promoteur** peut le faire — et la base le refuse aux autres, pas seulement l'écran. Pour retirer un accès, la croix **✕** à côté de son nom.
 
-### 4.4 Rejoindre (côté invité)
+### 4.4 Limiter quelqu'un à **un seul cycle**
+
+Le cas typique : votre école a un préscolaire et un élémentaire, chacun avec sa responsable, et chacune n'a pas à voir les élèves de l'autre.
+
+**Membres** → sur sa ligne → le sélecteur **« Toute l'école / … seulement »** → choisir le cycle → confirmer.
+
+À partir de là, cette personne ne voit plus que son cycle : **les élèves, les inscriptions, les classes, les bulletins, les notes, les absences, les factures, les abonnements cantine et transport** — et **les totaux suivent**. Son tableau de bord affiche le montant facturé de son cycle, pas celui de l'école.
+
+> **Elle garde tous ses accès.** Le périmètre ne touche pas à ce qu'elle peut FAIRE, seulement à QUI elle le fait. Une responsable qui encaisse continue d'encaisser — pour les familles de son cycle.
+
+**Deux personnes ne sont jamais limitées** : **vous** (le promoteur) et la **responsable RH**. Même si vous vous désignez sur un cycle, vous continuez de tout voir — sinon vous perdriez la main sur votre propre établissement sans pouvoir revenir en arrière.
+
+Le sélecteur n'apparaît **que si votre école a au moins deux cycles**, et **seul le promoteur** peut le régler. Pour revenir en arrière : **« Toute l'école »**.
+
+### 4.5 Rejoindre (côté invité)
 L'invité crée un compte, choisit **« 🧑‍💼 Je suis un membre du personnel »** et saisit le code — ou ouvre le **lien d'invitation** (code pré-rempli). ✅ Son compte est créé avec le bon rôle.
 
-### 4.5 Enseignants reliés à leur fiche
+### 4.6 Enseignants reliés à leur fiche
 Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doit correspondre à sa **fiche** :
 1. **Enseignants** → ouvrir la fiche (e-mail conseillé) → **« Code d'accès »** → l'enseignant choisit **« 🧑‍🏫 Je suis un enseignant »** et le saisit. *Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.*
 2. **Affectations** : relier enseignant × classe × matière (alimente coefficients **et** la génération d'emploi du temps).
 
-### 4.6 Invitations en attente & 4.7 Révoquer/suspendre
+### 4.7 Invitations en attente & 4.8 Révoquer/suspendre
 La section **« Invitations en attente »** liste les codes non utilisés (Copier le lien / Annuler). Sur chaque personne gérée : **✕** retire un rôle ; **Suspendre** bloque l'accès (« Compte suspendu »), **Réactiver** le rétablit.
 
 ---

@@ -57,6 +57,35 @@ export async function accorderModele(profilId, modele) {
   return data;
 }
 
+/**
+ * Périmètre de chaque membre : « toute l'école », « certains cycles », ou
+ * « ses classes ». Rendu par profil_id, pour que la page Membres l'affiche
+ * sur la ligne de chacun.
+ */
+export async function getPerimetres() {
+  const { data, error } = await supabase.rpc("perimetres_ecole");
+  if (error) throw error;
+  const par = {};
+  for (const r of data ?? []) par[r.profil_id] = r;
+  return par;
+}
+
+/**
+ * Pose le périmètre d'un membre. Réservé au promoteur — et la base le refuse
+ * aux autres, pas seulement l'écran (mig. 190).
+ *
+ * ⚠️ `cycles` est REMPLACÉ, pas cumulé : choisir « Élémentaire » après
+ * « Préscolaire » donne l'élémentaire seul. C'est ce qu'on attend d'un
+ * sélecteur, et la RPC s'en charge.
+ */
+export async function definirPerimetre(profilId, mode, cycles = []) {
+  const { data, error } = await supabase.rpc("definir_perimetre", {
+    p_profil: profilId, p_mode: mode, p_cycles: cycles,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // Liste des invitations en attente (codes générés non utilisés).
 export async function getInvitations() {
   const { data, error } = await supabase.rpc("invitations_ecole");

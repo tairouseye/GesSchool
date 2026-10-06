@@ -4,7 +4,8 @@ import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
 import { MODELES } from "@/lib/acces.js";
-import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation, accorderModele } from "@/lib/membres.js";
+import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation, accorderModele, getPerimetres, definirPerimetre } from "@/lib/membres.js";
+import { getCycles } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
 export default function Membres() {
@@ -22,6 +23,11 @@ export default function Membres() {
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
   const [q, setQ] = useState("");
+  //  Périmètres et cycles : chargés seulement si l'école a plus d'un cycle.
+  //  Proposer « un seul cycle » à une école qui n'en a qu'un serait un réglage
+  //  sans effet, et un réglage sans effet est un piège.
+  const [perimetres, setPerimetres] = useState({});
+  const [cycles, setCycles] = useState([]);
 
   // Recherche sur le nom, l'e-mail et le libellé lisible des rôles.
   const membresFiltres = filtreTexte(membres, q, [
@@ -35,11 +41,26 @@ export default function Membres() {
       const [m, inv] = await Promise.all([getMembres(), getInvitations()]);
       setMembres(m);
       setInvitations(inv);
+      //  ⚠️ DÉGRADATION GRACIEUSE, patron de `Structure.jsx` : le périmètre
+      //  est un ajout récent (mig. 188-190). Si ces RPC manquent — base pas
+      //  encore migrée — la page des membres doit rester utilisable, pas
+      //  afficher une erreur pour une fonctionnalité annexe.
+      if (complet) {
+        try {
+          const [per, cy] = await Promise.all([getPerimetres(), getCycles(ecole?.id)]);
+          setPerimetres(per);
+          setCycles(cy || []);
+        } catch { /* périmètre indisponible : on n'affiche pas le sélecteur */ }
+      }
     } catch (e) { setErreur(e.message); }
     finally { setChargement(false); }
-  }, []);
+  }, [complet, ecole?.id]);
 
   useEffect(() => { charger(); }, [charger]);
+
+  //  Index des cycles par identifiant, pour nommer le périmètre dans la
+  //  confirmation et sur la ligne du membre.
+  const cyclesParId = Object.fromEntries((cycles || []).map((c) => [c.id, c]));
 
   // Puis-je gérer ce rôle précis ?
   const gereRole = (r) => complet || invitables.includes(r);
@@ -66,6 +87,33 @@ export default function Membres() {
     try {
       await accorderModele(m.id, modele);
       toast.succes(`Accès « ${lib} » accordé.`);
+      await charger();
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
+  }
+
+  //  Poser le périmètre d'un membre : toute l'école, ou UN cycle.
+  //
+  //  ⚠️ ON NE PROPOSE PAS « plusieurs cycles » dans ce sélecteur, alors que la
+  //  base l'accepte. Un responsable qui tient deux cycles est un cas réel
+  //  mais rare, et un sélecteur multiple ici coûterait en clarté à tout le
+  //  monde. La RPC prend un tableau : le jour où le besoin apparaît, l'écran
+  //  suit sans migration.
+  async function reglerPerimetre(m, valeur) {
+    const mode = valeur === "ecole" ? "ecole" : "cycles";
+    const cycles = mode === "cycles" ? [valeur] : [];
+    const libelle = mode === "ecole"
+      ? "toute l'école"
+      : (cyclesParId[valeur]?.libelle || "ce cycle");
+    if (!(await confirmer({
+      message: `${m.prenom} ${m.nom} ne verra plus que « ${libelle} ». Les élèves, factures, bulletins et absences des autres cycles disparaîtront de ses écrans.`,
+      confirmer: "Appliquer",
+    }))) return;
+    setErreur("");
+    try {
+      await definirPerimetre(m.id, mode, cycles);
+      toast.succes(mode === "ecole"
+        ? `${m.prenom} voit de nouveau toute l'école.`
+        : `${m.prenom} est limitée à « ${libelle} ».`);
       await charger();
     } catch (e) { setErreur(e.message); toast.erreur(e.message); }
   }
@@ -169,6 +217,30 @@ export default function Membres() {
                             aria-label={`Donner un accès à ${m.prenom} ${m.nom}`}>
                             <option value="">+ Donner un accès…</option>
                             {aDonner.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                          </select>
+                        );
+                      })()}
+                      {/*  PÉRIMÈTRE PAR CYCLE (mig. 188-190).
+                           ⚠️ Affiché SEULEMENT si l'école a au moins deux cycles :
+                           proposer « un seul cycle » à une école qui n'en a qu'un
+                           serait un réglage sans effet, donc un piège.
+                           ⚠️ Et PAS pour le promoteur ni pour la RH : la base ne
+                           les cloisonne jamais (c'est écrit dans `cycles_autorises`),
+                           donc le sélecteur mentirait. */}
+                      {complet && cycles.length > 1
+                        && !(m.roles || []).some((r) => r === "admin_ecole" || r === "rh") && (() => {
+                        const per = perimetres[m.id];
+                        const courant = per?.mode === "cycles" && per.cycles?.length === 1
+                          ? per.cycles[0] : "ecole";
+                        return (
+                          <select value={courant}
+                            onChange={(e) => reglerPerimetre(m, e.target.value)}
+                            className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs text-navy-900 outline-none focus:border-or-500"
+                            aria-label={`Périmètre de ${m.prenom} ${m.nom}`}>
+                            <option value="ecole">Toute l'école</option>
+                            {cycles.map((c) => (
+                              <option key={c.id} value={c.id}>{c.libelle} seulement</option>
+                            ))}
                           </select>
                         );
                       })()}
