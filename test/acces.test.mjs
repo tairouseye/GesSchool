@@ -524,3 +524,66 @@ test("🔴 relancer_eleve prend l'élève de son paramètre, pas d'un champ abse
   assert.match(corps, /v_msg, p_eleve, 'facture'/,
     "la notification doit porter `p_eleve`, le paramètre de la fonction");
 });
+
+test("🔴 la paie ne se voit que par la case `rh`", () => {
+  //  🔴 CE QUE CETTE ÉPREUVE PROTÈGE (mig. 182). Avant la bascule,
+  //  `bareme_ir` et `cotisations_paie` — la configuration de la paie —
+  //  portaient `est_gestion() or a_role('rh') or a_role('comptable')`. Or
+  //  `est_gestion()` vaut vrai pour la **direction** : un responsable
+  //  pédagogique pouvait donc lire ET ÉCRIRE le barème de l'impôt, ce qui
+  //  change tous les bulletins de paie suivants. Chez le premier client réel,
+  //  les deux responsables de cycle sont `comptable+direction` : la
+  //  confidentialité de la paie reposait donc sur un écran, pas sur la base.
+  //
+  //  Si un jour la case `rh` est accordée à un autre modèle, c'est une
+  //  décision à prendre les yeux ouverts : des salaires nominatifs.
+  const porteurs = MODELES.filter((m) => boitesDuModele(m.id).includes("rh")).map((m) => m.id);
+  assert.deepEqual(porteurs, ["rh"],
+    "la case `rh` ouvre les salaires nominatifs : elle ne va qu'au modèle RH");
+});
+
+test("🔴 la dette envers le personnel reste lisible par la Comptabilité", () => {
+  //  🔴 LA SEULE EXCEPTION DU DOMAINE RH, et elle est réelle :
+  //  `dettes_personnel` est appelée depuis `src/lib/comptabilite.js` —
+  //  l'écran du comptable, qui affiche la dette envers le personnel. La
+  //  réduire à la seule case `rh` aurait cassé son bilan. C'est le même cas
+  //  que `comptes` à la migration 177 : une donnée lue par deux domaines.
+  const sql = lireBascule("182_bascule_rh_paie.sql");
+  const i = sql.indexOf("'dettes_personnel'");
+  assert.ok(i > 0, "la paire de dettes_personnel a disparu de la migration 182");
+  const ligne = sql.slice(i, sql.indexOf("]", i));
+  for (const boite of ["rh", "comptabilite"]) {
+    assert.ok(ligne.includes("a_acces(''" + boite + "'')"),
+      "dettes_personnel doit rester ouverte à la case `" + boite + "`");
+  }
+});
+
+test("🔴 la policy du barème reste HOISTÉE, sinon elle met 29 secondes", () => {
+  //  🔴 MESURÉ, PAS SUPPOSÉ (mig. 183). Sous une session RH réelle :
+  //      select count(*) from personnels  →     33 ms
+  //      select count(*) from bareme_ir   → 35 408 ms
+  //  Le prédicat était évalué par ligne sur 59 346 lignes, parce que
+  //  l'expression mêle un terme dépendant de la ligne
+  //  (`ecole_id = ecole_courante()`) aux appels de fonction : PostgreSQL ne
+  //  peut alors rien sortir de la boucle.
+  //
+  //  ⚠️ CE N'EST PAS LA BASCULE QUI L'A CAUSÉ, mesuré sur 8 000 lignes :
+  //  l'ancienne forme par rôles prenait 9 715 ms, la nouvelle 6 203 ms, la
+  //  forme hoistée 3 ms. Le défaut était antérieur ; la bascule l'a rendu
+  //  visible en lisant la table pour de vrai.
+  //
+  //  Envelopper chaque appel dans `(select f())` en fait un InitPlan évalué
+  //  UNE fois : 35 408 ms → 14 ms. Sémantique identique (`(select f())` rend
+  //  ce que rend `f()`, NULL compris).
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "183_rls_hoistee_bareme_ir.sql"), "utf8"));
+  const i = sql.indexOf("create policy bareme_ir_acces");
+  assert.ok(i > 0, "la policy hoistée de bareme_ir a disparu");
+  const policy = sql.slice(i, sql.indexOf(";", i));
+  for (const appel of ["(select est_super_admin())", "(select ecole_courante())",
+                       "(select a_acces('rh'))"]) {
+    assert.ok(policy.includes(appel),
+      "la policy doit appeler " + appel + " en sous-requête scalaire : un appel nu"
+      + " ramènerait la lecture du barème à 29 secondes");
+  }
+});
