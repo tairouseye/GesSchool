@@ -287,3 +287,100 @@ test("la migration ne touche AUCUNE policy existante", () => {
   assert.deepEqual([...new Set(touchees)], [],
     "cette migration ne doit créer ou détruire que les policies de ses propres tables");
 });
+
+
+// ---------------------------------------------------------------------
+//  4. La règle de bascule, éprouvée sur CHAQUE migration de bascule
+//
+//  🔴 POURQUOI C'EST GÉNÉRIQUE. L'étape 3 bascule huit domaines, un par
+//  un. Écrire une épreuve par domaine garantirait d'en oublier une ; ces
+//  trois-là trouvent les migrations par leur NOM (`NNN_bascule_*.sql`), donc
+//  elles couvriront Encaissements, RH, Notes et Élèves sans qu'on revienne
+//  ici.
+// ---------------------------------------------------------------------
+const SAUT = String.fromCharCode(10);
+const DOSSIER_MIG = path.join(process.cwd(), "supabase", "migrations");
+const MIGRATIONS_BASCULE = fs.readdirSync(DOSSIER_MIG)
+  .filter((f) => /^\d+_bascule_.*\.sql$/.test(f));
+
+//  ⚠️ ON RETIRE LES COMMENTAIRES AVANT D'ANALYSER. Le bloc ANNULATION de
+//  chaque migration contient volontairement l'ancienne garde par rôle : sans
+//  ce filtre, toutes les épreuves ci-dessous échouent sur du texte inerte.
+function sansCommentaires(sql) {
+  return sql.split(SAUT).filter((l) => !l.trimStart().startsWith("--")).join(SAUT);
+}
+function lireBascule(f) {
+  return sansCommentaires(fs.readFileSync(path.join(DOSSIER_MIG, f), "utf8"));
+}
+
+test("🔴 une bascule REMPLACE la garde par rôle, elle ne l'ajoute pas", () => {
+  assert.ok(MIGRATIONS_BASCULE.length > 0, "aucune migration de bascule trouvée");
+  for (const f of MIGRATIONS_BASCULE) {
+    const sql = lireBascule(f);
+    //  Chaque policy créée est examinée seule. Si elle parle de cases, elle
+    //  ne doit plus parler de rôles : garder les deux ferait que décocher une
+    //  case masquerait l'écran pendant que la base continuerait d'autoriser.
+    //  C'est exactement le défaut corrigé par la migration 173 et par les
+    //  lots 1 et 2 de l'audit.
+    for (const m of sql.matchAll(/create policy[\s\S]*?;/gi)) {
+      const p = m[0];
+      if (!p.includes("a_acces")) continue;
+      assert.ok(!/a_role\s*\(/.test(p) && !/est_gestion\s*\(/.test(p),
+        f + " : une policy mêle les cases et les rôles —" + SAUT + p);
+    }
+  }
+});
+
+test("🔴 une substitution de garde échoue bruyamment, jamais en silence", () => {
+  //  Les gardes des RPC sont remplacées par substitution de texte sur
+  //  `pg_get_functiondef`. Si la chaîne attendue a changé depuis, la
+  //  substitution ne fait RIEN — et la fonction reste ouverte alors que la
+  //  migration a « réussi ». D'où le `raise exception` obligatoire.
+  for (const f of MIGRATIONS_BASCULE) {
+    const sql = lireBascule(f);
+    for (const bloc of sql.split("do $$")) {
+      if (!bloc.includes("replace(v_def")) continue;
+      //  ⚠️ IL NE SUFFIT PAS DE CHERCHER UN `raise exception` DANS LE BLOC :
+      //  ces blocs en contiennent déjà un pour « fonction introuvable ». J'ai
+      //  saboté la migration pour éprouver cette épreuve, et elle a passé
+      //  quand même. Ce qu'il faut exiger, c'est la comparaison du texte
+      //  substitué avec l'original, SUIVIE du refus.
+      assert.match(bloc, /v_new\s*=\s*v_def[\s\S]{0,200}raise exception/i,
+        f + " : la substitution doit comparer v_new à v_def et refuser si rien"
+          + " n'a changé — sinon une RPC reste ouverte alors que la migration"
+          + " annonce avoir réussi");
+    }
+  }
+});
+
+test("🔴 une bascule ne touche JAMAIS le chemin des familles", () => {
+  //  Les parents et les étudiants ne sont pas du personnel : leur accès vient
+  //  de leur LIEN, par des fonctions `security definer` gardées par
+  //  `_parent_possede()` et la grille de consentement (mig. 114). Une bascule
+  //  qui les redéfinirait risquerait « un parent voit les notes d'un autre
+  //  enfant » — le pire défaut possible dans cette application.
+  const INTERDITS = ["enfant_notes", "enfant_bulletins", "enfant_cantine",
+                     "enfant_cantine_menu", "enfant_transport", "mes_enfants",
+                     "_parent_possede", "_acces_notes_autorise"];
+  for (const f of MIGRATIONS_BASCULE) {
+    const sql = lireBascule(f);
+    for (const nom of INTERDITS) {
+      const motif = new RegExp("(create or replace function|drop function)[^;]{0,120}" + nom, "i");
+      assert.ok(!motif.test(sql),
+        f + " : ne redéfinissez pas " + nom + " dans une migration de bascule");
+    }
+  }
+});
+
+test("la bascule Cantine / Transport garde les deux cases séparées", () => {
+  //  Une école peut avoir un bus sans cantine. Les fusionner sous prétexte
+  //  qu'elles partagent le groupe de menu « Services » créerait un droit que
+  //  le promoteur ne peut plus défaire.
+  const sql = lireBascule("178_bascule_cantine_transport.sql");
+  const cantine = [...sql.matchAll(/a_acces\('cantine'\)/g)].length;
+  const transport = [...sql.matchAll(/a_acces\('transport'\)/g)].length;
+  assert.ok(cantine >= 2, "la case `cantine` doit garder ses tables");
+  assert.ok(transport >= 2, "la case `transport` doit garder ses tables");
+  assert.ok(!/a_acces\('cantine_transport'\)|a_acces\('services'\)/.test(sql),
+    "les deux cases ont été fusionnées : ce n'est pas le modèle");
+});
