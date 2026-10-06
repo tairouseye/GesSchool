@@ -35,6 +35,8 @@ const { FUSIONS, DERIVEES, POUVOIRS, MODELES, ESPACES_SANS_CASES,
         boiteDeCle, clesDeBoite, arbreDesCases, boitesDeLArbre, boitesDuModele,
         aAcces, aPouvoir, ESPACES, itemPourType, peutVoir } = A;
 
+const SAUT = String.fromCharCode(10);
+const DOSSIER_MIG = path.join(process.cwd(), "supabase", "migrations");
 const CLES = [...new Set(ESPACES.flatMap((e) => e.items.map((i) => i.cle)))];
 const ROLES = MODELES.map((m) => m.id);
 const MIXTE = { type_etablissement: "superieur", paliers: ["elementaire", "college", "lycee", "universite"] };
@@ -240,38 +242,56 @@ test("entrées vides : fail-closed", () => {
 //  4. La base et le JS ne doivent pas diverger
 // ---------------------------------------------------------------------
 
-test("🔴 la migration 175 reproduit EXACTEMENT la carte et les modèles du JS", () => {
+test("🔴 le SQL EN VIGUEUR reproduit exactement la carte et les modèles du JS", () => {
   //  Deux implémentations de la même règle, c'est deux vérités à maintenir
   //  — le défaut que l'audit a relevé ailleurs. Ici elles sont inévitables
   //  (l'écran a besoin du JS, les policies ont besoin du SQL), alors on les
   //  compare : les blocs SQL sont GÉNÉRÉS depuis ce fichier, et cette
   //  épreuve échoue si quelqu'un les édite à la main d'un seul côté.
-  const sql = fs.readFileSync(
-    path.join(process.cwd(), "supabase", "migrations", "175_acces_personnel.sql"), "utf8");
+  //
+  //  ⚠️ ELLE LISAIT LA MIGRATION 175, ET C'ÉTAIT UN PIÈGE. Les modèles ont
+  //  été redéfinis en 176, puis élargis en 180 (deux pouvoirs de plus) :
+  //  épingler une migration historique revenait à interdire toute évolution,
+  //  ou à réécrire une migration déjà appliquée — ce qu'on ne fait jamais.
+  //  On compare donc la DÉFINITION EN VIGUEUR : la migration la plus récente
+  //  qui porte le bloc. Les anciennes restent l'histoire, et c'est leur rôle.
+  const fichiers = fs.readdirSync(DOSSIER_MIG)
+    .filter((f) => /^\d+_.*\.sql$/.test(f)).sort();
+  const derniere = (motif) => {
+    for (const f of [...fichiers].reverse()) {
+      const sql = fs.readFileSync(path.join(DOSSIER_MIG, f), "utf8");
+      if (motif.test(sql)) return { f, sql };
+    }
+    return null;
+  };
 
   //  a) la carte clé → boîte
-  const paires = [...sql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => [m[1], m[2]]);
+  const carte = derniere(/when '[a-z_]+' then '[a-z_]+'/);
+  assert.ok(carte, "aucune migration ne porte la carte clé → boîte");
+  const paires = [...carte.sql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => [m[1], m[2]]);
   const attendu = FUSIONS.flatMap((f) => f.cles.map((c) => [c, f.id]));
   assert.deepEqual(
     paires.map((p) => p.join("→")).sort(),
     attendu.map((p) => p.join("→")).sort(),
-    "la carte SQL ne correspond plus aux FUSIONS : régénérez le bloc");
+    carte.f + " : la carte SQL ne correspond plus aux FUSIONS — régénérez le bloc");
 
   //  b) les modèles, un par un.
   //  Lecture par chaînes et non par expression régulière : les crochets et
   //  les parenthèses d'un littéral `array[...]` demandent trois niveaux
-  //  d'échappement, et c'est exactement là que ce test s'est cassé la
+  //  d'échappement, et c'est exactement là que cette épreuve s'est cassée la
   //  première fois.
+  const mod = derniere(/when 'direction' then array\[/);
+  assert.ok(mod, "aucune migration ne définit les modèles");
   for (const m of MODELES) {
-    const marqueur = `('${m.id}', array[`;
-    const debut = sql.indexOf(marqueur);
-    assert.ok(debut >= 0, `le modèle « ${m.id} » manque dans la migration`);
-    const fin = sql.indexOf("])", debut);
-    assert.ok(fin > debut, `le modèle « ${m.id} » n'est pas refermé`);
-    const dansSql = sql.slice(debut + marqueur.length, fin)
+    const marqueur = "when '" + m.id + "' then array[";
+    const debut = mod.sql.indexOf(marqueur);
+    assert.ok(debut >= 0, mod.f + " : le modèle « " + m.id + " » manque");
+    const fin = mod.sql.indexOf("]", debut);
+    assert.ok(fin > debut, mod.f + " : le modèle « " + m.id + " » n'est pas refermé");
+    const dansSql = mod.sql.slice(debut + marqueur.length, fin)
       .split(",").map((x) => x.trim().replace(/'/g, "")).filter(Boolean).sort();
     assert.deepEqual(dansSql, boitesDuModele(m.id).sort(),
-      `le modèle « ${m.id} » diverge entre le SQL et le JS`);
+      mod.f + " : le modèle « " + m.id + " » diverge entre le SQL et le JS");
   }
 });
 
@@ -298,8 +318,6 @@ test("la migration ne touche AUCUNE policy existante", () => {
 //  elles couvriront Encaissements, RH, Notes et Élèves sans qu'on revienne
 //  ici.
 // ---------------------------------------------------------------------
-const SAUT = String.fromCharCode(10);
-const DOSSIER_MIG = path.join(process.cwd(), "supabase", "migrations");
 const MIGRATIONS_BASCULE = fs.readdirSync(DOSSIER_MIG)
   .filter((f) => /^\d+_bascule_.*\.sql$/.test(f));
 
@@ -445,4 +463,64 @@ test("l'archivage GED reste ouvert à ses quatre domaines", () => {
       "documents_insert doit rester ouverte à la case `" + boite + "` : un des"
       + " quatre écrans qui archivent (certificats, paie, bulletins, factures)");
   }
+});
+
+test("🔴 p_frais ne va qu'à qui pouvait déjà fixer les tarifs", () => {
+  //  🔴 CE POUVOIR EST NÉ D'UN ÉLARGISSEMENT ÉVITÉ (mig. 180). La case
+  //  `encaissement` regroupe Paiements et Recouvrement — juste, ils lisent
+  //  `factures` — mais `frais` ne s'écrivait que par
+  //  `est_admin() or a_role('comptable')` : le secrétariat encaisse, il ne
+  //  fixe pas les tarifs de l'école. Basculer naïvement lui aurait donné la
+  //  grille tarifaire. Si quelqu'un ajoute `p_frais` à un autre modèle, c'est
+  //  une décision commerciale — pas un détail d'implémentation — et cette
+  //  épreuve l'oblige à la regarder en face.
+  const porteurs = MODELES.filter((m) => boitesDuModele(m.id).includes("p_frais")).map((m) => m.id);
+  assert.deepEqual(porteurs, ["comptable"],
+    "p_frais reproduit `a_role('comptable')` sur la table `frais` : le comptable seul");
+});
+
+test("🔴 p_voir_impayes distingue la direction de l'enseignant", () => {
+  //  🔴 L'AUTRE ÉLARGISSEMENT ÉVITÉ (mig. 180). `statut_paiement_classe`
+  //  — l'indicateur de paiement de la liste Élèves — nomme
+  //  `est_admin() or direction or comptable or secretaire`. Or la case
+  //  `eleves` est partagée par l'enseignant ET le surveillant : s'appuyer sur
+  //  elle aurait montré à tout enseignant quelles familles sont en retard de
+  //  paiement. C'est une information sur la situation financière des
+  //  familles, pas une information pédagogique.
+  const porteurs = MODELES.filter((m) => boitesDuModele(m.id).includes("p_voir_impayes"))
+    .map((m) => m.id).sort();
+  assert.deepEqual(porteurs, ["comptable", "direction", "secretaire"],
+    "p_voir_impayes reproduit la garde de statut_paiement_classe");
+  for (const sans of ["enseignant", "surveillant", "rh", "bibliothecaire"]) {
+    assert.ok(!boitesDuModele(sans).includes("p_voir_impayes"),
+      "« " + sans + " » ne doit pas voir quelles familles sont en retard de paiement");
+  }
+});
+
+test("🔴 relancer_eleve prend l'élève de son paramètre, pas d'un champ absent", () => {
+  //  🔴 BUG TROUVÉ EN ÉPROUVANT LA MIGRATION 180, corrigé par la 181.
+  //  `relancer_eleve` chargeait `r` avec
+  //  `e.ecole_id, e.prenom, e.nom, ec.nom, ec.devise` puis insérait la
+  //  notification en lisant `r.eleve_id` — un champ que `r` NE CONTIENT PAS.
+  //  PL/pgSQL ne s'en aperçoit qu'à l'exécution :
+  //  « record "r" has no field "eleve_id" ». Le bouton « Relancer (push) » de
+  //  l'écran Recouvrement n'a donc JAMAIS fonctionné — et c'est le seul
+  //  chemin de relance que l'interface utilise.
+  //
+  //  ⚠️ LA LEÇON, plus large que le bug : une garde se lit dans l'en-tête,
+  //  un corps ne se vérifie qu'en APPELANT la fonction. Les bascules
+  //  précédentes n'avaient éprouvé que des policies ; celle-ci a appelé les
+  //  huit RPC pour de vrai, et c'est ainsi qu'elle l'a trouvé.
+  //  ⚠️ ON RETIRE LES COMMENTAIRES D'ABORD. Première version de cette
+  //  épreuve : elle échouait sur le commentaire de la migration, qui CITE
+  //  `r.eleve_id` pour expliquer le correctif. Une épreuve qui lit du
+  //  commentaire ne lit pas le code.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "181_corriger_relancer_eleve.sql"), "utf8"));
+  const corps = sql.slice(sql.indexOf("create or replace function public.relancer_eleve"));
+  assert.ok(!/r\.eleve_id/.test(corps),
+    "r.eleve_id n'existe pas dans l'enregistrement chargé : la fonction échouerait"
+    + " à chaque appel");
+  assert.match(corps, /v_msg, p_eleve, 'facture'/,
+    "la notification doit porter `p_eleve`, le paramètre de la fonction");
 });

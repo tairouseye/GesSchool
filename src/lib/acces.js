@@ -123,6 +123,21 @@ export const POUVOIRS = [
   //  partage, l'acte non : il devient un pouvoir à part.
   { id: "p_relancer", label: "Relancer les familles",
     aide: "Envoyer les rappels d'impayés, par notification ou WhatsApp, et régler les relances automatiques." },
+  //  🔴 CEUX-CI SONT NÉS DE LA BASCULE DES ENCAISSEMENTS (mig. 180), pour la
+  //  même raison que `p_relancer` : la case `encaissement` couvre le
+  //  comptable ET le secrétariat, mais la base ne leur donne pas les mêmes
+  //  droits. Sans ces deux pouvoirs, la bascule aurait élargi en silence.
+  //
+  //  `frais` ne s'écrit aujourd'hui que par `est_admin() or a_role('comptable')`
+  //  — le secrétariat encaisse mais ne fixe pas les tarifs.
+  { id: "p_frais", label: "Fixer la grille des frais",
+    aide: "Créer et modifier les frais de scolarité par niveau, et les règles de relance automatique." },
+  //  `statut_paiement_classe` (l'indicateur de paiement de la liste Élèves)
+  //  nomme `direction`, que la case `eleves` ne distingue pas de l'enseignant
+  //  ni du surveillant. Sans ce pouvoir, tout enseignant verrait quelles
+  //  familles sont en retard de paiement.
+  { id: "p_voir_impayes", label: "Voir l'état de paiement des familles",
+    aide: "Afficher, dans la liste des élèves, qui est à jour et qui a des factures échues." },
 ];
 
 const IDS_POUVOIRS = POUVOIRS.map((p) => p.id);
@@ -237,10 +252,14 @@ export function boitesDuModele(modele) {
   //  relances (comptable seul, PAS le secrétariat). Une épreuve vérifie
   //  cette fidélité : sans elle, la bascule déplacerait des droits en
   //  silence.
+  //  ⚠️ `p_frais` au comptable SEUL (c'est `a_role('comptable')` sur `frais`),
+  //  et `p_voir_impayes` aux trois que `statut_paiement_classe` nomme —
+  //  direction, comptable, secrétariat — mais ni l'enseignant ni le
+  //  surveillant, qui n'ont pas à savoir quelle famille est en retard.
   const pouvoirs = [];
-  if (modele === "direction") pouvoirs.push("p_bulletins_diffuser", "p_codes_parents");
-  if (modele === "comptable") pouvoirs.push("p_eleves_editer", "p_relancer");
-  if (modele === "secretaire") pouvoirs.push("p_eleves_editer");
+  if (modele === "direction") pouvoirs.push("p_bulletins_diffuser", "p_codes_parents", "p_voir_impayes");
+  if (modele === "comptable") pouvoirs.push("p_eleves_editer", "p_relancer", "p_frais", "p_voir_impayes");
+  if (modele === "secretaire") pouvoirs.push("p_eleves_editer", "p_voir_impayes");
   return [...boites.filter((b) => !IDS_POUVOIRS.includes(b)), ...pouvoirs];
 }
 
