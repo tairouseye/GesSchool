@@ -6,13 +6,21 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/emploiSup.js";
 import { getFilieres, getSemestres, getMaquette } from "@/lib/superieur.js";
 import { getEnseignants } from "@/lib/enseignants.js";
+import { voitToutesClasses } from "@/lib/permissions.js";
 import { getAnneeCourante } from "@/lib/academique.js";
 
 // Pédagogie — emploi du temps du supérieur.
 // On planifie par filière et semestre : c'est la maille réelle d'une
 // université, qui n'a pas de classes (cf. migration 138).
 export default function EmploiSup() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, roles } = useAuth();
+  //  ⚠️ L'ÉCRAN OFFRAIT « + Nouvelle séance », « modifier » ET « supprimer »
+  //  À TOUT ENSEIGNANT qui pouvait l'ouvrir, alors que la base ne les
+  //  autorise qu'à la direction (mig. 195, et déjà 108 avant elle) : ses
+  //  enregistrements échouaient. C'est exactement le défaut que la mig. 166
+  //  décrit comme « parfaitement trompeur ». L'enseignant CONSULTE son emploi
+  //  du temps ; la direction le compose.
+  const peutModifier = voitToutesClasses(roles);
   const toast = useToast();
   const confirmer = useConfirm();
   const [annee, setAnnee] = useState(null);
@@ -80,7 +88,9 @@ export default function EmploiSup() {
       <EnTete
         titre="Emploi du temps"
         sousTitre="Séances par filière et semestre"
-        action={<Bouton onClick={() => setEdite({})} disabled={!semestreId}>+ Nouvelle séance</Bouton>}
+        action={peutModifier
+          ? <Bouton onClick={() => setEdite({})} disabled={!semestreId}>+ Nouvelle séance</Bouton>
+          : null}
       />
 
       <div className="space-y-5 p-4 sm:p-8">
@@ -157,10 +167,14 @@ export default function EmploiSup() {
                         <Badge ton={s.type_seance === "CM" ? "navy" : s.type_seance === "TP" ? "or" : "neutre"}>
                           {s.type_seance}
                         </Badge>
-                        <button type="button" onClick={() => setEdite(s)}
-                          className="text-navy-900/50 hover:text-navy-900">modifier</button>
-                        <button type="button" onClick={() => supprimer(s)}
-                          className="text-rose-500 hover:underline">supprimer</button>
+                        {peutModifier && (
+                          <>
+                            <button type="button" onClick={() => setEdite(s)}
+                              className="text-navy-900/50 hover:text-navy-900">modifier</button>
+                            <button type="button" onClick={() => supprimer(s)}
+                              className="text-rose-500 hover:underline">supprimer</button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

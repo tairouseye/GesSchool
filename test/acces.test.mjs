@@ -1086,3 +1086,132 @@ test("🔴 une annonce de l'établissement reste visible par une responsable clo
     + " cloisonné en remontant aux ENFANTS du tuteur : sans cette remontée, une"
     + " responsable cloisonnée lit toutes les conversations de l'école");
 });
+
+test("🔴 les notes du supérieur ne se lisent plus par tout le personnel", () => {
+  //  🔴 LE DÉFAUT QUE LA MIGRATION 195 FERME. `notes_lmd_select`,
+  //  `releves_select` et `deliberations_select` n'avaient pour prédicat que
+  //  `ecole_id = ecole_courante()`. Dans une université, le bibliothécaire, le
+  //  surveillant, la RH, le magasinier lisaient donc **toutes les notes et
+  //  tous les relevés de tous les étudiants**. C'est la famille du défaut
+  //  corrigé par la migration 173 côté école, jamais appliquée au supérieur.
+  //
+  //  Mesuré : l'enseignant de l'UCAD lisait 1 relevé et 1 délibération, il en
+  //  lit 0 ; ses 10 autres lectures sont inchangées.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "195_bascule_superieur_lmd.sql"), "utf8"));
+  const paires = [...sql.matchAll(/array\['([a-z_]+)',\s*'([a-z_:,]+)',\s*'([a-zA-Z_:]+)'\]/g)]
+    .map((m) => ({ table: m[1], lecture: m[2], ecriture: m[3] }));
+  assert.equal(paires.length, 12,
+    "la carte du supérieur ne compte plus 12 tables : ajustez cette épreuve en"
+    + " même temps que la migration, pour qu'elle les vérifie TOUTES");
+  const par = Object.fromEntries(paires.map((p) => [p.table, p]));
+
+  //  Les trois lectures resserrées, et par les BONNES cases.
+  for (const t of ["notes_lmd", "releves", "deliberations"]) {
+    assert.match(par[t].lecture, /^boites:/,
+      `la lecture de ${t} doit être réservée à des cases : sinon tout le`
+      + " personnel de l'université lit les notes des étudiants");
+  }
+  //  ⚠️ ET LE COUPLAGE QUI M'AURAIT CASSÉ LE PV : l'écran Délibérations LIT
+  //  `notes_lmd` pour calculer les moyennes (`Deliberations.jsx:55`). Sans sa
+  //  case dans la lecture, le PV se calculerait sur zéro note — EN SILENCE,
+  //  car une lecture refusée par la RLS ne lève rien, elle rend 0 ligne.
+  assert.ok(par["notes_lmd"].lecture.includes("deliberations_sup"),
+    "l'écran Délibérations lit `notes_lmd` pour délibérer : sa case doit"
+    + " figurer dans la lecture des notes, sinon le procès-verbal se calcule"
+    + " sur zéro note sans qu'aucune erreur ne le signale");
+
+  //  Les neuf référentiels gardent une lecture LARGE : ils composent
+  //  l'affichage de presque tous les écrans du supérieur.
+  for (const t of ["filieres", "semestres", "ue", "ecue", "inscriptions_sup"]) {
+    assert.equal(par[t].lecture, "tenant",
+      `${t} est un référentiel : fermer sa lecture viderait des grilles en`
+      + " silence, comme l'aurait fait `classes` à la migration 186");
+  }
+  //  ⚠️ `emplois_sup` garde `est_membre_ecole` : les ÉTUDIANTS lisent leur
+  //  emploi du temps, et pour eux `ecole_courante()` vaut NULL.
+  assert.equal(par["emplois_sup"].lecture, "membres",
+    "les étudiants consultent l'emploi du temps de leurs séances :"
+    + " `ecole_courante()` vaut NULL pour eux, il faut `est_membre_ecole`");
+  //  ⚠️ ET SON ÉCRITURE N'ÉLARGIT PAS : la case `emploi_sup` couvre aussi
+  //  l'enseignant, alors que la base réservait l'écriture à la direction.
+  assert.equal(par["emplois_sup"].ecriture, "_DIRECTION:emploi_sup",
+    "la case `emploi_sup` SEULE élargirait l'écriture de l'emploi du temps aux"
+    + " enseignants : il faut exiger aussi le pouvoir `p_toutes_classes`,"
+    + " qui reproduit exactement {promoteur, direction}");
+
+  //  Toute case nommée existe. `boite_de_cle()` rend son argument tel quel,
+  //  donc une faute de frappe verrouillerait l'écran sans aucune erreur.
+  const connues = new Set([
+    ...MODELES.flatMap((m) => boitesDuModele(m.id)),
+    ...boitesDeLArbre(arbreDesCases(MIXTE)),
+    ...POUVOIRS.map((p) => p.id),
+  ]);
+  const citees = paires.flatMap((p) => [
+    ...p.lecture.replace("boites:", "").split(",").filter((b) => b && b !== "tenant" && b !== "membres"),
+    p.ecriture.replace("_DIRECTION:", ""),
+  ]);
+  const inconnues = [...new Set(citees)].filter((b) => !connues.has(boiteDeCle(b)));
+  assert.deepEqual(inconnues, [],
+    "case(s) inexistante(s) : elles n'accorderaient rien à personne et"
+    + " verrouilleraient l'écran sans aucune erreur");
+});
+
+test("🔴 décocher « Messagerie » doit fermer les RPC, pas seulement l'écran", () => {
+  //  🔴 LE DÉFAUT QUE LA MIGRATION 194 AVAIT LAISSÉ, ET QUE J'AI MESURÉ.
+  //  La 194 a basculé les TABLES `annonces` et `messages`, et je m'y suis
+  //  arrêté. Or la messagerie école ↔ familles ne passe PAS par la table :
+  //  elle passe par quatre fonctions `security definer`, qui contournent la
+  //  RLS par construction.
+  //
+  //  Mesuré avant la 196, en transaction annulée : case « Messagerie »
+  //  décochée → la table `messages` rend **0** ligne (la 194 ferme bien) mais
+  //  `ecole_conversations()` rend encore **4** conversations. La case était
+  //  défaite par la couche RPC. Après la 196 : 0, et les deux autres lèvent.
+  //
+  //  ⚠️ Le défaut n'était pas exploitable AUJOURD'HUI, parce que les cases
+  //  reflètent encore les rôles après le backfill. Il se serait manifesté au
+  //  premier décochage — c'est-à-dire dès que l'arbre à cocher sert à
+  //  quelque chose.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "196_rpc_communication_oubliees.sql"), "utf8"));
+
+  //  Les quatre fonctions de messagerie passent à la case…
+  for (const f of ["ecole_conversations", "ecole_conversations_etudiants",
+                   "ecole_fil_parent", "ecole_envoyer_parent"]) {
+    const i = sql.indexOf(`function public.${f}(`);
+    assert.ok(i > 0, `la migration doit redéfinir ${f}`);
+    const corps = sql.slice(i, sql.indexOf("$fn$;", i));
+    assert.match(corps, /a_acces\('messagerie'\)/,
+      `${f} contourne la RLS : sans la case dans son corps, décocher`
+      + " « Messagerie » masque l'écran et laisse la RPC servir");
+    assert.ok(!/a_role\('(direction|comptable|secretaire)'\)/.test(corps),
+      `${f} garde une branche par RÔLE : la case ne déciderait plus rien`
+      + " (le défaut « ne pas garder les deux »)");
+    //  ⚠️ ET LE PÉRIMÈTRE, structurellement absent de ces fonctions : la
+    //  conjonction que la 194 a posée sur `messages` ne les gouverne pas.
+    assert.match(corps, /peut_voir_eleve\(/,
+      `${f} doit porter le périmètre à la main : « security definer »`
+      + " contourne la RLS, c'est la leçon de la migration 167");
+  }
+  //  …et la notification de masse aux familles relève de `annonces`.
+  const notif = sql.slice(sql.indexOf("function public._notifier_parents_ecole"));
+  assert.match(notif.slice(0, notif.indexOf("$fn$;")), /a_acces\('annonces'\)/,
+    "notifier toutes les familles de l'école relève de la case `annonces`");
+  //  ⚠️ ET SA BRANCHE SYSTÈME RESTE : `auth.uid() is null` = appel du cron.
+  //  La retirer casserait les relances automatiques de 07h00.
+  assert.match(notif.slice(0, notif.indexOf("$fn$;")), /auth\.uid\(\) is not null/,
+    "la branche d'appel système (cron, clé de service) doit rester : sans"
+    + " elle, les relances automatiques de 07h00 lèveraient toutes");
+
+  //  ⚠️ ET `_annonce_visible_par` N'EST PAS TOUCHÉE, délibérément : elle est
+  //  appelée par la policy `fichiers_ecole_select`, donc elle décide qui peut
+  //  ouvrir la PIÈCE JOINTE d'une annonce. Sa liste de rôles inclut
+  //  l'enseignant : c'est un test de DESTINATAIRE, pas une permission de
+  //  gestion. La remplacer par `a_acces('annonces')` rendrait ces pièces
+  //  jointes illisibles aux enseignants — en silence.
+  assert.ok(!sql.includes("_annonce_visible_par("),
+    "`_annonce_visible_par` décide qui ouvre la pièce jointe d'une annonce"
+    + " (policy `fichiers_ecole_select`) : la basculer sur `a_acces('annonces')`"
+    + " retirerait aux enseignants l'accès aux pièces jointes de l'école");
+});
