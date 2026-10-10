@@ -1215,3 +1215,71 @@ test("🔴 décocher « Messagerie » doit fermer les RPC, pas seulement l'écra
     + " (policy `fichiers_ecole_select`) : la basculer sur `a_acces('annonces')`"
     + " retirerait aux enseignants l'accès aux pièces jointes de l'école");
 });
+
+test("🔴 réécrire une fonction ne doit lui retirer AUCUNE garantie (mig. 197)", () => {
+  //  🔴 CE GARDE-FOU EXISTE PARCE QUE J'AI FAILLI CASSER QUATRE CHOSES EN
+  //  UNE SEULE MIGRATION. La 196 a établi qu'on réécrit ces fonctions EN
+  //  ENTIER plutôt que par substitution — plus auditable, et robuste aux fins
+  //  de ligne mélangées. Mais réécrire de MÉMOIRE, sans relire la définition
+  //  en vigueur, en perd des morceaux. J'ai rédigé `definir_perimetre` et
+  //  `perimetres_ecole` avant de les lire, et mes versions :
+  //    1. rendaient `void` au lieu de `text` — `create or replace` REFUSE de
+  //       changer un type de retour : la migration aurait échoué ;
+  //    2. testaient l'appartenance sur `profil_roles` au lieu de
+  //       `profils … and p.actif` — un membre SUSPENDU aurait pu être
+  //       cloisonné, et surtout la garde était affaiblie ;
+  //    3. gardaient `perimetres_ecole` par `est_admin()` au lieu de
+  //       `a_acces('membres')` — le sélecteur se serait vidé pour la
+  //       direction, en silence ;
+  //    4. perdaient le refus de « mode cycles sans aucun cycle » — lequel
+  //       ferait rendre un TABLEAU VIDE à `cycles_autorises()`, c'est-à-dire
+  //       « aucune classe » : la responsable perdrait toute son école sans
+  //       qu'aucun message ne l'explique.
+  //
+  //  Les quatre ont été trouvées en lisant `pg_get_functiondef` AVANT
+  //  d'appliquer. Cette épreuve les gèle.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "197_tracer_qui_pose_un_perimetre.sql"), "utf8"));
+
+  const dp = sql.slice(sql.indexOf("function public.definir_perimetre"),
+                       sql.indexOf("drop function if exists public.perimetres_ecole"));
+  assert.match(dp, /returns text/,
+    "`definir_perimetre` retourne `p_mode` : changer son type de retour en"
+    + " `void` fait ÉCHOUER la migration (create or replace le refuse)");
+  assert.match(dp, /return p_mode;/,
+    "le front lit la valeur de retour : elle doit rester");
+  assert.match(dp, /from profils p[\s\S]*?and p\.actif/,
+    "l'appartenance se teste sur `profils … and p.actif` : sur `profil_roles`,"
+    + " un membre SUSPENDU passerait la garde");
+  assert.match(dp, /if not est_admin\(\) then/,
+    "définir un périmètre reste réservé au promoteur : ce n'est pas une"
+    + " préférence, c'est le choix de qui voit quels enfants");
+  assert.match(dp, /array_length\(p_cycles, 1\), 0\) = 0[\s\S]{0,120}raise exception/,
+    "« mode cycles sans aucun cycle » doit être REFUSÉ :"
+    + " `cycles_autorises()` rendrait un tableau vide, donc AUCUNE classe,"
+    + " et la responsable perdrait toute son école en silence");
+  assert.match(dp, /delete from personnel_cycles/,
+    "l'écriture REMPLACE les cycles au lieu de les cumuler, sinon retirer un"
+    + " cycle serait impossible");
+  //  Et la nouveauté : l'auteur est enregistré dans les DEUX tables.
+  assert.equal((dp.match(/auth\.uid\(\)/g) || []).length >= 3, true,
+    "`pose_par` doit être renseigné à l'insertion ET à la mise à jour du mode,"
+    + " ET à l'insertion des cycles");
+
+  const pe = sql.slice(sql.indexOf("create function public.perimetres_ecole"));
+  assert.match(pe, /est_super_admin\(\) or public\.a_acces\('membres'\)/,
+    "`perimetres_ecole` est gardée par la case `membres`, pas par `est_admin()` :"
+    + " la resserrer viderait le sélecteur de périmètre pour la direction");
+  assert.match(pe, /libelles text/,
+    "la colonne `libelles` est lue par l'écran Membres : la retirer casserait"
+    + " l'affichage du cycle courant");
+  assert.match(pe, /pose_par_email text/,
+    "l'e-mail de l'auteur permet de répondre « est-ce vous ou moi ? » depuis"
+    + " l'écran, sans repasser par le SQL");
+  //  ⚠️ ET LA MIGRATION NE DOIT PAS INVENTER D'AUTEUR pour les lignes
+  //  existantes : je ne sais pas qui a posé celles de Tut'Tank, et `null` se
+  //  lit « avant la traçabilité ». Un backfill serait une affirmation fausse.
+  assert.ok(!/update\s+public\.personnel_(cycles|perimetre)\s+set\s+pose_par/.test(sql),
+    "la migration ne doit PAS remplir `pose_par` des lignes existantes :"
+    + " leur auteur est inconnu, et inventer une valeur serait pire que `null`");
+});

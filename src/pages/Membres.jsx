@@ -232,11 +232,26 @@ export default function Membres() {
                         const per = perimetres[m.id];
                         const courant = per?.mode === "cycles" && per.cycles?.length === 1
                           ? per.cycles[0] : "ecole";
+                        //  ⚠️ QUI A POSÉ CE CLOISONNEMENT (mig. 197). Un périmètre
+                        //  décide quels enfants une responsable voit : quand on le
+                        //  trouve en place sans savoir d'où il vient, on n'ose ni le
+                        //  garder ni le retirer. C'est arrivé le 10/10 sur Tut'Tank,
+                        //  et la question est restée sans réponse. Les lignes
+                        //  antérieures à la traçabilité le disent au lieu de
+                        //  prétendre un auteur.
+                        const origine = per?.mode === "cycles"
+                          ? (per.pose_par_email
+                              ? `Cloisonnement posé par ${per.pose_par_email}.`
+                              : "Cloisonnement d'origine inconnue (posé avant la traçabilité).")
+                          : undefined;
                         return (
                           <select value={courant}
                             onChange={(e) => reglerPerimetre(m, e.target.value)}
+                            title={origine}
                             className="rounded-lg border border-navy-900/15 bg-white px-2 py-1.5 text-xs text-navy-900 outline-none focus:border-or-500"
-                            aria-label={`Périmètre de ${m.prenom} ${m.nom}`}>
+                            aria-label={origine
+                              ? `Périmètre de ${m.prenom} ${m.nom}. ${origine}`
+                              : `Périmètre de ${m.prenom} ${m.nom}`}>
                             <option value="ecole">Toute l'école</option>
                             {cycles.map((c) => (
                               <option key={c.id} value={c.id}>{c.libelle} seulement</option>
