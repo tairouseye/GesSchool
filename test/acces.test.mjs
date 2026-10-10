@@ -1028,3 +1028,61 @@ test("🔴 la carte de la pédagogie ne nomme que des cases qui existent", () =>
   assert.equal(par["cahier_textes"], "cahier",
     "le cahier de textes appartient à la case de son écran");
 });
+
+test("🔴 une annonce de l'établissement reste visible par une responsable cloisonnée", () => {
+  //  🔴 LE PÉRIMÈTRE DES ANNONCES EST LE PLUS SUBTIL DU CHANTIER, parce
+  //  qu'une annonce se cible de QUATRE façons : l'établissement entier (aucune
+  //  des trois colonnes renseignée), un cycle, un niveau, ou une classe.
+  //
+  //  ⚠️ SI L'ON « RESSERRE » EN RETIRANT LA PORTE DE SORTIE, le resserrement
+  //  a l'air plus sûr et casse l'application : la responsable du préscolaire ne
+  //  verrait plus « Rentrée des classes 2026/27 », l'annonce que l'école
+  //  adresse à TOUTES les familles. Elle perdrait les communications de son
+  //  propre établissement — ce qui n'a aucun sens, et ne lui dirait rien :
+  //  l'écran afficherait simplement une liste plus courte.
+  //
+  //  Mesuré sur les données réelles de Tut'Tank (3 annonces : une générale, une
+  //  ciblée Élémentaire, une ciblée CM1) — bureau (Préscolaire) en voit 1,
+  //  primaire (Élémentaire) en voit 3, et bureau ne peut ni publier pour
+  //  l'autre cycle ni réécrire le règlement de l'élémentaire (0 ligne).
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "194_bascule_communication.sql"), "utf8"));
+
+  const annonces = sql.slice(sql.indexOf("create policy annonces_acces"),
+                             sql.indexOf("create policy messages_acces"));
+  //  La garde par case, et PAS `est_membre_ecole` — ce helper vaut vrai pour
+  //  les parents : une annonce deviendrait publiable par une famille.
+  assert.match(annonces, /a_acces\('annonces'\)/,
+    "les annonces appartiennent à la case `annonces` : sans elle, l'écriture"
+    + " était ouverte à TOUT le personnel (le défaut corrigé par la mig. 194)");
+  assert.ok(!annonces.includes("est_membre_ecole"),
+    "`est_membre_ecole()` vaut vrai pour les PARENTS : il ouvrirait la"
+    + " publication d'annonces au nom de l'école aux familles");
+
+  //  La porte de sortie, présente DANS LES DEUX moitiés de la policy : sans
+  //  elle dans le `with check`, la responsable verrait l'annonce générale sans
+  //  pouvoir en publier une — l'asymétrie que la mig. 179 a déjà coûtée.
+  const porte = /classe_id is null and niveau_id is null and cycle_id is null/g;
+  assert.equal((annonces.match(porte) || []).length, 2,
+    "la porte de sortie « annonce de tout l'établissement » doit figurer dans"
+    + " le `using` ET dans le `with check` : une responsable cloisonnée doit"
+    + " LIRE et POUVOIR PUBLIER les communications générales de son école");
+  //  Et le niveau se compare par REMONTÉE vers son cycle : une annonce
+  //  adressée au niveau « GS » concerne la responsable du préscolaire.
+  assert.match(annonces, /from niveaux n[\s\S]*?n\.cycle_id = any/,
+    "une annonce ciblée sur un NIVEAU doit remonter à son cycle, sinon elle"
+    + " échappe à la responsable du cycle concerné");
+
+  const messages = sql.slice(sql.indexOf("create policy messages_acces"));
+  assert.match(messages, /a_acces\('messagerie'\)/,
+    "la messagerie appartient à sa case");
+  //  ⚠️ LA REMONTÉE TUTEUR → ENFANTS, sans laquelle le cloisonnement ne tient
+  //  pas : un fil se rattache SOIT à un élève, SOIT à un tuteur, les deux
+  //  colonnes étant nullables. Comparer seulement `eleve_id` laisserait passer
+  //  TOUS les fils de parents de l'école — c'est-à-dire l'essentiel de la
+  //  table, puisque c'est par là que les familles écrivent.
+  assert.match(messages, /from eleve_tuteurs et[\s\S]*?peut_voir_eleve\(et\.eleve_id\)/,
+    "un fil de parent (`tuteur_id` renseigné, `eleve_id` nul) doit être"
+    + " cloisonné en remontant aux ENFANTS du tuteur : sans cette remontée, une"
+    + " responsable cloisonnée lit toutes les conversations de l'école");
+});
