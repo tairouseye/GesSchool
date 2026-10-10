@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Badge, SkeletonListe, Kpi } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
-import { mesFactures, mesDeclarations, declarerMonPaiement, mesInfosPaiement, monDossier } from "@/lib/etudiant.js";
+import { mesFactures, mesDeclarations, declarerMonPaiement, televerserMaPreuve, mesInfosPaiement, monDossier } from "@/lib/etudiant.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—");
@@ -23,6 +23,9 @@ export default function EtudiantScolarite() {
   const [infos, setInfos] = useState({});
   const [erreur, setErreur] = useState("");
   const [payer, setPayer] = useState(null);
+  //  Le chemin de la preuve est `<eleve_id>/…` : la policy compare ce premier
+  //  segment à `_eleve_courant()`, donc l’identifiant est indispensable.
+  const [eleveId, setEleveId] = useState(null);
 
   const recharger = useCallback(async () => {
     try {
@@ -33,7 +36,10 @@ export default function EtudiantScolarite() {
   useEffect(() => {
     recharger();
     mesInfosPaiement().then(setInfos).catch(() => setInfos({}));
-    monDossier().then((d) => d?.devise && setDevise(d.devise)).catch(() => {});
+    monDossier().then((d) => {
+      if (d?.devise) setDevise(d.devise);
+      if (d?.eleve_id) setEleveId(d.eleve_id);
+    }).catch(() => {});
   }, [recharger]);
 
   const total = (factures || []).reduce((s, f) => s + (Number(f.montant_total) || 0), 0);
@@ -117,7 +123,7 @@ export default function EtudiantScolarite() {
       )}
 
       {payer && (
-        <ModalePaiement facture={payer} devise={devise} infos={infos}
+        <ModalePaiement facture={payer} devise={devise} infos={infos} eleveId={eleveId}
           onFermer={() => setPayer(null)}
           onFait={() => { setPayer(null); recharger(); toast.succes("Déclaration envoyée. La comptabilité va la vérifier."); }} />
       )}
@@ -125,9 +131,10 @@ export default function EtudiantScolarite() {
   );
 }
 
-function ModalePaiement({ facture, devise, infos, onFermer, onFait }) {
+function ModalePaiement({ facture, devise, infos, eleveId, onFermer, onFait }) {
   const toast = useToast();
   const [f, setF] = useState({ montant: reste(facture), mode: "wave", reference: "" });
+  const [fichier, setFichier] = useState(null);
   const [busy, setBusy] = useState(false);
 
   async function envoyer(e) {
@@ -135,9 +142,14 @@ function ModalePaiement({ facture, devise, infos, onFermer, onFait }) {
     const m = Number(f.montant);
     if (!(m > 0)) { toast.erreur("Montant invalide."); return; }
     if (m > reste(facture)) { toast.erreur(`Le reste dû est de ${fmt(reste(facture))} ${devise}.`); return; }
+    //  ⚠️ La base l’exige aussi (mig. 198) : ce contrôle-ci ne fait que le dire
+    //  avant l’envoi, il ne protège rien tout seul.
+    if (!fichier) { toast.erreur("Joignez la capture de votre paiement."); return; }
+    if (!eleveId) { toast.erreur("Dossier étudiant en cours de chargement, réessayez."); return; }
     setBusy(true);
     try {
-      await declarerMonPaiement(facture.id, m, f.mode, f.reference);
+      const preuve = await televerserMaPreuve(eleveId, fichier);
+      await declarerMonPaiement(facture.id, m, f.mode, f.reference, preuve);
       onFait();
     } catch (e2) { toast.erreur(e2); }
     finally { setBusy(false); }
@@ -176,9 +188,23 @@ function ModalePaiement({ facture, devise, infos, onFermer, onFait }) {
         <Champ label="Référence de la transaction" placeholder="Identifiant reçu par SMS"
           value={f.reference} onChange={(e) => setF((s) => ({ ...s, reference: e.target.value }))} />
 
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
+            Preuve du paiement <span className="text-rose-600">(obligatoire)</span>
+          </span>
+          <input type="file" accept="image/*,application/pdf" required
+            onChange={(e) => setFichier(e.target.files?.[0] || null)}
+            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
+          <span className="mt-1 block text-xs text-navy-900/50">
+            La capture d&apos;écran ou le SMS de confirmation. Sans elle, la comptabilité
+            n&apos;a aucun moyen de vérifier votre paiement.
+          </span>
+          {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
+        </label>
+
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit" disabled={busy}>{busy ? "…" : "Envoyer la déclaration"}</Bouton>
+          <Bouton type="submit" disabled={busy || !fichier}>{busy ? "…" : "Envoyer la déclaration"}</Bouton>
         </div>
       </form>
     </Modale>

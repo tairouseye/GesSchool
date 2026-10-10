@@ -1078,17 +1078,26 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-navy-900/40">(capture / photo — optionnel)</span></span>
+          {/* 🔴 C’ÉTAIT « optionnel », ET C’EST CE QUI A PRODUIT LE DÉFAUT : une
+              déclaration de 65 000 F est partie en validation sans preuve NI
+              référence, chez une vraie école. La caisse n’avait qu’un montant et
+              un nom. La base l’exige désormais (mig. 198) — ce libellé et le
+              bouton désactivé ne font que le dire avant l’envoi. */}
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-600">(obligatoire)</span></span>
           <input type="file" accept="image/*,application/pdf"
             onChange={(e) => setFichier(e.target.files?.[0] || null)}
             className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
+          <span className="mt-1 block text-xs text-navy-900/50">
+            La capture d&apos;écran ou le SMS de confirmation. Sans elle, l&apos;école
+            n&apos;a aucun moyen de vérifier ton paiement.
+          </span>
           {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
         </label>
 
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton
-            disabled={envoi || !montant}
+            disabled={envoi || !montant || !fichier}
             onClick={async () => { setEnvoi(true); await onDeclare({ montant: Number(montant), mode, reference, fichier }); setEnvoi(false); }}
           >
             {envoi ? "Envoi…" : "Déclarer le paiement"}

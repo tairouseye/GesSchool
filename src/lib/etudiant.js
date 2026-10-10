@@ -91,9 +91,26 @@ export async function mesDeclarations() {
   if (error) throw error;
   return data ?? [];
 }
-export async function declarerMonPaiement(factureId, montant, mode, reference) {
+// Téléverse SA preuve de paiement dans le bucket privé `preuves`.
+//
+// ⚠️ L’ÉTUDIANT NE POUVAIT PAS LE FAIRE AVANT LA MIGRATION 198 : la policy
+// `preuves_insert` exigeait `_parent_possede(...)`, et un étudiant n’est pas un
+// parent. Elle accepte désormais aussi son propre dossier — et SEULEMENT le
+// sien, le premier segment du chemin étant comparé à `_eleve_courant()`.
+export async function televerserMaPreuve(eleveId, file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const chemin = eleveId + "/" + Date.now() + "." + ext;
+  const { error } = await supabase.storage.from("preuves").upload(chemin, file, { upsert: true });
+  if (error) throw error;
+  return chemin;
+}
+
+// ⚠️ `preuve` est OBLIGATOIRE côté base (mig. 198) : une déclaration sans
+// preuve n’est pas vérifiable par la caisse, donc elle ne part pas.
+export async function declarerMonPaiement(factureId, montant, mode, reference, preuve) {
   const { error } = await supabase.rpc("declarer_mon_paiement", {
     p_facture: factureId, p_montant: montant, p_mode: mode, p_reference: reference || null,
+    p_preuve: preuve || null,
   });
   if (error) throw error;
 }

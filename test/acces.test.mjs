@@ -1283,3 +1283,73 @@ test("🔴 réécrire une fonction ne doit lui retirer AUCUNE garantie (mig. 197
     "la migration ne doit PAS remplir `pose_par` des lignes existantes :"
     + " leur auteur est inconnu, et inventer une valeur serait pire que `null`");
 });
+
+test("🔴 une déclaration de paiement sans preuve ne peut ni partir ni être validée", () => {
+  //  🔴 DÉFAUT SIGNALÉ PAR LE PROMOTEUR, VÉRIFIÉ EN BASE. Une déclaration de
+  //  65 000 F existait chez Tut'Tank (Nafissatou KANE, Wave, 09/10) avec
+  //  **aucune preuve ET une référence de transaction vide** : la caisse n'avait
+  //  qu'un montant et un nom, et elle attendait validation.
+  //
+  //  ⚠️ CE N'ÉTAIT PAS UN CONTOURNEMENT : le formulaire étiquetait la preuve
+  //  « optionnel » et la base n'exigeait rien — pas même un montant positif,
+  //  alors que la version étudiante le vérifiait. Les deux versants avaient
+  //  déjà divergé, d'où le garde COMMUN `_verifier_declaration`.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "198_declaration_paiement_preuve_obligatoire.sql"), "utf8"));
+
+  //  Le garde commun porte les quatre règles.
+  const g = sql.slice(sql.indexOf("function public._verifier_declaration"),
+                      sql.indexOf("function public.declarer_paiement"));
+  assert.match(g, /trim\(p_preuve\), ''\) = ''[\s\S]{0,160}raise exception/,
+    "la preuve doit être exigée, et un champ d'espaces compte comme vide");
+  assert.match(g, /p_montant, 0\) <= 0[\s\S]{0,80}raise exception/,
+    "un montant nul ou négatif doit être refusé");
+  assert.match(g, /montant_total[\s\S]{0,200}p_montant > v_reste[\s\S]{0,120}raise exception/,
+    "déclarer plus que le reste dû créerait un paiement supérieur à la facture");
+  assert.match(g, /statut = 'en_attente'[\s\S]{0,200}raise exception/,
+    "une déclaration déjà en attente doit bloquer la suivante : c'est le cas du"
+    + " parent qui, ne voyant rien se passer, déclare deux fois");
+
+  //  ⚠️ LES DEUX VERSANTS PASSENT PAR CE GARDE — sinon ils re-divergeraient.
+  for (const f of ["declarer_paiement", "declarer_mon_paiement"]) {
+    const i = sql.indexOf(`function public.${f}(`);
+    assert.ok(i > 0, `la migration doit redéfinir ${f}`);
+    const corps = sql.slice(i, sql.indexOf("$fn$;", i));
+    assert.match(corps, /_verifier_declaration\(p_facture, p_montant, p_preuve\)/,
+      `${f} doit appeler le garde commun : écrire la règle deux fois, c'est`
+      + " accepter qu'elle diverge — et elle avait déjà divergé");
+  }
+
+  //  🔴 ET LE POINT LE PLUS FACILE À MANQUER : ajouter un paramètre crée une
+  //  SURCHARGE, elle ne remplace pas. Sans le `drop`, l'ancienne signature à
+  //  4 arguments resterait appelable — le chemin SANS preuve resterait grand
+  //  ouvert et le correctif ne protégerait rien.
+  assert.match(sql, /drop function if exists public\.declarer_mon_paiement\(uuid, numeric, text, text\)/,
+    "l'ancienne signature à 4 arguments doit être SUPPRIMÉE : sinon elle reste"
+    + " appelable et laisse passer les déclarations sans preuve");
+
+  //  La caisse non plus ne valide pas l'invérifiable (les déclarations déposées
+  //  AVANT cette migration en portent déjà une).
+  const v = sql.slice(sql.indexOf("function public.valider_declaration"));
+  assert.match(v, /trim\(d\.preuve_chemin\), ''\) = ''[\s\S]{0,200}raise exception/,
+    "sans ce contrôle, les déclarations déjà déposées sans preuve resteraient"
+    + " validables et deviendraient de vrais paiements");
+  assert.match(v, /a_acces\('encaissement'\)/,
+    "la validation reste réservée à la case Encaissements");
+
+  //  ⚠️ ET LE CHEMIN QUI AURAIT TRANSFORMÉ LE CORRECTIF EN BLOCAGE : un
+  //  étudiant ne pouvait PAS téléverser de preuve (`preuves_insert` exigeait
+  //  `_parent_possede`, et un étudiant n'est pas un parent). Exiger la preuve
+  //  sans ouvrir ce chemin rendait toute déclaration étudiante impossible.
+  //  ⚠️ LA TRANCHE S ARRETE A preuves_select, ET C EST ESSENTIEL : en
+  //  englobant les deux policies, cette epreuve acceptait que l ouverture
+  //  disparaisse de l INSERT tant qu elle restait dans le SELECT. Le sabotage
+  //  ne la faisait pas tomber.
+  const pol = sql.slice(sql.indexOf("create policy preuves_insert"),
+                        sql.indexOf("drop policy if exists preuves_select"));
+  assert.match(pol, /_preuve_eleve\(name\) = _eleve_courant\(\)/,
+    "l'étudiant doit pouvoir déposer SA preuve, sinon exiger la preuve lui"
+    + " interdit toute déclaration");
+  assert.match(pol, /_parent_possede\(_preuve_eleve\(name\)\)/,
+    "et le parent garde le sien : c'est un ajout, pas un remplacement");
+});
