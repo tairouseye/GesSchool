@@ -401,8 +401,11 @@ export async function validerDeclaration(id) {
   if (error) throw error;
 }
 
-export async function rejeterDeclaration(id) {
-  const { error } = await supabase.rpc("rejeter_declaration", { p_decl: id });
+// ⚠️ LE MOTIF EST OBLIGATOIRE côté base (mig. 201), et il part au parent
+// dans sa notification : un rejet muet le laissait deviner, ou recommencer
+// à l’identique.
+export async function rejeterDeclaration(id, motif) {
+  const { error } = await supabase.rpc("rejeter_declaration", { p_decl: id, p_motif: motif });
   if (error) throw error;
 }
 

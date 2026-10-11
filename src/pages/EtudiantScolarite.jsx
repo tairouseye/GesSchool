@@ -105,7 +105,8 @@ export default function EtudiantScolarite() {
           <h3 className="mb-2 font-display text-base font-semibold text-navy-900">Mes déclarations</h3>
           <ul className="space-y-1.5">
             {decls.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <li key={d.id} className="text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-navy-900/70">
                   {fmt(d.montant)} {devise} · {d.mode}
                   {d.reference_tx ? <span className="ml-2 font-mono text-xs text-navy-900/45">{d.reference_tx}</span> : null}
@@ -116,6 +117,13 @@ export default function EtudiantScolarite() {
                     {d.statut}
                   </Badge>
                 </span>
+                </div>
+                {/*  Le motif du rejet (mig. 201), comme côté parent. */}
+                {d.statut === "rejete" && d.motif && (
+                  <p className="mt-1 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                    {d.motif}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

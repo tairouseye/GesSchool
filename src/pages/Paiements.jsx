@@ -216,7 +216,7 @@ export default function Paiements() {
           <PanneauDeclarations
             declarations={declarations} devise={devise}
             onValider={(id) => wrap(() => api.validerDeclaration(id), "Paiement validé.")}
-            onRejeter={(id) => wrap(() => api.rejeterDeclaration(id), "Déclaration rejetée.")}
+            onRejeter={(id, motif) => wrap(() => api.rejeterDeclaration(id, motif), "Déclaration rejetée, le parent est prévenu.")}
           />
         ) : onglet === "enligne" ? (
           <PanneauEnLigne ecoleId={ecoleId} devise={devise} onErreur={setErreur} />
@@ -429,8 +429,24 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
   );
 }
 
+//  ⚠️ DES MOTIFS PRÉ-ÉCRITS, et pas seulement un champ libre : la caisse
+//  rejette à la chaîne, et un champ vide à remplir à chaque fois finirait
+//  rempli de « non » ou de « ras » — ce qui ramènerait le problème d’origine.
+//  Chaque motif dit au parent CE QU’IL DOIT FAIRE, pas seulement ce qui ne va
+//  pas : c’est lui qui doit pouvoir corriger.
+const MOTIFS_REJET = [
+  "Aucune preuve n’est jointe. Envoyez la capture de votre paiement.",
+  "La preuve envoyée est illisible. Renvoyez une capture plus nette.",
+  "Le montant de la preuve ne correspond pas au montant déclaré.",
+  "Ce paiement n’apparaît pas sur le compte de l’école. Vérifiez le numéro utilisé.",
+  "Cette preuve a déjà servi pour un autre paiement.",
+];
+
 function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   const modeLabel = (m) => (api.MODES.find((x) => x[0] === m) || [])[1] || m;
+  //  La déclaration qu’on rejette, et le motif en cours de saisie.
+  const [rejet, setRejet] = useState(null);
+  const [motif, setMotif] = useState("");
   const voirPreuve = async (chemin) => {
     try { const u = await api.urlPreuve(chemin); if (u) window.open(u, "_blank", "noopener"); }
     catch { /* ignore */ }
@@ -468,7 +484,7 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
               <td className="px-5 py-3">
                 <div className="flex justify-end gap-3 text-xs">
                   <button onClick={() => onValider(d.id)} className="font-medium text-emerald-700 hover:underline">valider</button>
-                  <button onClick={() => onRejeter(d.id)} className="text-rose-500 hover:underline">rejeter</button>
+                  <button onClick={() => { setRejet(d); setMotif(""); }} className="text-rose-500 hover:underline">rejeter</button>
                 </div>
               </td>
             </tr>
@@ -477,7 +493,49 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
       </table>
       <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
         « Valider » enregistre l'encaissement et solde la facture automatiquement.
+        « Rejeter » demande un motif, qui est envoyé au parent.
       </p>
+
+      {/*  🔴 POURQUOI CETTE SAISIE EXISTE. Avant la migration 201, rejeter
+           basculait le statut et c’était tout : le parent voyait « rejeté »
+           sans savoir pourquoi, sans notification, et seulement s’il pensait
+           à retourner voir son espace. Il recommençait à l’identique, ou
+           appelait l’école. */}
+      <Modale ouvert={!!rejet} onFermer={() => setRejet(null)} titre="Rejeter la déclaration">
+        {rejet && (
+          <div className="space-y-4">
+            <p className="text-sm text-navy-900/70">
+              {rejet.eleves?.prenom} {rejet.eleves?.nom} — <b>{fmt(rejet.montant)} {devise}</b>
+              {rejet.factures?.numero ? ` sur ${rejet.factures.numero}` : ""}.
+            </p>
+            <div className="space-y-1.5">
+              <span className="block text-sm font-medium text-navy-900/70">Motif courant</span>
+              {MOTIFS_REJET.map((m) => (
+                <button key={m} type="button" onClick={() => setMotif(m)}
+                  className={`block w-full rounded-lg border px-3 py-2 text-left text-sm ${
+                    motif === m
+                      ? "border-navy-900 bg-navy-900/5 text-navy-900"
+                      : "border-navy-900/15 text-navy-900/70 hover:bg-creme/60"}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+            <Champ label="Motif envoyé au parent" value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              placeholder="Dites ce que le parent doit faire pour corriger" />
+            <p className="text-xs text-navy-900/50">
+              Ce texte lui sera notifié et restera visible dans son espace.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Bouton type="button" variante="fantome" onClick={() => setRejet(null)}>Annuler</Bouton>
+              <Bouton variante="danger" disabled={!motif.trim()}
+                onClick={() => { const d = rejet; setRejet(null); onRejeter(d.id, motif.trim()); }}>
+                Rejeter et prévenir
+              </Bouton>
+            </div>
+          </div>
+        )}
+      </Modale>
     </Carte>
   );
 }

@@ -928,9 +928,19 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
           <h3 className="mb-2 font-display font-semibold text-navy-900">Mes déclarations</h3>
           <ul className="space-y-1 text-sm">
             {declarations.map((d) => (
-              <li key={d.id} className="flex items-center justify-between">
-                <span className="text-navy-900/70">{d.numero} · {fmt(d.montant)} XOF</span>
-                <span className={`text-xs font-medium ${statutTon[d.statut]}`}>{statutLib[d.statut] || d.statut}</span>
+              <li key={d.id}>
+                <div className="flex items-center justify-between">
+                  <span className="text-navy-900/70">{d.numero} · {fmt(d.montant)} XOF</span>
+                  <span className={`text-xs font-medium ${statutTon[d.statut]}`}>{statutLib[d.statut] || d.statut}</span>
+                </div>
+                {/*  🔴 LE MOTIF DU REJET (mig. 201). Sans lui, le parent
+                    voyait « Rejeté » et rien d’autre : il recommençait à
+                    l’identique, ou appelait l’école. */}
+                {d.statut === "rejete" && d.motif && (
+                  <p className="mt-1 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                    {d.motif}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

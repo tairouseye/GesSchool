@@ -1450,3 +1450,70 @@ test("🔴 `definir_acces` refuse une case qui n'existe pas", () => {
     "`boites_connues()` doit énumérer TOUS les modèles : en oublier un rend"
     + " ses cases impossibles à accorder, et le refus serait incompréhensible");
 });
+
+test("🔴 un rejet MUET est impossible : le parent doit savoir pourquoi", () => {
+  //  🔴 LA QUESTION DU PROMOTEUR : « comment le parent va savoir l'objet du
+  //  rejet ? » Mesuré : **il ne le savait pas, et personne ne le lui disait.**
+  //  `rejeter_declaration(p_decl)` ne prenait aucun motif, la table n'avait
+  //  aucune colonne pour le porter, `enfant_declarations()` ne le rendait pas,
+  //  et **aucune notification** n'était émise. Le parent voyait « rejeté » —
+  //  s'il pensait à retourner voir — et recommençait à l'identique.
+  //
+  //  ⚠️ LA MIGRATION 198 REND CE CAS FRÉQUENT : toute déclaration sans preuve
+  //  devra être rejetée. Le silence cessait d'être un détail.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "201_motif_de_rejet_declaration.sql"), "utf8"));
+
+  //  🔴 LE POINT LE PLUS FACILE À MANQUER, et c'est la leçon de la mig. 198 :
+  //  ajouter un paramètre crée une SURCHARGE. Sans ce `drop`, l'ancienne
+  //  signature à un argument reste appelable — le rejet MUET reste possible et
+  //  le correctif ne sert à rien.
+  assert.match(sql, /drop function if exists public\.rejeter_declaration\(uuid\)/,
+    "l'ancienne signature à un argument doit être SUPPRIMÉE : sinon le rejet"
+    + " sans motif reste appelable");
+
+  const r = sql.slice(sql.indexOf("function public.rejeter_declaration"),
+                      sql.indexOf("drop function if exists public.enfant_declarations"));
+  assert.match(r, /trim\(p_motif\), ''\) = ''[\s\S]{0,200}raise exception/,
+    "le motif doit être exigé, et un champ d'espaces compte comme vide :"
+    + " un rejet sans explication est exactement la situation d'avant");
+  assert.match(r, /set statut = 'rejete', motif = trim\(p_motif\)/,
+    "le motif doit être STOCKÉ : la notification peut être manquée, l'espace"
+    + " du parent doit garder l'explication");
+  //  ⚠️ LE MOTIF DANS LE MESSAGE, pas seulement en base : une notification
+  //  disant « votre déclaration a été rejetée » obligerait à rouvrir
+  //  l'application pour comprendre.
+  assert.match(r, /_notifier_parents\([\s\S]{0,400}trim\(p_motif\)/,
+    "le motif doit figurer DANS le message notifié : le parent doit pouvoir"
+    + " corriger depuis ce qu'il lit");
+  //  ⚠️ LES DEUX FAMILLES DE DESTINATAIRES : les tuteurs d'un élève ET le
+  //  compte d'un étudiant majeur, qui déclare pour lui-même. Ne traiter que le
+  //  premier laisserait dans le silence précisément ceux dont la mig. 198
+  //  vient d'ouvrir le dépôt de preuve.
+  assert.match(r, /_notifier_etudiant\(/,
+    "l'étudiant majeur déclare pour lui-même : il doit être notifié aussi,"
+    + " sinon la mig. 198 lui ouvre le dépôt de preuve et le laisse sans retour");
+  assert.match(r, /if d\.statut <> 'en_attente' then[\s\S]{0,120}raise exception/,
+    "une déclaration déjà traitée ne se re-rejette pas : sinon le parent"
+    + " recevrait plusieurs notifications contradictoires");
+  assert.match(r, /a_acces\('encaissement'\)/,
+    "le rejet reste réservé à la case Encaissements");
+
+  //  Et les deux côtés LISENT le motif — sinon il dort en base.
+  for (const f of ["enfant_declarations", "mes_declarations_paiement"]) {
+    const i = sql.indexOf(`create function public.${f}(`);
+    assert.ok(i > 0, `la migration doit recréer ${f}`);
+    const corps = sql.slice(i, sql.indexOf("$fn$;", i));
+    assert.match(corps, /motif text/,
+      `${f} doit rendre le motif, sinon il reste invisible pour la famille`);
+    assert.match(corps, /dp?\.motif|d\.motif/,
+      `${f} doit sélectionner la colonne, pas seulement la déclarer`);
+  }
+  //  ⚠️ ET LA LECTURE DU PARENT RESTE GARDÉE : `enfant_declarations` est
+  //  `definer`, donc elle contourne la RLS. Sans `_parent_possede`, n'importe
+  //  quel compte lirait les déclarations de n'importe quel élève.
+  const ed = sql.slice(sql.indexOf("create function public.enfant_declarations"));
+  assert.match(ed.slice(0, ed.indexOf("$fn$;")), /_parent_possede\(p_eleve\)/,
+    "`enfant_declarations` contourne la RLS : sans `_parent_possede`, un parent"
+    + " lirait les déclarations de l'enfant d'un autre");
+});
