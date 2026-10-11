@@ -58,6 +58,41 @@ export async function accorderModele(profilId, modele) {
 }
 
 /**
+ * Les cases cochées d'UN membre, pour afficher son arbre.
+ *
+ * `mes_acces()` ne rend que les siennes ; celle-ci rend celles d'un autre,
+ * réservée à qui gère les membres (mig. 199).
+ */
+export async function getAccesDuMembre(profilId) {
+  const { data, error } = await supabase.rpc("acces_du_membre", { p_profil: profilId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Pose les cases d'un membre. La liste reçue devient la liste EXACTE.
+ *
+ * 🔴 POURQUOI CETTE FONCTION EXISTE. On savait accorder un MODÈLE entier,
+ * pas décocher une case. Besoin réel du promoteur : les deux responsables ne
+ * doivent pas voir la Comptabilité, alors que la responsable RH & Paie doit
+ * la voir — impossible avec des modèles, qui apportent tout d'un bloc.
+ *
+ * ⚠️ REMPLACE au lieu de cumuler : `accorder_modele` faisait
+ * `on conflict do nothing`, donc rien ne pouvait jamais être retiré.
+ *
+ * ⚠️ Réservé au promoteur côté BASE, pas seulement ici : décider qui voit la
+ * comptabilité et la paie n'est pas la même chose qu'inviter un collègue, et
+ * une responsable ne doit pas pouvoir se re-accorder ce qu'on lui retire.
+ */
+export async function definirAcces(profilId, boites) {
+  const { data, error } = await supabase.rpc("definir_acces", {
+    p_profil: profilId, p_boites: boites,
+  });
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Périmètre de chaque membre : « toute l'école », « certains cycles », ou
  * « ses classes ». Rendu par profil_id, pour que la page Membres l'affiche
  * sur la ligne de chacun.

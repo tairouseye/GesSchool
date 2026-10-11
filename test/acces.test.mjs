@@ -1353,3 +1353,100 @@ test("🔴 une déclaration de paiement sans preuve ne peut ni partir ni être v
   assert.match(pol, /_parent_possede\(_preuve_eleve\(name\)\)/,
     "et le parent garde le sien : c'est un ajout, pas un remplacement");
 });
+
+test("🔴 décocher une case doit FERMER la base, pas seulement l'écran", () => {
+  //  🔴 LE PIÈGE QUE J'AI FAILLI LIVRER, ET QUE LA MESURE A ATTRAPÉ. Le
+  //  promoteur voulait que ses deux responsables ne voient pas la
+  //  Comptabilité, alors que la responsable RH & Paie la voie. La migration
+  //  199 lui donne le moyen de décocher la case. Mesuré juste après :
+  //  décocher `comptabilite` ne changeait **RIEN** — la responsable lisait
+  //  toujours les 102 comptes du plan comptable, et la RH n'en lisait aucun.
+  //
+  //  La cause : ces tables étaient encore gardées par `est_gestion() or
+  //  a_role('comptable')`, et `est_gestion()` comprend la **direction**.
+  //  Livrer l'écran seul aurait donné un réglage qui a l'air de marcher et qui
+  //  ne protège rien — **pire que pas de réglage du tout**.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "200_bascule_compta_et_paie_restes.sql"), "utf8"));
+  const paires = [...sql.matchAll(/array\['([a-z_]+)',\s*'([^']*(?:''[^']*)*)'\]/g)]
+    .map((m) => ({ table: m[1], pred: m[2] }));
+  assert.equal(paires.length, 10,
+    "la carte ne compte plus 10 tables : ajustez cette épreuve en même temps"
+    + " que la migration, pour qu'elle les vérifie TOUTES");
+  const par = Object.fromEntries(paires.map((p) => [p.table, p.pred]));
+
+  //  Plus aucune garde par rôle : sinon la case ne décide rien.
+  for (const p of paires) {
+    assert.ok(!/a_role\(|est_gestion\(/.test(p.pred),
+      `${p.table} garde une branche par RÔLE ou \`est_gestion()\` : la case`
+      + " serait décorative, et `est_gestion()` comprend la direction —"
+      + " c'est précisément ce qui rendait le réglage sans effet");
+  }
+  //  ⚠️ ET LA TABLE PARTAGÉE, dont l'oubli aurait cassé LA PAIE en silence :
+  //  `plan_comptable` est lu par `rh.js` autant que par `comptabilite.js` —
+  //  la paie rattache ses lignes aux comptes. Même piège que
+  //  `dettes_personnel` à la migration 182.
+  assert.match(par["plan_comptable"], /a_acces\(''comptabilite''\)[\s\S]*a_acces\(''rh''\)/,
+    "`plan_comptable` est lu par la PAIE autant que par la comptabilité :"
+    + " le réserver à la seule case `comptabilite` viderait l'écran Paie — et"
+    + " en silence, car une lecture refusée par la RLS ne lève rien");
+  //  Et les cinq tables de paie restent à la paie.
+  for (const t of ["avances_prets", "element_affectations", "element_exclusions",
+                   "regime_elements", "remboursements"]) {
+    assert.match(par[t], /a_acces\(''rh''\)/,
+      `${t} appartient à la case RH & Paie`);
+  }
+  //  Forme hoistée, comme partout ailleurs dans le chantier.
+  for (const p of paires) {
+    assert.match(p.pred, /\(select a_acces\(/,
+      `${p.table} doit rester en forme hoistée \`(select a_acces(…))\` :`
+      + " évaluée une fois par requête et non une fois par ligne");
+  }
+});
+
+test("🔴 `definir_acces` refuse une case qui n'existe pas", () => {
+  //  🔴 `boite_de_cle()` REND SON ARGUMENT TEL QUEL pour une clé inconnue :
+  //  une faute de frappe (`encaissements` au pluriel) ne lève aucune erreur,
+  //  elle crée une case MORTE qui n'accorde rien et verrouille l'écran en
+  //  silence. Le défaut s'est déjà produit dans ce chantier. Une RPC qui
+  //  reçoit une liste de cases doit donc les valider — et LEVER, pas ignorer.
+  const sql = sansCommentaires(fs.readFileSync(
+    path.join(DOSSIER_MIG, "199_definir_les_acces_case_par_case.sql"), "utf8"));
+
+  const d = sql.slice(sql.indexOf("function public.definir_acces"));
+  assert.match(d, /boites_connues\(\)/,
+    "les cases reçues doivent être validées : une faute de frappe créerait une"
+    + " case morte, sans aucune erreur");
+  assert.match(d, /v_inconnues[\s\S]{0,200}raise exception/,
+    "une case inconnue doit LEVER : l'ignorer verrouillerait l'écran en silence");
+  assert.match(d, /if not est_admin\(\) then[\s\S]{0,120}raise exception/,
+    "seul le promoteur règle les accès : sinon une responsable se ré-accorde"
+    + " la comptabilité qu'on vient de lui retirer");
+  assert.match(d, /from profils p[\s\S]{0,160}and p\.actif/,
+    "le membre doit être ACTIF : sur `profil_roles`, un membre suspendu"
+    + " passerait la garde (même leçon que `definir_perimetre`)");
+  assert.match(d, /delete from personnel_acces[\s\S]{0,200}not \(boite = any/,
+    "la liste reçue doit REMPLACER l'ancienne : `accorder_modele` cumulait"
+    + " (`on conflict do nothing`), donc rien ne pouvait jamais être retiré —"
+    + " c'est tout l'intérêt de cette RPC");
+  //  Un changement de droits se journalise : c'est ce qu'un journal d'audit
+  //  atteste. Append-only depuis la mig. 192.
+  assert.match(d, /insert into journal_audit[\s\S]{0,300}'definir_acces'/,
+    "donner ou retirer un accès doit laisser une trace dans le journal d'audit");
+
+  //  ⚠️ ET `boites_connues()` NE RECOPIE PAS LA LISTE : elle la DÉRIVE des
+  //  modèles, que la migration 175 a générés depuis `acces.js`. Retaper
+  //  45 noms créerait une seconde vérité, qui divergerait au premier écran
+  //  ajouté. Vérifié : les 45 cases de l'arbre figurent dans au moins un
+  //  modèle, donc l'union est complète.
+  const bc = sql.slice(sql.indexOf("function public.boites_connues"),
+                       sql.indexOf("function public.acces_du_membre"));
+  assert.match(bc, /boites_du_modele\(m\)/,
+    "`boites_connues()` doit DÉRIVER des modèles, pas recopier une liste :"
+    + " une seconde vérité divergerait dès le premier écran ajouté");
+  const modeles = [...bc.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  assert.deepEqual(
+    MODELES.map((m) => m.id).filter((id) => !modeles.includes(id)), [],
+    "`boites_connues()` doit énumérer TOUS les modèles : en oublier un rend"
+    + " ses cases impossibles à accorder, et le refus serait incompréhensible");
+});

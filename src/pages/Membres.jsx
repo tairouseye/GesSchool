@@ -3,8 +3,8 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Recherche, filtreTexte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { LIBELLES_ROLES, rolesInvitables, estRoleComplet } from "@/lib/permissions.js";
-import { MODELES } from "@/lib/acces.js";
-import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation, accorderModele, getPerimetres, definirPerimetre } from "@/lib/membres.js";
+import { MODELES, POUVOIRS, arbreDesCases, boitesDeLArbre } from "@/lib/acces.js";
+import { getMembres, inviterMembre, revoquerRole, suspendreMembre, lienInvitation, getInvitations, annulerInvitation, accorderModele, getPerimetres, definirPerimetre, getAccesDuMembre, definirAcces } from "@/lib/membres.js";
 import { getCycles } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 
@@ -28,6 +28,8 @@ export default function Membres() {
   //  sans effet, et un réglage sans effet est un piège.
   const [perimetres, setPerimetres] = useState({});
   const [cycles, setCycles] = useState([]);
+  //  Le membre dont on règle les accès case par case (mig. 199).
+  const [regle, setRegle] = useState(null);
 
   // Recherche sur le nom, l'e-mail et le libellé lisible des rôles.
   const membresFiltres = filtreTexte(membres, q, [
@@ -220,6 +222,14 @@ export default function Membres() {
                           </select>
                         );
                       })()}
+                      {/*  ⚠️ RÉGLER LES ACCÈS CASE PAR CASE (mig. 199-200).
+                           Le promoteur seul : la base refuse `definir_acces`
+                           aux autres, donc l'offrir à la direction la mènerait
+                           à un message d'erreur, pas à un réglage. */}
+                      {complet && (
+                        <Bouton variante="fantome" className="!py-1.5 text-xs"
+                          onClick={() => setRegle(m)}>⚙ Accès détaillés</Bouton>
+                      )}
                       {/*  PÉRIMÈTRE PAR CYCLE (mig. 188-190).
                            ⚠️ Affiché SEULEMENT si l'école a au moins deux cycles :
                            proposer « un seul cycle » à une école qui n'en a qu'un
@@ -310,6 +320,12 @@ export default function Membres() {
           </div>
         )}
       </div>
+
+      {regle && (
+        <ModaleAcces membre={regle} ecole={ecole}
+          onFermer={() => setRegle(null)}
+          onFait={async () => { setRegle(null); await charger(); }} />
+      )}
 
       <ModaleInvitation
         ouvert={modale}
@@ -402,6 +418,186 @@ function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
           <Bouton variante="or" className="w-full" onClick={onFermer}>Terminé</Bouton>
         </div>
       )}
+    </Modale>
+  );
+}
+
+// ---------------------------------------------------------------------
+//  L'arbre à cocher d'un membre
+// ---------------------------------------------------------------------
+//
+//  🔴 CE QUE CET ÉCRAN RÈGLE, ET POURQUOI IL N'EXISTAIT PAS AVANT. On
+//  pouvait accorder un MODÈLE entier — « Comptable / Gestion », « Responsable
+//  RH » — mais pas retirer une case. Besoin réel : les deux responsables de
+//  l'école ne doivent pas voir la **Comptabilité**, alors que la responsable
+//  **RH & Paie** doit la voir. Avec des modèles seuls, c'est impossible.
+//
+//  ⚠️ ET CE N'EST UTILISABLE QUE DEPUIS LES MIGRATIONS 175→200. Avant elles,
+//  les droits réels tenaient aux RÔLES : décocher une case aurait masqué
+//  l'écran pendant que la base continuait d'autoriser. Mesuré : avant la
+//  migration 200, décocher « Comptabilité » laissait la responsable lire les
+//  102 comptes du plan comptable. Un réglage qui a l'air de marcher et qui ne
+//  protège rien est pire que pas de réglage.
+function ModaleAcces({ membre, ecole, onFermer, onFait }) {
+  const toast = useToast();
+  const [coche, setCoche] = useState(null);
+  const [erreur, setErreur] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  //  L'arbre vient du MENU (`ESPACES`), pas d'une liste retapée ici : un écran
+  //  ajouté demain apparaîtra tout seul, et aucune case ne pourra désigner une
+  //  autorisation qui n'existe pas.
+  const arbre = arbreDesCases(ecole);
+  const toutesDeLArbre = boitesDeLArbre(arbre);
+
+  useEffect(() => {
+    let vivant = true;
+    getAccesDuMembre(membre.id)
+      .then((l) => { if (vivant) setCoche(new Set(l)); })
+      .catch((e) => { if (vivant) setErreur(e.message); });
+    return () => { vivant = false; };
+  }, [membre.id]);
+
+  function basculer(id) {
+    setCoche((s) => {
+      const n = new Set(s);
+      //  ⚠️ On bascule LA BOÎTE, pas « la boîte dans cet espace » : une clé
+      //  transverse (Membres, Paramètres) apparaît dans plusieurs espaces et
+      //  n'accorde qu'une seule autorisation. Sans cela, l'écran afficherait
+      //  deux états pour une même case.
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+
+  function basculerEspace(espace, tout) {
+    const ids = espace.groupes.flatMap((g) => g.cases.map((c) => c.id));
+    setCoche((s) => {
+      const n = new Set(s);
+      for (const id of ids) { if (tout) n.add(id); else n.delete(id); }
+      return n;
+    });
+  }
+
+  async function enregistrer() {
+    setErreur("");
+    setBusy(true);
+    try {
+      const n = await definirAcces(membre.id, [...coche]);
+      toast.succes(`${membre.prenom} a maintenant ${n} accès.`);
+      await onFait();
+    } catch (e) { setErreur(e.message); toast.erreur(e.message); }
+    finally { setBusy(false); }
+  }
+
+  const n = coche ? coche.size : 0;
+
+  return (
+    <Modale ouvert onFermer={onFermer}
+      titre={`Accès de ${membre.prenom} ${membre.nom}`}>
+      <div className="space-y-4">
+        <Alerte ton="erreur">{erreur}</Alerte>
+        <p className="text-sm text-navy-900/60">
+          Cochez ce à quoi cette personne a droit. <b>{n}</b> accès coché{n > 1 ? "s" : ""}.
+        </p>
+
+        {coche === null ? <SkeletonListe lignes={4} /> : (
+          <div className="max-h-[55vh] space-y-4 overflow-y-auto pr-1">
+            {arbre.map((e) => {
+              const ids = e.groupes.flatMap((g) => g.cases.map((c) => c.id));
+              const combien = ids.filter((id) => coche.has(id)).length;
+              return (
+                <div key={e.espace} className="rounded-xl border border-navy-900/10 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="font-display text-sm font-bold text-navy-900">
+                      {e.icone} {e.label}
+                      <span className="ml-2 text-xs font-normal text-navy-900/45">
+                        {combien}/{ids.length}
+                      </span>
+                    </p>
+                    {/*  Tout cocher / tout décocher un espace : sans cela, régler
+                        un enseignant demanderait une trentaine de clics. */}
+                    <button type="button" onClick={() => basculerEspace(e, combien < ids.length)}
+                      className="text-xs text-navy-700 underline hover:text-or-600">
+                      {combien < ids.length ? "tout cocher" : "tout décocher"}
+                    </button>
+                  </div>
+                  {e.groupes.map((g, i) => (
+                    <div key={g.groupe || i} className="mb-2">
+                      {g.groupe && (
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-navy-900/40">
+                          {g.groupe}
+                        </p>
+                      )}
+                      <div className="grid gap-1.5 sm:grid-cols-2">
+                        {g.cases.map((c) => (
+                          <label key={c.id}
+                            className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-creme/60">
+                            <input type="checkbox" checked={coche.has(c.id)}
+                              onChange={() => basculer(c.id)}
+                              className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-900/25 text-navy-900 focus:ring-or-500" />
+                            <span>
+                              {c.label}
+                              {/*  Dire ce qu'une case FUSIONNÉE couvre vraiment :
+                                  quatre cases regroupent onze écrans parce qu'ils
+                                  lisent les mêmes tables. Le promoteur doit
+                                  pouvoir le vérifier d'un œil. */}
+                              {c.couvre && (
+                                <span className="block text-xs text-navy-900/45">
+                                  {c.couvre.join(" · ")}
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+
+            {/*  ⚠️ LES POUVOIRS NE SONT PAS DES ÉCRANS, CE SONT DES ACTES, et ce
+                sont eux qui distinguent la direction de l'enseignant : diffuser
+                les bulletins, modifier une fiche élève, voir les impayés… Ils
+                ont leur propre section parce que les confondre avec un écran
+                accorderait des droits inégaux sous une même case — le défaut
+                qui a rendu nécessaires les sept pouvoirs du chantier. */}
+            <div className="rounded-xl border border-or-500/30 bg-or-500/5 p-3">
+              <p className="mb-2 font-display text-sm font-bold text-navy-900">
+                ⚡ Ce que cette personne peut FAIRE
+              </p>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {POUVOIRS.map((p) => (
+                  <label key={p.id}
+                    className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/60">
+                    <input type="checkbox" checked={coche.has(p.id)}
+                      onChange={() => basculer(p.id)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-900/25 text-navy-900 focus:ring-or-500" />
+                    <span>
+                      {p.label}
+                      {/*  L'aide de chaque pouvoir, affichée et pas masquée dans
+                          une infobulle : « Arrêter et publier les bulletins » ne
+                          dit pas à lui seul que cela couvre la signature du
+                          procès-verbal du conseil. */}
+                      {p.aide && (
+                        <span className="block text-xs text-navy-900/45">{p.aide}</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton onClick={enregistrer} disabled={busy || coche === null}>
+            {busy ? "…" : "Enregistrer les accès"}
+          </Bouton>
+        </div>
+      </div>
     </Modale>
   );
 }
