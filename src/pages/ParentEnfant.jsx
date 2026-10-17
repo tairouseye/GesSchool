@@ -6,8 +6,9 @@ import {
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
   alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
-  enfantFactureDetail,
+  enfantFactureDetail, avanceOptions, declarerAvance,
 } from "@/lib/parent.js";
+import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
@@ -861,7 +862,6 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
     } catch (e) { onErreur(e.message || "Paiement en ligne indisponible."); setEncours(null); }
   }
 
-  if (factures.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>;
   const totalReste = factures.reduce((s, f) => s + ((Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0)), 0);
   const aDesNumeros = MODES_MOBILE.some(([k]) => infos?.[k]);
   const statutLib = { en_attente: "En attente", valide: "Validé", rejete: "Rejeté" };
@@ -869,11 +869,21 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
 
   return (
     <div className="space-y-4">
-      <Carte className="p-5">
-        <p className="text-sm text-navy-900/50">Reste à payer</p>
-        <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalReste)} <span className="text-sm font-normal">XOF</span></p>
-      </Carte>
+      {factures.length > 0 ? (
+        <Carte className="p-5">
+          <p className="text-sm text-navy-900/50">Reste à payer</p>
+          <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalReste)} <span className="text-sm font-normal">XOF</span></p>
+        </Carte>
+      ) : (
+        <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>
+      )}
 
+      {/*  Le paiement anticipé (mig. 202) : AVANT la liste, et même sans
+          aucune facture — c'est précisément le cas où il sert. */}
+      <PayerAvance eleveId={eleveId} infos={infos} aDesNumeros={aDesNumeros}
+        declarations={declarations} onChange={onChange} onErreur={onErreur} />
+
+      {factures.length > 0 && (
       <Carte className="overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
@@ -912,6 +922,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
           </tbody>
         </table>
       </Carte>
+      )}
 
       {enLigne.actif && (
         <p className="text-xs text-navy-900/50">
@@ -930,7 +941,11 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
             {declarations.map((d) => (
               <li key={d.id}>
                 <div className="flex items-center justify-between">
-                  <span className="text-navy-900/70">{d.numero} · {fmt(d.montant)} XOF</span>
+                  <span className="text-navy-900/70">
+                    {d.avance ? `Avance ${d.avance}${d.numero ? ` (${d.numero})` : ""}` : d.numero} · {fmt(d.montant)} XOF
+                    {/*  Les deux parents lisent la même liste : on dit qui a déclaré. */}
+                    {d.declarant && d.declarant !== "Vous" && <span className="text-navy-900/45"> · par {d.declarant}</span>}
+                  </span>
                   <span className={`text-xs font-medium ${statutTon[d.statut]}`}>{statutLib[d.statut] || d.statut}</span>
                 </div>
                 {/*  🔴 LE MOTIF DU REJET (mig. 201). Sans lui, le parent
@@ -962,6 +977,161 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
 
       {factureDoc && <ModaleDocument factureId={factureDoc} onFermer={() => setFactureDoc(null)} />}
     </div>
+  );
+}
+
+// Payer un ou plusieurs mois AVANT que l'école les facture (mig. 202).
+//
+// Le parent coche des mois, pas un montant : le tarif vient de la base, et
+// c'est elle qui recalcule le total déclaré. À la validation par la caisse,
+// la facture du mois est créée déjà réglée, et le parent est prévenu.
+function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange, onErreur }) {
+  const [groupes, setGroupes] = useState([]);
+  const [version, setVersion] = useState(0);
+  const [ouvert, setOuvert] = useState(false);
+
+  useEffect(() => {
+    let vivant = true;
+    //  Silencieux : sans tarif mensuel ni inscription, rien à proposer, et
+    //  la carte n'apparaît simplement pas.
+    avanceOptions(eleveId)
+      .then((l) => { if (vivant) setGroupes(grouperParMois(l)); })
+      .catch(() => { if (vivant) setGroupes([]); });
+    return () => { vivant = false; };
+  }, [eleveId, version]);
+
+  //  Deux parents, un enfant : ce que l'un a payé d'avance disparaît de la
+  //  liste de l'autre. On dit pourquoi, et qui l'a fait.
+  const couvertes = avancesCouvertes(declarations);
+
+  //  La déclaration passe par le mobile money de l'école : sans numéro
+  //  configuré, le parent paie au guichet, et la caisse encaisse l'avance.
+  if (!aDesNumeros || (groupes.length === 0 && couvertes.length === 0)) return null;
+
+  return (
+    <Carte className="flex flex-wrap items-center justify-between gap-3 p-5">
+      <div className="min-w-0">
+        <h3 className="font-display font-semibold text-navy-900">Payer d&apos;avance</h3>
+        {groupes.length > 0 ? (
+          <p className="mt-0.5 text-sm text-navy-900/60">
+            Réglez dès maintenant {groupes[0].libelle}{groupes.length > 1 ? " ou les mois suivants" : ""} :
+            {" "}la facture sera émise déjà payée.
+          </p>
+        ) : (
+          <p className="mt-0.5 text-sm text-navy-900/60">Tous les mois restants de l&apos;année sont déjà réglés ou facturés.</p>
+        )}
+        {couvertes.length > 0 && (
+          <ul className="mt-2 space-y-0.5 text-xs text-navy-900/60">
+            {couvertes.map((c) => (
+              <li key={c.id}>
+                {c.enAttente ? "⏳" : "✅"} {c.mois} : payé d&apos;avance{c.par ? ` par ${c.par}` : " par vous"}
+                {c.enAttente ? ", en attente de validation" : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {groupes.length > 0 && <Bouton onClick={() => setOuvert(true)}>Payer d&apos;avance</Bouton>}
+
+      {ouvert && (
+        <ModaleAvance
+          groupes={groupes} infos={infos}
+          onFermer={() => setOuvert(false)}
+          onDeclare={async ({ mois, mode, reference, fichier }) => {
+            try {
+              const preuve = await televerserPreuve(eleveId, fichier);
+              await declarerAvance(eleveId, mois, mode, reference, preuve);
+              setOuvert(false);
+              setVersion((v) => v + 1);
+              await onChange();
+            } catch (e) { onErreur(e.message); }
+          }}
+        />
+      )}
+    </Carte>
+  );
+}
+
+function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
+  const [choisis, setChoisis] = useState(() => choixParDefaut(groupes));
+  //  Premier mode configuré par l'école : un clic de moins dans le cas courant.
+  const [mode, setMode] = useState(() => (MODES_MOBILE.find(([k]) => infos?.[k]) || ["wave"])[0]);
+  const [reference, setReference] = useState("");
+  const [fichier, setFichier] = useState(null);
+  const [envoi, setEnvoi] = useState(false);
+
+  const total = totalDesMois(groupes, choisis);
+  const numero = infos?.[mode];
+  const libelles = groupes.filter((g) => choisis.includes(g.mois)).map((g) => g.libelle);
+
+  return (
+    <Modale ouvert onFermer={onFermer} titre="Payer d'avance">
+      <div className="space-y-4">
+        <div>
+          <p className="mb-2 text-sm text-navy-900/60">1. Choisis les mois à payer :</p>
+          <div className="space-y-1.5">
+            {groupes.map((g) => {
+              const coche = choisis.includes(g.mois);
+              return (
+                <label key={g.mois}
+                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${
+                    coche ? "border-navy-900 bg-navy-900/5" : "border-navy-900/15"}`}>
+                  <span className="flex items-center gap-2">
+                    <input type="checkbox" checked={coche}
+                      onChange={() => setChoisis((c) => basculerMois(groupes, c, g.mois))} />
+                    <span className="font-medium text-navy-900">{g.libelle}</span>
+                  </span>
+                  <span className="font-mono text-navy-900/70">{fmt(g.total)}</span>
+                </label>
+              );
+            })}
+          </div>
+          {groupes[0]?.lignes.length > 1 && (
+            <p className="mt-1 text-xs text-navy-900/50">
+              Par mois : {groupes[0].lignes.map((l) => `${l.libelle.split(" — ")[0]} ${fmt(l.montant)}`).join(" + ")}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-xl bg-creme p-4 text-sm">
+          <p className="text-navy-900/60">2. Paie <b className="text-navy-900">{fmt(total)} XOF</b> depuis ton application mobile money :</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {MODES_MOBILE.map(([k, label]) => infos?.[k] && (
+              <button key={k} type="button" onClick={() => setMode(k)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${mode === k ? "bg-navy-900 text-creme" : "bg-white text-navy-900/70 border border-navy-900/15"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {numero && <p className="mt-3 font-display text-xl font-bold text-navy-900">{numero}</p>}
+          {libelles.length > 0 && (
+            <p className="mt-1 text-xs text-navy-900/50">Motif à indiquer : <span className="font-mono">Avance {resumeMois(libelles)}</span></p>
+          )}
+        </div>
+
+        <p className="text-sm text-navy-900/60">3. Déclare ton paiement, l&apos;école le validera :</p>
+        <Champ label="Réf. transaction" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ID Wave/OM…" />
+        <label className="block">
+          {/*  Même exigence que pour une facture (mig. 198) : sans preuve,
+              la caisse n'a rien à vérifier, et la base refuse. */}
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-600">(obligatoire)</span></span>
+          <input type="file" accept="image/*,application/pdf"
+            onChange={(e) => setFichier(e.target.files?.[0] || null)}
+            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
+          {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
+        </label>
+
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton
+            disabled={envoi || choisis.length === 0 || !fichier}
+            onClick={async () => { setEnvoi(true); await onDeclare({ mois: choisis, mode, reference, fichier }); setEnvoi(false); }}
+          >
+            {envoi ? "Envoi…" : `Déclarer ${fmt(total)} XOF`}
+          </Bouton>
+        </div>
+      </div>
+    </Modale>
   );
 }
 

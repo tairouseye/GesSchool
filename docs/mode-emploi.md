@@ -522,6 +522,25 @@ Un parent qui paie par mobile money **déclare** son paiement depuis son espace,
 
 > C'est le point où l'on se fait avoir : **comparez toujours la référence de la transaction** avec celle de la preuve. Une capture d'écran se retouche.
 
+### 10.4 bis Le paiement anticipé (bouton **⏩ Encaisser une avance**)
+
+Une famille peut **payer un ou plusieurs mois avant que l'école les facture**.
+
+- **Depuis l'espace parent**, carte **« Payer d'avance »** dans Paiements : le parent coche les mois (le prochain est coché d'office), le montant est calculé d'après la **grille tarifaire** (frais **mensuels** et **obligatoires** de la classe), il paie par mobile money et joint sa **preuve**. Sa déclaration arrive dans l'onglet **Déclarations**, marquée **« Avance · Novembre 2026 »**.
+- **Au guichet**, bouton **⏩ Encaisser une avance** : cherchez l'élève, cochez les mois, encaissez.
+
+Dans les deux cas, **la facture du mois est créée au moment où vous validez, déjà réglée**. La famille reçoit « Paiement anticipé validé », et non « Nouvelle facture ». Quand vous lancerez **⚡ Générer en lot** pour ce mois, l'élève sera **ignoré** : il est déjà facturé et payé. Un mois dont l'avance attend encore votre validation est lui aussi sauté.
+
+> Un mois ne se paie qu'une fois. Si une facture de ce mois a été saisie à la main entre-temps, la validation de l'avance est refusée : **rejetez-la** avec ce motif, et le parent réglera la facture existante.
+
+### 10.4 ter Situation des paiements (menu **Situation des paiements**)
+
+Pour le **responsable pédagogique**, le comptable et le secrétariat (pouvoir **« Voir l'état de paiement des familles »**) : tous les élèves de votre périmètre, **sans choisir de classe**. Tapez un nom ou un matricule, ou filtrez par classe ou par état.
+
+Pour chaque élève : l'état (🔴 Retard · 🟢 À jour · ⚪ Non facturé), le **facturé**, le **payé**, le **reste** (dont la part **échue**), les **mois payés d'avance**, une avance en attente de validation, la prochaine échéance et le dernier paiement.
+
+> C'est un écran de **lecture** : on n'y encaisse pas, on n'y relance pas. Les numéros de facture et le détail des paiements restent à la caisse. Une responsable cloisonnée sur un cycle ne voit que les élèves de ce cycle.
+
 ### 10.5 Recouvrement (menu **Recouvrement**)
 
 La liste des impayés : montant total, retard, contact de la famille.

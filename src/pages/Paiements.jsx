@@ -14,6 +14,7 @@ import { nbPages } from "@/lib/pagination.js";
 import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
+import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois } from "@/lib/avance.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -35,6 +36,7 @@ export default function Paiements() {
   const [erreur, setErreur] = useState("");
   const [modaleNouvelle, setModaleNouvelle] = useState(false);
   const [modaleLot, setModaleLot] = useState(false);
+  const [modaleAvance, setModaleAvance] = useState(false);
   const [factureId, setFactureId] = useState(null);
 
   const [pageFac, setPageFac] = useState(0);
@@ -128,6 +130,9 @@ export default function Paiements() {
             <div className="flex flex-wrap gap-2">
               <Bouton variante="fantome" onClick={() => setModaleLot(true)} disabled={inscrits.length === 0 || frais.length === 0}>
                 ⚡ Générer en lot
+              </Bouton>
+              <Bouton variante="fantome" onClick={() => setModaleAvance(true)} disabled={inscrits.length === 0}>
+                ⏩ Encaisser une avance
               </Bouton>
               <Bouton onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
                 + Nouvelle facture
@@ -249,6 +254,14 @@ export default function Paiements() {
         onTermine={() => { setModaleLot(false); recharger(); toast.succes("Factures générées."); }}
         onErreur={setErreur}
       />
+
+      {modaleAvance && (
+        <ModaleAvanceCaisse
+          ecoleId={ecoleId} annee={annee} devise={devise}
+          onFermer={() => setModaleAvance(false)}
+          onEncaisse={(id) => { setModaleAvance(false); recharger(); toast.succes("Avance encaissée : la facture est émise et réglée."); setFactureId(id); }}
+        />
+      )}
 
       <ModaleFacture
         factureId={factureId}
@@ -442,6 +455,113 @@ const MOTIFS_REJET = [
   "Cette preuve a déjà servi pour un autre paiement.",
 ];
 
+// « Novembre et Décembre 2026 » depuis les lignes figées d'une avance.
+function moisDeLAvance(d) {
+  return resumeMois([...new Set((d.avance_lignes || []).map((l) => l.libelle_mois))]);
+}
+
+// Le parent paie au guichet pour les mois à venir (mig. 202). Mêmes mois et
+// mêmes tarifs que ce que voit le parent ; la facture naît réglée.
+function ModaleAvanceCaisse({ ecoleId, annee, devise, onFermer, onEncaisse }) {
+  const [eleveId, setEleveId] = useState("");
+  const [groupes, setGroupes] = useState([]);
+  const [choisis, setChoisis] = useState([]);
+  const [pay, setPay] = useState({ mode: "especes", reference: "", compte_id: "" });
+  const [comptes, setComptes] = useState([]);
+  const [erreur, setErreur] = useState("");
+  const [charge, setCharge] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+
+  useEffect(() => {
+    let vivant = true;
+    getComptes(ecoleId)
+      .then((cs) => { if (!vivant) return; const a = cs.filter((c) => c.actif !== false); setComptes(a); setPay((p) => ({ ...p, compte_id: a[0]?.id || "" })); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [ecoleId]);
+
+  useEffect(() => {
+    let vivant = true;
+    setGroupes([]); setChoisis([]); setErreur(""); setCharge(false);
+    if (!eleveId) return undefined;
+    api.avanceOptions(eleveId)
+      .then((l) => { if (!vivant) return; const g = grouperParMois(l); setGroupes(g); setChoisis(choixParDefaut(g)); })
+      .catch((e) => { if (vivant) setErreur(e.message); })
+      .finally(() => { if (vivant) setCharge(true); });
+    return () => { vivant = false; };
+  }, [eleveId]);
+
+  const total = totalDesMois(groupes, choisis);
+
+  async function valider() {
+    setEnvoi(true); setErreur("");
+    try { onEncaisse(await api.encaisserAvance(eleveId, choisis, pay)); }
+    catch (e) { setErreur(e.message); }
+    finally { setEnvoi(false); }
+  }
+
+  return (
+    <Modale ouvert onFermer={onFermer} titre="Encaisser une avance">
+      <div className="space-y-4">
+        <Alerte ton="erreur">{erreur}</Alerte>
+        <SelecteurEleve value={eleveId} anneeId={annee?.id} onChange={(id) => setEleveId(id)} label="Élève *" requis />
+
+        {eleveId && charge && groupes.length === 0 && !erreur && (
+          <p className="text-sm text-navy-900/50">
+            Aucun mois à payer d&apos;avance : tous les mois restants sont déjà facturés, ou la classe
+            n&apos;a pas de frais mensuel obligatoire dans la grille tarifaire.
+          </p>
+        )}
+
+        {groupes.length > 0 && (
+          <>
+            <div className="space-y-1.5">
+              <span className="block text-sm font-medium text-navy-900/70">Mois payés</span>
+              {groupes.map((g) => (
+                <label key={g.mois} className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-navy-900/15 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-2">
+                    <input type="checkbox" checked={choisis.includes(g.mois)}
+                      onChange={() => setChoisis((c) => basculerMois(groupes, c, g.mois))} />
+                    {g.libelle}
+                  </span>
+                  <span className="font-mono text-navy-900/70">{fmt(g.total)} {devise}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Mode</span>
+                <select value={pay.mode} onChange={(e) => setPay((p) => ({ ...p, mode: e.target.value }))}
+                  className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                  {api.MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </label>
+              <div className="w-36"><Champ label="Référence" value={pay.reference} onChange={(e) => setPay((p) => ({ ...p, reference: e.target.value }))} /></div>
+              {comptes.length > 0 && (
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Encaissé dans</span>
+                  <select value={pay.compte_id} onChange={(e) => setPay((p) => ({ ...p, compte_id: e.target.value }))}
+                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                    <option value="">— Aucun compte —</option>
+                    {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton variante="or" disabled={envoi || choisis.length === 0} onClick={valider}>
+            {envoi ? "Encaissement…" : `Encaisser ${fmt(total)} ${devise}`}
+          </Bouton>
+        </div>
+      </div>
+    </Modale>
+  );
+}
+
 function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   const modeLabel = (m) => (api.MODES.find((x) => x[0] === m) || [])[1] || m;
   //  La déclaration qu’on rejette, et le motif en cours de saisie.
@@ -471,8 +591,17 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
         <tbody>
           {declarations.map((d) => (
             <tr key={d.id} className="border-t border-navy-900/5">
-              <td className="px-5 py-3 font-medium text-navy-900">{d.eleves?.prenom} {d.eleves?.nom}</td>
-              <td className="px-5 py-3 font-mono text-xs text-navy-900/70">{d.factures?.numero || "—"}</td>
+              <td className="px-5 py-3 font-medium text-navy-900">
+                {d.eleves?.prenom} {d.eleves?.nom}
+                {d.declarant && <span className="block text-xs font-normal text-navy-900/50">par {d.declarant}</span>}
+              </td>
+              <td className="px-5 py-3 font-mono text-xs text-navy-900/70">
+                {/*  Une avance n'a pas encore de facture (mig. 202) : la
+                    valider la crée, déjà réglée. */}
+                {d.avance_lignes
+                  ? <span className="font-sans text-or-600">Avance · {moisDeLAvance(d)}</span>
+                  : d.factures?.numero || "—"}
+              </td>
               <td className="px-5 py-3">{modeLabel(d.mode)}</td>
               <td className="px-5 py-3 font-mono text-xs">{d.reference_tx || "—"}</td>
               <td className="px-5 py-3 text-xs">
@@ -492,7 +621,8 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
         </tbody>
       </table>
       <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
-        « Valider » enregistre l'encaissement et solde la facture automatiquement.
+        « Valider » enregistre l'encaissement et solde la facture automatiquement ;
+        pour une avance, la facture des mois payés est créée déjà réglée.
         « Rejeter » demande un motif, qui est envoyé au parent.
       </p>
 
@@ -506,7 +636,8 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
           <div className="space-y-4">
             <p className="text-sm text-navy-900/70">
               {rejet.eleves?.prenom} {rejet.eleves?.nom} — <b>{fmt(rejet.montant)} {devise}</b>
-              {rejet.factures?.numero ? ` sur ${rejet.factures.numero}` : ""}.
+              {rejet.avance_lignes ? ` en avance pour ${moisDeLAvance(rejet)}`
+                : rejet.factures?.numero ? ` sur ${rejet.factures.numero}` : ""}.
             </p>
             <div className="space-y-1.5">
               <span className="block text-sm font-medium text-navy-900/70">Motif courant</span>
@@ -1071,7 +1202,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
         {resultat ? (
           <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             ✅ {resultat.crees} facture{resultat.crees > 1 ? "s" : ""} créée{resultat.crees > 1 ? "s" : ""}
-            {resultat.ignores > 0 && <> · {resultat.ignores} élève(s) ignoré(s) (déjà facturés)</>}.
+            {resultat.ignores > 0 && <> · {resultat.ignores} élève(s) ignoré(s) (déjà facturés ou payés d&apos;avance)</>}.
             <div className="mt-3 text-right">
               <Bouton onClick={onTermine}>Fermer</Bouton>
             </div>

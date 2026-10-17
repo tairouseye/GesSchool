@@ -64,6 +64,7 @@ const Paiements = lazy(() => import("@/pages/Paiements.jsx"));
 const Enseignants = lazy(() => import("@/pages/Enseignants.jsx"));
 const VieScolaire = lazy(() => import("@/pages/VieScolaire.jsx"));
 const Recouvrement = lazy(() => import("@/pages/Recouvrement.jsx"));
+const SituationPaiements = lazy(() => import("@/pages/SituationPaiements.jsx"));
 const EmploiDuTemps = lazy(() => import("@/pages/EmploiDuTemps.jsx"));
 const Annonces = lazy(() => import("@/pages/Annonces.jsx"));
 const Comptabilite = lazy(() => import("@/pages/Comptabilite.jsx"));
@@ -278,6 +279,7 @@ export default function App() {
             <Route path="/bulletins" element={<Garde cle="bulletins"><Bulletins /></Garde>} />
             <Route path="/paiements" element={<Garde cle="paiements"><Paiements /></Garde>} />
             <Route path="/recouvrement" element={<Garde cle="recouvrement"><Recouvrement /></Garde>} />
+            <Route path="/situation-paiements" element={<Garde cle="situation_paiements"><SituationPaiements /></Garde>} />
             <Route path="/emploi-du-temps" element={<Garde cle="emploi"><EmploiDuTemps /></Garde>} />
             <Route path="/annonces" element={<Garde cle="annonces"><Annonces /></Garde>} />
             <Route path="/messagerie" element={<Garde cle="messagerie"><Messagerie /></Garde>} />

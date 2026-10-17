@@ -92,8 +92,16 @@ for (const f of FUSIONS) for (const c of f.cles) PAR_CLE[c] = f;
  * plus que par la discipline de l'interface. Là, il tient par la structure.
  */
 export function boiteDeCle(cle) {
-  return PAR_CLE[cle]?.id || cle || null;
+  return PAR_CLE[cle]?.id || ECRANS_DE_POUVOIR[cle] || cle || null;
 }
+
+//  🔴 UN ÉCRAN GARDÉ PAR UN POUVOIR, ET NON PAR SA PROPRE CASE. La page
+//  « Situation des paiements » (mig. 203) ne lit QUE la RPC
+//  `situation_paiements`, gardée en base par `a_acces('p_voir_impayes')`.
+//  Lui donner une case à elle créerait deux vérités : cochée sans le
+//  pouvoir, la page s'ouvrirait sur un refus ; le pouvoir sans la case, et
+//  la donnée resterait lisible sans écran. L'écran SUIT donc le pouvoir.
+export const ECRANS_DE_POUVOIR = { situation_paiements: "p_voir_impayes" };
 
 /** Les clés qu'une boîte ouvre (une fusion, ou la clé elle-même). */
 export function clesDeBoite(id) {
@@ -136,8 +144,11 @@ export const POUVOIRS = [
   //  nomme `direction`, que la case `eleves` ne distingue pas de l'enseignant
   //  ni du surveillant. Sans ce pouvoir, tout enseignant verrait quelles
   //  familles sont en retard de paiement.
+  //  ⚠️ DEPUIS LA MIG. 203, CE POUVOIR DONNE LES MONTANTS (décision du
+  //  promoteur, 17/10/2026) : total facturé, payé, reste, échu par élève,
+  //  et l'écran « Situation des paiements ». Toujours en lecture seule.
   { id: "p_voir_impayes", label: "Voir l'état de paiement des familles",
-    aide: "Afficher, dans la liste des élèves, qui est à jour et qui a des factures échues." },
+    aide: "Voir, pour chaque élève, ce qui est facturé, payé, échu et payé d'avance (écran « Situation des paiements »), en lecture seule." },
   //  🔴 CELUI-CI COMBLE UN MANQUE, pas seulement une bascule (mig. 184). La
   //  notion « voit toutes les classes, pas seulement les siennes » existait
   //  SEULEMENT dans le front (`voitToutesClasses`, permissions.js) : neuf
@@ -195,6 +206,8 @@ export function arbreDesCases(ecole, pertinent = () => true) {
         //  Seules les clés dérivées ne se cochent pas.
         if (DERIVEES.includes(it.cle)) continue;
         const id = boiteDeCle(it.cle);
+        //  Un écran qui suit un pouvoir se coche dans les pouvoirs, pas ici.
+        if (IDS_POUVOIRS.includes(id)) continue;
         if (cases.some((c) => c.id === id)) continue; // une fusion n'apparaît qu'une fois
         const f = FUSIONS.find((x) => x.id === id);
         cases.push({

@@ -118,7 +118,10 @@ test("🔴 toute clé de menu est couverte par exactement une case", () => {
   //  cochable — à rattacher, ou à déclarer dérivé avec sa raison.
   const arbre = arbreDesCases(MIXTE, (i) => itemPourType(i, MIXTE));
   const boites = boitesDeLArbre(arbre);
-  const orphelines = CLES_COCHABLES.filter((c) => !boites.includes(boiteDeCle(c)));
+  //  Un écran qui SUIT un pouvoir (« Situation des paiements » → p_voir_impayes,
+  //  mig. 203) est couvert par la case de ce pouvoir, pas par une case d'écran.
+  const couvertes = [...boites, ...POUVOIRS.map((p) => p.id)];
+  const orphelines = CLES_COCHABLES.filter((c) => !couvertes.includes(boiteDeCle(c)));
   assert.deepEqual(orphelines, [], "clé(s) de menu sans case");
   //  Et l'inverse : une case qui ne correspond à aucune clé est un reste.
   const inutiles = boites.filter((b) => !clesDeBoite(b).some((c) => CLES.includes(c)));

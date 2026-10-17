@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
+import { libellesReserves } from "@/lib/avance.js";
 
 // GesSchool — couche « finances » : frais, factures, encaissements.
 // Le statut de facture + montant_paye sont recalculés par un trigger en base.
@@ -257,6 +258,19 @@ async function getLibellesDejaFactures(ecoleId, anneeId) {
     if (!eid || !d.libelle) continue;
     (map[eid] ||= new Set()).add(d.libelle);
   }
+  //  Un mois payé d'avance mais pas encore validé par la caisse n'a pas
+  //  encore de facture : sans cette réservation, le lot le facturerait, et
+  //  la validation de l'avance serait ensuite refusée (mig. 202).
+  const { data: avances, error: e2 } = await supabase
+    .from("declarations_paiement")
+    .select("eleve_id, statut, avance_lignes")
+    .eq("ecole_id", ecoleId)
+    .eq("statut", "en_attente")
+    .is("facture_id", null);
+  if (e2) throw e2;
+  for (const [eid, libs] of Object.entries(libellesReserves(avances))) {
+    for (const l of libs) (map[eid] ||= new Set()).add(l);
+  }
   return map;
 }
 
@@ -385,7 +399,40 @@ export async function getDeclarations(ecoleId, statut = "en_attente") {
   if (statut) q = q.eq("statut", statut);
   const { data, error } = await q.order("created_at", { ascending: false });
   if (error) throw error;
+  const lignes = data ?? [];
+
+  //  QUEL parent a déclaré (mig. 202) : un élève a souvent deux parents qui
+  //  paient chacun leur part. On résout le nom par la fiche tuteur de
+  //  l'école — best-effort : sans elle, la ligne s'affiche sans nom.
+  const ids = [...new Set(lignes.map((d) => d.declare_par).filter(Boolean))];
+  if (ids.length) {
+    const { data: tuteurs } = await supabase
+      .from("tuteurs").select("profil_id, prenom, nom")
+      .eq("ecole_id", ecoleId).in("profil_id", ids);
+    const nom = {};
+    for (const t of tuteurs ?? []) nom[t.profil_id] ||= `${t.prenom || ""} ${t.nom || ""}`.trim();
+    for (const d of lignes) d.declarant = nom[d.declare_par] || null;
+  }
+  return lignes;
+}
+
+// --- Paiement anticipé (mig. 202) ---
+// Les mois qu'un élève peut payer d'avance (même RPC que le parent).
+export async function avanceOptions(eleveId) {
+  const { data, error } = await supabase.rpc("avance_options", { p_eleve: eleveId });
+  if (error) throw error;
   return data ?? [];
+}
+
+// Le parent paie au guichet pour les mois à venir : la facture est créée
+// déjà réglée, dans la même transaction que l'encaissement. Renvoie son id.
+export async function encaisserAvance(eleveId, mois, p) {
+  const { data, error } = await supabase.rpc("encaisser_avance", {
+    p_eleve: eleveId, p_mois: mois, p_mode: p.mode,
+    p_reference: p.reference || null, p_compte: p.compte_id || null,
+  });
+  if (error) throw error;
+  return data;
 }
 
 // URL signée (temporaire) pour consulter une preuve de paiement jointe.
@@ -407,6 +454,19 @@ export async function validerDeclaration(id) {
 export async function rejeterDeclaration(id, motif) {
   const { error } = await supabase.rpc("rejeter_declaration", { p_decl: id, p_motif: motif });
   if (error) throw error;
+}
+
+// La situation de paiement de chaque élève de l'année, montants compris
+// (mig. 203). Ouverte au pouvoir « Voir l'état de paiement des familles » :
+// responsable pédagogique, comptable, secrétariat — dans leur périmètre.
+// Lecture seule : ni numéro de facture, ni détail des paiements.
+export async function situationPaiements(anneeId, { q = null, classeId = null } = {}) {
+  if (!anneeId) return [];
+  const { data, error } = await supabase.rpc("situation_paiements", {
+    p_annee: anneeId, p_q: q || null, p_classe: classeId || null,
+  });
+  if (error) throw error;
+  return data ?? [];
 }
 
 // Solde par élève (somme due - payé sur ses factures).

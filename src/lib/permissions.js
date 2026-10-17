@@ -98,6 +98,10 @@ const ACCES = {
   demandes: ["comptable", "secretaire"],
   paiements: ["comptable", "secretaire"],
   recouvrement: ["comptable"],
+  //  La situation de paiement par élève, montants compris (mig. 203) : les
+  //  trois que nomme le pouvoir `p_voir_impayes`, ni l'enseignant ni le
+  //  surveillant (décision de la mig. 170, maintenue).
+  situation_paiements: ["direction", "comptable", "secretaire"],
   comptabilite: ["comptable"],
   cantine: ["comptable", "secretaire"],
   transport: ["comptable", "secretaire"],

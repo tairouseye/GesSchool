@@ -57,6 +57,7 @@ export const ESPACES = [
       // Finances
       { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements", groupe: "Finances" },
       { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement", groupe: "Finances" },
+      { to: "/situation-paiements", label: "Situation des paiements", icone: "📊", cle: "situation_paiements", groupe: "Finances" },
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite", groupe: "Finances" },
 
       // Services aux familles
@@ -108,6 +109,7 @@ export const ESPACES = [
 
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
+      { to: "/situation-paiements", label: "Situation des paiements", icone: "📊", cle: "situation_paiements", groupe: "Élèves & structure" },
       { to: "/photos", label: "Photos des élèves", labelSup: "Photos des étudiants", icone: "📷", cle: "photos", groupe: "Élèves & structure" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Élèves & structure" },
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Élèves & structure" },

@@ -170,6 +170,23 @@ export async function declarerPaiement(factureId, montant, mode, reference, preu
   if (error) throw error;
 }
 
+// --- Paiement anticipé (mig. 202) ---
+// Les mois qu'on peut payer d'avance, avec le tarif mensuel de la classe.
+// Une ligne par frais et par mois : à regrouper avec `grouperParMois`.
+export async function avanceOptions(eleveId) {
+  const { data, error } = await supabase.rpc("avance_options", { p_eleve: eleveId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// ⚠️ Pas de montant : la base le recalcule à partir des mois choisis.
+export async function declarerAvance(eleveId, mois, mode, reference, preuve) {
+  const { error } = await supabase.rpc("declarer_avance", {
+    p_eleve: eleveId, p_mois: mois, p_mode: mode, p_reference: reference || null, p_preuve: preuve || null,
+  });
+  if (error) throw error;
+}
+
 export async function enfantDeclarations(eleveId) {
   const { data, error } = await supabase.rpc("enfant_declarations", { p_eleve: eleveId });
   if (error) throw error;
