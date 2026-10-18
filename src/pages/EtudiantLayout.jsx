@@ -8,10 +8,12 @@ import InvitePush from "@/composants/InvitePush.jsx";
 import { compterNonLues } from "@/lib/parent.js";
 import { mesMessagesNonLus } from "@/lib/etudiant.js";
 import { libelleCompteur } from "@/lib/accessibilite.js";
+import BarreRubriques from "@/composants/BarreRubriques.jsx";
+import { rubriquesEtudiant, rubriqueEtudiantActive } from "@/lib/etudiantRubriques.js";
 
 // Espace étudiant (supérieur) — coque légère.
 export default function EtudiantLayout() {
-  const { profil, deconnexion } = useAuth();
+  const { profil, deconnexion, modulesActifs } = useAuth();
   const { pathname } = useLocation();
   const surAccueil = pathname === "/etudiant" || pathname === "/etudiant/";
 
@@ -26,6 +28,10 @@ export default function EtudiantLayout() {
     compterNonLues().then(setNonLues).catch(() => {});
     mesMessagesNonLus().then(setMsgNonLus).catch(() => {});
   }, [pathname]);
+
+  // Accueil → rubrique (ou retour) : on repart du haut de la page. Entre deux
+  // rubriques, c'est la barre qui ramène au début du contenu.
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [surAccueil]);
 
   // Masquée aux lecteurs d'écran : le nombre est déjà dans le nom du lien.
   const Pastille = ({ n }) => (n > 0 ? (
@@ -61,16 +67,19 @@ export default function EtudiantLayout() {
           </button>
         </div>
       </header>
-      {/* Pas de barre de navigation : le menu, ce sont les tuiles de l'accueil.
-          Une fois dans une section elles ne sont plus visibles, d'où ce retour
-          — sans lui, on resterait enfermé dans la page ouverte. */}
+      {/* Sur l'accueil, le menu ce sont les tuiles. Dans une rubrique, elles
+          ne sont plus visibles : la barre de rubriques les remplace, et
+          « Accueil » y reste le premier lien. Elle remplace l'ancien seul
+          « ← Accueil », qui imposait un retour entre deux rubriques. */}
       {!surAccueil && (
-        <div className="border-b border-navy-900/10 bg-white px-4 py-2">
-          <Link to="/etudiant"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-navy-900/70 transition hover:bg-creme hover:text-navy-900">
-            ← Accueil
-          </Link>
-        </div>
+        <BarreRubriques
+          actif={rubriqueEtudiantActive(pathname)}
+          items={[
+            { cle: "_accueil", label: "Accueil", to: "/etudiant" },
+            ...rubriquesEtudiant(modulesActifs).map((r) => ({
+              ...r, pastille: r.cle === "messagerie" ? msgNonLus : 0,
+            })),
+          ]} />
       )}
 
       <main className="mx-auto max-w-3xl space-y-4 p-6">

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import BarreRubriques from "@/composants/BarreRubriques.jsx";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
@@ -32,9 +33,13 @@ const fmtDate = (d) =>
   (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 
 export default function ParentEnfant() {
-  const { id } = useParams();
-  // null = accueil en tuiles ; sinon la section ouverte.
-  const [onglet, setOnglet] = useState(null);
+  //  ⚠️ LA RUBRIQUE OUVERTE VIT DANS L'ADRESSE (/parent/enfant/:id/:rubrique),
+  //  plus dans un état local. Avant, le bouton retour d'Android quittait la
+  //  fiche de l'enfant au lieu de revenir à la rubrique précédente, et aucune
+  //  alerte ne pouvait mener directement à « Paiements ».
+  const { id, rubrique } = useParams();
+  const navigate = useNavigate();
+  const lienRubrique = (cle) => (cle ? `/parent/enfant/${id}/${cle}` : `/parent/enfant/${id}`);
   const [enfant, setEnfant] = useState(null);
   const [notes, setNotes] = useState([]);
   const [factures, setFactures] = useState([]);
@@ -60,6 +65,22 @@ export default function ParentEnfant() {
 
   const loadedRef = useRef(new Set());      // sections déjà chargées (dédup)
   const [charge, setCharge] = useState({}); // idem, pour piloter le rendu
+
+  // Sections disponibles (Cantine/Transport seulement si abonnement).
+  //  La tuile « Suivi des acquis » n'apparaît que lorsque l'école a
+  //  observé quelque chose. On la sonde une fois, au chargement initial :
+  //  proposer une tuile vide ferait croire à un oubli de l'enseignante.
+  const tuiles = TUILES.filter((t) =>
+    (t.cle !== "cantine" || cantine)
+    && (t.cle !== "transport" || transport)
+    && (t.cle !== "acquis" || aDesAcquis));
+
+  // Rubrique de l'adresse : inconnue → accueil en tuiles. Une rubrique connue
+  // mais absente pour cet enfant (pas d'abonnement cantine…) ne retombe sur
+  // l'accueil qu'une fois le chargement fini, pour ne pas refuser trop tôt une
+  // tuile dont l'information arrive.
+  const demandee = TUILES.some((t) => t.cle === rubrique) ? rubrique : null;
+  const onglet = demandee && !chargement && !tuiles.some((t) => t.cle === demandee) ? null : demandee;
 
   // Chargement INITIAL minimal : en-tête (enfant), badges (factures, demandes)
   // et visibilité des tuiles Cantine/Transport. Le reste est chargé à l'ouverture
@@ -109,6 +130,15 @@ export default function ParentEnfant() {
     chargerInitial().finally(() => setChargement(false));
   }, [chargerInitial]);
 
+  // Grille → rubrique (ou retour) : on repart du haut de la page. Entre deux
+  // rubriques, c'est la barre qui ramène au début du contenu.
+  const ongletPrecedent = useRef(onglet);
+  useEffect(() => {
+    const avant = ongletPrecedent.current;
+    ongletPrecedent.current = onglet;
+    if (avant !== onglet && (avant === null || onglet === null)) window.scrollTo({ top: 0 });
+  }, [onglet]);
+
   // Ouverture d'une section → charge ses données à la demande.
   useEffect(() => { if (onglet) chargerSection(onglet); }, [onglet, chargerSection]);
 
@@ -148,14 +178,6 @@ export default function ParentEnfant() {
     notes: alertes.note || 0, absences: alertes.absence || 0,
   };
 
-  // Sections disponibles (Cantine/Transport seulement si abonnement).
-  //  La tuile « Suivi des acquis » n'apparaît que lorsque l'école a
-  //  observé quelque chose. On la sonde une fois, au chargement initial :
-  //  proposer une tuile vide ferait croire à un oubli de l'enseignante.
-  const tuiles = TUILES.filter((t) =>
-    (t.cle !== "cantine" || cantine)
-    && (t.cle !== "transport" || transport)
-    && (t.cle !== "acquis" || aDesAcquis));
   const sectionActive = TUILES.find((t) => t.cle === onglet);
 
   return (
@@ -163,7 +185,25 @@ export default function ParentEnfant() {
       {onglet === null ? (
         <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
       ) : (
-        <button onClick={() => setOnglet(null)} className="text-sm font-medium text-navy-700 hover:text-or-500">← Accueil</button>
+        <>
+          {/* Dans une rubrique : l'enfant courant, le retour à sa grille, et
+              la barre pour passer directement à une autre rubrique. */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-display font-semibold text-navy-900">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
+              {enfant?.classe && <p className="truncate text-xs text-navy-900/60">{enfant.classe}{enfant.ecole ? ` · ${enfant.ecole}` : ""}</p>}
+            </div>
+            <Link to={lienRubrique(null)} className="shrink-0 text-sm font-medium text-navy-700 hover:text-or-600">Toutes les rubriques</Link>
+          </div>
+          <BarreRubriques
+            label={`Rubriques de ${enfant?.prenom || "l'enfant"}`}
+            className="-mx-6"
+            actif={onglet}
+            items={tuiles.map((t) => ({
+              cle: t.cle, label: t.label, to: lienRubrique(t.cle),
+              pastille: badges[t.cle] || 0, pastilleRouge: t.cle === "paiements",
+            }))} />
+        </>
       )}
       <Alerte ton="erreur">{erreur}</Alerte>
 
@@ -197,7 +237,7 @@ export default function ParentEnfant() {
             {tuiles.map((t) => (
               <button
                 key={t.cle}
-                onClick={() => setOnglet(t.cle)}
+                onClick={() => navigate(lienRubrique(t.cle))}
                 className="group relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]"
               >
                 <Icone name={t.cle} className="h-7 w-7 text-or-500" />

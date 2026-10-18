@@ -5,33 +5,15 @@ import { Bouton, Carte, Alerte } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { Icone } from "@/composants/Icones.jsx";
 import { mesDemandesAcces, deciderAcces, mesMessagesNonLus } from "@/lib/etudiant.js";
-import { moduleActif } from "@/lib/modules.js";
+import { rubriquesEtudiant } from "@/lib/etudiantRubriques.js";
 
 const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 const LIB = { en_attente: "En attente", autorise: "Autorisé", refuse: "Refusé", revoque: "Révoqué" };
 
 // Menu principal en tuiles — même traitement que l'espace parent
 // (navy sombre, icône dorée), pour que les deux espaces se ressemblent.
-//
-// 🔴 `cle` N'EST PAS DÉCORATIF. Il portait jusqu'ici l'icône et la pastille,
-// et rien d'autre : l'étudiant voyait donc « Bibliothèque » et « Mon dépôt »
-// même si l'établissement n'avait acheté ni l'un ni l'autre — la tuile
-// s'ouvrait sur un écran vide, la RLS faisant son travail trop tard. Le même
-// champ sert maintenant de verrou (`moduleActif`), comme dans le menu du
-// personnel. Une clé inconnue de `MODULES` reste une page « cœur », toujours
-// ouverte : c'est le cas de `_documentation` et de `carte_etudiant`.
-const TUILES = [
-  { to: "/etudiant/notes", cle: "notes", label: "Mes résultats" },
-  { to: "/etudiant/emploi", cle: "emploi_sup", label: "Emploi du temps" },
-  { to: "/etudiant/messagerie", cle: "messagerie", label: "Messagerie" },
-  { to: "/etudiant/textes", cle: "_documentation", label: "Textes de référence" },
-  { to: "/etudiant/scolarite", cle: "paiements", label: "Ma scolarité" },
-  { to: "/etudiant/documents", cle: "certificats", label: "Mes documents" },
-  { to: "/etudiant/actualites", cle: "annonces", label: "Actualités" },
-  { to: "/etudiant/bibliotheque", cle: "bibliotheque", label: "Bibliothèque" },
-  { to: "/etudiant/depots", cle: "biblio_depots", label: "Mon dépôt" },
-  { to: "/etudiant/carte", cle: "carte_etudiant", label: "Ma carte" },
-];
+// La liste vit dans etudiantRubriques.js : la barre de rubriques de l'en-tête
+// la partage, et les deux ne doivent jamais diverger.
 
 // Accueil étudiant : gestion du consentement d'accès parent aux notes.
 export default function EtudiantAccueil() {
@@ -62,7 +44,7 @@ export default function EtudiantAccueil() {
   }
 
   //  Les tuiles que l'établissement a réellement achetées.
-  const tuiles = TUILES.filter((t) => moduleActif(modulesActifs, t.cle));
+  const tuiles = rubriquesEtudiant(modulesActifs);
 
   const enAttente = demandes.filter((d) => d.statut === "en_attente");
   const traitees = demandes.filter((d) => d.statut !== "en_attente");

@@ -791,6 +791,8 @@ Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant
 - **Absences** : **Justifier** une absence → l'école valide.
 - **Documents** : **Demander** un document → suivre le statut.
 - En-tête : 💬 **Messagerie** et 🔔 **Alertes** (+ **Activer** les notifications push).
+- **Passer d'une rubrique à l'autre** : dans une rubrique, une **barre de rubriques** défile sous le nom de l'enfant — un toucher pour aller des Notes aux Paiements, sans revenir à la grille. Les pastilles (impayé, nouvelles notes) y restent visibles ; **« Toutes les rubriques »** ramène à la grille. Le **retour du téléphone** revient à la rubrique précédente.
+- Dans **Alertes**, le bouton **« Voir »** ouvre directement la bonne rubrique : une nouvelle facture mène à Paiements, une absence à Absences, une note à Notes.
 
 ### 17.3 Plusieurs enfants — y compris dans des écoles différentes
 Un parent gère **tous ses enfants depuis un seul compte**, même dans des établissements différents :
@@ -944,7 +946,7 @@ Un étudiant accède depuis son espace au catalogue, à ses emprunts, à ses ré
 
 ### 24.4 L'espace de l'étudiant
 
-Il fonctionne comme l'espace parent : des **tuiles** à l'accueil, et un lien **« ← Accueil »** pour y revenir.
+Il fonctionne comme l'espace parent : des **tuiles** à l'accueil, puis, dans chaque rubrique, une **barre de rubriques** pour passer directement à une autre — **« Accueil »** y est le premier lien.
 
 | Tuile | Ce qu'il y trouve |
 |---|---|

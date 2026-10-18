@@ -15,6 +15,17 @@ const ICONE = (titre = "") => {
   return "🔔";
 };
 
+//  Où mène une alerte. Possible depuis que la rubrique d'un enfant est dans
+//  l'adresse : avant, une alerte « Nouvelle facture » laissait le parent
+//  chercher l'enfant, puis la tuile Paiements. Catégories posées par la base
+//  (_notifier_parents, migration 112 et suivantes) ; inconnue → pas de lien.
+const RUBRIQUE_DE = { note: "notes", absence: "absences", facture: "paiements", transport: "transport", annonce: "annonces" };
+function lienAlerte(n) {
+  if (n.categorie === "message") return "/parent/messages";
+  const r = RUBRIQUE_DE[n.categorie];
+  return n.eleve_id && r ? `/parent/enfant/${n.eleve_id}/${r}` : null;
+}
+
 export default function ParentNotifications() {
   const [items, setItems] = useState([]);
   const [enfants, setEnfants] = useState([]);
@@ -101,11 +112,19 @@ export default function ParentNotifications() {
                 {n.message && <p className="text-sm text-navy-900/70">{n.message}</p>}
                 <p className="mt-1 text-xs text-navy-900/40">{fmt(n.created_at)}</p>
               </div>
-              {!n.lu && (
-                <button onClick={async () => { await marquerLue(n.id); recharger(); }} className="text-xs text-navy-700 hover:text-or-500">
-                  marquer lu
-                </button>
-              )}
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                {lienAlerte(n) && (
+                  <Link to={lienAlerte(n)} onClick={() => { if (!n.lu) marquerLue(n.id).catch(() => {}); }}
+                    className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800">
+                    Voir
+                  </Link>
+                )}
+                {!n.lu && (
+                  <button onClick={async () => { await marquerLue(n.id); recharger(); }} className="text-xs text-navy-700 hover:text-or-600">
+                    marquer lu
+                  </button>
+                )}
+              </div>
             </Carte>
           ))}
         </div>

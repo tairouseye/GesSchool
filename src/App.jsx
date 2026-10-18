@@ -200,7 +200,10 @@ export default function App() {
             }
           >
             <Route index element={<ParentAccueil />} />
-            <Route path="enfant/:id" element={<ParentEnfant />} />
+            {/* La rubrique ouverte est DANS l'adresse : le retour du téléphone
+                revient à la rubrique précédente, et une alerte peut ouvrir
+                directement « Paiements ». */}
+            <Route path="enfant/:id/:rubrique?" element={<ParentEnfant />} />
             <Route path="notifications" element={<ParentNotifications />} />
             <Route path="textes" element={<TextesReference />} />
             <Route path="messages" element={<ParentMessagerie />} />
