@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useContext, createContext } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
@@ -18,20 +19,128 @@ import { PALIERS, COMBINAISONS, PEDAGOGIES, paliersDeclares, resume as resumePal
 
 const DEVISES = ["XOF", "XAF", "CDF", "USD", "EUR", "GNF", "MAD", "MRU"];
 
+// =====================================================================
+//  Les réglages, rangés par thème — un seul affiché à la fois
+//
+//  ⚠️ POURQUOI CE RANGEMENT (audit ergonomie, oct. 2026 ; maquette validée
+//  par le promoteur). Les huit sections s'empilaient sur une seule page :
+//    - il fallait la faire défiler pour retrouver un réglage ;
+//    - « Enregistré ✓ » s'affichait TOUT EN HAUT : en enregistrant les
+//      Modules, huit sections plus bas, on ne le voyait pas ;
+//    - rien ne signalait une modification non enregistrée : on changeait la
+//      devise, on quittait, et c'était perdu.
+//  Désormais : un sommaire par thème (liste sur téléphone), chaque section a
+//  son adresse (/parametres/matricule), la confirmation s'affiche à côté du
+//  titre de la section, une barre collée en bas signale ce qui n'est pas
+//  enregistré, et changer de section le demande avant de rien perdre.
+//
+//  Le fond ne change pas : mêmes champs, mêmes droits (`peutVoirSection`).
+// =====================================================================
+const SECTIONS = [
+  { cle: "etablissement", slug: "etablissement", groupe: "Établissement", titre: "Identité et apparence", resume: "Nom, coordonnées, paliers, devise, couleurs" },
+  { cle: "signataires", slug: "signataires", groupe: "Établissement", titre: "Signataires", resume: "Qui signe bulletins et certificats" },
+  { cle: "notation", slug: "notation", groupe: "Scolarité", titre: "Notation et bulletins", resume: "Barème, moyenne de passage, mentions" },
+  { cle: "matricule", slug: "matricule", groupe: "Scolarité", titre: "Matricule des élèves", resume: "Format des numéros d'inscription" },
+  { cle: "champs_eleve", slug: "champs-eleve", groupe: "Scolarité", titre: "Champs élève personnalisés", resume: "Informations en plus sur la fiche élève" },
+  { cle: "relances", slug: "relances", groupe: "Finances", titre: "Relances automatiques", resume: "Rappels d'impayés aux parents" },
+  { cle: "paiement", slug: "paiement-en-ligne", groupe: "Finances", titre: "Paiement en ligne", resume: "Prestataire et clés du paiement mobile", sensible: true },
+  { cle: "modules", slug: "modules", groupe: "Abonnement", titre: "Modules actifs", resume: "Fonctions activées pour l'école", sensible: true },
+];
+
+// Suivi de la section affichée : modifications en attente, dernier enregistrement.
+const SuiviCtx = createContext({ signaler() {}, enregistre() {}, heure: null });
+function useSuivi(modifie) {
+  const suivi = useContext(SuiviCtx);
+  const { signaler } = suivi;
+  useEffect(() => { signaler(Boolean(modifie)); }, [modifie, signaler]);
+  return suivi;
+}
+const heureCourte = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+// Deux états de formulaire sont-ils identiques ? (objets simples, ordre stable)
+const memes = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
 export default function Parametres() {
   const { ecoleId, ecole, roles, modulesActifs, rafraichirProfil } = useAuth();
+  const { section } = useParams();
+  const navigate = useNavigate();
+  const confirmer = useConfirm();
   const [erreur, setErreur] = useState("");
-  const [info, setInfo] = useState("");
-
-  const action = async (fn) => {
-    setErreur(""); setInfo("");
-    try { await fn(); await rafraichirProfil(); setInfo("Enregistré ✓"); }
-    catch (e) { setErreur(e.message); }
-  };
+  const [modifie, setModifie] = useState(false);
+  const [heures, setHeures] = useState({}); // dernier enregistrement, par section
 
   // Chaque responsable ne voit que les sections de son domaine ; le promoteur
   // les voit toutes (cf. SECTIONS_PARAMETRES dans permissions.js).
   const voit = (s) => peutVoirSection(roles, s);
+  const visibles = SECTIONS.filter((s) => {
+    if (s.cle === "relances") return voit("relances") && moduleActif(modulesActifs, "recouvrement");
+    // Paiement en ligne : secrets prestataire, réservé au promoteur.
+    if (s.cle === "paiement") return estRoleComplet(roles);
+    return voit(s.cle);
+  });
+  const demandee = visibles.find((s) => s.slug === section) || null;
+  // Sur ordinateur, sans section dans l'adresse, la première s'affiche ; sur
+  // téléphone, c'est la liste. Une seule section visible : elle, directement.
+  const affichee = demandee || visibles[0] || null;
+  const seule = visibles.length === 1;
+
+  const cle = affichee?.cle;
+  useEffect(() => { setModifie(false); setErreur(""); }, [cle]);
+
+  //  Fermer ou recharger l'onglet avec des modifications : le navigateur
+  //  demande confirmation. (Le menu latéral, lui, n'est pas intercepté : le
+  //  routeur de l'application ne le permet pas.)
+  useEffect(() => {
+    if (!modifie) return undefined;
+    const retenir = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", retenir);
+    return () => window.removeEventListener("beforeunload", retenir);
+  }, [modifie]);
+
+  const suivi = useMemo(() => ({
+    signaler: setModifie,
+    enregistre: () => cle && setHeures((h) => ({ ...h, [cle]: heureCourte() })),
+    heure: cle ? heures[cle] || null : null,
+  }), [cle, heures]);
+
+  const action = async (fn) => {
+    setErreur("");
+    try { await fn(); await rafraichirProfil(); suivi.enregistre(); }
+    catch (e) { setErreur(e.message); }
+  };
+
+  // Changer de section avec des modifications en attente : on demande.
+  const aller = async (e, vers) => {
+    if (!modifie) return;
+    e.preventDefault();
+    const ok = await confirmer({
+      titre: "Quitter sans enregistrer ?",
+      message: `Vos modifications de « ${affichee?.titre} » seront perdues.`,
+      confirmer: "Quitter sans enregistrer",
+    });
+    if (ok) { setModifie(false); navigate(vers); }
+  };
+
+  const contenu = (c) => {
+    switch (c) {
+      case "etablissement": return <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />;
+      case "signataires": return <Signataires ecoleId={ecoleId} onErreur={setErreur} />;
+      case "notation": return <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />;
+      case "champs_eleve": return <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />;
+      case "matricule": return <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />;
+      case "relances": return <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />;
+      case "paiement": return <PaiementEnLigne onErreur={setErreur} />;
+      case "modules": return <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />;
+      default: return null;
+    }
+  };
+
+  const groupes = [...new Set(visibles.map((s) => s.groupe))];
+  const panneau = affichee && (
+    <SuiviCtx.Provider value={suivi}>
+      <Alerte ton="erreur">{erreur}</Alerte>
+      <div key={affichee.cle} className={erreur ? "mt-4" : ""}>{contenu(affichee.cle)}</div>
+    </SuiviCtx.Provider>
+  );
 
   return (
     <>
@@ -39,28 +148,100 @@ export default function Parametres() {
         titre="Paramètres"
         sousTitre={estRoleComplet(roles) ? "Configuration de l'établissement" : "Les réglages de votre domaine"}
       />
-      <div className="max-w-2xl space-y-6 p-8">
-        <Alerte ton="erreur">{erreur}</Alerte>
-        {info && <Alerte ton="succes">{info}</Alerte>}
+      <div className="p-4 sm:p-8">
+        {!affichee ? (
+          <Alerte ton="info">Aucun réglage n'est ouvert à votre rôle.</Alerte>
+        ) : seule ? (
+          <div className="max-w-2xl">{panneau}</div>
+        ) : (
+          <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-8">
+            {/* Sommaire : à gauche sur ordinateur ; seul à l'écran sur
+                téléphone tant qu'aucune section n'est ouverte. */}
+            <nav aria-label="Sections des paramètres"
+              className={`space-y-5 lg:sticky lg:top-4 ${demandee ? "hidden lg:block" : ""}`}>
+              {groupes.map((g) => (
+                <div key={g}>
+                  <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-navy-900/60">{g}</p>
+                  <div className="overflow-hidden rounded-2xl border border-navy-900/10 bg-white lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent">
+                    {visibles.filter((s) => s.groupe === g).map((s) => {
+                      // `affichee` : surlignée sur ordinateur (la première par
+                      // défaut). `demandee` : celle de l'adresse — sur téléphone,
+                      // la liste n'a pas de section ouverte, tout reste cliquable.
+                      const surlignee = s.cle === affichee.cle;
+                      const ouverte = s.cle === demandee?.cle;
+                      const vers = `/parametres/${s.slug}`;
+                      return (
+                        <Link key={s.cle} to={vers} onClick={(e) => (ouverte ? e.preventDefault() : aller(e, vers))}
+                          aria-current={ouverte ? "page" : undefined}
+                          className={`flex items-center justify-between gap-2 border-navy-900/10 px-3 py-3 text-sm text-navy-900 transition hover:bg-navy-900/5 [&:not(:first-child)]:border-t lg:rounded-lg lg:border-0 lg:py-2 ${
+                            surlignee ? "lg:bg-navy-900 lg:font-semibold lg:text-creme lg:hover:bg-navy-900" : ""
+                          }`}>
+                          <span className="min-w-0">
+                            <span className="block">{s.titre}{s.sensible && <span className="ml-1.5 text-xs" aria-label="réservé au promoteur">🔒</span>}</span>
+                            <span className="block text-xs text-navy-900/60 lg:hidden">{s.resume}</span>
+                          </span>
+                          {surlignee && modifie
+                            ? <span className="h-2 w-2 shrink-0 rounded-full bg-or-500" aria-label="modifications non enregistrées" />
+                            : <span className="text-navy-900/40 lg:hidden" aria-hidden="true">›</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
 
-        {voit("etablissement") && (
-          <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
-        )}
-        {voit("signataires") && <Signataires ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("notation") && <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("champs_eleve") && <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("matricule") && <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />}
-        {voit("relances") && moduleActif(modulesActifs, "recouvrement") && (
-          <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
-        )}
-        {/* Paiement en ligne : secrets prestataire, réservé au promoteur. */}
-        {estRoleComplet(roles) && <PaiementEnLigne onErreur={setErreur} />}
-        {/* Activation des modules « à la carte » : réservée au promoteur. */}
-        {voit("modules") && (
-          <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
+            <div className={`min-w-0 max-w-2xl ${demandee ? "" : "hidden lg:block"}`}>
+              <Link to="/parametres" onClick={(e) => aller(e, "/parametres")}
+                className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:text-or-600 lg:hidden">
+                ‹ Paramètres
+              </Link>
+              {affichee.sensible && (
+                <p className="mb-3 flex items-start gap-2 rounded-xl border border-or-500/40 bg-or-500/10 px-4 py-2.5 text-xs text-or-600">
+                  <span aria-hidden="true">🔒</span>
+                  <span>Réglage sensible, réservé au promoteur. Les autres responsables ne voient pas cette section.</span>
+                </p>
+              )}
+              {panneau}
+            </div>
+          </div>
         )}
       </div>
     </>
+  );
+}
+
+// Titre d'une section, avec la confirmation du dernier enregistrement à côté :
+// là où l'on regarde, plus en haut de la page.
+function TitreSection({ children, className = "" }) {
+  const { heure } = useContext(SuiviCtx);
+  return (
+    <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 ${className}`}>
+      <h3 className="font-display text-lg font-semibold text-navy-900">{children}</h3>
+      {heure && <span role="status" className="text-xs font-semibold text-emerald-700">✓ Enregistré à {heure}</span>}
+    </div>
+  );
+}
+
+// Rangée des boutons d'une section. Dès qu'il y a une modification, elle se
+// colle en bas de l'écran avec « Modifications non enregistrées » et Annuler :
+// le bouton Enregistrer reste à portée même dans une longue section.
+function BarreEnregistrement({ modifie, onAnnuler, children }) {
+  return (
+    <div className={`mt-4 flex flex-wrap items-center gap-2 ${modifie
+      ? "sticky bottom-0 z-10 -mx-6 -mb-6 justify-between rounded-b-2xl border-t border-navy-900/10 bg-white px-6 py-3 shadow-[0_-6px_16px_rgba(11,31,58,0.06)]"
+      : "justify-end"}`}>
+      {modifie && (
+        <p className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+          <span className="h-2 w-2 rounded-full bg-or-500" aria-hidden="true" />
+          Modifications non enregistrées
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {modifie && onAnnuler && <Bouton variante="fantome" onClick={onAnnuler}>Annuler</Bouton>}
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -73,6 +254,8 @@ function RelancesConfig({ ecoleId, estGestion }) {
   const [regles, setRegles] = useState([]);
   const [edit, setEdit] = useState(null); // règle en cours d'édition / création
   const [erreur, setErreur] = useState("");
+  // Chaque palier s'enregistre tout seul (modale) : rien n'est jamais en attente.
+  const { enregistre } = useSuivi(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -83,7 +266,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
   useEffect(() => { recharger(); }, [recharger]);
 
   const wrap = async (fn, msg) => {
-    try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
+    try { await fn(); await recharger(); enregistre(); if (msg) toast.succes(msg); return true; }
     catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
   };
 
@@ -95,8 +278,8 @@ function RelancesConfig({ ecoleId, estGestion }) {
 
   return (
     <Carte className="p-6">
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-navy-900">Relances automatiques</h3>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <TitreSection>Relances automatiques</TitreSection>
         <Bouton variante="fantome" onClick={() => setEdit({ libelle: "", jours: 1, modele: MODELE_DEFAUT, actif: true })}>
           + Palier
         </Bouton>
@@ -207,6 +390,11 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
     couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
   });
   const [up, setUp] = useState("");
+  // État enregistré, pour savoir ce qui ne l'est pas (logo téléversé compris :
+  // il ne vaut qu'après « Enregistrer », ce que rien ne disait).
+  const [depart, setDepart] = useState(null);
+  const modifie = Boolean(depart) && !memes(f, depart);
+  useSuivi(modifie);
   //  ⚠️ L'ORDRE DE MISE EN LIGNE NE DOIT PAS COMPTER. Si la migration 168
   //  n'est pas encore appliquee, les colonnes `paliers` et
   //  `pedagogie_elementaire` n'existent pas : les envoyer ferait echouer
@@ -216,7 +404,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
   const paliersDispo = Boolean(ecole) && "paliers" in ecole;
   useEffect(() => {
     if (!ecole) return;
-    setF({
+    const v = {
       nom: ecole.nom || "", sigle: ecole.sigle || "", devise: ecole.devise || "XOF",
       pays: ecole.pays || "Sénégal", ville: ecole.ville || "", adresse: ecole.adresse || "",
       telephone: ecole.telephone || "", email: ecole.email || "",
@@ -228,7 +416,8 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
       couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
       couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
       logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
-    });
+    };
+    setF(v); setDepart(v);
   }, [ecole]);
   // Si l'aperçu live n'est pas enregistré, rétablir l'accent sauvegardé au départ.
   useEffect(() => () => appliquerAccent(ecole?.couleur_secondaire), [ecole?.couleur_secondaire]);
@@ -244,7 +433,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Établissement</h3>
+      <TitreSection className="mb-4">Identité et apparence</TitreSection>
 
       {/* Logo & cachet */}
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -324,9 +513,10 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
         )}
       </div>
 
-      <div className="mt-4 flex justify-end">
+      <BarreEnregistrement modifie={modifie}
+        onAnnuler={() => { setF(depart); appliquerAccent(depart.couleur_secondaire); }}>
         <Bouton onClick={() => onSave(profilAEnregistrer(f, paliersDispo))}>Enregistrer</Bouton>
-      </div>
+      </BarreEnregistrement>
     </Carte>
   );
 }
@@ -334,10 +524,15 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
 function ModulesActifs({ ecole, onSave }) {
   // null = tous actifs
   const [actifs, setActifs] = useState(() => new Set(tousLesModules()));
+  const [depart, setDepart] = useState(null);
   useEffect(() => {
     if (!ecole) return;
-    setActifs(new Set(ecole.modules_actifs ?? tousLesModules()));
+    const v = ecole.modules_actifs ?? tousLesModules();
+    setActifs(new Set(v)); setDepart(v);
   }, [ecole]);
+  const trie = (l) => [...l].sort();
+  const modifie = Boolean(depart) && !memes(trie(actifs), trie(depart));
+  useSuivi(modifie);
 
   const toggle = (id) => setActifs((s) => {
     const n = new Set(s);
@@ -347,7 +542,7 @@ function ModulesActifs({ ecole, onSave }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Modules actifs</h3>
+      <TitreSection className="mb-1">Modules actifs</TitreSection>
       <p className="mb-4 text-xs text-navy-900/40">
         Active ou désactive des modules pour cet établissement. Un module désactivé disparaît
         des menus et son accès est bloqué.
@@ -363,24 +558,30 @@ function ModulesActifs({ ecole, onSave }) {
           </label>
         ))}
       </div>
-      <div className="mt-4 flex justify-end">
+      <BarreEnregistrement modifie={modifie} onAnnuler={() => setActifs(new Set(depart))}>
         <Bouton onClick={() => onSave([...actifs])}>Enregistrer</Bouton>
-      </div>
+      </BarreEnregistrement>
     </Carte>
   );
 }
 
 function Matricule({ ecole, onSave }) {
   const [f, setF] = useState({ prefixe: "", separateur: "-", longueur: 4, annee: "" });
+  const [depart, setDepart] = useState(null);
   useEffect(() => {
     if (!ecole) return;
-    setF({
+    const v = {
       prefixe: ecole.matricule_prefixe ?? "",
       separateur: ecole.matricule_separateur ?? "-",
       longueur: ecole.matricule_longueur ?? 4,
       annee: ecole.matricule_annee ? String(ecole.matricule_annee) : "",
-    });
+    };
+    setF(v); setDepart(v);
   }, [ecole]);
+  // `longueur` arrive en nombre et repart en texte une fois saisi : on compare en texte.
+  const enTexte = (o) => Object.fromEntries(Object.entries(o).map(([k, x]) => [k, String(x)]));
+  const modifie = Boolean(depart) && !memes(enTexte(f), enTexte(depart));
+  useSuivi(modifie);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const anEff = f.annee ? Number(f.annee) : new Date().getFullYear();
   const aa = String(anEff % 100).padStart(2, "0");
@@ -388,7 +589,7 @@ function Matricule({ ecole, onSave }) {
   const apercu = (f.prefixe ? f.prefixe + (f.separateur || "-") : "") + aa + (f.separateur || "-") + seq;
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Matricule des élèves</h3>
+      <TitreSection className="mb-1">Matricule des élèves</TitreSection>
       <p className="mb-4 text-xs text-navy-900/40">Format : {"{PRÉFIXE}{SÉP}{AA}{SÉP}{SÉQUENCE}"}. La séquence repart à 1 par année.</p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Champ label="Préfixe" value={f.prefixe} onChange={(e) => maj("prefixe", e.target.value.toUpperCase())} placeholder="GS" />
@@ -401,10 +602,10 @@ function Matricule({ ecole, onSave }) {
         <b>Année</b> : fixez-la (ex. 2026) pour que toute une rentrée ait le même « {aa} », quelle que soit la date de saisie.
         Laissez <b>vide</b> pour l'année civile automatique. Les matricules déjà attribués ne changent pas.
       </p>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
+      <p className="mt-4 text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
+      <BarreEnregistrement modifie={modifie} onAnnuler={() => setF(depart)}>
         <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
-      </div>
+      </BarreEnregistrement>
     </Carte>
   );
 }
@@ -436,12 +637,13 @@ const slugChamp = (s) => ((s || "").toLowerCase().normalize("NFD").replace(/[̀-
 function ChampsEleveConfig({ ecoleId, onErreur }) {
   const [liste, setListe] = useState([]);
   const [f, setF] = useState({ libelle: "", type: "texte", options: "" });
-  const [info, setInfo] = useState("");
+  // La liste s'enregistre à chaque ajout ou retrait ; seul un champ tapé mais
+  // pas encore ajouté peut se perdre.
+  const { enregistre } = useSuivi(Boolean(f.libelle.trim() || f.options.trim()));
   useEffect(() => { getChampsEleve(ecoleId).then(setListe).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
 
   async function sauver(nouvelle) {
-    setInfo("");
-    try { await setChampsEleve(ecoleId, nouvelle); setListe(nouvelle); setInfo("Enregistré ✓"); }
+    try { await setChampsEleve(ecoleId, nouvelle); setListe(nouvelle); enregistre(); }
     catch (e) { onErreur?.(e.message); }
   }
   function ajouter() {
@@ -454,11 +656,10 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Champs élève personnalisés</h3>
+      <TitreSection className="mb-1">Champs élève personnalisés</TitreSection>
       <p className="mb-4 text-xs text-navy-900/40">
         Ajoutez des informations propres à votre école (ex. groupe sanguin, personne à contacter…). Elles apparaissent sur la <b>fiche élève</b>.
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
         {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun champ personnalisé.</p>}
@@ -486,21 +687,27 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
           <Champ label="Options (séparées par des virgules)" value={f.options} onChange={(e) => setF((s) => ({ ...s, options: e.target.value }))} placeholder="A+, A-, B+, O-…" />
         )}
       </div>
-      <div className="mt-3 flex justify-end"><Bouton onClick={ajouter} disabled={!f.libelle.trim()}>+ Ajouter</Bouton></div>
+      <BarreEnregistrement modifie={Boolean(f.libelle.trim() || f.options.trim())}
+        onAnnuler={() => setF({ libelle: "", type: "texte", options: "" })}>
+        <Bouton onClick={ajouter} disabled={!f.libelle.trim()}>+ Ajouter</Bouton>
+      </BarreEnregistrement>
     </Carte>
   );
 }
 
 function NotationConfig({ ecoleId, onErreur }) {
   const [cfg, setCfg] = useState(DEFAUT_NOTATION);
-  const [info, setInfo] = useState("");
-  useEffect(() => { getNotationConfig(ecoleId).then(setCfg).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+  const [depart, setDepart] = useState(null);
+  const modifie = Boolean(depart) && !memes(cfg, depart);
+  const { enregistre } = useSuivi(modifie);
+  useEffect(() => {
+    getNotationConfig(ecoleId).then((c) => { setCfg(c); setDepart(c); }).catch((e) => onErreur?.(e.message));
+  }, [ecoleId]); // eslint-disable-line
 
   const maj = (k, v) => setCfg((s) => ({ ...s, [k]: v }));
   const majMention = (i, k, v) => setCfg((s) => ({ ...s, mentions: s.mentions.map((m, j) => (j === i ? { ...m, [k]: v } : m)) }));
 
   async function sauver() {
-    setInfo("");
     try {
       const clean = {
         ...cfg,
@@ -511,17 +718,16 @@ function NotationConfig({ ecoleId, onErreur }) {
           .sort((a, b) => b.min - a.min),
       };
       await setNotationConfig(ecoleId, clean);
-      setCfg(clean); setInfo("Enregistré ✓");
+      setCfg(clean); setDepart(clean); enregistre();
     } catch (e) { onErreur?.(e.message); }
   }
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Notation &amp; bulletins</h3>
+      <TitreSection className="mb-1">Notation et bulletins</TitreSection>
       <p className="mb-4 text-xs text-navy-900/40">
         Barème, moyenne de passage, mentions et options d'affichage. <b>Recalculez</b> les bulletins après un changement.
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Champ label="Barème (moyennes sur…)" type="number" value={cfg.bareme} onChange={(e) => maj("bareme", e.target.value)} />
@@ -551,7 +757,9 @@ function NotationConfig({ ecoleId, onErreur }) {
         ))}
       </div>
 
-      <div className="mt-4 flex justify-end"><Bouton onClick={sauver}>Enregistrer</Bouton></div>
+      <BarreEnregistrement modifie={modifie} onAnnuler={() => setCfg(depart)}>
+        <Bouton onClick={sauver}>Enregistrer</Bouton>
+      </BarreEnregistrement>
     </Carte>
   );
 }
@@ -561,7 +769,10 @@ function Signataires({ ecoleId, onErreur }) {
   const [membres, setMembres] = useState([]);
   const [f, setF] = useState({ fonction: "", nom: "", signature_url: null, profil_id: "" });
   const [up, setUp] = useState(false);
-  const [info, setInfo] = useState("");
+  // La liste s'enregistre à chaque ajout ou retrait ; seul un signataire saisi
+  // mais pas encore ajouté (signature scannée comprise) peut se perdre.
+  const brouillon = Boolean(f.fonction.trim() || f.nom.trim() || f.signature_url || f.profil_id);
+  const { enregistre } = useSuivi(brouillon);
 
   const recharger = useCallback(async () => {
     try {
@@ -574,8 +785,7 @@ function Signataires({ ecoleId, onErreur }) {
   const nomMembre = (id) => { const m = membres.find((x) => x.id === id); return m ? `${m.prenom} ${m.nom}`.trim() || m.email : ""; };
 
   async function sauver(nouvelle) {
-    setInfo("");
-    try { await setSignataires(ecoleId, nouvelle); setListe(nouvelle); setInfo("Enregistré ✓"); }
+    try { await setSignataires(ecoleId, nouvelle); setListe(nouvelle); enregistre(); }
     catch (e) { onErreur?.(e.message); }
   }
   async function uploadSig(file) {
@@ -596,11 +806,10 @@ function Signataires({ ecoleId, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Signataires</h3>
+      <TitreSection className="mb-1">Signataires</TitreSection>
       <p className="mb-4 text-xs text-navy-900/40">
         Responsables et leur signature scannée — proposés sur les documents officiels (certificats, bulletins…).
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
         {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun signataire.</p>}
@@ -645,9 +854,10 @@ function Signataires({ ecoleId, onErreur }) {
           </div>
         </div>
       </div>
-      <div className="mt-3 flex justify-end">
+      <BarreEnregistrement modifie={brouillon}
+        onAnnuler={() => setF({ fonction: "", nom: "", signature_url: null, profil_id: "" })}>
         <Bouton onClick={ajouter} disabled={!f.fonction.trim()}>+ Ajouter</Bouton>
-      </div>
+      </BarreEnregistrement>
     </Carte>
   );
 }
@@ -659,19 +869,25 @@ function PaiementEnLigne({ onErreur }) {
   const [etat, setEtat] = useState(null);
   const [f, setF] = useState({ prestataire: "cinetpay", mode: "test", commission_a_charge: "ecole", commission_taux: 0.035, api_key: "", site_id: "", secret_webhook: "" });
   const [envoi, setEnvoi] = useState(false);
+  const [depart, setDepart] = useState(null);
+  const modifie = Boolean(depart) && !memes(f, depart);
+  const { enregistre } = useSuivi(modifie);
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paiement/webhook`;
 
+  // Les clés ne sont jamais relues : l'état de départ les porte vides, et une
+  // clé saisie compte donc comme une modification à enregistrer.
   const recharger = useCallback(async () => {
     try {
       const e = await pspEtat();
       setEtat(e);
-      setF((s) => ({
-        ...s,
+      const v = {
         prestataire: e.prestataire || "cinetpay",
         mode: e.mode || "test",
         commission_a_charge: e.commission_a_charge || "ecole",
         commission_taux: e.commission_taux ?? 0.035,
-      }));
+        api_key: "", site_id: "", secret_webhook: "",
+      };
+      setF(v); setDepart(v);
     } catch (e) { onErreur?.(e.message); }
   }, [onErreur]);
   useEffect(() => { recharger(); }, [recharger]);
@@ -682,8 +898,8 @@ function PaiementEnLigne({ onErreur }) {
     try {
       await setPspConfig({ ...f, actif: activer });
       // On ne renvoie pas les clés vides pour ne pas écraser celles en base.
-      setF((s) => ({ ...s, api_key: "", site_id: "", secret_webhook: "" }));
       await recharger();
+      enregistre();
       toast.succes(activer === false ? "Paiement en ligne désactivé." : "Configuration enregistrée.");
     } catch (e) { toast.erreur(e.message); }
     finally { setEnvoi(false); }
@@ -694,8 +910,8 @@ function PaiementEnLigne({ onErreur }) {
 
   return (
     <Carte className="p-6">
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-navy-900">Paiement en ligne</h3>
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <TitreSection>Paiement en ligne</TitreSection>
         {etat?.actif
           ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Activé · {etat.mode === "live" ? "production" : "test"}</span>
           : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs text-navy-900/50">Inactif</span>}
@@ -767,11 +983,11 @@ function PaiementEnLigne({ onErreur }) {
         <code className="mt-1 block break-all rounded bg-white px-2 py-1 text-[11px] text-navy-900/70">{webhookUrl}</code>
       </div>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <BarreEnregistrement modifie={modifie} onAnnuler={() => setF(depart)}>
         {etat?.actif && <Bouton variante="fantome" onClick={() => sauver(false)} disabled={envoi}>Désactiver</Bouton>}
         <Bouton variante="fantome" onClick={() => sauver(null)} disabled={envoi}>Enregistrer</Bouton>
         <Bouton variante="or" onClick={() => sauver(true)} disabled={envoi}>Enregistrer &amp; activer</Bouton>
-      </div>
+      </BarreEnregistrement>
     </Carte>
   );
 }

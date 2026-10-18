@@ -79,7 +79,10 @@ Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficien
 - **Grille de coefficients** : choisir une portée (série OU niveau), saisir le coefficient de chaque matière (vide = non comptée).
 
 ### 2.2 Paramètres (menu **Paramètres**)
-- **Établissement** : nom, sigle, devise, **logo** et **cachet** (utilisés sur factures, bulletins, certificats), et **Apparence** — une **couleur d'accent** propre à l'école, avec aperçu en direct.
+Les réglages sont rangés en **quatre thèmes** — **Établissement**, **Scolarité**, **Finances**, **Abonnement** — et s'affichent **un à la fois** : sommaire à gauche sur ordinateur, liste puis écran du réglage sur téléphone. Chaque réglage a son adresse (ex. `…/parametres/matricule`), à envoyer à un collègue.
+> Dès qu'un champ change, une barre **« Modifications non enregistrées »** apparaît en bas avec **Annuler** et **Enregistrer** ; la confirmation **« ✓ Enregistré à 17 h 02 »** s'affiche à côté du titre. Changer de réglage sans enregistrer demande confirmation. **Paiement en ligne** et **Modules** portent un 🔒 : réservés au promoteur.
+
+- **Établissement** (réglage « Identité et apparence ») : nom, sigle, devise, **logo** et **cachet** (utilisés sur factures, bulletins, certificats), et **Apparence** — une **couleur d'accent** propre à l'école, avec aperçu en direct.
 - **Signataires** : liste des responsables habilités à signer (nom, fonction, signature), rattachés à leur compte pour la **validation des documents** (§9).
 - **Notation & bulletins** : **barème** (ex. /20), **moyenne de passage**, **mentions** personnalisées (seuils et libellés), et affichage du rang / des appréciations / de la décision. Ces réglages pilotent les bulletins (§7).
 - **Champs personnalisés de l'élève** : ajoutez vos propres champs (texte, nombre, date, liste) qui apparaissent sur la fiche élève et à l'inscription (et sont **mappables à l'import**, §3).
