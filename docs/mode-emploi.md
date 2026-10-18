@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.265 · mise à jour du 18 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.266 · mise à jour du 18 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -79,17 +79,23 @@ Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficien
 - **Grille de coefficients** : choisir une portée (série OU niveau), saisir le coefficient de chaque matière (vide = non comptée).
 
 ### 2.2 Paramètres (menu **Paramètres**)
-- **Établissement** : nom, sigle, devise, **logo** et **cachet** (utilisés sur factures, bulletins, certificats), et **Apparence** — une **couleur d'accent** propre à l'école, avec aperçu en direct.
+Les réglages sont rangés en **quatre groupes** — Établissement, Scolarité, Finances, Abonnement — et chacun s'ouvre sur **sa propre page**. Sur ordinateur, le menu des rubriques reste à gauche ; sur téléphone, touchez une rubrique dans la liste, puis **‹ Paramètres** pour revenir. Chaque responsable ne voit que les rubriques de son domaine (le comptable : champs élève et relances ; la direction : notation et signataires).
+
+Tant qu'une rubrique a des **modifications non enregistrées**, une barre **« Modifications non enregistrées · Annuler · Enregistrer »** reste collée en bas de l'écran, et changer de rubrique demande confirmation. **« Enregistré ✓ »** s'affiche à côté du bouton.
+
+- **Établissement**, en trois rubriques : **Identité et coordonnées** (nom, sigle, pays, devise, ville, adresse, téléphone, e-mail — utilisés sur factures, bulletins, certificats) ; **Ce que l'école couvre** (paliers et pédagogie, §2.4) ; **Apparence** (**logo**, **cachet** et une **couleur d'accent** propre à l'école, avec aperçu en direct).
 - **Signataires** : liste des responsables habilités à signer (nom, fonction, signature), rattachés à leur compte pour la **validation des documents** (§9).
 - **Notation & bulletins** : **barème** (ex. /20), **moyenne de passage**, **mentions** personnalisées (seuils et libellés), et affichage du rang / des appréciations / de la décision. Ces réglages pilotent les bulletins (§7).
 - **Champs personnalisés de l'élève** : ajoutez vos propres champs (texte, nombre, date, liste) qui apparaissent sur la fiche élève et à l'inscription (et sont **mappables à l'import**, §3).
 - **Matricule** : préfixe, séparateur, nombre de chiffres, et **Année** — laissez vide pour l'année civile automatique, **ou fixez-la** (ex. 2026) pour que toute une rentrée porte le même « 26 », quelle que soit la date de saisie. Aperçu ex. `CLB-26-0001`.
-- **Modules actifs** (réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus.
+- **Relances automatiques** (groupe Finances, module Recouvrement) : les paliers de rappel d'impayés (§ Recouvrement).
+- **Paiement en ligne** (groupe Finances, réservé au **promoteur**) : prestataire et clés.
+- **Modules actifs** (groupe Abonnement, réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus.
 
 ### 2.3 Paiement mobile (menu **Paiements → onglet Paiement mobile**)
 Saisir vos numéros **Wave / Orange Money / Free Money** (affichés aux parents pour régler les factures et déclarer un paiement).
 
-### 2.4 Ce que l'établissement couvre, et sa pédagogie (**Paramètres → Établissement**)
+### 2.4 Ce que l'établissement couvre, et sa pédagogie (**Paramètres → Ce que l'école couvre**)
 
 C'est ici que vous déclarez **les paliers** de votre établissement, et c'est **ce choix qui détermine les écrans visibles**.
 
@@ -1050,7 +1056,7 @@ Si vous ouvrez GesSchool pour la première fois, suivez cet ordre. Il n'est pas 
 ### Jour 1 — L'établissement (≈ 1 h, promoteur)
 
 1. **Créez votre compte** et votre école (§1).
-2. **Paramètres → Établissement** : nom, sigle, devise, **logo** et **cachet**. Ils apparaîtront sur toutes les factures, bulletins et certificats — autant les mettre maintenant.
+2. **Paramètres → Identité et coordonnées**, puis **Apparence** : nom, sigle, devise, **logo** et **cachet**. Ils apparaîtront sur toutes les factures, bulletins et certificats — autant les mettre maintenant.
 3. **Déclarez vos paliers** (§2.4) : élémentaire seul, élémentaire et collège, jusqu'à l'université… C'est ce choix qui détermine les écrans que vous verrez. Et la **pédagogie** si vous couvrez l'élémentaire.
 4. **Paramètres → Matricule** : votre format (`CLB-26-0001`). Fixez l'**année** si toute une rentrée doit porter le même millésime.
 5. **Paramètres → Signataires** : qui signe les documents officiels, avec sa fonction et sa signature. **Sans cela, aucun certificat ne pourra être validé.**
