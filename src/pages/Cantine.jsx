@@ -119,7 +119,7 @@ export default function Cantine() {
                           )}
                           <button onClick={() => setModale(a)} className="ml-3 text-xs text-navy-700 hover:text-or-500">modifier</button>
                           <button onClick={async () => { if (await confirmer("Supprimer cet abonné ?")) wrap(() => api.supprimerAbonnement(a.id), "Abonné supprimé."); }}
-                            className="ml-3 text-xs text-rose-500 hover:underline">suppr.</button>
+                            className="ml-3 text-xs text-rose-700 hover:underline">suppr.</button>
                         </td>
                       </tr>
                     ))}

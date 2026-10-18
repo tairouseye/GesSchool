@@ -3,12 +3,16 @@
 @tailwind utilities;
 
 /* Accent « or » par défaut (personnalisable par école, cf. src/lib/theme.js).
-   Valeurs RGB brutes pour supporter les classes alpha (ex. bg-or-500/10). */
+   Valeurs RGB brutes pour supporter les classes alpha (ex. bg-or-500/10).
+   ⚠️ Ce sont EXACTEMENT les valeurs de `nuancesAccent(COULEUR_DEFAUT)` :
+   600 et 700 sont des couleurs de texte foncées jusqu'à 4,5:1 sur crème
+   (l'ancien 600, « 166 132 20 », ne donnait que 3,3:1). Une épreuve
+   (test/contraste.test.mjs) refuse tout écart avec le calcul. */
 :root {
-  --or-400: 217 184 74; /* #D9B84A */
+  --or-400: 212 181 82;
   --or-500: 201 162 39; /* #C9A227 */
-  --or-600: 166 132 20; /* dérivé foncé */
-  --or-700: 133 104 16; /* dérivé plus foncé */
+  --or-600: 125 100 24; /* texte sur fond clair : 5,2:1 sur crème */
+  --or-700: 100 80 19;  /* texte appuyé : 7,1:1 sur crème */
 }
 
 /* GesSchool — base globale */

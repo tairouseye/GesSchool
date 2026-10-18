@@ -368,7 +368,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
           <div key={fr.id} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${editId === fr.id ? "border-or-500 bg-or-500/5" : "border-navy-900/10"}`}>
             <div>
               <span className="font-medium text-navy-900">{fr.libelle}</span>
-              {fr.recurrent && <span className="ml-2 text-xs text-or-500">mensuel</span>}
+              {fr.recurrent && <span className="ml-2 text-xs text-or-600">mensuel</span>}
               {fr.obligatoire ? (
                 <span className="ml-2 rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] text-navy-900/50">obligatoire</span>
               ) : (
@@ -380,7 +380,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
               <span className="font-mono text-sm">{fmt(fr.montant)} {devise}</span>
               <button onClick={() => editer(fr)} className="text-xs text-navy-700 hover:underline">modifier</button>
               <button onClick={async () => { try { await api.supprimerFrais(fr.id); if (editId === fr.id) annuler(); onChange(); } catch (e) { onErreur(e.message); } }}
-                className="text-xs text-rose-500 hover:underline">supprimer</button>
+                className="text-xs text-rose-700 hover:underline">supprimer</button>
             </div>
           </div>
         ))}
@@ -613,7 +613,7 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
               <td className="px-5 py-3">
                 <div className="flex justify-end gap-3 text-xs">
                   <button onClick={() => onValider(d.id)} className="font-medium text-emerald-700 hover:underline">valider</button>
-                  <button onClick={() => { setRejet(d); setMotif(""); }} className="text-rose-500 hover:underline">rejeter</button>
+                  <button onClick={() => { setRejet(d); setMotif(""); }} className="text-rose-700 hover:underline">rejeter</button>
                 </div>
               </td>
             </tr>
@@ -789,7 +789,7 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, frais, devise
                 className="w-14 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-center text-sm outline-none focus:border-or-500" />
               <input value={l.prix_unitaire} onChange={(e) => majLigne(i, { prix_unitaire: e.target.value.replace(/[^0-9]/g, "") })}
                 placeholder="Prix" className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-right font-mono text-sm outline-none focus:border-or-500" />
-              <button type="button" onClick={() => retirerLigne(i)} className="pb-2 text-navy-900/30 hover:text-rose-500">✕</button>
+              <button type="button" onClick={() => retirerLigne(i)} className="pb-2 text-navy-900/30 hover:text-rose-700">✕</button>
             </div>
           ))}
           <button type="button" onClick={ajouterLigne} className="text-sm text-navy-700 hover:text-or-500">+ Ajouter une ligne</button>
@@ -1024,7 +1024,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                       <span className="capitalize">{(api.MODES.find((m) => m[0] === p.mode) || [])[1] || p.mode}</span>
                       <span className="font-mono">{fmt(p.montant)} {devise}</span>
                       <button onClick={async () => { try { await api.supprimerPaiement(p.id); await recharger(); onChange(); } catch (e) { setErreur(e.message); } }}
-                        className="text-xs text-rose-500 hover:underline">annuler</button>
+                        className="text-xs text-rose-700 hover:underline">annuler</button>
                     </li>
                   ))}
                 </ul>
@@ -1146,7 +1146,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
       <div className="space-y-4">
         <p className="text-sm text-navy-900/50">
           Crée une facture par élève d'un niveau à partir des frais sélectionnés. Les frais
-          <span className="text-or-500"> mensuels</span> sont facturés pour le <b>mois choisi</b> ;
+          <span className="text-or-600"> mensuels</span> sont facturés pour le <b>mois choisi</b> ;
           les frais déjà facturés (le même mois, pour un frais mensuel) sont ignorés — pas de doublon.
         </p>
 
@@ -1177,7 +1177,7 @@ function ModaleFacturationLot({ ouvert, onFermer, ecoleId, annee, frais, niveaux
                         <input type="checkbox" checked={!!choisis[fr.id]}
                           onChange={(e) => setChoisis((s) => ({ ...s, [fr.id]: e.target.checked }))} />
                         {fr.libelle}
-                        {fr.recurrent && <span className="text-xs text-or-500">mensuel</span>}
+                        {fr.recurrent && <span className="text-xs text-or-600">mensuel</span>}
                         <span className="text-xs text-navy-900/40">({cibleFrais(fr)})</span>
                       </span>
                       <span className="font-mono text-navy-900/70">{fmt(fr.montant)} {devise}</span>

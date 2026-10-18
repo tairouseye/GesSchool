@@ -338,7 +338,7 @@ function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, a
             </span>
           )}
         </span>
-        <button onClick={onSuppr} className="text-xs text-rose-500 hover:underline">
+        <button onClick={onSuppr} className="text-xs text-rose-700 hover:underline">
           supprimer
         </button>
       </div>
@@ -353,7 +353,7 @@ function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, a
         {sousNiveaux.map((x) => (
           <span key={x.id} className="inline-flex items-center gap-1.5 rounded-full border border-navy-900/15 px-2.5 py-0.5 text-xs text-navy-900/70">
             {x.libelle}
-            <button onClick={() => onSupprSousNiveau(x.id, x.libelle)} className="text-rose-500 hover:text-rose-600" title="Retirer ce sous-niveau">×</button>
+            <button onClick={() => onSupprSousNiveau(x.id, x.libelle)} className="text-rose-700 hover:text-rose-800" title="Retirer ce sous-niveau">×</button>
           </span>
         ))}
         <form
@@ -394,7 +394,7 @@ function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, a
             </select>
             <button
               onClick={() => onSupprClasse(c.id)}
-              className="text-navy-900/30 hover:text-rose-500"
+              className="text-navy-900/30 hover:text-rose-700"
               title="Supprimer la classe"
             >
               ✕
@@ -538,7 +538,7 @@ function PanneauPeriodes({ periodes, annee, onDater }) {
                 Enregistrer
               </Bouton>
               {incoherente(p) && (
-                <span className="w-full text-xs text-rose-600">La fin précède le début.</span>
+                <span className="w-full text-xs text-rose-700">La fin précède le début.</span>
               )}
             </div>
           ))}
@@ -577,9 +577,9 @@ function PanneauMatieres({ matieres, cycles, onAjout, onSuppr }) {
             key={m.id}
             className="inline-flex items-center gap-2 rounded-lg border border-navy-900/10 bg-creme px-3 py-1.5 text-sm"
           >
-            {m.code && <span className="font-mono text-xs text-or-500">{m.code}</span>}
+            {m.code && <span className="font-mono text-xs text-or-600">{m.code}</span>}
             {m.libelle}
-            <button onClick={() => onSuppr(m.id)} className="text-navy-900/30 hover:text-rose-500">
+            <button onClick={() => onSuppr(m.id)} className="text-navy-900/30 hover:text-rose-700">
               ✕
             </button>
           </span>
@@ -652,7 +652,7 @@ function PanneauSeries({ series, onAjout, onSuppr, onSemer }) {
           <span key={s.id} className="inline-flex items-center gap-2 rounded-lg border border-navy-900/10 bg-creme px-3 py-1.5 text-sm">
             <span className="font-mono text-xs text-or-600">{s.code}</span>
             {s.libelle}
-            <button onClick={() => onSuppr(s.id)} className="text-navy-900/30 hover:text-rose-500">✕</button>
+            <button onClick={() => onSuppr(s.id)} className="text-navy-900/30 hover:text-rose-700">✕</button>
           </span>
         ))}
         {series.length === 0 && <span className="text-sm text-navy-900/40">aucune série</span>}
@@ -854,7 +854,7 @@ function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDe
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium text-navy-900">{c.libelle}</span>
                 {liste.length === 0 && (
-                  <span className="text-xs text-amber-600">aucun responsable désigné</span>
+                  <span className="text-xs text-amber-700">aucun responsable désigné</span>
                 )}
               </div>
 
@@ -866,7 +866,7 @@ function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDe
                       {`${r.profils?.prenom || ""} ${r.profils?.nom || ""}`.trim() || r.profils?.email || "—"}
                       {peutModifier && (
                         <button type="button" onClick={() => onRetirer(r.id)}
-                          className="text-rose-500 hover:text-rose-600" title="Retirer">✕</button>
+                          className="text-rose-700 hover:text-rose-800" title="Retirer">✕</button>
                       )}
                     </li>
                   ))}

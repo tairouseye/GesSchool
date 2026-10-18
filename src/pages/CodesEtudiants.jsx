@@ -133,7 +133,7 @@ export default function CodesEtudiants() {
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
-          {[{ l: "Étudiants", v: stats.total, c: "text-navy-900" }, { l: "Avec code", v: stats.avecCode, c: "text-emerald-600" }, { l: "Sans code", v: stats.sansCode, c: "text-rose-600" }, { l: "Comptes activés", v: stats.connectes, c: "text-or-600" }].map((s) => (
+          {[{ l: "Étudiants", v: stats.total, c: "text-navy-900" }, { l: "Avec code", v: stats.avecCode, c: "text-emerald-700" }, { l: "Sans code", v: stats.sansCode, c: "text-rose-700" }, { l: "Comptes activés", v: stats.connectes, c: "text-or-600" }].map((s) => (
             <Carte key={s.l} className="p-4"><p className={`font-display text-2xl font-bold ${s.c}`}>{s.v}</p><p className="text-xs text-navy-900/50">{s.l}</p></Carte>
           ))}
         </div>
@@ -186,7 +186,7 @@ export default function CodesEtudiants() {
                         <td className="px-4 py-3 font-mono text-xs text-navy-900/60">{t.matricule || "—"}</td>
                         <td className="px-4 py-3">
                           <span className="font-medium text-navy-900">{`${t.nom} ${t.prenom}`.trim()}</span>
-                          {t.connecte && <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">activé</span>}
+                          {t.connecte && <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">activé</span>}
                         </td>
                         <td className="px-4 py-3">
                           <input value={t.telephone || ""} onChange={(e) => poser(t.id, { telephone: e.target.value })}
@@ -200,7 +200,7 @@ export default function CodesEtudiants() {
                           {t.code ? (
                             t.telephone ? (
                               <a href={lienWhatsApp(t.telephone, messageEtudiant(origin, ecoleNom, t.prenom, t.code))} target="_blank" rel="noreferrer"
-                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700">💬 WhatsApp</a>
+                                className="text-xs font-medium text-emerald-700 hover:text-emerald-800">💬 WhatsApp</a>
                             ) : (
                               <button onClick={() => { navigator.clipboard?.writeText(t.code); toast.info("Code copié"); }} className="text-xs text-navy-700 hover:text-or-500">Copier</button>
                             )

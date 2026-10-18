@@ -83,7 +83,7 @@ export default function ASigner() {
               </div>
             ) : (
               <div className="mt-4 flex justify-end gap-2">
-                <Bouton variante="fantome" className="text-rose-600" onClick={() => setRejet(true)}>Rejeter</Bouton>
+                <Bouton variante="fantome" className="text-rose-700" onClick={() => setRejet(true)}>Rejeter</Bouton>
                 <Bouton onClick={() => valider(sel)}>✓ Valider &amp; signer</Bouton>
               </div>
             )}

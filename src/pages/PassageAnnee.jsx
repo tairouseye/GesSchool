@@ -74,7 +74,7 @@ export default function PassageAnnee() {
                   <span className="font-mono text-xs text-navy-900/40">{a.date_debut} → {a.date_fin}</span>
                   {(nbInsc[a.id] || 0) === 0 && annees.length > 1 && (
                     <button onClick={() => supprimer(a)} title="Supprimer cette année (vide)"
-                      className="rounded-lg px-2 py-1 text-xs text-navy-900/40 hover:bg-rose-50 hover:text-rose-600">
+                      className="rounded-lg px-2 py-1 text-xs text-navy-900/40 hover:bg-rose-50 hover:text-rose-700">
                       Supprimer
                     </button>
                   )}
@@ -278,7 +278,7 @@ function PanneauPromotion({ ecoleId, annees, courante, onErreur }) {
             <span className="ml-1 text-xs text-navy-900/40">(le dernier = sortants)</span>
           </p>
           {ordreIncoherent && (
-            <p className="mt-2 text-xs font-medium text-rose-600">
+            <p className="mt-2 text-xs font-medium text-rose-700">
               ⚠️ Des niveaux ont le même ordre : la promotion pourrait viser le mauvais niveau. Corrigez l'ordre dans « Niveaux & classes ».
             </p>
           )}
@@ -368,7 +368,7 @@ function PanneauPromotion({ ecoleId, annees, courante, onErreur }) {
                 </Bouton>
               </div>
               {classesCible.length === 0 && (
-                <p className="text-xs text-rose-600">Aucune classe dans l'année courante : ouvrez d'abord l'année en recopiant la structure.</p>
+                <p className="text-xs text-rose-700">Aucune classe dans l'année courante : ouvrez d'abord l'année en recopiant la structure.</p>
               )}
             </div>
           )}

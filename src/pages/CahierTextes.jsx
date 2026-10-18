@@ -112,7 +112,7 @@ export default function CahierTextes() {
                         {e.enseignants && <span className="text-xs text-navy-900/40">{e.enseignants.prenom} {e.enseignants.nom}</span>}
                       </div>
                       <button onClick={async () => { if (await confirmer("Supprimer cette entrée ?")) wrap(() => api.supprimerEntree(e.id), "Entrée supprimée."); }}
-                        className="shrink-0 text-xs text-rose-500 hover:underline">supprimer</button>
+                        className="shrink-0 text-xs text-rose-700 hover:underline">supprimer</button>
                     </div>
                     {e.contenu && <p className="mt-2 whitespace-pre-wrap text-sm text-navy-900/80"><b className="text-navy-900/50">Séance :</b> {e.contenu}</p>}
                     {e.devoirs && (

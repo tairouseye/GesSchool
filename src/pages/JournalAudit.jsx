@@ -150,7 +150,7 @@ export default function JournalAudit() {
                         {champs.map((c, i) => (
                           <tr key={i} className="border-t border-navy-900/5">
                             <td className="py-1 pr-3 font-mono text-navy-900/70">{c.champ}</td>
-                            <td className="py-1 pr-3 text-rose-600">{court(c.avant)}</td>
+                            <td className="py-1 pr-3 text-rose-700">{court(c.avant)}</td>
                             <td className="py-1 text-emerald-700">{court(c.apres)}</td>
                           </tr>
                         ))}

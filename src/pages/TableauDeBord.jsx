@@ -153,7 +153,7 @@ export default function TableauDeBord() {
                 {stats.topDebiteurs.map((d, i) => (
                   <li key={i} className="flex items-center justify-between py-2 text-sm">
                     <span className="truncate font-medium text-navy-900">{d.nom}</span>
-                    <span className="ml-2 shrink-0 font-mono text-rose-600">{fmtMontant(d.reste)} {devise}</span>
+                    <span className="ml-2 shrink-0 font-mono text-rose-700">{fmtMontant(d.reste)} {devise}</span>
                   </li>
                 ))}
               </ul>
@@ -178,7 +178,7 @@ export default function TableauDeBord() {
 }
 
 function Bloc({ label, valeur, ton }) {
-  const c = ton === "vert" ? "text-emerald-600" : ton === "rouge" ? "text-rose-600" : "text-navy-900";
+  const c = ton === "vert" ? "text-emerald-700" : ton === "rouge" ? "text-rose-700" : "text-navy-900";
   return (
     <div className="rounded-xl border border-navy-900/10 p-4">
       <p className="text-xs text-navy-900/50">{label}</p>

@@ -10,7 +10,7 @@ import { getAbsencesJour, enregistrerAppel } from "@/lib/viescolaire.js";
 
 const ETATS = [
   ["present", "Présent", "bg-emerald-500 text-white", "text-emerald-700"],
-  ["absence", "Absent", "bg-rose-500 text-white", "text-rose-600"],
+  ["absence", "Absent", "bg-rose-500 text-white", "text-rose-700"],
   ["retard", "Retard", "bg-or-500 text-navy-900", "text-or-600"],
 ];
 const auj = () => new Date().toISOString().slice(0, 10);
@@ -141,7 +141,7 @@ export default function Appel() {
             <Carte className="flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="flex gap-4 text-sm">
                 <span className="text-emerald-700">Présents : <b>{compteurs.present}</b></span>
-                <span className="text-rose-600">Absents : <b>{compteurs.absence}</b></span>
+                <span className="text-rose-700">Absents : <b>{compteurs.absence}</b></span>
                 <span className="text-or-600">Retards : <b>{compteurs.retard}</b></span>
               </div>
               <span className="text-xs text-navy-900/40">{eleves.length} élève(s)</span>

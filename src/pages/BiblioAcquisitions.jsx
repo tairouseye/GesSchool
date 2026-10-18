@@ -277,7 +277,7 @@ function ModaleCommande({ id, ecoleId, devise, onFermer, onChange }) {
                     )}
                     {reste === 0 && <Badge ton="success">complet</Badge>}
                     {modifiable && l.quantite_recue === 0 && (
-                      <button onClick={() => supprimerLigne(l)} className="text-xs text-rose-500 hover:underline">retirer</button>
+                      <button onClick={() => supprimerLigne(l)} className="text-xs text-rose-700 hover:underline">retirer</button>
                     )}
                   </div>
                 </div>
@@ -449,7 +449,7 @@ function Fournisseurs({ ecoleId }) {
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <button onClick={() => setEdite(f)} className="text-navy-900/50 hover:text-navy-900">modifier</button>
-                <button onClick={() => supprimer(f)} className="text-rose-500 hover:underline">suppr.</button>
+                <button onClick={() => supprimer(f)} className="text-rose-700 hover:underline">suppr.</button>
               </div>
             </Carte>
           ))}

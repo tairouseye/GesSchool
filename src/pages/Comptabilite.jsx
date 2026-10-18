@@ -325,7 +325,7 @@ function Synthese({ devise, tresorerie, scolarite, soldeCaisse, soldeBanque, sol
 }
 
 function KpiCarte({ label, valeur, suffixe, ton, note }) {
-  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
+  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-700", or: "text-or-600" };
   return (
     <Carte className="p-5">
       <p className="text-sm text-navy-900/50">{label}</p>
@@ -351,13 +351,13 @@ function Tresorerie({ soldes, devise, onSuppr }) {
               <p className="font-display text-lg font-semibold text-navy-900">{c.libelle}</p>
               <p className="text-xs text-navy-900/40">{typeLabel(c.type)}{c.numero ? ` · ${c.numero}` : ""}</p>
             </div>
-            <button onClick={() => onSuppr(c.id)} className="text-xs text-rose-500 hover:underline">supprimer</button>
+            <button onClick={() => onSuppr(c.id)} className="text-xs text-rose-700 hover:underline">supprimer</button>
           </div>
           <p className="mt-4 font-display text-2xl font-bold text-navy-900">{fmt(c.solde)} <span className="text-sm font-normal text-navy-900/40">{devise}</span></p>
           <div className="mt-3 flex justify-between border-t border-navy-900/10 pt-2 text-xs text-navy-900/50">
             <span>Initial {fmt(c.solde_initial)}</span>
             <span className="text-emerald-700">+{fmt(c.entrees)}</span>
-            <span className="text-rose-600">−{fmt(c.sorties)}</span>
+            <span className="text-rose-700">−{fmt(c.sorties)}</span>
           </div>
         </Carte>
       ))}
@@ -396,7 +396,7 @@ function Mouvements({ type, items, devise, onSuppr, onRecu }) {
               <button onClick={async () => { const u = await urlSignee("justificatifs", it.justificatif_url); if (u) window.open(u, "_blank", "noreferrer"); }}
                 className="text-xs text-navy-700 hover:text-or-500" title="Voir le justificatif">📎 pièce</button>
             )}
-            <button onClick={() => onSuppr(it.id)} className="text-xs text-danger-500 hover:underline">suppr.</button>
+            <button onClick={() => onSuppr(it.id)} className="text-xs text-danger-600 hover:underline">suppr.</button>
           </div>
         ) },
       ]}
@@ -566,7 +566,7 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, cat
             className="block w-full text-sm text-navy-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm file:text-navy-900 hover:file:bg-navy-900/10"
           />
           {fichier && <span className="mt-1 block text-xs text-navy-900/50">{fichier.name}</span>}
-          {erreurFichier && <span className="mt-1 block text-xs text-rose-500">{erreurFichier}</span>}
+          {erreurFichier && <span className="mt-1 block text-xs text-rose-700">{erreurFichier}</span>}
         </label>
 
         <div className="flex justify-end gap-2">
@@ -611,7 +611,7 @@ function ModaleCategories({ ouvert, onFermer, ecoleId, cats, onChange }) {
                 className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5"
                 title={c.actif === false ? "Réactiver" : "Désactiver"}>{c.actif === false ? "activer" : "masquer"}</button>
               <button type="button" onClick={async () => { if (await confirmer(`Supprimer la catégorie « ${c.libelle} » ? Les opérations existantes gardent leur libellé.`)) run(() => api.supprimerCategorie(c.id)); }}
-                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-500 hover:bg-danger-500/5">suppr.</button>
+                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-600 hover:bg-danger-500/5">suppr.</button>
             </li>
           ))}
           {liste.length === 0 && <li className="text-xs text-navy-900/40">Aucune catégorie.</li>}
@@ -732,7 +732,7 @@ function Journal({ pieces, devise, onSuppr }) {
                   <span className="font-mono text-sm font-semibold text-navy-900">{p.numero}</span>
                   <span className="rounded bg-navy-900/5 px-1.5 py-0.5 text-xs text-navy-900/60">{p.journal?.code}</span>
                   {p.source_type !== "manuel" && <span className="rounded bg-or-500/10 px-1.5 py-0.5 text-xs text-or-700">auto · {p.source_type}</span>}
-                  {p.statut === "annulee" && <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-xs text-red-600">annulée</span>}
+                  {p.statut === "annulee" && <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-xs text-red-700">annulée</span>}
                 </div>
                 <div className="mt-0.5 text-sm text-navy-900">{p.libelle}</div>
                 <div className="text-xs text-navy-900/50">{p.date_piece}{p.reference ? ` · réf. ${p.reference}` : ""}</div>
@@ -740,7 +740,7 @@ function Journal({ pieces, devise, onSuppr }) {
               <div className="text-right">
                 <div className="font-semibold text-navy-900">{fmt(totalD)} {devise}</div>
                 {p.source_type === "manuel" && (
-                  <button onClick={() => onSuppr(p.id)} className="mt-1 text-xs text-red-600 hover:underline">Supprimer</button>
+                  <button onClick={() => onSuppr(p.id)} className="mt-1 text-xs text-red-700 hover:underline">Supprimer</button>
                 )}
               </div>
             </div>
@@ -833,7 +833,7 @@ function ModaleSaisiePiece({ ouvert, onFermer, journaux, plan, devise, onEnregis
               <div className="col-span-2 flex items-center gap-1">
                 <input value={l.credit} onChange={(e) => { const v = num(e.target.value); majLigne(i, "credit", v); if (v) majLigne(i, "debit", ""); }} inputMode="numeric" className={`flex-1 text-right ${selCls}`} />
                 {lignes.length > 2 && (
-                  <button type="button" onClick={() => setLignes((ls) => ls.filter((_, k) => k !== i))} className="text-navy-900/30 hover:text-red-600" title="Retirer">✕</button>
+                  <button type="button" onClick={() => setLignes((ls) => ls.filter((_, k) => k !== i))} className="text-navy-900/30 hover:text-red-700" title="Retirer">✕</button>
                 )}
               </div>
             </div>

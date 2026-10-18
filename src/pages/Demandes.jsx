@@ -86,7 +86,7 @@ function LigneDemande({ d, onTraite }) {
         </label>
         <Bouton variante="fantome" onClick={() => onTraite("en_cours", reponse)}>En cours</Bouton>
         <Bouton variante="or" onClick={() => onTraite("pret", reponse)}>Marquer prêt</Bouton>
-        <button onClick={() => onTraite("rejete", reponse)} className="px-2 py-2 text-xs text-rose-500 hover:underline">Rejeter</button>
+        <button onClick={() => onTraite("rejete", reponse)} className="px-2 py-2 text-xs text-rose-700 hover:underline">Rejeter</button>
       </div>
     </Carte>
   );

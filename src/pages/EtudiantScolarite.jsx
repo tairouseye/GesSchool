@@ -84,7 +84,7 @@ export default function EtudiantScolarite() {
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                   <span className="tabular-nums text-navy-900/70">
                     {fmt(f.montant_paye)} / {fmt(f.montant_total)} {devise}
-                    {r > 0 && <b className="ml-2 text-rose-600">reste {fmt(r)}</b>}
+                    {r > 0 && <b className="ml-2 text-rose-700">reste {fmt(r)}</b>}
                   </span>
                   {r > 0 && <Bouton onClick={() => setPayer(f)}>Déclarer un paiement</Bouton>}
                 </div>
@@ -198,7 +198,7 @@ function ModalePaiement({ facture, devise, infos, eleveId, onFermer, onFait }) {
 
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
-            Preuve du paiement <span className="text-rose-600">(obligatoire)</span>
+            Preuve du paiement <span className="text-rose-700">(obligatoire)</span>
           </span>
           <input type="file" accept="image/*,application/pdf" required
             onChange={(e) => setFichier(e.target.files?.[0] || null)}

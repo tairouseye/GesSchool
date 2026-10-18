@@ -224,12 +224,12 @@ export default function Certificats() {
                     <td className="px-5 py-3 text-navy-900/60">{d.signataire_fonction}{d.signataire_nom ? ` — ${d.signataire_nom}` : ""}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUTS[d.statut]?.cls}`}>{STATUTS[d.statut]?.label}</span>
-                      {d.statut === "rejete" && d.motif_rejet && <div className="mt-1 text-xs text-rose-500">{d.motif_rejet}</div>}
+                      {d.statut === "rejete" && d.motif_rejet && <div className="mt-1 text-xs text-rose-700">{d.motif_rejet}</div>}
                     </td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
                       <button onClick={() => setApercu(d)} className="text-xs text-navy-700 hover:text-or-500">{d.statut === "valide" ? "imprimer" : "aperçu"}</button>
                       <button onClick={async () => { if (await confirmer("Supprimer ce document ?")) { try { await api.supprimerDocument(d.id); toast.succes("Document supprimé."); await recharger(); } catch (e) { toast.erreur(e.message); } } }}
-                        className="ml-3 text-xs text-rose-500 hover:underline">suppr.</button>
+                        className="ml-3 text-xs text-rose-700 hover:underline">suppr.</button>
                     </td>
                   </tr>
                 ))}

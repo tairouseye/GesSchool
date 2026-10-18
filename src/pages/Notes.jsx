@@ -191,7 +191,7 @@ export default function Notes() {
                             archiver
                           </button>
                         )}
-                        <button onClick={() => retirer(ev)} className="text-[11px] text-rose-500 hover:underline">
+                        <button onClick={() => retirer(ev)} className="text-[11px] text-rose-700 hover:underline">
                           supprimer
                         </button>
                       </div>
@@ -316,7 +316,7 @@ function GrilleNotes({ ecoleId, classeId, anneeId, evaluation, onErreur }) {
           {eleves.length} élève(s) · barème /{evaluation.bareme}
         </p>
         <div className="flex items-center gap-3">
-          {enregistre && <span className="text-xs text-emerald-600">✓ Enregistré</span>}
+          {enregistre && <span className="text-xs text-emerald-700">✓ Enregistré</span>}
           <Bouton onClick={enregistrer} disabled={enCours}>{enCours ? "…" : "Enregistrer"}</Bouton>
         </div>
       </div>

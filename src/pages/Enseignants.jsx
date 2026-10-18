@@ -100,7 +100,7 @@ export default function Enseignants() {
                 { key: "actions", label: "", align: "right", render: (e) => (
                   <>
                     <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                    <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-danger-500 hover:underline">supprimer</button>
+                    <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-danger-600 hover:underline">supprimer</button>
                   </>
                 ) },
               ]}
@@ -277,7 +277,7 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
                           if (!(await confirmer(`Retirer ${qui}${quoi} de la classe ${c.libelle} ? Il ne pourra plus y saisir de notes.`))) return;
                           try { await api.supprimerAffectation(a.id); onChange(); } catch (e) { onErreur(e.message); }
                         }}
-                          className="text-xs text-rose-500 hover:underline">retirer</button>
+                          className="text-xs text-rose-700 hover:underline">retirer</button>
                       </td>
                     </tr>
                   ))}

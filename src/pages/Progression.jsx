@@ -114,7 +114,7 @@ export default function Progression() {
                           ))}
                         </div>
                         <button onClick={async () => { if (await confirmer("Supprimer cette leçon ?")) wrap(() => api.supprimerEtape(e.id), "Leçon supprimée."); }}
-                          className="text-xs text-rose-500 hover:underline">✕</button>
+                          className="text-xs text-rose-700 hover:underline">✕</button>
                       </div>
                     </div>
                   </Carte>

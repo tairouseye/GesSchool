@@ -203,8 +203,8 @@ export default function CodesParents() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 print:hidden">
           {[
             { l: "Tuteurs", v: stats.total, c: "text-navy-900" },
-            { l: "Avec code", v: stats.avecCode, c: "text-emerald-600" },
-            { l: "Sans code", v: stats.sansCode, c: "text-rose-600" },
+            { l: "Avec code", v: stats.avecCode, c: "text-emerald-700" },
+            { l: "Sans code", v: stats.sansCode, c: "text-rose-700" },
             { l: "Envoyables WhatsApp", v: stats.envoyables, c: "text-navy-900" },
             { l: "Comptes activés", v: stats.connectes, c: "text-or-600" },
           ].map((s) => (
@@ -235,7 +235,7 @@ export default function CodesParents() {
             <button
               onClick={() => genererMasse(true)}
               disabled={!!progression}
-              className="text-xs text-navy-900/40 hover:text-rose-500 sm:ml-auto"
+              className="text-xs text-navy-900/40 hover:text-rose-700 sm:ml-auto"
             >
               Régénérer tous les codes
             </button>
@@ -284,12 +284,12 @@ export default function CodesParents() {
                         <td className="px-4 py-3">
                           <span className="font-medium text-navy-900">{`${t.prenom} ${t.nom}`.trim() || "—"}</span>
                           {t.connecte && (
-                            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                               compte activé
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-navy-900/70">{t.telephone || <span className="text-rose-400">absent</span>}</td>
+                        <td className="px-4 py-3 text-navy-900/70">{t.telephone || <span className="text-rose-700">absent</span>}</td>
                         <td className="px-4 py-3">
                           {t.code ? (
                             <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
@@ -306,7 +306,7 @@ export default function CodesParents() {
                                 href={lienWhatsApp(t.telephone, messageParent(origin, ecoleNom, t.enfants, t.code))}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                                className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
                               >
                                 💬 WhatsApp
                               </a>

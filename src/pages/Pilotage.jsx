@@ -230,7 +230,7 @@ function MiseEnRoute({ ecoleId, ecole }) {
       <ul className="mt-4 grid gap-2 sm:grid-cols-2">
         {etapes.map((e, i) => (
           <li key={i} className={`flex items-center gap-3 rounded-xl border p-3 ${e.ok ? "border-navy-900/10" : "border-or-500/40 bg-or-500/5"}`}>
-            <span className={e.ok ? "text-emerald-600" : "text-or-600"} aria-hidden>{e.ok ? "✓" : "⚠️"}</span>
+            <span className={e.ok ? "text-emerald-700" : "text-or-600"} aria-hidden>{e.ok ? "✓" : "⚠️"}</span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-navy-900">{e.label}</p>
               <p className="text-xs text-navy-900/45">{e.detail}</p>
@@ -244,7 +244,7 @@ function MiseEnRoute({ ecoleId, ecole }) {
 }
 
 function Kpi({ label, valeur, suffixe, ton, note }) {
-  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
+  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-700", or: "text-or-600" };
   return (
     <Carte className="p-5">
       <p className="text-sm text-navy-900/50">{label}</p>
@@ -261,7 +261,7 @@ function Kpi({ label, valeur, suffixe, ton, note }) {
 // « 12 000 » sans dire de quoi, ou pire la somme d'USD et de francs CFA,
 // n'informe pas : elle trompe.
 function KpiMonnaie({ label, monnaies, champ, ton, selonSigne, note }) {
-  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-600", or: "text-or-600" };
+  const tons = { navy: "text-navy-900", vert: "text-emerald-700", rouge: "text-rose-700", or: "text-or-600" };
   const couleur = (v) => (selonSigne ? (v >= 0 ? tons.or : tons.rouge) : tons[ton] || tons.navy);
   return (
     <Carte className="p-5">
@@ -284,7 +284,7 @@ function KpiMonnaie({ label, monnaies, champ, ton, selonSigne, note }) {
 }
 
 function Ligne({ l, v, ton }) {
-  const tons = { vert: "text-emerald-700", rouge: "text-rose-600" };
+  const tons = { vert: "text-emerald-700", rouge: "text-rose-700" };
   return (
     <div className="flex items-center justify-between">
       <dt className="text-navy-900/50">{l}</dt>

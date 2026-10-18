@@ -361,7 +361,7 @@ export default function Documentation() {
                         retirer du rayon
                       </button>
                     )}
-                    <button onClick={() => retirer(x)} className="text-xs text-rose-500 hover:underline">
+                    <button onClick={() => retirer(x)} className="text-xs text-rose-700 hover:underline">
                       supprimer
                     </button>
                   </div>
@@ -465,7 +465,7 @@ export default function Documentation() {
                         ⚖️ verser au rayon
                       </button>
                     )}
-                    <button onClick={() => retirer(x)} className="text-xs text-rose-500 hover:underline">
+                    <button onClick={() => retirer(x)} className="text-xs text-rose-700 hover:underline">
                       supprimer
                     </button>
                   </div>

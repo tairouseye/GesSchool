@@ -23,7 +23,7 @@ import { etudiantsSeance, getAbsencesSeance, enregistrerAppelSeance } from "@/li
 
 const ETATS = [
   ["present", "Présent", "bg-emerald-500 text-white", "text-emerald-700"],
-  ["absence", "Absent", "bg-rose-500 text-white", "text-rose-600"],
+  ["absence", "Absent", "bg-rose-500 text-white", "text-rose-700"],
   ["retard", "Retard", "bg-or-500 text-navy-900", "text-or-600"],
 ];
 const JOURS = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -185,7 +185,7 @@ export default function AppelSup() {
                       {/* ⚠️ Une séance sans UE convoque TOUTE la filière : on
                           le dit, car le compte d'assiduité en dépend. */}
                       {!seance.ue_id && (
-                        <p className="mt-1 text-xs text-amber-600">
+                        <p className="mt-1 text-xs text-amber-700">
                           Cette séance n&apos;est rattachée à aucune UE : toute la filière est convoquée.
                         </p>
                       )}

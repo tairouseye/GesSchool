@@ -442,7 +442,7 @@ function ModaleBulletin({ resultat, notation, ecole, classe, periode, annee, eco
             </select>
           </label>
         </div>
-        {msg && <p className="text-sm text-emerald-600">{msg}</p>}
+        {msg && <p className="text-sm text-emerald-700">{msg}</p>}
         <div className="flex justify-end gap-2">
           <Bouton variante="or" onClick={publier} disabled={saving}>{saving ? "Enregistrement…" : "💾 Enregistrer"}</Bouton>
         </div>
@@ -684,17 +684,17 @@ function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, rol
                     <span className="font-mono font-semibold tabular-nums">{e.calcule ?? "—"}</span>
                   </span>
                 ))}
-                {d.consulte && <span className="text-xs text-rose-700/60">· déjà lu</span>}
+                {d.consulte && <span className="text-xs text-rose-700/90">· déjà lu</span>}
               </li>
             ))}
             {perimes.detail.length > 8 && (
-              <li className="text-xs text-rose-700/60">… et {perimes.detail.length - 8} autre(s)</li>
+              <li className="text-xs text-rose-700/90">… et {perimes.detail.length - 8} autre(s)</li>
             )}
           </ul>
           {/*  Dire le geste exact, et ce qu'il produit : réenregistrer ne
                remet PAS en brouillon (l'upsert ne touche pas au statut), donc
                la correction part aussitôt aux familles. */}
-          <p className="mt-2.5 text-xs text-rose-700/80">
+          <p className="mt-2.5 text-xs text-rose-700/90">
             Pour corriger : <b>Calculer les bulletins</b>, puis <b>Enregistrer les bulletins</b>.
             Ceux qui sont publiés le restent — la correction parvient aussitôt aux familles.
           </p>
@@ -712,7 +712,7 @@ function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, rol
         <ul className="mt-2.5 space-y-1.5">
           {sign.detail.map((d) => (
             <li key={d.qualite} className="flex flex-wrap items-center gap-2 text-sm">
-              <span className={d.signature ? "text-emerald-600" : "text-navy-900/30"}>
+              <span className={d.signature ? "text-emerald-700" : "text-navy-900/30"}>
                 {d.signature ? "✓" : "○"}
               </span>
               <span className="text-navy-900/60">{d.label}</span>
@@ -737,7 +737,7 @@ function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, rol
             onClick={async () => {
               if (await confirmer("Retirer votre signature de ce procès-verbal ?")) onRetirerSignature();
             }}
-            className="mt-2 text-xs text-rose-500 hover:underline">
+            className="mt-2 text-xs text-rose-700 hover:underline">
             retirer ma signature
           </button>
         )}
@@ -770,7 +770,7 @@ function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, rol
             </Bouton>
           ))}
           {actes.some((a) => a.cle === "publier" && a.bloque) && (
-            <span className="text-xs text-amber-600">PV non signé</span>
+            <span className="text-xs text-amber-700">PV non signé</span>
           )}
         </div>
       )}

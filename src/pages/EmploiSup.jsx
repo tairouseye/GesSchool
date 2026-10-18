@@ -172,7 +172,7 @@ export default function EmploiSup() {
                             <button type="button" onClick={() => setEdite(s)}
                               className="text-navy-900/50 hover:text-navy-900">modifier</button>
                             <button type="button" onClick={() => supprimer(s)}
-                              className="text-rose-500 hover:underline">supprimer</button>
+                              className="text-rose-700 hover:underline">supprimer</button>
                           </>
                         )}
                       </div>

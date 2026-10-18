@@ -130,7 +130,7 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
                           </div>
                           <IconeBouton aria-label="Supprimer le créneau" title="Supprimer"
                             onClick={async () => { if (await confirmer("Supprimer ce créneau ?")) wrap(() => api.supprimerCreneau(c.id)); }}
-                            className="hover:text-rose-500">✕</IconeBouton>
+                            className="hover:text-rose-700">✕</IconeBouton>
                         </div>
                       </li>
                     ))}
@@ -372,7 +372,7 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
         <Carte className="p-6">
           <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Disponibilités</h3>
           <p className="mb-4 text-xs text-navy-900/50">
-            Cliquez un créneau pour le marquer <b className="text-rose-600">indisponible</b> (ex. le prof n'est pas là ce jour-là).
+            Cliquez un créneau pour le marquer <b className="text-rose-700">indisponible</b> (ex. le prof n'est pas là ce jour-là).
             La génération automatique n'y placera aucun cours.
           </p>
           {bandes.length === 0 ? (
@@ -397,7 +397,7 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
                         return (
                           <td key={j} className="px-1 py-1">
                             <button onClick={() => toggleIndispo(j, hd)}
-                              className={`h-7 w-14 rounded text-[10px] font-medium transition ${off ? "bg-rose-100 text-rose-600 hover:bg-rose-200" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"}`}>
+                              className={`h-7 w-14 rounded text-[10px] font-medium transition ${off ? "bg-rose-100 text-rose-700 hover:bg-rose-200" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>
                               {off ? "Indispo" : "OK"}
                             </button>
                           </td>
@@ -514,7 +514,7 @@ function PanneauCharge({ ecoleId, enseignants, grille, classes, volumes }) {
               {stats.map(({ e, total, parJour, matin, aprem, trous }) => (
                 <tr key={e.id} className="border-t border-navy-900/5">
                   <td className="px-5 py-2 font-medium text-navy-900">{e.prenom} {e.nom}</td>
-                  <td className={`px-5 py-2 text-center font-mono font-semibold ${total > 25 ? "text-rose-600" : total === 0 ? "text-navy-900/30" : "text-navy-900"}`}>{total}</td>
+                  <td className={`px-5 py-2 text-center font-mono font-semibold ${total > 25 ? "text-rose-700" : total === 0 ? "text-navy-900/30" : "text-navy-900"}`}>{total}</td>
                   <td className="px-5 py-2 text-center font-mono text-xs text-navy-900/60">{matin} / {aprem}</td>
                   <td className={`px-5 py-2 text-center font-mono ${trous > 0 ? "text-or-600" : "text-navy-900/30"}`}>{trous}</td>
                   {api.JOURS.map(([j]) => (
@@ -565,7 +565,7 @@ function PanneauCharge({ ecoleId, enseignants, grille, classes, volumes }) {
 }
 
 function Mini({ label, valeur, ton }) {
-  const tons = { or: "text-or-600", vert: "text-emerald-600" };
+  const tons = { or: "text-or-600", vert: "text-emerald-700" };
   return (
     <Carte className="p-4">
       <p className="text-xs text-navy-900/50">{label}</p>
@@ -577,7 +577,7 @@ function Mini({ label, valeur, ton }) {
 // Ligne de checklist (préparation de la génération).
 function EtapePrep({ ok, label, detail, optionnel }) {
   const icone = ok ? "✓" : optionnel ? "○" : "⚠️";
-  const couleur = ok ? "text-emerald-600" : optionnel ? "text-navy-900/30" : "text-or-600";
+  const couleur = ok ? "text-emerald-700" : optionnel ? "text-navy-900/30" : "text-or-600";
   return (
     <li className="flex flex-wrap items-center gap-x-2">
       <span className={`font-bold ${couleur}`} aria-hidden="true">{icone}</span>
@@ -649,7 +649,7 @@ function PanneauGrille({ ecoleId, grille, onChange, onErreur }) {
             <label className="ml-2 flex items-center gap-1.5 text-sm text-navy-900/60">
               <input type="checkbox" checked={l.pause} onChange={(e) => maj(i, "pause", e.target.checked)} /> pause
             </label>
-            <button onClick={() => retirer(i)} className="ml-auto text-navy-900/30 hover:text-rose-500">✕</button>
+            <button onClick={() => retirer(i)} className="ml-auto text-navy-900/30 hover:text-rose-700">✕</button>
           </div>
         ))}
       </div>
@@ -772,7 +772,7 @@ function PanneauSalles({ ecoleId, salles, onChange, onErreur }) {
         {salles.map((s) => (
           <li key={s.id} className="flex items-center justify-between py-2 text-sm">
             <span className="font-medium text-navy-900">{s.nom}{s.capacite ? <span className="ml-2 text-xs text-navy-900/40">{s.capacite} places</span> : ""}</span>
-            <button onClick={() => supprimer(s)} className="text-navy-900/30 hover:text-rose-500">✕</button>
+            <button onClick={() => supprimer(s)} className="text-navy-900/30 hover:text-rose-700">✕</button>
           </li>
         ))}
       </ul>
@@ -911,7 +911,7 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
           <Carte className={`p-6 ${resultat.nonPlaces.length ? "border-l-4 border-l-rose-400" : "border-l-4 border-l-emerald-400"}`}>
             <h3 className="font-display text-lg font-semibold text-navy-900">
               {resultat.creneaux.length} séance(s) placée(s)
-              {resultat.nonPlaces.length > 0 && <span className="ml-2 text-rose-600">· {resultat.nonPlaces.length} non placée(s)</span>}
+              {resultat.nonPlaces.length > 0 && <span className="ml-2 text-rose-700">· {resultat.nonPlaces.length} non placée(s)</span>}
             </h3>
             {resultat.nonPlaces.length > 0 && (
               <div className="mt-3 space-y-1 text-sm">
@@ -920,7 +920,7 @@ function PanneauGenerer({ ecoleId, annee, classes, niveaux, matieres, enseignant
                   {resultat.nonPlaces.map((np, i) => (
                     <li key={i}>
                       <span className="font-medium">{np.classe} — {np.matiere}</span>
-                      <span className="text-rose-700/80"> : {np.raison}</span>
+                      <span className="text-rose-700/90"> : {np.raison}</span>
                     </li>
                   ))}
                 </ul>

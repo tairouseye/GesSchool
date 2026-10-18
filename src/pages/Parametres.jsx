@@ -3,7 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
-import { appliquerAccent, COULEUR_DEFAUT } from "@/lib/theme.js";
+import { appliquerAccent, accentPeuVisible, COULEUR_DEFAUT } from "@/lib/theme.js";
 import { PAYS, deviseDuPays } from "@/lib/pays.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet, peutVoirSection } from "@/lib/permissions.js";
@@ -131,7 +131,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
               </label>
               <button onClick={() => setEdit(r)} className="text-xs font-medium text-navy-700 hover:text-or-500">éditer</button>
               <button onClick={async () => { if (await confirmer("Supprimer ce palier ?")) wrap(() => relancesApi.supprimerRegle(r.id), "Palier supprimé."); }}
-                className="text-xs font-medium text-rose-600 hover:text-rose-700">suppr.</button>
+                className="text-xs font-medium text-rose-700 hover:text-rose-800">suppr.</button>
             </div>
           </div>
         ))}
@@ -305,12 +305,23 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
           <button type="button" className="rounded-lg bg-or-500 px-4 py-1.5 text-sm font-semibold text-white">Bouton</button>
           <span className="text-sm font-semibold text-or-600">Lien actif</span>
           <span className="rounded-full bg-or-500/10 px-3 py-1 text-xs font-medium text-or-600">Badge</span>
+          <span className="rounded-lg bg-navy-900 px-3 py-1 text-sm font-semibold text-or-500">Sur l'en-tête</span>
           <button type="button" onClick={() => { maj("couleur_secondaire", COULEUR_DEFAUT); appliquerAccent(COULEUR_DEFAUT); }}
             className="ml-auto text-xs text-navy-900/50 underline">Rétablir l'accent d'origine</button>
         </div>
         <p className="mt-2 text-xs text-navy-900/50">
           L'accent colore les boutons, liens et éléments actifs de toute l'application. Le navy reste fixe pour la lisibilité.
+          Sur fond clair, ses textes sont foncés automatiquement pour rester lisibles.
         </p>
+        {/* Les textes sur fond clair sont garantis par le calcul (theme.js) ;
+            l'accent sur le navy des en-têtes, lui, est la couleur choisie telle
+            quelle — une couleur foncée y devient illisible. On le dit. */}
+        {accentPeuVisible(f.couleur_secondaire) && (
+          <p className="mt-2 text-xs font-medium text-amber-800">
+            ⚠️ Cette couleur est trop foncée pour ressortir sur le bleu marine des en-têtes (logo, menus actifs).
+            Choisissez une teinte plus claire ou plus vive.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 flex justify-end">
@@ -412,7 +423,7 @@ function AssetUpload({ label, valeur, occupe, onFichier, onRetirer }) {
             <input type="file" accept="image/*" className="hidden" disabled={occupe}
               onChange={(e) => e.target.files?.[0] && onFichier(e.target.files[0])} />
           </label>
-          {valeur && <button onClick={onRetirer} className="ml-3 text-rose-500 hover:underline">retirer</button>}
+          {valeur && <button onClick={onRetirer} className="ml-3 text-rose-700 hover:underline">retirer</button>}
         </div>
       </div>
     </div>
@@ -447,7 +458,7 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
       <p className="mb-4 text-xs text-navy-900/40">
         Ajoutez des informations propres à votre école (ex. groupe sanguin, personne à contacter…). Elles apparaissent sur la <b>fiche élève</b>.
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
         {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun champ personnalisé.</p>}
@@ -457,7 +468,7 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
               <b className="text-navy-900">{c.libelle}</b>
               <span className="ml-2 text-xs text-navy-900/40">· {TYPES_CHAMP.find((t) => t[0] === c.type)?.[1]}{c.type === "liste" && c.options?.length ? ` (${c.options.join(", ")})` : ""}</span>
             </span>
-            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-500 hover:underline">retirer</button>
+            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-700 hover:underline">retirer</button>
           </div>
         ))}
       </div>
@@ -510,7 +521,7 @@ function NotationConfig({ ecoleId, onErreur }) {
       <p className="mb-4 text-xs text-navy-900/40">
         Barème, moyenne de passage, mentions et options d'affichage. <b>Recalculez</b> les bulletins après un changement.
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Champ label="Barème (moyennes sur…)" type="number" value={cfg.bareme} onChange={(e) => maj("bareme", e.target.value)} />
@@ -525,7 +536,7 @@ function NotationConfig({ ecoleId, onErreur }) {
               className="w-20 rounded-xl border border-navy-900/15 px-3 py-2 text-sm outline-none focus:border-or-500" />
             <input value={m.libelle} onChange={(e) => majMention(i, "libelle", e.target.value)} placeholder="Mention (ex. Très Bien)"
               className="flex-1 rounded-xl border border-navy-900/15 px-3 py-2 text-sm outline-none focus:border-or-500" />
-            <button onClick={() => setCfg((s) => ({ ...s, mentions: s.mentions.filter((_, j) => j !== i) }))} className="text-xs text-rose-500 hover:underline">retirer</button>
+            <button onClick={() => setCfg((s) => ({ ...s, mentions: s.mentions.filter((_, j) => j !== i) }))} className="text-xs text-rose-700 hover:underline">retirer</button>
           </div>
         ))}
         <button onClick={() => setCfg((s) => ({ ...s, mentions: [...(s.mentions || []), { min: 0, libelle: "" }] }))}
@@ -589,7 +600,7 @@ function Signataires({ ecoleId, onErreur }) {
       <p className="mb-4 text-xs text-navy-900/40">
         Responsables et leur signature scannée — proposés sur les documents officiels (certificats, bulletins…).
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-600">{info}</p>}
+      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
         {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun signataire.</p>}
@@ -606,7 +617,7 @@ function Signataires({ ecoleId, onErreur }) {
                   : <span className="ml-2 rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] text-navy-900/40">sans compte (ne peut pas valider)</span>}
               </span>
             </div>
-            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-500 hover:underline">retirer</button>
+            <button onClick={() => sauver(liste.filter((_, j) => j !== i))} className="text-xs text-rose-700 hover:underline">retirer</button>
           </div>
         ))}
       </div>
@@ -715,7 +726,7 @@ function PaiementEnLigne({ onErreur }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
             {estPD ? "Private key (PayDunya)" : "API key (CinetPay)"}
-            {etat?.cles_saisies && <span className="ml-1 text-xs text-emerald-600">✓ enregistrée</span>}
+            {etat?.cles_saisies && <span className="ml-1 text-xs text-emerald-700">✓ enregistrée</span>}
           </span>
           <input type="password" value={f.api_key} onChange={(e) => maj("api_key", e.target.value)}
             placeholder={etat?.cles_saisies ? "•••••• (laisser vide pour garder)" : ""} className={champ} />
@@ -730,7 +741,7 @@ function PaiementEnLigne({ onErreur }) {
       <label className="mt-3 block">
         <span className="mb-1.5 block text-sm font-medium text-navy-900/70">
           {estPD ? "Token PayDunya (ou master|private|token)" : "Secret (clé de vérification)"}
-          {etat?.secret_saisi && <span className="ml-1 text-xs text-emerald-600">✓ enregistré</span>}
+          {etat?.secret_saisi && <span className="ml-1 text-xs text-emerald-700">✓ enregistré</span>}
         </span>
         <input type="password" value={f.secret_webhook} onChange={(e) => maj("secret_webhook", e.target.value)}
           placeholder={etat?.secret_saisi ? "•••••• (laisser vide pour garder)" : ""} className={champ} />
@@ -838,7 +849,7 @@ function ChoixPaliers({ paliers, pedagogie, onPaliers, onPedagogie }) {
       {/* ⚠️ On SIGNALE un trou dans l'échelle, sans l'interdire : une école
           peut fermer son collège le temps d'un chantier. */}
       {manquant && (
-        <p className="mt-2 text-xs text-amber-600">
+        <p className="mt-2 text-xs text-amber-700">
           Le {manquant.toLowerCase()} est absent entre deux paliers déclarés. Si c&apos;est voulu, ignorez ce message.
         </p>
       )}

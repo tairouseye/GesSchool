@@ -136,7 +136,7 @@ export default function Annonces() {
                   </a>
                   <button
                     onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id), "Annonce supprimée."); }}
-                    className="text-xs text-rose-500 hover:underline"
+                    className="text-xs text-rose-700 hover:underline"
                   >
                     supprimer
                   </button>
@@ -229,12 +229,12 @@ function ModaleAnnonce({ ouvert, onFermer, classes, niveaux, cycles, onCreer }) 
                 <li key={i} className="flex items-center justify-between gap-2 text-xs text-navy-900/70">
                   <span className="min-w-0 truncate">📎 {x.name} <span className="text-navy-900/40">({poids(x.size)})</span></span>
                   <button type="button" onClick={() => setFichiers(fichiers.filter((_, j) => j !== i))}
-                    className="shrink-0 text-rose-500 hover:underline">retirer</button>
+                    className="shrink-0 text-rose-700 hover:underline">retirer</button>
                 </li>
               ))}
             </ul>
           )}
-          {refus && <p className="mt-2 text-xs text-rose-600">{refus}</p>}
+          {refus && <p className="mt-2 text-xs text-rose-700">{refus}</p>}
           <p className="mt-2 text-[11px] text-navy-900/45">
             Ces fichiers seront conservés dans Pilotage → Documentation.
           </p>

@@ -122,7 +122,7 @@ export default function Assiduite() {
                       <td className="px-6 py-2.5 font-medium text-navy-900">{l.eleve.prenom} {l.eleve.nom}</td>
                       {/* Le nombre devient le chemin vers le détail : c'est la
                           question que le responsable se pose en le lisant. */}
-                      <td className="px-6 py-2.5 text-right font-mono text-rose-600">
+                      <td className="px-6 py-2.5 text-right font-mono text-rose-700">
                         {l.absences ? (
                           <button onClick={() => setDetail(l)} className="underline decoration-dotted hover:text-rose-700">{l.absences}</button>
                         ) : "—"}
@@ -189,7 +189,7 @@ function ModaleDetail({ ligne, onFermer }) {
               <tbody>
                 {ligne.items.map((a) => {
                   const st = STATUTS_JUSTIF[a.statut] || { label: a.statut, ton: "neutre" };
-                  const cls = { vert: "text-emerald-700", or: "text-or-600", rouge: "text-rose-600" }[st.ton] || "text-navy-900/60";
+                  const cls = { vert: "text-emerald-700", or: "text-or-600", rouge: "text-rose-700" }[st.ton] || "text-navy-900/60";
                   return (
                     <tr key={a.id} className="border-t border-navy-900/5">
                       <td className="px-3 py-2 font-mono text-xs">{dateFr(a.date_abs)}</td>
@@ -295,7 +295,7 @@ function ModaleRecap({ ouvert, onFermer, ecole, annee, lignes, classe, debut, fi
 }
 
 function Kpi({ label, valeur, ton }) {
-  const tons = { navy: "text-navy-900", rouge: "text-rose-600", or: "text-or-600" };
+  const tons = { navy: "text-navy-900", rouge: "text-rose-700", or: "text-or-600" };
   return (
     <Carte className="p-5">
       <p className="text-sm text-navy-900/50">{label}</p>

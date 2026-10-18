@@ -361,7 +361,7 @@ export default function Eleves() {
                       {peutEditer && (
                         <td className="px-6 py-4 text-right" onClick={(ev) => ev.stopPropagation()}>
                           <button onClick={() => supprimerUn(e)} title={`Supprimer l'${L.s}`}
-                            className="rounded-lg px-2 py-1 text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-600">
+                            className="rounded-lg px-2 py-1 text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-700">
                             🗑️
                           </button>
                         </td>

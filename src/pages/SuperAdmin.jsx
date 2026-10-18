@@ -326,7 +326,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono text-navy-900/60">{fmtX(r.eleves)}</td>
                   <td className="px-4 py-2.5 text-right font-mono text-navy-900/60">{fmtX(r.coutParEcoleMois)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-rose-600">{fmtX(r.plancherAnnuel)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-rose-700">{fmtX(r.plancherAnnuel)}</td>
                   <td className="px-4 py-2.5 text-right font-mono font-semibold text-emerald-700">{fmtX(r.prixRecommandeAnnuel)}</td>
                 </tr>
               );
@@ -441,7 +441,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono text-xs">
                     {marge === null ? "—" : (
-                      <span className={marge >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                      <span className={marge >= 0 ? "text-emerald-700" : "text-rose-700"}>
                         {marge >= 0 ? "+" : ""}{fmtX(marge)}
                       </span>
                     )}

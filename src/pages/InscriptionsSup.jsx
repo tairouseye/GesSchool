@@ -291,15 +291,15 @@ export default function InscriptionsSup() {
                   <p className="text-xs text-navy-900/50">
                     {insc.filieres?.nom} · {insc.niveau || "—"} · {(insc.inscriptions_ue?.length || 0)} UE choisie{(insc.inscriptions_ue?.length || 0) > 1 ? "s" : ""}
                     {insc.statut !== "active" && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">{api.STATUTS_INSCRIPTION[insc.statut]}</span>}
-                    {insc.droits_facture_id && <span className="ml-2 text-emerald-600">₣ droits facturés</span>}
+                    {insc.droits_facture_id && <span className="ml-2 text-emerald-700">₣ droits facturés</span>}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <Bouton variante="fantome" onClick={() => setIp(insc)}>Inscription pédagogique</Bouton>
                   {insc.statut === "active"
-                    ? <button onClick={() => changerStatut(insc, "suspendue")} className="text-navy-900/50 hover:text-amber-600">suspendre</button>
-                    : <button onClick={() => changerStatut(insc, "active")} className="text-navy-900/50 hover:text-emerald-600">réactiver</button>}
-                  <button onClick={() => supprimer(insc)} className="text-rose-500 hover:underline">suppr.</button>
+                    ? <button onClick={() => changerStatut(insc, "suspendue")} className="text-navy-900/50 hover:text-amber-700">suspendre</button>
+                    : <button onClick={() => changerStatut(insc, "active")} className="text-navy-900/50 hover:text-emerald-700">réactiver</button>}
+                  <button onClick={() => supprimer(insc)} className="text-rose-700 hover:underline">suppr.</button>
                 </div>
               </Carte>
             ))}

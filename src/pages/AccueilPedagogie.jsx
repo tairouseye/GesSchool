@@ -11,7 +11,7 @@ const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "";
 
 // Couleur d'une moyenne /20 : rouge sous la barre, ambre limite, vert au-dessus.
-const tonMoyenne = (m) => (m == null ? "text-navy-900/30" : m < 10 ? "text-rose-600" : m < 12 ? "text-or-600" : "text-emerald-600");
+const tonMoyenne = (m) => (m == null ? "text-navy-900/30" : m < 10 ? "text-rose-700" : m < 12 ? "text-or-600" : "text-emerald-700");
 
 export default function AccueilPedagogie() {
   const { ecoleId, ecole, profil } = useAuth();
@@ -111,7 +111,7 @@ export default function AccueilPedagogie() {
             <ul className="divide-y divide-navy-900/5">
               {absences.map((a) => {
                 const s = STATUTS_JUSTIF[a.statut] || STATUTS_JUSTIF.non_justifie;
-                const tons = { rouge: "text-rose-600", or: "text-or-600", vert: "text-emerald-700" };
+                const tons = { rouge: "text-rose-700", or: "text-or-600", vert: "text-emerald-700" };
                 return (
                   <li key={a.id} className="flex items-center justify-between py-2 text-sm">
                     <span className="font-medium text-navy-900">{a.eleves?.prenom} {a.eleves?.nom}</span>

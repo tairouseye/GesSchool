@@ -144,7 +144,7 @@ export default function Bibliotheque() {
                     <button onClick={() => basculerVisible(r)} className="text-navy-900/50 hover:text-navy-900">
                       {r.visible ? "masquer" : "publier"}
                     </button>
-                    <button onClick={() => supprimer(r)} className="text-rose-500 hover:underline">suppr.</button>
+                    <button onClick={() => supprimer(r)} className="text-rose-700 hover:underline">suppr.</button>
                   </div>
                 </Carte>
               );
@@ -402,7 +402,7 @@ function ModaleFiche({ id, ecoleId, onFermer, onChange }) {
                       <Badge ton={x.statut === "disponible" ? "success" : x.statut === "emprunte" ? "warning" : "neutre"}>
                         {api.STATUTS_EXEMPLAIRE[x.statut] || x.statut}
                       </Badge>
-                      <button onClick={() => supprimerExemplaire(x)} className="text-xs text-rose-500 hover:underline">suppr.</button>
+                      <button onClick={() => supprimerExemplaire(x)} className="text-xs text-rose-700 hover:underline">suppr.</button>
                     </span>
                   </li>
                 ))}
@@ -438,7 +438,7 @@ function ModaleFiche({ id, ecoleId, onFermer, onChange }) {
                         {api.NIVEAUX_ACCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
                       <button onClick={() => ouvrirDocument(n)} className="font-medium text-navy-700 hover:text-or-600">ouvrir</button>
-                      <button onClick={() => supprimerDoc(n)} className="text-rose-500 hover:underline">suppr.</button>
+                      <button onClick={() => supprimerDoc(n)} className="text-rose-700 hover:underline">suppr.</button>
                     </span>
                   </li>
                 ))}

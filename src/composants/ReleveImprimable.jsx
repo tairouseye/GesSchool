@@ -77,7 +77,7 @@ export default function ReleveImprimable({ ecole, etudiant, contexte = {}, relev
               <td className="py-2 text-center">
                 {l.acquise
                   ? <span className="text-emerald-700">Acquise</span>
-                  : <span className="text-rose-600">Non acquise</span>}
+                  : <span className="text-rose-700">Non acquise</span>}
               </td>
             </tr>
           ))}

@@ -179,7 +179,7 @@ export default function Deliberations() {
                       <div className="flex items-center gap-3 text-xs">
                         <button onClick={() => ouvrirDelib(d)} className="font-medium text-navy-700 hover:text-or-600">ouvrir</button>
                         <button onClick={() => verrouiller(d)} className="text-navy-900/50 hover:text-navy-900">{d.verrouillee ? "déverrouiller" : "verrouiller"}</button>
-                        {!d.verrouillee && <button onClick={() => supprimerDelib(d)} className="text-rose-500 hover:underline">suppr.</button>}
+                        {!d.verrouillee && <button onClick={() => supprimerDelib(d)} className="text-rose-700 hover:underline">suppr.</button>}
                       </div>
                     </div>
                   ))}
@@ -197,7 +197,7 @@ export default function Deliberations() {
                           <span className="font-medium text-navy-900">{nomEleve(r)}</span>
                           <span className="flex items-center gap-3">
                             <span className="font-mono text-navy-900/60">{arr2(r.moyenne)} · {r.credits_acquis}/{r.credits_total} cr.</span>
-                            <span className={r.valide ? "text-emerald-700" : "text-rose-600"}>{r.decision}</span>
+                            <span className={r.valide ? "text-emerald-700" : "text-rose-700"}>{r.decision}</span>
                             <button onClick={() => setReleveDoc({ releve: r, delib: delibSel })} className="font-medium text-navy-700 hover:text-or-600">relevé</button>
                           </span>
                         </li>

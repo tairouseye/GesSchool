@@ -196,7 +196,7 @@ function VignetteEleve({ eleve, occupe, onFichier, onRetirer }) {
       {eleve.photo_url && (
         <div className="border-t border-navy-900/5 px-2.5 py-1.5">
           <button type="button" onClick={onRetirer}
-            className="text-[11px] text-rose-500 hover:underline">retirer</button>
+            className="text-[11px] text-rose-700 hover:underline">retirer</button>
         </div>
       )}
     </Carte>

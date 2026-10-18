@@ -121,7 +121,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
         <div className="w-44"><Champ label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         {classeId && eleves.length > 0 && (
           <div className="flex items-center gap-3">
-            {enregistre && <span className="text-xs text-emerald-600">✓ Appel enregistré</span>}
+            {enregistre && <span className="text-xs text-emerald-700">✓ Appel enregistré</span>}
             <Bouton onClick={enregistrer}>Enregistrer l'appel</Bouton>
           </div>
         )}
@@ -225,7 +225,7 @@ function Incidents({ ecoleId, onErreur }) {
 
   useEffect(() => { recharger(); }, [recharger]);
 
-  const couleur = (t) => t === "felicitation" ? "text-emerald-600" : t === "sanction" ? "text-rose-600" : "text-navy-900/70";
+  const couleur = (t) => t === "felicitation" ? "text-emerald-700" : t === "sanction" ? "text-rose-700" : "text-navy-900/70";
 
   return (
     <div className="space-y-4">
@@ -259,7 +259,7 @@ function Incidents({ ecoleId, onErreur }) {
                       ))) return;
                       try { await api.supprimerIncident(i.id); recharger(); } catch (e) { onErreur(e.message); }
                     }}
-                      className="text-xs text-rose-500 hover:underline">supprimer</button>
+                      className="text-xs text-rose-700 hover:underline">supprimer</button>
                   </td>
                 </tr>
               ))}

@@ -108,7 +108,7 @@ export default function Verifier() {
           {etat === "absent" && (
             <div className="p-6 text-center">
               <span className="text-3xl">⚠️</span>
-              <p className="mt-2 font-display text-lg font-bold text-rose-600">Document non reconnu</p>
+              <p className="mt-2 font-display text-lg font-bold text-rose-700">Document non reconnu</p>
               <p className="mt-1 text-sm text-navy-900/60">
                 Ce code ne correspond à aucun document officiel valide. Le document pourrait être
                 falsifié, supprimé, ou non encore validé par l'établissement.

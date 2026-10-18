@@ -6,7 +6,7 @@ import { messageErreur } from "@/lib/erreurs.js";
 // --- Indicateur clé (KPI) : valeur + libellé + sous-texte optionnel ---
 // ton : navy | or | vert | rouge ; tonValeur : classe couleur explicite (prioritaire).
 export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement = false }) {
-  const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-600", rouge: "text-rose-600" };
+  const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-700", rouge: "text-rose-700" };
   return (
     <Carte className="p-5">
       <p className="text-sm text-navy-900/50">{label}</p>
@@ -57,7 +57,7 @@ export function TuileAlerte({ to, onClick, label, valeur, sousTexte, actif = fal
     navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
   };
   const chiffre = actif
-    ? (ton === "rouge" ? "text-rose-600" : ton === "or" ? "text-or-600" : "text-navy-900")
+    ? (ton === "rouge" ? "text-rose-700" : ton === "or" ? "text-or-600" : "text-navy-900")
     : "text-navy-900/30";
   const cls = `block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`;
   const inner = (

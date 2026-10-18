@@ -151,8 +151,8 @@ export default function EtudiantAccueil() {
                       }`}>{LIB[d.statut] || d.statut}</span>
                     </div>
                     {d.statut === "autorise"
-                      ? <button onClick={() => decider(d, "revoque")} className="text-xs text-rose-500 hover:underline">Révoquer</button>
-                      : <button onClick={() => decider(d, "autorise")} className="text-xs text-emerald-600 hover:underline">Autoriser</button>}
+                      ? <button onClick={() => decider(d, "revoque")} className="text-xs text-rose-700 hover:underline">Révoquer</button>
+                      : <button onClick={() => decider(d, "autorise")} className="text-xs text-emerald-700 hover:underline">Autoriser</button>}
                   </div>
                 ))}
               </div>

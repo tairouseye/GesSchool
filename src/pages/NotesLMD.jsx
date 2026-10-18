@@ -231,7 +231,7 @@ export default function NotesLMD() {
                                   <td key={u.id} className="px-2 py-2 text-center font-mono">
                                     {!r ? <span className="text-navy-900/20">·</span>
                                       : r.moyenne == null ? <span className="text-navy-900/25">—</span>
-                                      : <span className={r.acquise ? "text-emerald-700" : "text-rose-600"}>{arr2(r.moyenne)}</span>}
+                                      : <span className={r.acquise ? "text-emerald-700" : "text-rose-700"}>{arr2(r.moyenne)}</span>}
                                   </td>
                                 );
                               })}
@@ -239,7 +239,7 @@ export default function NotesLMD() {
                               <td className="px-2 py-2 text-center font-mono">{sem.creditsAcquis}/{sem.creditsTotal}</td>
                               <td className="px-2 py-2">
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sem.valide ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{sem.decision}</span>
-                                {sem.parCompensation && <span className="ml-1 text-[10px] text-amber-600">compensation</span>}
+                                {sem.parCompensation && <span className="ml-1 text-[10px] text-amber-700">compensation</span>}
                               </td>
                               <td className="px-2 py-2 text-navy-900/70">{sem.mention || "—"}</td>
                             </tr>

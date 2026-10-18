@@ -240,7 +240,7 @@ function Apercu({ lecture, niveaux, onChange, onAnnuler, onValider }) {
           </div>
         )}
         {coursInconnu && (
-          <div className="mt-1.5 text-xs text-rose-600">
+          <div className="mt-1.5 text-xs text-rose-700">
             Aucun niveau de l'école ne s'appelle « {en.cours} » : choisissez-le vous-même.
           </div>
         )}

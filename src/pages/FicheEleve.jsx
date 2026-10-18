@@ -155,7 +155,7 @@ export default function FicheEleve() {
           {peutEditer && (
             <Bouton
               variante="fantome"
-              className="mt-5 w-full text-rose-600"
+              className="mt-5 w-full text-rose-700"
               onClick={async () => {
                 if (await confirmer({ message: `Supprimer définitivement cet ${L.s} ?`, confirmer: "Supprimer" })) {
                   wrap(async () => {
@@ -190,7 +190,7 @@ export default function FicheEleve() {
                       </p>
                       <p className="text-xs text-navy-900/50">
                         {t.tuteurs.telephone || "—"}
-                        {t.responsable_paiement && <span className="ml-2 text-or-500">• paiement</span>}
+                        {t.responsable_paiement && <span className="ml-2 text-or-600">• paiement</span>}
                         {t.responsable_legal && <span className="ml-2 text-navy-900/40">• légal</span>}
                       </p>
                     </div>
@@ -217,7 +217,7 @@ export default function FicheEleve() {
                               )}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                              className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
                             >
                               💬 Envoyer par WhatsApp
                             </a>
@@ -238,7 +238,7 @@ export default function FicheEleve() {
                         </button>
                       )}
                       {peutEditer && (
-                        <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-500 hover:underline">
+                        <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-700 hover:underline">
                           retirer
                         </button>
                       )}

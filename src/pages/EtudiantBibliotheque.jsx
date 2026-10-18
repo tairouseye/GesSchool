@@ -204,7 +204,7 @@ function MesReservations({ onErreur, toast }) {
               {r.statut === "disponible" ? "Disponible — à retirer" : `En attente · position ${r.rang}`}
             </p>
           </div>
-          <button onClick={() => annuler(r)} className="text-xs text-rose-500 hover:underline">annuler</button>
+          <button onClick={() => annuler(r)} className="text-xs text-rose-700 hover:underline">annuler</button>
         </Carte>
       ))}
     </div>
@@ -237,7 +237,7 @@ function MesFavoris({ onErreur, toast }) {
               {libType(f.biblio_ressources?.type_ressource)}{f.biblio_ressources?.annee_pub ? ` · ${f.biblio_ressources.annee_pub}` : ""}
             </p>
           </div>
-          <button onClick={() => retirer(f)} className="text-xs text-rose-500 hover:underline">retirer</button>
+          <button onClick={() => retirer(f)} className="text-xs text-rose-700 hover:underline">retirer</button>
         </Carte>
       ))}
     </div>
@@ -330,7 +330,7 @@ function MesSuggestions({ dossier, toast }) {
                 )}
                 {s.statut === "soumise" && (
                   <div className="mt-2 flex justify-end">
-                    <button onClick={() => retirer(s)} className="text-xs text-rose-500 hover:underline">retirer</button>
+                    <button onClick={() => retirer(s)} className="text-xs text-rose-700 hover:underline">retirer</button>
                   </div>
                 )}
               </Carte>

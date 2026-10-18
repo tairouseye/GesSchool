@@ -239,7 +239,7 @@ function FichierChamp({ label, onChange, fichier }) {
         <input type="file" accept="image/*" onChange={(e) => onChange(e.target.files?.[0] ?? null)}
                className="block w-full text-xs text-navy-900/60 file:mr-2 file:rounded-lg file:border-0 file:bg-navy-900 file:px-3 file:py-1.5 file:text-creme" />
       </div>
-      {fichier && <span className="mt-1 block truncate text-xs text-emerald-600">✓ {fichier.name}</span>}
+      {fichier && <span className="mt-1 block truncate text-xs text-emerald-700">✓ {fichier.name}</span>}
     </label>
   );
 }

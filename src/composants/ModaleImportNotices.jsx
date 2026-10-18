@@ -103,15 +103,15 @@ export default function ModaleImportNotices({ ecoleId, onFermer, onFini }) {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-emerald-50 p-3">
                 <p className="font-display text-2xl font-bold text-emerald-700">{analyse.valides.length}</p>
-                <p className="text-xs text-emerald-700/80">à importer</p>
+                <p className="text-xs text-emerald-700">à importer</p>
               </div>
               <div className="rounded-xl bg-amber-50 p-3">
                 <p className="font-display text-2xl font-bold text-amber-700">{analyse.doublons.length}</p>
-                <p className="text-xs text-amber-700/80">doublons dans le fichier</p>
+                <p className="text-xs text-amber-800">doublons dans le fichier</p>
               </div>
               <div className="rounded-xl bg-rose-50 p-3">
                 <p className="font-display text-2xl font-bold text-rose-700">{analyse.rejets.length}</p>
-                <p className="text-xs text-rose-700/80">lignes écartées</p>
+                <p className="text-xs text-rose-700/90">lignes écartées</p>
               </div>
             </div>
 

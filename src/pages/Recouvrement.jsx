@@ -96,7 +96,7 @@ export default function Recouvrement() {
           </Carte>
           <Carte className="p-5">
             <p className="text-sm text-navy-900/50">Dont en retard</p>
-            <p className="mt-1 font-display text-2xl font-bold text-rose-600">{fmt(totalRetard)} <span className="text-sm font-normal">{devise}</span></p>
+            <p className="mt-1 font-display text-2xl font-bold text-rose-700">{fmt(totalRetard)} <span className="text-sm font-normal">{devise}</span></p>
           </Carte>
           <Carte className="p-5">
             <p className="text-sm text-navy-900/50">Élèves concernés</p>
@@ -232,7 +232,7 @@ export default function Recouvrement() {
                 <td className="px-2 py-2 text-right font-mono">{fmt(liste.reduce((s, i) => s + i.reste, 0))} {devise}</td>
               </tr>
               {filtre !== "retard" && (
-                <tr className="text-rose-600">
+                <tr className="text-rose-700">
                   <td className="px-2 py-1" colSpan={4}>dont en retard</td>
                   <td className="px-2 py-1 text-right font-mono">{fmt(totalRetard)} {devise}</td>
                 </tr>

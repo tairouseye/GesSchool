@@ -120,7 +120,7 @@ function Circuits({ ecoleId, circuits, wrap, confirmer }) {
                 </div>
                 <div className="flex gap-2">
                   <Bouton variante="fantome" className="!py-1.5 text-xs" onClick={() => setModale(c)}>Modifier</Bouton>
-                  <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-600" onClick={async () => { if (await confirmer("Supprimer ce circuit ?")) wrap(() => api.supprimerCircuit(c.id), "Circuit supprimé."); }}>Suppr.</Bouton>
+                  <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-700" onClick={async () => { if (await confirmer("Supprimer ce circuit ?")) wrap(() => api.supprimerCircuit(c.id), "Circuit supprimé."); }}>Suppr.</Bouton>
                 </div>
               </div>
               <Arrets ecoleId={ecoleId} circuit={c} wrap={wrap} confirmer={confirmer} />
@@ -163,7 +163,7 @@ function Arrets({ ecoleId, circuit, wrap, confirmer }) {
                   <span className="text-navy-900/80">📍 {a.libelle}{a.heure ? ` — ${a.heure}` : ""}</span>
                   <span className="shrink-0 whitespace-nowrap">
                     <button onClick={() => setEdit({ id: a.id, libelle: a.libelle, heure: a.heure || "" })} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                    <button onClick={async () => { if (await confirmer("Supprimer cet arrêt ?")) wrap(() => api.supprimerArret(a.id), "Arrêt supprimé."); }} className="ml-3 text-xs text-rose-500 hover:underline">retirer</button>
+                    <button onClick={async () => { if (await confirmer("Supprimer cet arrêt ?")) wrap(() => api.supprimerArret(a.id), "Arrêt supprimé."); }} className="ml-3 text-xs text-rose-700 hover:underline">retirer</button>
                   </span>
                 </div>
               )}
@@ -228,7 +228,7 @@ function Abonnes({ ecoleId, abonnes, circuits, classe, devise, wrap, confirmer }
                   <td className="px-5 py-3 font-mono text-navy-900/70">{fmt(a.tarif)} {devise}</td>
                   <td className="px-5 py-3 text-right whitespace-nowrap">
                     <button onClick={() => setModale(a)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                    <button onClick={async () => { if (await confirmer("Supprimer cet abonné ?")) wrap(() => api.supprimerAbonnement(a.id), "Abonné supprimé."); }} className="ml-3 text-xs text-rose-500 hover:underline">suppr.</button>
+                    <button onClick={async () => { if (await confirmer("Supprimer cet abonné ?")) wrap(() => api.supprimerAbonnement(a.id), "Abonné supprimé."); }} className="ml-3 text-xs text-rose-700 hover:underline">suppr.</button>
                   </td>
                 </tr>
               ))}

@@ -229,7 +229,7 @@ export default function RH() {
                   <li key={i} className="flex items-center justify-between py-2 text-sm">
                     <span className="font-medium text-navy-900">{e.nom}</span>
                     <span className="text-navy-900/50">{e.type || "—"}</span>
-                    <span className="font-mono text-xs text-rose-600">{new Date(e.fin).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })}</span>
+                    <span className="font-mono text-xs text-rose-700">{new Date(e.fin).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" })}</span>
                   </li>
                 ))}
               </ul>
@@ -406,7 +406,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
             <div className="flex items-center justify-end gap-3">
               <button onClick={(e) => { e.stopPropagation(); onAvances(p); }} className="text-xs text-navy-700 hover:text-or-500">avances</button>
               <button onClick={(e) => { e.stopPropagation(); onEditer(p); }} className="text-xs text-navy-700 hover:text-or-500">éditer</button>
-              <button onClick={(e) => { e.stopPropagation(); onSuppr(p.id); }} className="text-xs text-danger-500 hover:underline">suppr.</button>
+              <button onClick={(e) => { e.stopPropagation(); onSuppr(p.id); }} className="text-xs text-danger-600 hover:underline">suppr.</button>
             </div>
           ) },
         ]}
@@ -493,7 +493,7 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
                 <td className="px-2 py-2 text-right font-mono">{fmt(totalNet)} {devise}</td>
               </tr>
               <tr className="text-emerald-700"><td className="px-2 py-1" colSpan={4}>dont payé</td><td className="px-2 py-1 text-right font-mono">{fmt(totalPaye)} {devise}</td></tr>
-              <tr className="text-rose-600"><td className="px-2 py-1" colSpan={4}>restant à payer</td><td className="px-2 py-1 text-right font-mono">{fmt(totalNet - totalPaye)} {devise}</td></tr>
+              <tr className="text-rose-700"><td className="px-2 py-1" colSpan={4}>restant à payer</td><td className="px-2 py-1 text-right font-mono">{fmt(totalNet - totalPaye)} {devise}</td></tr>
             </tfoot>
           </table>
         </div>
@@ -578,7 +578,7 @@ function LignePaie({ s, devise, onDetail, onValider, onDevalider, onPayer, onAnn
         {statut === "valide" && <button onClick={() => onPayer(s)} className={`${btn} text-emerald-700`}>payer</button>}
         {statut === "valide" && <button onClick={() => onDevalider(s.id)} className={`${btn} text-navy-900/50`}>dévalider</button>}
         {statut === "paye" && <button onClick={() => onAnnuler(s.id)} className={`${btn} text-navy-900/50`}>annuler</button>}
-        {statut === "brouillon" && <button onClick={() => onSuppr(s.id)} className={`${btn} text-rose-500`}>suppr.</button>}
+        {statut === "brouillon" && <button onClick={() => onSuppr(s.id)} className={`${btn} text-rose-700`}>suppr.</button>}
       </div>
     </div>
   );
@@ -1116,7 +1116,7 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
               <button type="button" onClick={() => run(() => api.modifierElementPaie(el.id, { actif: !(el.actif !== false) }))}
                 className="rounded-lg border border-navy-900/10 px-2 py-1.5 text-xs text-navy-900/60 hover:bg-navy-900/5">{el.actif === false ? "activer" : "masquer"}</button>
               <button type="button" onClick={async () => { if (await confirmer(`Supprimer l'élément « ${el.libelle} » ?`)) run(() => api.supprimerElementPaie(el.id)); }}
-                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-500 hover:bg-danger-500/5">suppr.</button>
+                className="rounded-lg border border-danger-500/20 px-2 py-1.5 text-xs text-danger-600 hover:bg-danger-500/5">suppr.</button>
             </li>
           ))}
           {liste.length === 0 && <li className="text-xs text-navy-900/40">Aucun élément.</li>}
@@ -1265,7 +1265,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
               : <span className="w-28 px-2 py-1.5 text-right font-mono text-sm text-navy-900">{fmt(l.montant)}</span>}
             {editable
               ? <button type="button" onClick={async () => { if (await confirmer(`Retirer « ${l.libelle} » ?`)) runCalc(() => api.supprimerLigneSalaire(l.id)); }}
-                  className="text-xs text-danger-500 hover:underline">×</button>
+                  className="text-xs text-danger-600 hover:underline">×</button>
               : <span className="w-3" />}
           </div>
         );
@@ -1598,7 +1598,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
                       <td className="py-1 pl-1 text-right whitespace-nowrap">
                         <button type="button" onClick={() => commit({ actif: !(c.actif !== false) })} className="text-navy-900/50 hover:underline">{c.actif === false ? "on" : "off"}</button>
                         {" "}
-                        <button type="button" onClick={async () => { if (await confirmer(`Supprimer « ${c.libelle} » ?`)) run(() => api.supprimerCotisation(c.id)); }} className="text-danger-500 hover:underline">×</button>
+                        <button type="button" onClick={async () => { if (await confirmer(`Supprimer « ${c.libelle} » ?`)) run(() => api.supprimerCotisation(c.id)); }} className="text-danger-600 hover:underline">×</button>
                       </td>
                     </tr>
                   );
@@ -1670,7 +1670,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
                         {Object.entries(diag[g] || {}).map(([k, ok]) => (
                           <li key={k} className="flex items-center justify-between text-xs">
                             <span className="font-mono text-navy-900/70">{k}</span>
-                            <span className={ok ? "text-emerald-600" : "text-danger-600"}>{ok ? "✓" : "✗"}</span>
+                            <span className={ok ? "text-emerald-700" : "text-danger-600"}>{ok ? "✓" : "✗"}</span>
                           </li>
                         ))}
                       </ul>
@@ -1809,7 +1809,7 @@ function ModalePreparerPaie({ ouvert, onFermer, ecoleId, onAllerConges, periode,
                 Entêtes à compléter — {aVerifier.length} employé{aVerifier.length > 1 ? "s" : ""}
                 {nbCritiques > 0 && <span className="text-danger-600"> · {nbCritiques} champ(s) critique(s)</span>}
               </p>
-              <p className="mt-0.5 text-xs text-amber-800/80">Les champs manquants apparaîtront vides sur le bulletin ; un <b>taux horaire</b> manquant met le salaire de base à 0. Complète-les dans la fiche de l'employé.</p>
+              <p className="mt-0.5 text-xs text-amber-800">Les champs manquants apparaîtront vides sur le bulletin ; un <b>taux horaire</b> manquant met le salaire de base à 0. Complète-les dans la fiche de l'employé.</p>
               <ul className="mt-2 space-y-1.5">
                 {aVerifier.map(({ p, m }) => (
                   <li key={p.id} className="text-xs">
@@ -1937,7 +1937,7 @@ function ModaleAvancesPret({ personnel, onFermer, ecoleId, devise, periode }) {
                       <td className="px-3 py-2 text-right">
                         {a.statut === "en_cours" && a.solde > 0 && (
                           <button onClick={async () => { if (await confirmer("Annuler cette avance/prêt ? Les remboursements déjà prélevés restent.")) { try { await api.annulerAvancePret(a.id); await recharger(); } catch (e) { toast.erreur(e.message); } } }}
-                            className="text-xs text-danger-500 hover:underline">annuler</button>
+                            className="text-xs text-danger-600 hover:underline">annuler</button>
                         )}
                       </td>
                     </tr>
@@ -2174,7 +2174,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
                 </span>
                 <span className="flex items-center gap-3 text-xs">
                   <button onClick={async () => { if (await confirmer("Approuver ce congé ?")) onDecider(c.id, "approuve"); }} className="font-medium text-emerald-700 hover:underline">approuver</button>
-                  <button onClick={async () => { if (await confirmer("Refuser cette demande ?")) onDecider(c.id, "refuse"); }} className="text-danger-500 hover:underline">refuser</button>
+                  <button onClick={async () => { if (await confirmer("Refuser cette demande ?")) onDecider(c.id, "refuse"); }} className="text-danger-600 hover:underline">refuser</button>
                 </span>
               </li>
             ))}
@@ -2224,7 +2224,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
                     <p className="text-xs text-navy-900/50">{typeLbl[c.type] || c.type} · <span className="font-mono">{c.date_debut} → {c.date_fin}</span> · {c.jours} j</p>
                   </div>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b[0]}`}>{b[1]}</span>
-                  <button onClick={() => onSuppr(c.id)} className="rounded-lg px-2.5 py-1.5 text-sm text-danger-500 hover:bg-navy-900/5">suppr.</button>
+                  <button onClick={() => onSuppr(c.id)} className="rounded-lg px-2.5 py-1.5 text-sm text-danger-600 hover:bg-navy-900/5">suppr.</button>
                   {c.statut === "refuse" && c.motif_refus && <p className="w-full text-xs text-navy-900/40">Motif : {c.motif_refus}</p>}
                 </li>
               );
@@ -2271,7 +2271,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
                 </span>
                 <span className="flex items-center gap-3 text-xs">
                   <span className={`rounded-full px-2 py-0.5 font-medium ${a.justifie ? "bg-emerald-500/10 text-emerald-700" : "bg-or-500/10 text-or-700"}`}>{a.justifie ? "justifiée" : "non justifiée"}</span>
-                  <button onClick={() => onSupprAbsence(a.id)} className="text-danger-500 hover:underline">suppr.</button>
+                  <button onClick={() => onSupprAbsence(a.id)} className="text-danger-600 hover:underline">suppr.</button>
                 </span>
               </li>
             ))}
@@ -2570,7 +2570,7 @@ function ModaleRegimes({ ouvert, onFermer, ecoleId, elements, personnels = [], d
             <div className="mb-2 flex items-center justify-between">
               <h3 className="font-display font-semibold text-navy-900">{sel.libelle}</h3>
               <button type="button" onClick={async () => { if (await confirmer(`Supprimer le régime « ${sel.libelle} » ? Les employés concernés seront détachés.`)) { await run(() => api.supprimerRegime(sel.id), "Régime supprimé."); setSel(null); setLignes([]); } }}
-                className="text-xs text-rose-600 hover:underline">Supprimer le régime</button>
+                className="text-xs text-rose-700 hover:underline">Supprimer le régime</button>
             </div>
 
             {/* Éléments du régime */}
@@ -2581,11 +2581,11 @@ function ModaleRegimes({ ouvert, onFermer, ecoleId, elements, personnels = [], d
                 {lignes.map((l) => (
                   <div key={l.id} className="flex items-center justify-between py-1.5 text-sm">
                     <span className="text-navy-900">{l.elements_paie?.libelle}
-                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${l.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-700"}`}>{l.elements_paie?.sens}</span>
+                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${l.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-700" : "bg-emerald-500/10 text-emerald-700"}`}>{l.elements_paie?.sens}</span>
                     </span>
                     <span className="flex items-center gap-3">
                       <span className="font-mono text-navy-900/70">{fmt(l.montant)} {devise}</span>
-                      <button type="button" onClick={() => retirer(l.id)} className="text-navy-900/30 hover:text-rose-600" title="Retirer">✕</button>
+                      <button type="button" onClick={() => retirer(l.id)} className="text-navy-900/30 hover:text-rose-700" title="Retirer">✕</button>
                     </span>
                   </div>
                 ))}
@@ -2713,7 +2713,7 @@ function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <span className="font-medium text-navy-900">{a.elements_paie?.libelle}</span>
-                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${a.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-600" : "bg-emerald-500/10 text-emerald-700"}`}>{a.elements_paie?.sens}</span>
+                      <span className={`ml-2 rounded px-1.5 py-0.5 text-xs ${a.elements_paie?.sens === "retenue" ? "bg-rose-500/10 text-rose-700" : "bg-emerald-500/10 text-emerald-700"}`}>{a.elements_paie?.sens}</span>
                       <div className="mt-0.5 text-xs text-navy-900/50">
                         {PORTEE[a.portee]}{a.valeur ? ` · ${a.valeur}` : ""} · {perim.length} employé(s){a.nb_exclusions > 0 ? ` · ${a.nb_exclusions} exclu(s)` : ""}
                       </div>
@@ -2721,7 +2721,7 @@ function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-navy-900/70">{fmt(a.montant)} {devise}</span>
                       <button type="button" onClick={() => setExpand(expand === a.id ? null : a.id)} className="text-xs text-sky-700 hover:underline">Exclusions</button>
-                      <button type="button" onClick={() => retirer(a.id)} className="text-navy-900/30 hover:text-rose-600" title="Retirer">✕</button>
+                      <button type="button" onClick={() => retirer(a.id)} className="text-navy-900/30 hover:text-rose-700" title="Retirer">✕</button>
                     </div>
                   </div>
                   {expand === a.id && (

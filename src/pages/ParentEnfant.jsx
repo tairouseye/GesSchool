@@ -570,7 +570,7 @@ function Documents({ eleveId, demandes, onChange, onErreur }) {
   const [envoi, setEnvoi] = useState(false);
   const fmtD = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
   const lib = { en_attente: "En attente", en_cours: "En cours", pret: "Prêt ✓", rejete: "Rejeté" };
-  const ton = { en_attente: "text-or-600", en_cours: "text-navy-900/60", pret: "text-emerald-700", rejete: "text-rose-600" };
+  const ton = { en_attente: "text-or-600", en_cours: "text-navy-900/60", pret: "text-emerald-700", rejete: "text-rose-700" };
   const typeLib = Object.fromEntries(TYPES_DOCUMENT);
 
   async function envoyer() {
@@ -865,7 +865,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
   const totalReste = factures.reduce((s, f) => s + ((Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0)), 0);
   const aDesNumeros = MODES_MOBILE.some(([k]) => infos?.[k]);
   const statutLib = { en_attente: "En attente", valide: "Validé", rejete: "Rejeté" };
-  const statutTon = { en_attente: "text-or-600", valide: "text-emerald-700", rejete: "text-rose-600" };
+  const statutTon = { en_attente: "text-or-600", valide: "text-emerald-700", rejete: "text-rose-700" };
 
   return (
     <div className="space-y-4">
@@ -896,7 +896,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
                 <tr key={f.id} className="border-t border-navy-900/5">
                   <td className="px-4 py-2 font-mono text-xs">{f.numero}</td>
                   <td className="px-4 py-2 font-mono text-xs">{f.date_echeance || "—"}</td>
-                  <td className={`px-4 py-2 text-right font-mono ${reste > 0 ? "text-rose-600" : "text-emerald-600"}`}>{fmt(reste)}</td>
+                  <td className={`px-4 py-2 text-right font-mono ${reste > 0 ? "text-rose-700" : "text-emerald-700"}`}>{fmt(reste)}</td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex flex-wrap items-center justify-end gap-1.5">
                       {reste > 0 && enLigne.actif && (
@@ -1114,7 +1114,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
         <label className="block">
           {/*  Même exigence que pour une facture (mig. 198) : sans preuve,
               la caisse n'a rien à vérifier, et la base refuse. */}
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-600">(obligatoire)</span></span>
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-700">(obligatoire)</span></span>
           <input type="file" accept="image/*,application/pdf"
             onChange={(e) => setFichier(e.target.files?.[0] || null)}
             className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
@@ -1263,7 +1263,7 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
               référence, chez une vraie école. La caisse n’avait qu’un montant et
               un nom. La base l’exige désormais (mig. 198) — ce libellé et le
               bouton désactivé ne font que le dire avant l’envoi. */}
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-600">(obligatoire)</span></span>
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Preuve de paiement <span className="text-rose-700">(obligatoire)</span></span>
           <input type="file" accept="image/*,application/pdf"
             onChange={(e) => setFichier(e.target.files?.[0] || null)}
             className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
@@ -1292,7 +1292,7 @@ function Absences({ absences, onChange, onErreur }) {
   const [justif, setJustif] = useState(null); // absence à justifier
   if (absences.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune absence enregistrée 🎉</Carte>;
   const lib = { non_justifie: "Non justifié", en_attente: "En attente", justifie: "Justifié" };
-  const ton = { non_justifie: "text-rose-600", en_attente: "text-or-600", justifie: "text-emerald-700" };
+  const ton = { non_justifie: "text-rose-700", en_attente: "text-or-600", justifie: "text-emerald-700" };
   return (
     <div className="space-y-2">
       {absences.map((a, i) => (

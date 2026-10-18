@@ -189,7 +189,7 @@ export default function Membres() {
                     <p className="flex items-center gap-2 font-medium text-navy-900">
                       {m.prenom} {m.nom}
                       {estMoi && <span className="rounded bg-navy-900/10 px-1.5 py-0.5 text-[10px] text-navy-900/60">vous</span>}
-                      {m.actif === false && <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600">suspendu</span>}
+                      {m.actif === false && <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">suspendu</span>}
                     </p>
                     <p className="text-xs text-navy-900/50">{m.email || "—"}</p>
                     <div className="mt-1 flex flex-wrap gap-1.5">
@@ -199,7 +199,7 @@ export default function Membres() {
                           {LIBELLES_ROLES[r] || r}
                           {peutGerer && gereRole(r) && (
                             <button onClick={() => retirer(m, r)} title="Retirer ce rôle"
-                              className="text-rose-500 hover:text-rose-700">✕</button>
+                              className="text-rose-700 hover:text-rose-800">✕</button>
                           )}
                         </span>
                       ))}
@@ -272,7 +272,7 @@ export default function Membres() {
                       {m.actif === false ? (
                         <Bouton variante="fantome" className="!py-1.5 text-xs" onClick={() => suspendre(m, false)}>Réactiver</Bouton>
                       ) : (
-                        <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-600" onClick={() => suspendre(m, true)}>Suspendre</Bouton>
+                        <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-700" onClick={() => suspendre(m, true)}>Suspendre</Bouton>
                       )}
                     </div>
                   )}
@@ -310,7 +310,7 @@ export default function Membres() {
                     <div className="flex shrink-0 gap-2">
                       <Bouton variante="fantome" className="!py-1.5 text-xs" onClick={() => copierLien(inv.code)}>Copier le lien</Bouton>
                       {gerable && (
-                        <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-600" onClick={() => annuler(inv)}>Annuler</Bouton>
+                        <Bouton variante="fantome" className="!py-1.5 text-xs text-rose-700" onClick={() => annuler(inv)}>Annuler</Bouton>
                       )}
                     </div>
                   </div>

@@ -102,7 +102,7 @@ function Cascade({ label, items, valeur, onChoisir, onAjouter, onModifier, onSup
             <button type="button" onClick={() => onModifier(courant)} title="Modifier"
               className="rounded-lg border border-navy-900/15 px-3 py-2 text-sm hover:border-or-500">✎</button>
             <button type="button" onClick={() => onSupprimer(courant)} title="Supprimer"
-              className="rounded-lg border border-navy-900/15 px-3 py-2 text-sm text-rose-500 hover:border-rose-400">🗑</button>
+              className="rounded-lg border border-navy-900/15 px-3 py-2 text-sm text-rose-700 hover:border-rose-400">🗑</button>
           </>
         )}
       </div>
@@ -261,7 +261,7 @@ export default function Filieres() {
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-medium text-navy-900">{semestre.libelle}</span>
                     <button type="button" onClick={() => setModal({ kind: "semestre", edit: semestre })} className="text-xs text-navy-900/50 hover:text-or-600">✎ modifier</button>
-                    <button type="button" onClick={() => supprimer("semestre", semestre, () => setSemestreId(null))} className="text-xs text-rose-500 hover:underline">🗑 suppr.</button>
+                    <button type="button" onClick={() => supprimer("semestre", semestre, () => setSemestreId(null))} className="text-xs text-rose-700 hover:underline">🗑 suppr.</button>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full px-3 py-1 text-sm font-semibold ${ecart === 0 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
@@ -290,7 +290,7 @@ export default function Filieres() {
                           <div className="flex items-center gap-2 text-xs">
                             <button type="button" onClick={() => setModal({ kind: "ecue", parentId: u.id })} className="text-navy-700 hover:text-or-600">＋ ECUE</button>
                             <button type="button" onClick={() => setModal({ kind: "ue", edit: u })} className="text-navy-700 hover:text-or-600">✎</button>
-                            <button type="button" onClick={() => supprimer("ue", u, rechargerMaquette)} className="text-rose-500 hover:underline">🗑</button>
+                            <button type="button" onClick={() => supprimer("ue", u, rechargerMaquette)} className="text-rose-700 hover:underline">🗑</button>
                           </div>
                         </div>
 
@@ -305,7 +305,7 @@ export default function Filieres() {
                                 </span>
                                 <span className="flex gap-2 text-xs">
                                   <button type="button" onClick={() => setModal({ kind: "ecue", parentId: u.id, edit: ec })} className="text-navy-700 hover:text-or-600">✎</button>
-                                  <button type="button" onClick={() => supprimer("ecue", ec, rechargerMaquette)} className="text-rose-500 hover:underline">🗑</button>
+                                  <button type="button" onClick={() => supprimer("ecue", ec, rechargerMaquette)} className="text-rose-700 hover:underline">🗑</button>
                                 </span>
                               </li>
                             ))}

@@ -85,7 +85,7 @@ export default function SectionAuteurs({ r, ecoleId, onChange }) {
               <span className="min-w-0 truncate text-navy-900">{nomComplet(l.biblio_auteurs)}</span>
               <span className="flex items-center gap-3">
                 <Badge ton="neutre">{libRole(l.role)}</Badge>
-                <button onClick={() => retirer(l)} className="text-xs text-rose-500 hover:underline">retirer</button>
+                <button onClick={() => retirer(l)} className="text-xs text-rose-700 hover:underline">retirer</button>
               </span>
             </li>
           ))}

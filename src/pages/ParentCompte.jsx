@@ -61,7 +61,7 @@ export default function ParentCompte() {
               onChange={(e) => setMdp(e.target.value)}
               placeholder="••••••••"
             />
-            {trop_court && <p className="mt-1 text-xs text-rose-500">8 caractères minimum.</p>}
+            {trop_court && <p className="mt-1 text-xs text-rose-700">8 caractères minimum.</p>}
           </div>
           <div>
             <ChampMotDePasse
@@ -71,7 +71,7 @@ export default function ParentCompte() {
               onChange={(e) => setConfirmation(e.target.value)}
               placeholder="••••••••"
             />
-            {discordent && <p className="mt-1 text-xs text-rose-500">Les deux mots de passe ne correspondent pas.</p>}
+            {discordent && <p className="mt-1 text-xs text-rose-700">Les deux mots de passe ne correspondent pas.</p>}
           </div>
           {erreur && <Alerte ton="erreur">{erreur}</Alerte>}
           <Bouton type="submit" disabled={!valide || enCours}>
