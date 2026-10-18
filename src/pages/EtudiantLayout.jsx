@@ -7,6 +7,7 @@ import GesProSignature from "@/composants/GesProSignature.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
 import { compterNonLues } from "@/lib/parent.js";
 import { mesMessagesNonLus } from "@/lib/etudiant.js";
+import { libelleCompteur } from "@/lib/accessibilite.js";
 
 // Espace étudiant (supérieur) — coque légère.
 export default function EtudiantLayout() {
@@ -26,28 +27,32 @@ export default function EtudiantLayout() {
     mesMessagesNonLus().then(setMsgNonLus).catch(() => {});
   }, [pathname]);
 
+  // Masquée aux lecteurs d'écran : le nombre est déjà dans le nom du lien.
   const Pastille = ({ n }) => (n > 0 ? (
-    <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
+    <span aria-hidden="true" className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
       {n > 9 ? "9+" : n}
     </span>
   ) : null);
 
   return (
     <div className="min-h-dscreen bg-creme">
-      <header className="flex items-center justify-between gap-3 border-b border-navy-900/10 bg-navy-900 px-6 py-4 text-creme">
-        <Link to="/etudiant" className="flex min-w-0 items-center gap-3">
-          <Cachet size={36} className="text-or-500" />
+      {/* Mêmes règles que l'en-tête parent : il doit tenir dans 320 px. */}
+      <header className="flex items-center justify-between gap-3 border-b border-navy-900/10 bg-navy-900 px-4 py-4 text-creme sm:px-6">
+        <Link to="/etudiant" aria-label="GesSchool — accueil de l'espace étudiant" className="flex min-w-0 items-center gap-3">
+          <Cachet size={36} className="shrink-0 text-or-500" />
           <span className="truncate font-display text-lg font-bold">
-            Ges<span className="text-or-500">School</span> <span className="text-sm font-normal text-creme/60">· Espace étudiant</span>
+            Ges<span className="text-or-500">School</span> <span className="hidden text-sm font-normal text-creme/60 sm:inline">· Espace étudiant</span>
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-3 text-sm">
-          <Link to="/etudiant/messagerie" className="relative" title="Messagerie">
-            <span className="text-xl">💬</span>
+          <Link to="/etudiant/messagerie" className="relative" title="Messagerie"
+            aria-label={libelleCompteur("Messagerie", msgNonLus, "message non lu", "messages non lus")}>
+            <span className="text-xl" aria-hidden="true">💬</span>
             <Pastille n={msgNonLus} />
           </Link>
-          <Link to="/etudiant/notifications" className="relative" title="Alertes">
-            <span className="text-xl">🔔</span>
+          <Link to="/etudiant/notifications" className="relative" title="Alertes"
+            aria-label={libelleCompteur("Alertes", nonLues, "alerte non lue", "alertes non lues")}>
+            <span className="text-xl" aria-hidden="true">🔔</span>
             <Pastille n={nonLues} />
           </Link>
           <span className="hidden text-creme/70 sm:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>

@@ -1,8 +1,10 @@
+import { useEffect, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
+import { useToast } from "@/composants/Feedback.jsx";
 import { peutVoir } from "@/lib/permissions.js";
-import { moduleActif } from "@/lib/modules.js";
+import { MODULES, moduleActif, moduleDeCle } from "@/lib/modules.js";
 import { premiereRoute } from "@/lib/espaces.js";
 
 // Garde de route :
@@ -55,14 +57,41 @@ export default function RouteProtegee({ children, role, exigeProfil = true }) {
 export function Garde({ cle, children }) {
   const { roles, estPromoteur, modulesActifs } = useAuth();
   const location = useLocation();
-  if (!peutVoir(roles, cle) || !moduleActif(modulesActifs, cle)) {
+  const inactif = !moduleActif(modulesActifs, cle);
+  if (inactif || !peutVoir(roles, cle)) {
     const repli = premiereRoute(roles, estPromoteur, modulesActifs);
     // Pas de repli, ou repli = la page qu'on vient de refuser → on affiche un
     // écran explicite. Rediriger ici créerait une boucle infinie.
     if (!repli || repli === location.pathname) return <EcranSansAcces />;
-    return <Navigate to={repli} replace />;
+    return <Renvoi vers={repli} message={motifRefus(cle, inactif)} />;
   }
   return children;
+}
+
+//  ⚠️ LE RENVOI DIT POURQUOI. Un lien direct (favori, lien partagé, ancienne
+//  adresse) vers une page fermée atterrissait en silence sur un autre écran :
+//  l'utilisateur ne savait pas si la fonction était désactivée, non souscrite
+//  ou interdite à son rôle. `/` passe par RedirectionAccueil, pas par Garde :
+//  la connexion ordinaire ne déclenche donc jamais ce message.
+function motifRefus(cle, inactif) {
+  if (inactif) {
+    const mod = MODULES.find((m) => m.id === moduleDeCle(cle));
+    return mod
+      ? `Le module « ${mod.label} » n'est pas activé pour votre établissement.`
+      : "Ce module n'est pas activé pour votre établissement.";
+  }
+  return "Votre rôle ne donne pas accès à cette page. Vous avez été redirigé vers votre espace.";
+}
+
+function Renvoi({ vers, message }) {
+  const toast = useToast();
+  const annonce = useRef(false);
+  useEffect(() => {
+    if (annonce.current) return; // StrictMode rejoue l'effet : un seul message
+    annonce.current = true;
+    toast.info(message);
+  }, [toast, message]);
+  return <Navigate to={vers} replace />;
 }
 
 // Aucun accès : ni page autorisée, ni module actif. Cas typique d'un membre

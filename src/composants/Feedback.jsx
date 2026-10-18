@@ -55,7 +55,7 @@ export function Feedback({ children }) {
           {toasts.map((t) => (
             <div
               key={t.id}
-              role="status"
+              role={t.ton === "erreur" ? "alert" : "status"}
               className={`pointer-events-auto flex items-start gap-2 rounded-xl border px-4 py-3 text-sm shadow-lg ${tons[t.ton] || tons.info}`}
             >
               <span className="mt-px font-bold">{icones[t.ton] || "•"}</span>

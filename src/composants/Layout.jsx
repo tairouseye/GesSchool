@@ -13,6 +13,7 @@ import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
+import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 
 // Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
@@ -154,13 +155,8 @@ export default function Layout() {
     } catch (e) { setPushMsg(e.message || "Action impossible."); }
   };
 
-  // Visite guidée au premier accès (une fois).
-  useEffect(() => {
-    if (localStorage.getItem("tour_staff_v1") !== "done") {
-      const t = setTimeout(() => setTour(true), 700);
-      return () => clearTimeout(t);
-    }
-  }, []);
+  // Visite guidée : PROPOSÉE au premier accès (voir InviteVisite), plus lancée
+  // d'office par-dessus le tableau de bord.
   const fermerTour = () => { setTour(false); localStorage.setItem("tour_staff_v1", "done"); };
 
   // Menus d'un espace : uniquement les pages RÉELLEMENT ouvrables (rôle,
@@ -580,6 +576,13 @@ export default function Layout() {
         )}
       </div>
 
+      {/* Mobile : au-dessus de la barre des espaces (au-dessus des tuiles aussi,
+          qui recouvrent le contenu). Desktop : en bas, à droite de la sidebar,
+          loin des toasts (en bas à droite). */}
+      <InviteVisite cle="tour_staff_v1" onLancer={() => setTour(true)}
+        className={`inset-x-3 lg:inset-x-auto lg:bottom-6 lg:left-[17.5rem] lg:w-96 ${
+          accessibles.length > 1 ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]"
+        }`} />
       <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
     </div>
   );

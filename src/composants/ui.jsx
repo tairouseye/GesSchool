@@ -257,16 +257,56 @@ export function Table({ columns, rows, keyField = "id", onRowClick, className = 
   );
 }
 
+const FOCALISABLES =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// Modales ouvertes, la plus récente en dernier : seule celle du dessus réagit
+// au clavier (une confirmation ouverte depuis une modale ne ferme plus les
+// deux d'un seul Échap).
+const pileModales = [];
+
 export function Modale({ ouvert, onFermer, titre, children, large = false }) {
   const ref = useRef(null);
-  // Fermeture au clavier (Échap) + focus sur la boîte à l'ouverture.
+  //  ⚠️ `onFermer` PASSE PAR UNE REF, et l'effet ne dépend que de `ouvert`.
+  //  Avec `[ouvert, onFermer]`, un `onFermer={() => …}` écrit en ligne relançait
+  //  l'effet à chaque rendu du parent — donc à chaque frappe dans un champ de la
+  //  modale — et `focus()` reprenait le curseur au champ en cours de saisie.
+  const fermer = useRef(onFermer);
+  fermer.current = onFermer;
+  // Élément qui avait le focus avant l'ouverture, pour le lui rendre ensuite.
+  // Lu au rendu, avant qu'un `autoFocus` du contenu ne le déplace.
+  const declencheur = useRef(null);
+  if (ouvert && !declencheur.current) declencheur.current = document.activeElement;
+
+  // Échap ferme ; Tab reste DANS la boîte (sans quoi le clavier parcourt la
+  // page masquée derrière) ; à la fermeture, le focus revient au déclencheur.
   useEffect(() => {
     if (!ouvert) return;
-    const onKey = (e) => { if (e.key === "Escape") onFermer?.(); };
+    const moi = {};
+    pileModales.push(moi);
+    const onKey = (e) => {
+      if (pileModales[pileModales.length - 1] !== moi) return;
+      if (e.key === "Escape") { fermer.current?.(); return; }
+      const boite = ref.current;
+      if (e.key !== "Tab" || !boite) return;
+      const elements = [...boite.querySelectorAll(FOCALISABLES)].filter((n) => n.getClientRects().length > 0);
+      if (!elements.length) { e.preventDefault(); boite.focus(); return; }
+      const premier = elements[0];
+      const dernier = elements[elements.length - 1];
+      const actif = document.activeElement;
+      if (!boite.contains(actif)) { e.preventDefault(); (e.shiftKey ? dernier : premier).focus(); }
+      else if (e.shiftKey && (actif === premier || actif === boite)) { e.preventDefault(); dernier.focus(); }
+      else if (!e.shiftKey && actif === dernier) { e.preventDefault(); premier.focus(); }
+    };
     document.addEventListener("keydown", onKey);
-    ref.current?.focus();
-    return () => document.removeEventListener("keydown", onKey);
-  }, [ouvert, onFermer]);
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      pileModales.splice(pileModales.indexOf(moi), 1);
+      const el = declencheur.current;
+      declencheur.current = null;
+      if (el?.isConnected && typeof el.focus === "function") el.focus();
+    };
+  }, [ouvert]);
 
   if (!ouvert) return null;
   return (
@@ -363,7 +403,9 @@ export function Alerte({ ton = "erreur", children }) {
     or: "border-or-500/40 bg-or-500/10 text-or-600",
     info: "border-navy-900/15 bg-creme text-navy-900/70",
   };
+  // Annoncé aux lecteurs d'écran sans déplacer le focus : une erreur de façon
+  // assertive (elle interrompt), le reste poliment.
   return (
-    <div className={`rounded-xl border px-4 py-3 text-sm ${tons[ton]}`}>{contenu}</div>
+    <div role={ton === "erreur" ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-sm ${tons[ton]}`}>{contenu}</div>
   );
 }
