@@ -184,8 +184,14 @@ export function espaceParId(id) {
 }
 
 // À quels espaces appartient une route (via la clé de page).
+// Une entrée de menu couvre sa page ET ses sous-pages (/parametres/notation
+// relève de « Paramètres »). « / » ne couvre que l'accueil.
+export function routeCouvre(to, path) {
+  return path === to || (to !== "/" && path.startsWith(`${to}/`));
+}
+
 export function espacesDeRoute(path) {
-  return ESPACES.filter((e) => e.items.some((it) => it.to === path));
+  return ESPACES.filter((e) => e.items.some((it) => routeCouvre(it.to, path)));
 }
 
 // (itemsEspace a été retiré : il laissait passer les accueils « _xxx » sans

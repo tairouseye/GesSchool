@@ -286,7 +286,8 @@ export default function App() {
             <Route path="/emploi-du-temps" element={<Garde cle="emploi"><EmploiDuTemps /></Garde>} />
             <Route path="/annonces" element={<Garde cle="annonces"><Annonces /></Garde>} />
             <Route path="/messagerie" element={<Garde cle="messagerie"><Messagerie /></Garde>} />
-            <Route path="/parametres" element={<Garde cle="parametres"><Parametres /></Garde>} />
+            {/* Rubrique dans l'adresse : /parametres/notation (cf. parametresRubriques.js). */}
+            <Route path="/parametres/:rubrique?" element={<Garde cle="parametres"><Parametres /></Garde>} />
             <Route path="/certificats" element={<Garde cle="certificats"><Certificats /></Garde>} />
             <Route path="/demandes" element={<Garde cle="demandes"><Demandes /></Garde>} />
             <Route path="/membres" element={<Garde cle="membres"><Membres /></Garde>} />

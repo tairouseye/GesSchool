@@ -4,7 +4,7 @@ import { ChargementPage } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
-import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeOuvrable, itemPourType, grouperItems,
+import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeCouvre, routeOuvrable, itemPourType, grouperItems,
          routeDAtterrissage, libelleItem } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
@@ -338,7 +338,7 @@ export default function Layout() {
           )}
           {grouperItems(items).map((sec, si) => (
             <Section key={sec.groupe || `libre-${si}`} titre={sec.groupe}
-              actif={sec.items.some((x) => x.to === location.pathname)}
+              actif={sec.items.some((x) => routeCouvre(x.to, location.pathname))}
               pastilles={sec.items.reduce((n, x) => n + pastille(x.cle), 0)}>
           {sec.items.map((item) => (
             <NavLink

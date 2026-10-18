@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
@@ -15,49 +16,181 @@ import { pspEtat, setPspConfig, PRESTATAIRES } from "@/lib/paiementEnLigne.js";
 import { PALIERS, COMBINAISONS, PEDAGOGIES, paliersDeclares, resume as resumePaliers,
          combinaisonDe, trou, pedagogiePertinente, couvreSuperieur,
          profilAEnregistrer } from "@/lib/paliers.js";
+import { rubriquesVisibles, grouperRubriques } from "@/lib/parametresRubriques.js";
+import { useFormulaire, useSignalModif, PiedEnregistrer, FournisseurModif } from "@/composants/Enregistrement.jsx";
 
 const DEVISES = ["XOF", "XAF", "CDF", "USD", "EUR", "GNF", "MAD", "MRU"];
 
+// =====================================================================
+//  Une sous-page par rubrique (audit d'ergonomie P2, variante A retenue
+//  par le promoteur sur maquette — docs/maquette-parametres.html).
+//
+//  Avant : neuf réglages empilés sur une seule page, chacun avec son
+//  « Enregistrer », et un « Enregistré ✓ » affiché tout en haut, loin du
+//  bouton. Désormais : ordinateur = menu à gauche + une rubrique ; téléphone
+//  = la liste, puis la rubrique en plein écran avec « ‹ Paramètres ».
+//
+//  ⚠️ LA RUBRIQUE EST DANS L'ADRESSE (/parametres/notation), comme la fiche
+//  enfant en 2.265 : le retour du téléphone revient à la liste, et une autre
+//  page peut renvoyer droit vers « Relances automatiques ».
+//
+//  ⚠️ LIMITE CONNUE : le HashRouter ne sait pas bloquer une navigation. La
+//  confirmation « quitter sans enregistrer » couvre le menu des rubriques,
+//  « ‹ Paramètres » et la fermeture de l'onglet — pas le menu général de
+//  l'application ni le bouton retour du navigateur.
+// =====================================================================
 export default function Parametres() {
   const { ecoleId, ecole, roles, modulesActifs, rafraichirProfil } = useAuth();
+  const { rubrique } = useParams();
+  const naviguer = useNavigate();
+  const confirmer = useConfirm();
   const [erreur, setErreur] = useState("");
-  const [info, setInfo] = useState("");
+  const [modifie, setModifie] = useState(false);
+  const contenuRef = useRef(null);
 
-  const action = async (fn) => {
-    setErreur(""); setInfo("");
-    try { await fn(); await rafraichirProfil(); setInfo("Enregistré ✓"); }
-    catch (e) { setErreur(e.message); }
-  };
-
-  // Chaque responsable ne voit que les sections de son domaine ; le promoteur
+  const estComplet = estRoleComplet(roles);
+  // Chaque responsable ne voit que les rubriques de son domaine ; le promoteur
   // les voit toutes (cf. SECTIONS_PARAMETRES dans permissions.js).
-  const voit = (s) => peutVoirSection(roles, s);
+  const visibles = rubriquesVisibles({
+    voit: (s) => peutVoirSection(roles, s),
+    estComplet,
+    moduleOk: (m) => moduleActif(modulesActifs, m),
+  });
+  const groupes = grouperRubriques(visibles);
+  const demandee = visibles.find((r) => r.id === rubrique);
+  // Sans rubrique dans l'adresse, l'ordinateur ouvre la première ; le téléphone
+  // montre la liste (cf. classes `lg:` plus bas).
+  const courante = demandee || visibles[0];
+
+  // Rubrique inconnue, ou fermée à ce rôle : retour à la liste.
+  useEffect(() => {
+    if (rubrique && !demandee) naviguer("/parametres", { replace: true });
+  }, [rubrique, demandee, naviguer]);
+
+  // On repart du haut en changeant de rubrique (le défilement est celui de <main>).
+  useEffect(() => {
+    setErreur("");
+    contenuRef.current?.closest("main")?.scrollTo({ top: 0 });
+  }, [rubrique]);
+
+  // Fermer l'onglet avec une saisie en attente : le navigateur prévient.
+  useEffect(() => {
+    if (!modifie) return;
+    const avertir = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", avertir);
+    return () => window.removeEventListener("beforeunload", avertir);
+  }, [modifie]);
+
+  async function aller(vers, e) {
+    e?.preventDefault();
+    if (modifie && courante && vers !== `/parametres/${courante.id}`) {
+      const ok = await confirmer({
+        titre: "Modifications non enregistrées",
+        message: `« ${courante.titre} » a des modifications non enregistrées. Elles seront perdues.`,
+        confirmer: "Quitter sans enregistrer",
+      });
+      if (!ok) return;
+      setModifie(false);
+    }
+    naviguer(vers);
+  }
+
+  // Enregistre des colonnes de l'école puis recharge le profil (nom, couleurs,
+  // modules… sont lus partout depuis le profil).
+  const majEtablissement = async (champs) => { await majEcole(ecoleId, champs); await rafraichirProfil(); };
+
+  const props = { ecoleId, ecole, onErreur: setErreur };
+  const RUBRIQUES = {
+    identite: () => <Identite {...props} onSave={majEtablissement} />,
+    couverture: () => <Couverture {...props} onSave={majEtablissement} />,
+    apparence: () => <Apparence {...props} onSave={majEtablissement} />,
+    notation: () => <NotationConfig {...props} />,
+    signataires: () => <Signataires {...props} />,
+    "champs-eleve": () => <ChampsEleveConfig {...props} />,
+    matricule: () => <Matricule ecole={ecole}
+      onSave={async (v) => { await majConfigMatricule(ecoleId, v); await rafraichirProfil(); }} />,
+    relances: () => <RelancesConfig ecoleId={ecoleId} estGestion={estComplet} />,
+    "paiement-en-ligne": () => <PaiementEnLigne onErreur={setErreur} />,
+    modules: () => <ModulesActifs ecole={ecole} onSave={(mods) => majEtablissement({ modules_actifs: mods })} />,
+  };
 
   return (
     <>
       <EnTete
         titre="Paramètres"
-        sousTitre={estRoleComplet(roles) ? "Configuration de l'établissement" : "Les réglages de votre domaine"}
+        sousTitre={estComplet ? "Configuration de l'établissement" : "Les réglages de votre domaine"}
       />
-      <div className="max-w-2xl space-y-6 p-8">
-        <Alerte ton="erreur">{erreur}</Alerte>
-        {info && <Alerte ton="succes">{info}</Alerte>}
+      <div className="p-4 sm:p-8 lg:flex lg:items-start lg:gap-8">
+        {/* Ordinateur : menu des rubriques, toujours visible. */}
+        <nav aria-label="Rubriques des paramètres"
+          className="sticky top-4 hidden w-60 shrink-0 space-y-4 lg:block">
+          {groupes.map((g) => (
+            <div key={g.groupe}>
+              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-navy-900/65">{g.groupe}</p>
+              <ul className="space-y-0.5">
+                {g.rubriques.map((r) => {
+                  const active = r.id === courante?.id;
+                  return (
+                    <li key={r.id}>
+                      <a href={`#/parametres/${r.id}`} onClick={(e) => aller(`/parametres/${r.id}`, e)}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${active
+                          ? "bg-navy-900 font-medium text-creme"
+                          : "text-navy-900/80 hover:bg-navy-900/5"}`}>
+                        <span className="min-w-0 flex-1 truncate">{r.titre}</span>
+                        {active && modifie && <span aria-label="non enregistré" className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
 
-        {voit("etablissement") && (
-          <ProfilEcole ecoleId={ecoleId} ecole={ecole} onSave={(v) => action(() => majEcole(ecoleId, v))} onErreur={setErreur} />
+        {/* Téléphone, sans rubrique : la liste. */}
+        {!rubrique && (
+          <div className="space-y-5 lg:hidden">
+            {groupes.map((g) => (
+              <div key={g.groupe}>
+                <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-navy-900/65">{g.groupe}</p>
+                <ul className="divide-y divide-navy-900/10 overflow-hidden rounded-2xl border border-navy-900/10 bg-white">
+                  {g.rubriques.map((r) => (
+                    <li key={r.id}>
+                      <Link to={`/parametres/${r.id}`} className="flex items-center gap-3 px-4 py-3.5 active:bg-creme">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-navy-900">{r.titre}</span>
+                          <span className="block truncate text-xs text-navy-900/65">{r.resume}</span>
+                        </span>
+                        <span aria-hidden="true" className="text-lg text-navy-900/65">›</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         )}
-        {voit("signataires") && <Signataires ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("notation") && <NotationConfig ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("champs_eleve") && <ChampsEleveConfig ecoleId={ecoleId} onErreur={setErreur} />}
-        {voit("matricule") && <Matricule ecole={ecole} onSave={(v) => action(() => majConfigMatricule(ecoleId, v))} />}
-        {voit("relances") && moduleActif(modulesActifs, "recouvrement") && (
-          <RelancesConfig ecoleId={ecoleId} estGestion={estRoleComplet(roles)} />
+
+        {visibles.length === 0 && (
+          <p className="text-sm text-navy-900/70">Aucun réglage ne relève de votre rôle.</p>
         )}
-        {/* Paiement en ligne : secrets prestataire, réservé au promoteur. */}
-        {estRoleComplet(roles) && <PaiementEnLigne onErreur={setErreur} />}
-        {/* Activation des modules « à la carte » : réservée au promoteur. */}
-        {voit("modules") && (
-          <ModulesActifs ecole={ecole} onSave={(mods) => action(() => majEcole(ecoleId, { modules_actifs: mods }))} />
+
+        {/* La rubrique. Sur téléphone, seulement si l'adresse en désigne une. */}
+        {courante && (
+          <div ref={contenuRef} className={`min-w-0 max-w-2xl flex-1 ${rubrique ? "" : "hidden lg:block"}`}>
+            <a href="#/parametres" onClick={(e) => aller("/parametres", e)}
+              className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-navy-700 lg:hidden">
+              ‹ Paramètres
+            </a>
+            <p className="hidden text-xs text-navy-900/65 lg:block">{courante.groupe}</p>
+            <h2 className="mb-4 font-display text-xl font-semibold text-navy-900">{courante.titre}</h2>
+            <Alerte ton="erreur">{erreur}</Alerte>
+            <FournisseurModif value={setModifie}>
+              {/* key : changer de rubrique repart d'un formulaire neuf. */}
+              <div key={courante.id}>{RUBRIQUES[courante.id]()}</div>
+            </FournisseurModif>
+          </div>
         )}
       </div>
     </>
@@ -95,8 +228,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
 
   return (
     <Carte className="p-6">
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-navy-900">Relances automatiques</h3>
+      <div className="mb-1 flex items-center justify-end">
         <Bouton variante="fantome" onClick={() => setEdit({ libelle: "", jours: 1, modele: MODELE_DEFAUT, actif: true })}>
           + Palier
         </Bouton>
@@ -199,40 +331,95 @@ function ModaleRegle({ regle, onFermer, onValider }) {
   );
 }
 
-function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
-  const [f, setF] = useState({
-    nom: "", sigle: "", devise: "XOF", pays: "Sénégal", ville: "", adresse: "",
-    telephone: "", email: "", type_etablissement: "ecole",
-    paliers: [], pedagogie_elementaire: "",
-    couleur_primaire: "#0B1F3A", couleur_secondaire: "#C9A227", logo_url: null, cachet_url: null,
+// La fiche Établissement, coupée en trois rubriques. Chacune n'envoie QUE
+// ses colonnes : enregistrer les couleurs ne renvoie plus le nom, et une
+// erreur sur l'une ne bloque plus les deux autres.
+const champSelect = "w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500";
+
+function Identite({ ecole, onSave }) {
+  const form = useFormulaire({
+    nom: ecole?.nom || "", sigle: ecole?.sigle || "", devise: ecole?.devise || "XOF",
+    pays: ecole?.pays || "Sénégal", ville: ecole?.ville || "", adresse: ecole?.adresse || "",
+    telephone: ecole?.telephone || "", email: ecole?.email || "",
   });
-  const [up, setUp] = useState("");
+  const { valeur: f, maj, setValeur } = form;
+  return (
+    <Carte className="p-6">
+      <p className="mb-4 text-xs text-navy-900/65">Apparaît sur les factures, bulletins et documents officiels.</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
+        <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
+          <select value={f.pays} className={champSelect}
+            onChange={(e) => { const p = e.target.value; setValeur((s) => ({ ...s, pays: p, devise: deviseDuPays(p) })); }}>
+            {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Devise</span>
+          <select value={f.devise} onChange={(e) => maj("devise", e.target.value)} className={champSelect}>
+            {DEVISES.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </label>
+        <Champ label="Ville" value={f.ville} onChange={(e) => maj("ville", e.target.value)} placeholder="Dakar" />
+        <Champ label="Adresse" value={f.adresse} onChange={(e) => maj("adresse", e.target.value)} />
+        <Champ label="Téléphone" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
+        <Champ label="E-mail" type="email" value={f.email} onChange={(e) => maj("email", e.target.value)} />
+      </div>
+      <PiedEnregistrer modifie={form.modifie} onAnnuler={form.annuler}
+        desactive={!f.nom.trim()}
+        onEnregistrer={async () => { await onSave(f); form.valider(); }} />
+    </Carte>
+  );
+}
+
+function Couverture({ ecole, onSave }) {
   //  ⚠️ L'ORDRE DE MISE EN LIGNE NE DOIT PAS COMPTER. Si la migration 168
   //  n'est pas encore appliquee, les colonnes `paliers` et
   //  `pedagogie_elementaire` n'existent pas : les envoyer ferait echouer
-  //  TOUT l'enregistrement de la fiche etablissement. On sonde leur
-  //  presence — un `select *` rend la cle des que la colonne existe, meme a
-  //  NULL — et on s'abstient tant qu'elle manque.
+  //  l'enregistrement. On sonde leur presence — un `select *` rend la cle
+  //  des que la colonne existe, meme a NULL — et on s'abstient tant qu'elle manque.
   const paliersDispo = Boolean(ecole) && "paliers" in ecole;
-  useEffect(() => {
-    if (!ecole) return;
-    setF({
-      nom: ecole.nom || "", sigle: ecole.sigle || "", devise: ecole.devise || "XOF",
-      pays: ecole.pays || "Sénégal", ville: ecole.ville || "", adresse: ecole.adresse || "",
-      telephone: ecole.telephone || "", email: ecole.email || "",
-      type_etablissement: ecole.type_etablissement || "ecole",
-      //  On montre ce que l'ecole a DECLARE. Vide = non declare : on
-      //  n'affiche pas le repli du menu comme si c'etait sa reponse.
-      paliers: paliersDeclares(ecole),
-      pedagogie_elementaire: ecole.pedagogie_elementaire || "",
-      couleur_primaire: ecole.couleur_primaire || "#0B1F3A",
-      couleur_secondaire: ecole.couleur_secondaire || "#C9A227",
-      logo_url: ecole.logo_url || null, cachet_url: ecole.cachet_url || null,
-    });
-  }, [ecole]);
+  const form = useFormulaire({
+    //  On montre ce que l'ecole a DECLARE. Vide = non declare : on
+    //  n'affiche pas le repli du menu comme si c'etait sa reponse.
+    paliers: ecole ? paliersDeclares(ecole) : [],
+    pedagogie_elementaire: ecole?.pedagogie_elementaire || "",
+    type_etablissement: ecole?.type_etablissement || "ecole",
+  });
+  const { valeur: f, maj } = form;
+  if (!paliersDispo) {
+    return (
+      <Carte className="p-6">
+        <p className="text-sm text-navy-900/70">Ce réglage sera disponible après la prochaine mise à jour de la base.</p>
+      </Carte>
+    );
+  }
+  return (
+    <Carte className="p-6">
+      <ChoixPaliers
+        paliers={f.paliers} pedagogie={f.pedagogie_elementaire}
+        onPaliers={(v) => maj("paliers", v)}
+        onPedagogie={(v) => maj("pedagogie_elementaire", v)}
+      />
+      <PiedEnregistrer modifie={form.modifie} onAnnuler={form.annuler}
+        onEnregistrer={async () => { await onSave(profilAEnregistrer(f, paliersDispo)); form.valider(); }} />
+    </Carte>
+  );
+}
+
+function Apparence({ ecoleId, ecole, onSave, onErreur }) {
+  const form = useFormulaire({
+    logo_url: ecole?.logo_url || null, cachet_url: ecole?.cachet_url || null,
+    couleur_primaire: ecole?.couleur_primaire || "#0B1F3A",
+    couleur_secondaire: ecole?.couleur_secondaire || "#C9A227",
+  });
+  const { valeur: f, maj } = form;
+  const [up, setUp] = useState("");
   // Si l'aperçu live n'est pas enregistré, rétablir l'accent sauvegardé au départ.
   useEffect(() => () => appliquerAccent(ecole?.couleur_secondaire), [ecole?.couleur_secondaire]);
-  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const accent = (c) => { maj("couleur_secondaire", c); appliquerAccent(c); };
 
   async function televerser(champ, file, prefixe) {
     if (!file) return;
@@ -244,9 +431,6 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Établissement</h3>
-
-      {/* Logo & cachet */}
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <AssetUpload label="Logo de l'école" valeur={f.logo_url} occupe={up === "logo_url"}
           onFichier={(file) => televerser("logo_url", file, "logo")} onRetirer={() => maj("logo_url", null)} />
@@ -254,48 +438,17 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
           onFichier={(file) => televerser("cachet_url", file, "cachet")} onRetirer={() => maj("cachet_url", null)} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Champ label="Nom" value={f.nom} onChange={(e) => maj("nom", e.target.value)} />
-        <Champ label="Sigle" value={f.sigle} onChange={(e) => maj("sigle", e.target.value.toUpperCase())} />
-        {paliersDispo && <div className="sm:col-span-2">
-          <ChoixPaliers
-            paliers={f.paliers} pedagogie={f.pedagogie_elementaire}
-            onPaliers={(v) => maj("paliers", v)}
-            onPedagogie={(v) => maj("pedagogie_elementaire", v)}
-          />
-        </div>}
+      <div className="flex items-end gap-4">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pays</span>
-          <select value={f.pays}
-            onChange={(e) => { const p = e.target.value; setF((s) => ({ ...s, pays: p, devise: deviseDuPays(p) })); }}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-            {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur principale</span>
+          <input type="color" value={f.couleur_primaire} onChange={(e) => maj("couleur_primaire", e.target.value)}
+            className="h-10 w-16 rounded-lg border border-navy-900/15" />
         </label>
-        <Champ label="Ville" value={f.ville} onChange={(e) => maj("ville", e.target.value)} placeholder="Dakar" />
-        <Champ label="Adresse" value={f.adresse} onChange={(e) => maj("adresse", e.target.value)} />
-        <Champ label="Téléphone" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
-        <Champ label="E-mail" type="email" value={f.email} onChange={(e) => maj("email", e.target.value)} />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Devise</span>
-          <select value={f.devise} onChange={(e) => maj("devise", e.target.value)}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-            {DEVISES.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Accent</span>
+          <input type="color" value={f.couleur_secondaire} onChange={(e) => accent(e.target.value)}
+            className="h-10 w-16 rounded-lg border border-navy-900/15" />
         </label>
-        <div className="flex items-end gap-4">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur principale</span>
-            <input type="color" value={f.couleur_primaire} onChange={(e) => maj("couleur_primaire", e.target.value)}
-              className="h-10 w-16 rounded-lg border border-navy-900/15" />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Accent</span>
-            <input type="color" value={f.couleur_secondaire}
-              onChange={(e) => { maj("couleur_secondaire", e.target.value); appliquerAccent(e.target.value); }}
-              className="h-10 w-16 rounded-lg border border-navy-900/15" />
-          </label>
-        </div>
       </div>
 
       {/* Aperçu live de l'accent + explication */}
@@ -306,7 +459,7 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
           <span className="text-sm font-semibold text-or-600">Lien actif</span>
           <span className="rounded-full bg-or-500/10 px-3 py-1 text-xs font-medium text-or-600">Badge</span>
           <span className="rounded-lg bg-navy-900 px-3 py-1 text-sm font-semibold text-or-500">Sur l'en-tête</span>
-          <button type="button" onClick={() => { maj("couleur_secondaire", COULEUR_DEFAUT); appliquerAccent(COULEUR_DEFAUT); }}
+          <button type="button" onClick={() => accent(COULEUR_DEFAUT)}
             className="ml-auto text-xs text-navy-900/50 underline">Rétablir l'accent d'origine</button>
         </div>
         <p className="mt-2 text-xs text-navy-900/50">
@@ -324,72 +477,58 @@ function ProfilEcole({ ecoleId, ecole, onSave, onErreur }) {
         )}
       </div>
 
-      <div className="mt-4 flex justify-end">
-        <Bouton onClick={() => onSave(profilAEnregistrer(f, paliersDispo))}>Enregistrer</Bouton>
-      </div>
+      <PiedEnregistrer modifie={form.modifie} desactive={Boolean(up)}
+        onAnnuler={() => { form.annuler(); appliquerAccent(form.base.couleur_secondaire); }}
+        onEnregistrer={async () => { await onSave(f); form.valider(); }} />
     </Carte>
   );
 }
 
 function ModulesActifs({ ecole, onSave }) {
-  // null = tous actifs
-  const [actifs, setActifs] = useState(() => new Set(tousLesModules()));
-  useEffect(() => {
-    if (!ecole) return;
-    setActifs(new Set(ecole.modules_actifs ?? tousLesModules()));
-  }, [ecole]);
-
-  const toggle = (id) => setActifs((s) => {
-    const n = new Set(s);
-    n.has(id) ? n.delete(id) : n.add(id);
-    return n;
-  });
+  // null en base = tous actifs. Tableau trié : l'ordre des clics ne doit pas
+  // faire croire à une modification.
+  const form = useFormulaire(ecole ? [...(ecole.modules_actifs ?? tousLesModules())].sort() : []);
+  const actifs = new Set(form.valeur);
+  const toggle = (id) => form.setValeur((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id].sort()));
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Modules actifs</h3>
-      <p className="mb-4 text-xs text-navy-900/40">
+      <p className="mb-4 text-xs text-navy-900/65">
         Active ou désactive des modules pour cet établissement. Un module désactivé disparaît
         des menus et son accès est bloqué.
       </p>
       <div className="space-y-2">
         {MODULES.map((m) => (
-          <label key={m.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3">
+          <label key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-navy-900/10 px-4 py-3">
             <span>
               <span className="font-medium text-navy-900">{m.label}</span>
               <span className="ml-2 text-xs text-navy-900/50">{m.desc}</span>
             </span>
-            <input type="checkbox" checked={actifs.has(m.id)} onChange={() => toggle(m.id)} className="h-5 w-5" />
+            <input type="checkbox" checked={actifs.has(m.id)} onChange={() => toggle(m.id)} className="h-5 w-5 shrink-0" />
           </label>
         ))}
       </div>
-      <div className="mt-4 flex justify-end">
-        <Bouton onClick={() => onSave([...actifs])}>Enregistrer</Bouton>
-      </div>
+      <PiedEnregistrer modifie={form.modifie} onAnnuler={form.annuler}
+        onEnregistrer={async () => { await onSave(form.valeur); form.valider(); }} />
     </Carte>
   );
 }
 
 function Matricule({ ecole, onSave }) {
-  const [f, setF] = useState({ prefixe: "", separateur: "-", longueur: 4, annee: "" });
-  useEffect(() => {
-    if (!ecole) return;
-    setF({
-      prefixe: ecole.matricule_prefixe ?? "",
-      separateur: ecole.matricule_separateur ?? "-",
-      longueur: ecole.matricule_longueur ?? 4,
-      annee: ecole.matricule_annee ? String(ecole.matricule_annee) : "",
-    });
-  }, [ecole]);
-  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const form = useFormulaire({
+    prefixe: ecole?.matricule_prefixe ?? "",
+    separateur: ecole?.matricule_separateur ?? "-",
+    longueur: ecole?.matricule_longueur ?? 4,
+    annee: ecole?.matricule_annee ? String(ecole.matricule_annee) : "",
+  });
+  const { valeur: f, maj } = form;
   const anEff = f.annee ? Number(f.annee) : new Date().getFullYear();
   const aa = String(anEff % 100).padStart(2, "0");
   const seq = "1".padStart(Math.max(1, Number(f.longueur) || 4), "0");
   const apercu = (f.prefixe ? f.prefixe + (f.separateur || "-") : "") + aa + (f.separateur || "-") + seq;
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Matricule des élèves</h3>
-      <p className="mb-4 text-xs text-navy-900/40">Format : {"{PRÉFIXE}{SÉP}{AA}{SÉP}{SÉQUENCE}"}. La séquence repart à 1 par année.</p>
+      <p className="mb-4 text-xs text-navy-900/65">Format : {"{PRÉFIXE}{SÉP}{AA}{SÉP}{SÉQUENCE}"}. La séquence repart à 1 par année.</p>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Champ label="Préfixe" value={f.prefixe} onChange={(e) => maj("prefixe", e.target.value.toUpperCase())} placeholder="GS" />
         <Champ label="Séparateur" value={f.separateur} onChange={(e) => maj("separateur", e.target.value.slice(0, 1))} placeholder="-" />
@@ -401,10 +540,9 @@ function Matricule({ ecole, onSave }) {
         <b>Année</b> : fixez-la (ex. 2026) pour que toute une rentrée ait le même « {aa} », quelle que soit la date de saisie.
         Laissez <b>vide</b> pour l'année civile automatique. Les matricules déjà attribués ne changent pas.
       </p>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
-        <Bouton onClick={() => onSave(f)}>Enregistrer</Bouton>
-      </div>
+      <p className="mt-4 text-sm text-navy-900/60">Aperçu : <span className="font-mono text-base font-semibold text-navy-900">{apercu}</span></p>
+      <PiedEnregistrer modifie={form.modifie} onAnnuler={form.annuler}
+        onEnregistrer={async () => { await onSave(f); form.valider(); }} />
     </Carte>
   );
 }
@@ -438,6 +576,9 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
   const [f, setF] = useState({ libelle: "", type: "texte", options: "" });
   const [info, setInfo] = useState("");
   useEffect(() => { getChampsEleve(ecoleId).then(setListe).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+  // La liste s'enregistre à chaque ajout ; seul un champ commencé et pas
+  // encore ajouté serait perdu en changeant de rubrique.
+  useSignalModif(Boolean(f.libelle.trim()));
 
   async function sauver(nouvelle) {
     setInfo("");
@@ -454,7 +595,6 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Champs élève personnalisés</h3>
       <p className="mb-4 text-xs text-navy-900/40">
         Ajoutez des informations propres à votre école (ex. groupe sanguin, personne à contacter…). Elles apparaissent sur la <b>fiche élève</b>.
       </p>
@@ -492,36 +632,33 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
 }
 
 function NotationConfig({ ecoleId, onErreur }) {
-  const [cfg, setCfg] = useState(DEFAUT_NOTATION);
-  const [info, setInfo] = useState("");
-  useEffect(() => { getNotationConfig(ecoleId).then(setCfg).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+  const [enregistree, setEnregistree] = useState(DEFAUT_NOTATION);
+  const form = useFormulaire(enregistree);
+  const { valeur: cfg, setValeur: setCfg } = form;
+  useEffect(() => { getNotationConfig(ecoleId).then(setEnregistree).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
 
   const maj = (k, v) => setCfg((s) => ({ ...s, [k]: v }));
   const majMention = (i, k, v) => setCfg((s) => ({ ...s, mentions: s.mentions.map((m, j) => (j === i ? { ...m, [k]: v } : m)) }));
 
+  // Une erreur remonte au pied, qui l'affiche (toast) et garde la saisie.
   async function sauver() {
-    setInfo("");
-    try {
-      const clean = {
-        ...cfg,
-        bareme: Number(cfg.bareme) || 20,
-        moyenne_passage: Number(cfg.moyenne_passage) || 0,
-        mentions: (cfg.mentions || []).filter((m) => (m.libelle || "").trim())
-          .map((m) => ({ min: Number(m.min) || 0, libelle: m.libelle.trim() }))
-          .sort((a, b) => b.min - a.min),
-      };
-      await setNotationConfig(ecoleId, clean);
-      setCfg(clean); setInfo("Enregistré ✓");
-    } catch (e) { onErreur?.(e.message); }
+    const clean = {
+      ...cfg,
+      bareme: Number(cfg.bareme) || 20,
+      moyenne_passage: Number(cfg.moyenne_passage) || 0,
+      mentions: (cfg.mentions || []).filter((m) => (m.libelle || "").trim())
+        .map((m) => ({ min: Number(m.min) || 0, libelle: m.libelle.trim() }))
+        .sort((a, b) => b.min - a.min),
+    };
+    await setNotationConfig(ecoleId, clean);
+    form.valider(clean);
   }
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Notation &amp; bulletins</h3>
-      <p className="mb-4 text-xs text-navy-900/40">
+      <p className="mb-4 text-xs text-navy-900/65">
         Barème, moyenne de passage, mentions et options d'affichage. <b>Recalculez</b> les bulletins après un changement.
       </p>
-      {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Champ label="Barème (moyennes sur…)" type="number" value={cfg.bareme} onChange={(e) => maj("bareme", e.target.value)} />
@@ -551,7 +688,7 @@ function NotationConfig({ ecoleId, onErreur }) {
         ))}
       </div>
 
-      <div className="mt-4 flex justify-end"><Bouton onClick={sauver}>Enregistrer</Bouton></div>
+      <PiedEnregistrer modifie={form.modifie} onAnnuler={form.annuler} onEnregistrer={sauver} />
     </Carte>
   );
 }
@@ -571,6 +708,7 @@ function Signataires({ ecoleId, onErreur }) {
   }, [ecoleId]); // eslint-disable-line
 
   useEffect(() => { recharger(); }, [recharger]);
+  useSignalModif(Boolean(f.fonction.trim() || f.nom.trim() || f.signature_url));
   const nomMembre = (id) => { const m = membres.find((x) => x.id === id); return m ? `${m.prenom} ${m.nom}`.trim() || m.email : ""; };
 
   async function sauver(nouvelle) {
@@ -596,7 +734,6 @@ function Signataires({ ecoleId, onErreur }) {
 
   return (
     <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Signataires</h3>
       <p className="mb-4 text-xs text-navy-900/40">
         Responsables et leur signature scannée — proposés sur les documents officiels (certificats, bulletins…).
       </p>
@@ -677,6 +814,12 @@ function PaiementEnLigne({ onErreur }) {
   useEffect(() => { recharger(); }, [recharger]);
 
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  // Clé saisie ou réglage changé et pas encore enregistré.
+  const modifie = Boolean(f.api_key || f.site_id || f.secret_webhook) || (etat !== null && (
+    f.prestataire !== (etat.prestataire || "cinetpay") || f.mode !== (etat.mode || "test")
+    || f.commission_a_charge !== (etat.commission_a_charge || "ecole")
+    || f.commission_taux !== (etat.commission_taux ?? 0.035)));
+  useSignalModif(modifie);
   async function sauver(activer) {
     setEnvoi(true);
     try {
@@ -694,8 +837,7 @@ function PaiementEnLigne({ onErreur }) {
 
   return (
     <Carte className="p-6">
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-navy-900">Paiement en ligne</h3>
+      <div className="mb-2 flex items-center justify-end">
         {etat?.actif
           ? <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Activé · {etat.mode === "live" ? "production" : "test"}</span>
           : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs text-navy-900/50">Inactif</span>}
@@ -767,7 +909,12 @@ function PaiementEnLigne({ onErreur }) {
         <code className="mt-1 block break-all rounded bg-white px-2 py-1 text-[11px] text-navy-900/70">{webhookUrl}</code>
       </div>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        {modifie && (
+          <span className="mr-auto flex items-center gap-2 text-sm font-medium text-amber-800">
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-amber-400" />Non enregistré
+          </span>
+        )}
         {etat?.actif && <Bouton variante="fantome" onClick={() => sauver(false)} disabled={envoi}>Désactiver</Bouton>}
         <Bouton variante="fantome" onClick={() => sauver(null)} disabled={envoi}>Enregistrer</Bouton>
         <Bouton variante="or" onClick={() => sauver(true)} disabled={envoi}>Enregistrer &amp; activer</Bouton>

@@ -26,7 +26,7 @@ Trois étapes qu'il ne faut pas sauter, parce qu'une fonction plus loin en dépe
 
 ## 2. Déclarer ce que l'établissement couvre
 
-**Paramètres → Établissement**
+**Paramètres → Ce que l'école couvre**
 
 Ce choix détermine **les écrans que vous verrez**.
 
@@ -183,7 +183,7 @@ Ce qui **persiste** et n'est pas à refaire : niveaux, cycles, matières, coeffi
 
 **« Toutes les familles apparaissent en retard »** → ⚪ **Non facturé** n'est pas 🔴 **Retard**. Il reste des factures à émettre.
 
-**« Je ne vois pas un menu »** → module désactivé (Paramètres → Modules), ou palier non déclaré (Paramètres → Établissement), ou rôle sans accès.
+**« Je ne vois pas un menu »** → module désactivé (Paramètres → Modules), ou palier non déclaré (Paramètres → Ce que l'école couvre), ou rôle sans accès.
 
 ---
 

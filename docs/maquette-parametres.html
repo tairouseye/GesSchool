@@ -1,0 +1,378 @@
+<title>Paramètres GesSchool</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Maquette : trois façons de ranger les Paramètres, chacune montrée sur ordinateur et téléphone,
+     avec les couleurs de l'application (navy, doré, crème). */
+  :root{
+    --navy:#0b1f3a; --navy-700:#1a3358; --or:#c9a227; --or-texte:#8a6d12; --creme:#f7f5ef;
+    --bg:#eceef2; --panel:#ffffff; --ink:#0b1f3a; --muted:#56627a; --line:#dde1e8;
+    --danger:#b42318; --ok:#067647; --warn-bg:#fff6dd; --warn-ink:#7a5a00;
+    --f-display:'Space Grotesk',system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0a111d; --panel:#121b2b; --ink:#e8ecf3; --muted:#9aa6ba; --line:#253350; --or-texte:#e0bf55;
+    --warn-bg:#3a2f0c; --warn-ink:#f3d77a; --danger:#ff8a80; --ok:#6ee7b7; color-scheme:dark}}
+  :root[data-theme="dark"]{
+    --bg:#0a111d; --panel:#121b2b; --ink:#e8ecf3; --muted:#9aa6ba; --line:#253350; --or-texte:#e0bf55;
+    --warn-bg:#3a2f0c; --warn-ink:#f3d77a; --danger:#ff8a80; --ok:#6ee7b7; color-scheme:dark}
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding-block:32px 80px;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  h1{font-family:var(--f-display);font-size:clamp(24px,4vw,32px);letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+  .lead{color:var(--muted);max-width:68ch;margin:0;line-height:1.55}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--or-texte);margin-bottom:8px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:26px 0 18px}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+  .seg button{font:inherit;font-weight:600;font-size:13px;border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:9px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--navy);color:#f7f5ef}
+  :root[data-theme="dark"] .seg button[aria-pressed="true"]{background:var(--or);color:var(--navy)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--or);color:var(--navy)}}
+  .seg button:focus-visible,.btn:focus-visible,.nav a:focus-visible{outline:2px solid var(--or);outline-offset:2px}
+  .ctl-label{font-size:12px;color:var(--muted);font-weight:600;margin-right:6px}
+
+  .variant-head{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px}
+  .variant-head h2{font-family:var(--f-display);font-size:19px;margin:0 0 4px}
+  .variant-head p{margin:0;color:var(--muted);line-height:1.5;max-width:75ch}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(201,162,39,.18);color:var(--or-texte);white-space:nowrap}
+  .procons{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-top:12px;font-size:13px;line-height:1.45;grid-column:1/-1}
+  .procons ul{margin:4px 0 0;padding-left:18px}
+  .procons b{font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .plus b{color:var(--ok)} .moins b{color:var(--danger)}
+
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+  .device-cap{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+
+  /* ---- Écran simulé : toujours clair, comme l'application ---- */
+  .app{--a-bg:#f7f5ef;--a-card:#fff;--a-ink:#0b1f3a;--a-muted:#55627a;--a-line:rgba(11,31,58,.12);
+    background:var(--a-bg);color:var(--a-ink);border-radius:14px;border:1px solid var(--line);overflow:hidden;
+    box-shadow:0 1px 2px rgba(10,20,40,.06),0 14px 34px rgba(10,20,40,.10);position:relative}
+  .app.desk{height:600px;display:grid;grid-template-rows:auto 1fr}
+  .app.phone{width:340px;height:660px;border-radius:30px;border:8px solid #1d2433;display:grid;grid-template-rows:auto 1fr;max-width:100%}
+  .topbar{background:var(--navy);color:#f7f5ef;display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12px}
+  .topbar .seal{width:22px;height:22px;border-radius:6px;background:var(--or);color:var(--navy);display:grid;place-items:center;font-weight:800;font-family:var(--f-display);font-size:11px}
+  .topbar .muted{opacity:.75}
+  .scroll{overflow:auto;min-height:0;position:relative}
+  .app-title{padding:16px 18px 6px}
+  .app-title h3{font-family:var(--f-display);font-size:20px;margin:0}
+  .app-title p{margin:2px 0 0;color:var(--a-muted);font-size:12px}
+  .phone .app-title{padding:14px 14px 4px}
+  .phone .app-title h3{font-size:18px}
+
+  .card{background:var(--a-card);border:1px solid var(--a-line);border-radius:14px;padding:16px}
+  .card h4{font-family:var(--f-display);font-size:15px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  .card .hint{color:var(--a-muted);font-size:11.5px;margin:0 0 12px;line-height:1.45}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .phone .fields{grid-template-columns:1fr}
+  .f label{display:block;font-size:11.5px;font-weight:600;color:var(--a-muted);margin-bottom:4px}
+  .f input,.f select{width:100%;font:inherit;font-size:13px;color:var(--a-ink);background:#fff;border:1px solid rgba(11,31,58,.18);border-radius:10px;padding:8px 10px;color-scheme:light}
+  .f input:focus,.f select:focus{outline:none;border-color:var(--or)}
+  .f.check{display:flex;align-items:center;gap:8px;font-size:13px;grid-column:1/-1}
+  .f.check label{margin:0;color:var(--a-ink);font-weight:500}
+  .lock{font-family:var(--f-body);font-size:10px;font-weight:700;letter-spacing:.04em;background:rgba(11,31,58,.07);color:#3d4a63;padding:2px 7px;border-radius:999px}
+  .dirty-dot{width:7px;height:7px;border-radius:50%;background:#d97706;display:inline-block;flex:none}
+
+  .btn{font:inherit;font-weight:600;font-size:12.5px;border-radius:10px;padding:8px 12px;border:1px solid transparent;cursor:pointer}
+  .btn.primary{background:var(--navy);color:#f7f5ef}
+  .btn.primary:disabled{opacity:.4;cursor:default}
+  .btn.ghost{background:transparent;color:var(--a-ink);border-color:rgba(11,31,58,.18)}
+  .card-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:14px}
+  .card-foot .state{margin-right:auto;font-size:11.5px;color:var(--a-muted);display:flex;align-items:center;gap:6px}
+  .card-foot .state.on{color:#92400e;font-weight:600}
+  .card-foot .state.saved{color:#067647;font-weight:600}
+
+  /* Barre collante « non enregistré » */
+  .savebar{position:sticky;bottom:0;margin-top:14px;background:var(--navy);color:#f7f5ef;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;box-shadow:0 -6px 18px rgba(11,31,58,.18)}
+  .savebar span{margin-right:auto;display:flex;align-items:center;gap:8px}
+  .savebar .btn.ghost{color:#f7f5ef;border-color:rgba(247,245,239,.35)}
+  .savebar .btn.primary{background:var(--or);color:var(--navy)}
+
+  /* Garde de sortie (dans l'écran, pas de confirm()) */
+  .leave{position:absolute;inset:0;background:rgba(11,31,58,.45);display:grid;place-items:center;padding:16px;z-index:5}
+  .leave .box{background:#fff;border-radius:14px;padding:16px;max-width:300px;color:var(--a-ink)}
+  .leave .box p{margin:0 0 12px;font-size:13px;line-height:1.45}
+  .leave .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+  /* Variante A : menu latéral / liste */
+  .A-desk{display:grid;grid-template-columns:210px minmax(0,1fr);height:100%;min-height:0}
+  .nav{border-right:1px solid var(--a-line);background:#fff;overflow:auto;padding:12px 8px}
+  .nav .grp{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--a-muted);padding:10px 10px 4px}
+  .nav a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;color:var(--a-ink);text-decoration:none;font-size:12.5px;cursor:pointer}
+  .nav a:hover{background:rgba(11,31,58,.05)}
+  .nav a[aria-current="page"]{background:var(--navy);color:#f7f5ef}
+  .nav a .lock{margin-left:auto}
+  .nav a[aria-current="page"] .lock{background:rgba(247,245,239,.15);color:#f7f5ef}
+  .nav a .dirty-dot{margin-left:auto}
+  .crumb{font-size:11.5px;color:var(--a-muted);padding:14px 18px 0}
+  .A-body{padding:6px 18px 18px}
+  .list{padding:4px 12px 16px}
+  .list .grp{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--a-muted);padding:12px 6px 6px}
+  .list .items{background:#fff;border:1px solid var(--a-line);border-radius:14px;overflow:hidden}
+  .list a{display:flex;align-items:center;gap:10px;padding:12px 12px;border-top:1px solid var(--a-line);color:var(--a-ink);text-decoration:none;cursor:pointer}
+  .list a:first-child{border-top:0}
+  .list a .t{font-weight:600;font-size:13px}
+  .list a .s{display:block;font-size:11px;color:var(--a-muted);margin-top:1px}
+  .list a .chev{margin-left:auto;color:var(--a-muted)}
+  .back{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--navy-700);padding:12px 14px 0;cursor:pointer;background:none;border:0;font-family:inherit}
+
+  /* Variante B : onglets par groupe */
+  .tabs{display:flex;gap:6px;padding:4px 18px 10px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;background:var(--a-bg);z-index:2}
+  .phone .tabs{padding:4px 14px 10px}
+  .tabs button{font:inherit;font-size:12.5px;font-weight:600;white-space:nowrap;border:1px solid var(--a-line);background:#fff;color:var(--a-ink);border-radius:999px;padding:7px 13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .tabs button[aria-selected="true"]{background:var(--navy);color:#f7f5ef;border-color:var(--navy)}
+  .stack{display:grid;gap:12px;padding:0 18px 18px}
+  .phone .stack{padding:0 14px 14px}
+
+  /* Variante C : page unique + sommaire */
+  .toc{display:flex;gap:6px;padding:8px 18px;overflow-x:auto;position:sticky;top:0;background:rgba(247,245,239,.96);border-bottom:1px solid var(--a-line);z-index:2;scrollbar-width:none}
+  .phone .toc{padding:8px 14px}
+  .toc a{font-size:11.5px;font-weight:600;white-space:nowrap;color:var(--a-muted);text-decoration:none;padding:5px 9px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:5px}
+  .toc a:hover{background:rgba(11,31,58,.06);color:var(--a-ink)}
+
+  .note{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;line-height:1.55}
+  .note h2{font-family:var(--f-display);font-size:17px;margin:0 0 8px}
+  .note ul{margin:6px 0 0;padding-left:18px}
+  .note li{margin:3px 0}
+  .note code{font-family:var(--f-mono);font-size:12px}
+  .grid-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+  .grid-map div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+  .grid-map b{font-family:var(--f-display)}
+  .grid-map p{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+
+  @media (max-width:900px){
+    .stage{grid-template-columns:1fr}
+    .desk-wrap{display:none}
+    .procons{grid-template-columns:1fr}
+    .variant-head{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="page">
+  <div class="eyebrow">Maquette · Audit ergonomie, constat P2</div>
+  <h1>Ranger les Paramètres</h1>
+  <p class="lead">
+    Aujourd'hui, les 9 réglages sont empilés sur une seule page, chacun avec son bouton « Enregistrer ».
+    Trois rangements possibles, avec les mêmes 4 groupes. Les écrans sont cliquables : changez de
+    rubrique, modifiez un champ pour voir l'alerte « non enregistré », puis essayez de partir sans enregistrer.
+  </p>
+
+  <div class="controls">
+    <div><span class="ctl-label">Variante</span>
+      <div class="seg" id="seg-variant" role="group" aria-label="Variante">
+        <button id="v-A" data-v="A" aria-pressed="true">A · Sous-pages</button>
+        <button id="v-B" data-v="B" aria-pressed="false">B · Onglets par groupe</button>
+        <button id="v-C" data-v="C" aria-pressed="false">C · Page unique + sommaire</button>
+      </div>
+    </div>
+    <div><span class="ctl-label">Vu par</span>
+      <div class="seg" id="seg-role" role="group" aria-label="Rôle">
+        <button id="r-p" data-r="promoteur" aria-pressed="true">Promoteur</button>
+        <button id="r-d" data-r="direction" aria-pressed="false">Direction</button>
+        <button id="r-c" data-r="comptable" aria-pressed="false">Comptable</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="variant-head" id="vhead"></div>
+
+  <div class="stage">
+    <div class="desk-wrap"><p class="device-cap">Ordinateur</p><div class="app desk" id="desk"></div></div>
+    <div><p class="device-cap">Téléphone · 340 px</p><div class="app phone" id="phone"></div></div>
+  </div>
+
+  <div class="note">
+    <h2>Les 4 groupes, communs aux trois variantes</h2>
+    <div class="grid-map">
+      <div><b>Établissement</b><p>Identité et coordonnées · Ce que l'école couvre (paliers, pédagogie) · Apparence (logo, couleurs). La fiche actuelle est coupée en trois, chacune avec son propre enregistrement.</p></div>
+      <div><b>Scolarité</b><p>Notation et bulletins · Signataires · Champs élève personnalisés · Matricule des élèves.</p></div>
+      <div><b>Finances</b><p>Relances automatiques · Paiement en ligne (clés du prestataire, promoteur seul).</p></div>
+      <div><b>Abonnement</b><p>Modules actifs (promoteur seul). Isolé, comme le demande l'audit : jamais à côté du profil.</p></div>
+    </div>
+    <h2 style="margin-top:18px">Ce qui change dans les trois cas</h2>
+    <ul>
+      <li>Chaque rubrique signale ses modifications non enregistrées (point orange dans le menu, barre « Enregistrer » collée en bas).</li>
+      <li>Partir d'une rubrique modifiée demande confirmation, dans l'écran, au lieu de perdre la saisie sans rien dire.</li>
+      <li>Le menu ne montre que les rubriques du rôle (règles de <code>SECTIONS_PARAMETRES</code>, inchangées). Un comptable voit 2 rubriques, pas 9.</li>
+      <li>« Enregistré ✓ » s'affiche dans la rubrique concernée, plus en haut de la page loin du bouton.</li>
+      <li>Sans migration : les données et les droits ne bougent pas, seul l'écran est réorganisé.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function(){
+  const GROUPES = ["Établissement","Scolarité","Finances","Abonnement"];
+  // roles : [] = promoteur seul (comme SECTIONS_PARAMETRES)
+  const SECTIONS = [
+    {id:"identite", g:"Établissement", t:"Identité et coordonnées", s:"Nom, sigle, pays, devise, contacts", roles:[],
+      hint:"Apparaît sur les factures, bulletins et documents officiels.",
+      f:[["Nom","Groupe scolaire Les Pionniers"],["Sigle","GSP"],["Ville","Dakar"],["Téléphone","+221 77 412 08 33"],["Pays",["Sénégal","Côte d'Ivoire","Mali"]],["Devise",["XOF","XAF","EUR"]]]},
+    {id:"paliers", g:"Établissement", t:"Ce que l'école couvre", s:"Paliers et pédagogie", roles:[],
+      hint:"Déclaré : élémentaire (avec préscolaire) et collège.",
+      f:[["Combinaison",["Élémentaire + collège","Élémentaire seul","Collège + lycée","Élémentaire → université"]],["Pédagogie de l'élémentaire",["Classique","Montessori","Bilingue"]]]},
+    {id:"apparence", g:"Établissement", t:"Apparence", s:"Logo, cachet, couleurs", roles:[],
+      hint:"L'accent colore boutons et liens dans toute l'application.",
+      f:[["Couleur principale","#0B1F3A"],["Accent","#C9A227"]]},
+    {id:"notation", g:"Scolarité", t:"Notation et bulletins", s:"Barème, mentions, affichage", roles:["direction"],
+      hint:"Recalculez les bulletins après un changement.",
+      f:[["Barème (moyennes sur…)","20"],["Moyenne de passage","10"],["☑ Afficher le rang",true],["☑ Afficher la décision du conseil",true]]},
+    {id:"signataires", g:"Scolarité", t:"Signataires", s:"2 signataires", roles:["direction"],
+      hint:"Proposés sur les certificats et bulletins.",
+      f:[["Fonction","Le Directeur des études"],["Nom","M. Abdoulaye Fall"]]},
+    {id:"champs", g:"Scolarité", t:"Champs élève personnalisés", s:"1 champ : groupe sanguin", roles:["comptable","secretaire"],
+      hint:"Apparaissent sur la fiche élève.",
+      f:[["Libellé du champ","Personne à prévenir"],["Type",["Texte","Nombre","Date","Liste de choix"]]]},
+    {id:"matricule", g:"Scolarité", t:"Matricule des élèves", s:"Aperçu : GSP-26-0001", roles:[],
+      hint:"La séquence repart à 1 chaque année. Les matricules déjà attribués ne changent pas.",
+      f:[["Préfixe","GSP"],["Séparateur","-"],["Chiffres","4"],["Année","2026"]]},
+    {id:"relances", g:"Finances", t:"Relances automatiques", s:"3 paliers actifs", roles:["comptable"],
+      hint:"Rappels envoyés chaque jour aux parents pour les scolarités impayées.",
+      f:[["Palier","Premier rappel"],["Jours après l'échéance","3"],["☑ Actif",true]]},
+    {id:"paiement", g:"Finances", t:"Paiement en ligne", s:"Inactif", roles:[], lock:true,
+      hint:"Clés du prestataire. Elles ne sont jamais réaffichées après enregistrement.",
+      f:[["Prestataire",["CinetPay","PayDunya"]],["Environnement",["Test (bac à sable)","Production"]],["API key","••••••"]]},
+    {id:"modules", g:"Abonnement", t:"Modules actifs", s:"11 modules sur 14", roles:[], lock:true,
+      hint:"Un module désactivé disparaît des menus et son accès est bloqué.",
+      f:[["☑ Bibliothèque",true],["☑ Cantine",false],["☑ Transport",true],["☑ Recouvrement",true]]},
+  ];
+
+  const S = { v:"A", role:"promoteur", cur:{A:"identite",B:"Établissement"}, phoneOpen:false,
+              dirty:new Set(), saved:null, leave:null };
+
+  const visibles = () => SECTIONS.filter(x => S.role==="promoteur" || x.roles.includes(S.role));
+  const groupes = () => GROUPES.filter(g => visibles().some(x => x.g===g));
+  const esc = (t) => String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  const VARIANTES = {
+    A:{nom:"A · Une sous-page par rubrique", reco:true,
+      desc:"Ordinateur : un menu à gauche, regroupé, qui reste en place. Téléphone : la liste des rubriques, puis la rubrique en plein écran avec « ← Paramètres ». La rubrique entre dans l'adresse (/parametres/notation), comme la barre de rubriques parent de la 2.265.",
+      plus:["Une seule rubrique à l'écran : on sait quel « Enregistrer » correspond à quoi","Le retour Android revient à la liste","Un lien direct est possible (ex. « Réglez vos relances » depuis le Recouvrement)","Le comptable voit 2 entrées, pas une page vide à moitié"],
+      moins:["Deux touchers pour atteindre une rubrique sur téléphone","Ne permet pas de tout parcourir d'un coup d'œil"]},
+    B:{nom:"B · Un onglet par groupe",
+      desc:"Quatre onglets (Établissement, Scolarité, Finances, Abonnement). Dans chaque onglet, ses rubriques restent empilées, chacune avec son bouton. Sur téléphone, les onglets défilent comme la barre de rubriques.",
+      plus:["Un toucher pour changer de groupe","Peu de travail : les cartes actuelles sont réutilisées telles quelles"],
+      moins:["« Scolarité » reste une longue page de 4 cartes","Plusieurs boutons « Enregistrer » à l'écran en même temps","Un rôle qui n'a qu'une rubrique voit un onglet seul"]},
+    C:{nom:"C · Page unique avec sommaire",
+      desc:"La page actuelle, plus un sommaire collé en haut qui fait défiler jusqu'à la rubrique et marque celles qui sont modifiées.",
+      plus:["Changement minimal, rien à réapprendre","Tout reste visible en faisant défiler"],
+      moins:["Le constat de l'audit reste : une page très longue, surtout sur téléphone","Une saisie non enregistrée peut être loin de l'écran au moment de partir"]},
+  };
+
+  function champs(sec){
+    return `<div class="fields">${sec.f.map(([l,v],i)=>{
+      const id=`${sec.id}-${i}-`;
+      if (l.startsWith("☑")) return `<div class="f check"><input type="checkbox" data-sec="${sec.id}" ${v?"checked":""} id="${id}"><label for="${id}">${esc(l.slice(2))}</label></div>`;
+      if (Array.isArray(v)) return `<div class="f"><label>${esc(l)}</label><select data-sec="${sec.id}">${v.map(o=>`<option>${esc(o)}</option>`).join("")}</select></div>`;
+      return `<div class="f"><label>${esc(l)}</label><input data-sec="${sec.id}" value="${esc(v)}"></div>`;
+    }).join("")}</div>`;
+  }
+  function lockTag(sec){ return sec.lock ? `<span class="lock">Promoteur seul</span>` : ""; }
+  function etat(sec){
+    if (S.dirty.has(sec.id)) return `<span class="state on"><span class="dirty-dot"></span>Modifications non enregistrées</span>`;
+    if (S.saved===sec.id) return `<span class="state saved">Enregistré ✓</span>`;
+    return `<span class="state"></span>`;
+  }
+  function carte(sec, opts={}){
+    const d=S.dirty.has(sec.id);
+    return `<section class="card" id="c-${sec.id}"><h4>${esc(sec.t)} ${lockTag(sec)}</h4><p class="hint">${esc(sec.hint)}</p>${champs(sec)}
+      ${opts.bar ? "" : `<div class="card-foot">${etat(sec)}${d?`<button class="btn ghost" data-cancel="${sec.id}">Annuler</button>`:""}<button class="btn primary" data-save="${sec.id}" ${d?"":"disabled"}>Enregistrer</button></div>`}
+    </section>${opts.bar && d ? `<div class="savebar"><span><span class="dirty-dot"></span>Non enregistré</span><button class="btn ghost" data-cancel="${sec.id}">Annuler</button><button class="btn primary" data-save="${sec.id}">Enregistrer</button></div>` : ""}
+    ${opts.bar && !d && S.saved===sec.id ? `<p style="margin:10px 2px 0;font-size:12px;color:#067647;font-weight:600">Enregistré ✓</p>`:""}`;
+  }
+  const topbar = (phone) => `<div class="topbar"><span class="seal">GS</span><b>${phone?"GSP":"Groupe scolaire Les Pionniers"}</b><span class="muted" style="margin-left:auto">${S.role==="promoteur"?"Promoteur":S.role==="direction"?"Direction":"Comptable"}</span></div>`;
+  const titre = (phone) => `<div class="app-title"><h3>Paramètres</h3>${phone?"":`<p>${S.role==="promoteur"?"Configuration de l'établissement":"Les réglages de votre domaine"}</p>`}</div>`;
+  const leaveBox = () => S.leave ? `<div class="leave"><div class="box" role="dialog" aria-label="Quitter sans enregistrer"><p><b>« ${esc(SECTIONS.find(x=>x.id===S.leave.from).t)} »</b> a des modifications non enregistrées.</p><div class="row"><button class="btn ghost" data-leave="stay">Rester</button><button class="btn ghost" data-leave="drop">Quitter sans enregistrer</button><button class="btn primary" data-leave="save">Enregistrer et continuer</button></div></div></div>` : "";
+
+  function renderA(phone){
+    const vis=visibles();
+    if (!vis.some(x=>x.id===S.cur.A)) S.cur.A=vis[0].id;
+    const sec=SECTIONS.find(x=>x.id===S.cur.A);
+    if (!phone){
+      const nav=groupes().map(g=>`<div class="grp">${g}</div>`+vis.filter(x=>x.g===g).map(x=>
+        `<a data-go="${x.id}" ${x.id===sec.id?'aria-current="page"':""} tabindex="0">${esc(x.t)}${S.dirty.has(x.id)?'<span class="dirty-dot" title="Non enregistré"></span>':lockTag(x)}</a>`).join("")).join("");
+      return topbar(false)+`<div class="A-desk"><nav class="nav" aria-label="Rubriques des paramètres">${nav}</nav>
+        <div class="scroll"><div class="crumb">Paramètres › ${esc(sec.g)} › <b>${esc(sec.t)}</b></div><div class="A-body"><h3 style="font-family:var(--f-display);margin:6px 0 12px;font-size:19px">${esc(sec.t)}</h3>${carte(sec,{bar:true})}</div></div></div>`+leaveBox();
+    }
+    if (!S.phoneOpen){
+      return topbar(true)+`<div class="scroll">${titre(true)}<div class="list">${groupes().map(g=>`<div class="grp">${g}</div><div class="items">`+vis.filter(x=>x.g===g).map(x=>
+        `<a data-open="${x.id}" tabindex="0"><span><span class="t">${esc(x.t)}</span><span class="s">${esc(x.s)}</span></span>${S.dirty.has(x.id)?'<span class="dirty-dot" style="margin-left:auto"></span>':lockTag(x)}<span class="chev" ${S.dirty.has(x.id)||x.lock?'style="margin-left:6px"':""}>›</span></a>`).join("")+`</div>`).join("")}</div></div>`;
+    }
+    return topbar(true)+`<div class="scroll"><button class="back" data-back="1">‹ Paramètres</button><div style="padding:6px 14px 14px"><h3 style="font-family:var(--f-display);margin:4px 0 12px;font-size:18px">${esc(sec.t)}</h3>${carte(sec,{bar:true})}</div></div>`+leaveBox();
+  }
+  function renderB(phone){
+    const gs=groupes();
+    if (!gs.includes(S.cur.B)) S.cur.B=gs[0];
+    const tabs=gs.map(g=>{const d=visibles().some(x=>x.g===g&&S.dirty.has(x.id));
+      return `<button role="tab" data-tab="${g}" aria-selected="${g===S.cur.B}">${g}${d?'<span class="dirty-dot"></span>':""}</button>`}).join("");
+    return topbar(phone)+`<div class="scroll">${titre(phone)}<div class="tabs" role="tablist">${tabs}</div><div class="stack">${visibles().filter(x=>x.g===S.cur.B).map(x=>carte(x)).join("")}</div></div>`+leaveBox();
+  }
+  function renderC(phone){
+    const vis=visibles();
+    const toc=vis.map(x=>`<a data-jump="${x.id}">${esc(phone?x.t.split(" ")[0]:x.t)}${S.dirty.has(x.id)?'<span class="dirty-dot"></span>':""}</a>`).join("");
+    return topbar(phone)+`<div class="scroll" data-scroll="C">${titre(phone)}<div class="toc">${toc}</div><div class="stack" style="padding-top:12px">${vis.map(x=>carte(x)).join("")}</div></div>`;
+  }
+
+  function render(){
+    const V=VARIANTES[S.v];
+    document.getElementById("vhead").innerHTML=`<div><h2>${V.nom}</h2><p>${V.desc}</p></div>${V.reco?'<span class="pill">Recommandée</span>':"<span></span>"}
+      <div class="procons"><div class="plus"><b>Pour</b><ul>${V.plus.map(p=>`<li>${p}</li>`).join("")}</ul></div><div class="moins"><b>Contre</b><ul>${V.moins.map(p=>`<li>${p}</li>`).join("")}</ul></div></div>`;
+    const fn={A:renderA,B:renderB,C:renderC}[S.v];
+    for (const [el,phone] of [["desk",false],["phone",true]]){
+      const box=document.getElementById(el);
+      const sc=box.querySelector(".scroll"); const top=sc?sc.scrollTop:0;
+      box.innerHTML=fn(phone);
+      const ns=box.querySelector(".scroll"); if (ns && S.keepScroll) ns.scrollTop=top;
+    }
+    S.keepScroll=false;
+  }
+
+  // Navigation avec garde de sortie (variante A)
+  function aller(to, phoneOpen){
+    const from=S.cur.A;
+    if (S.dirty.has(from) && to!==from){ S.leave={from,to,phoneOpen}; render(); return; }
+    S.cur.A=to; S.phoneOpen=phoneOpen; S.saved=null; render();
+  }
+
+  document.addEventListener("input",(e)=>{
+    const sec=e.target.dataset && e.target.dataset.sec; if(!sec) return;
+    const wasDirty=S.dirty.has(sec); S.dirty.add(sec); S.saved=null;
+    if (!wasDirty){
+      // garder la valeur et le focus pendant le re-rendu
+      const val=e.target.type==="checkbox"?e.target.checked:e.target.value;
+      const box=e.target.closest(".app"); const idx=[...box.querySelectorAll(`[data-sec="${sec}"]`)].indexOf(e.target);
+      S.keepScroll=true; render();
+      const t=document.getElementById(box.id).querySelectorAll(`[data-sec="${sec}"]`)[idx];
+      if (t){ if(t.type==="checkbox") t.checked=val; else { t.value=val; t.focus(); } }
+    }
+  });
+  document.addEventListener("change",(e)=>{ if (e.target.type==="checkbox"||e.target.tagName==="SELECT") e.target.dispatchEvent(new Event("input",{bubbles:true})); });
+
+  document.addEventListener("click",(e)=>{
+    const b=e.target.closest("button,a"); if(!b) return;
+    const d=b.dataset;
+    if (d.v){ S.v=d.v; S.dirty.clear(); S.saved=null; S.leave=null; S.phoneOpen=false;
+      document.querySelectorAll("#seg-variant button").forEach(x=>x.setAttribute("aria-pressed",x===b)); render(); return; }
+    if (d.r){ S.role=d.r; S.dirty.clear(); S.saved=null; S.leave=null; S.phoneOpen=false;
+      document.querySelectorAll("#seg-role button").forEach(x=>x.setAttribute("aria-pressed",x===b)); render(); return; }
+    if (d.go){ aller(d.go,S.phoneOpen); return; }
+    if (d.open){ S.cur.A=d.open; S.phoneOpen=true; S.saved=null; render(); return; }
+    if (d.back){ if (S.dirty.has(S.cur.A)){ S.leave={from:S.cur.A,to:S.cur.A,phoneOpen:false}; render(); } else { S.phoneOpen=false; render(); } return; }
+    if (d.tab){ S.cur.B=d.tab; S.saved=null; render(); return; }
+    if (d.save){ S.dirty.delete(d.save); S.saved=d.save; S.keepScroll=true; render(); return; }
+    if (d.cancel){ S.dirty.delete(d.cancel); S.saved=null; S.keepScroll=true; render(); return; }
+    if (d.jump){ const box=b.closest(".app"); const c=box.querySelector("#c-"+d.jump); const sc=box.querySelector(".scroll");
+      if (c&&sc) sc.scrollTo({top:c.offsetTop-box.querySelector(".toc").offsetHeight-8,behavior:"smooth"}); return; }
+    if (d.leave){ const L=S.leave; S.leave=null;
+      if (d.leave==="stay"){ render(); return; }
+      if (d.leave==="save") S.saved=null;
+      S.dirty.delete(L.from); S.cur.A=L.to; S.phoneOpen=L.phoneOpen; render(); return; }
+  });
+  document.addEventListener("keydown",(e)=>{ if((e.key==="Enter"||e.key===" ")&&e.target.matches("a[data-go],a[data-open],a[data-jump]")){ e.preventDefault(); e.target.click(); }});
+
+  render();
+})();
+</script>
