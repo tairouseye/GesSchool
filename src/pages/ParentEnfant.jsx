@@ -14,7 +14,8 @@ import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
 import { lienFichier, poids } from "@/lib/fichiers.js";
-import { JOURS } from "@/lib/emploi.js";
+import { pourGrille } from "@/lib/emploi.js";
+import GrilleEmploi from "@/composants/GrilleEmploi.jsx";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
 import { Icone } from "@/composants/Icones.jsx";
@@ -28,7 +29,6 @@ import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
-const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 const fmtDate = (d) =>
   (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
 
@@ -412,33 +412,16 @@ function Notes({ notes }) {
   );
 }
 
+// La semaine de l'enfant, présentée comme l'emploi du temps que l'école
+// imprime (heures × jours), et non plus jour par jour en liste à dérouler.
 function Emploi({ creneaux }) {
   if (creneaux.length === 0) {
     return <Carte className="p-6 text-sm text-navy-900/40">Aucun emploi du temps disponible.</Carte>;
   }
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {JOURS.map(([j, label]) => {
-        const items = creneaux.filter((c) => c.jour === j);
-        if (items.length === 0) return null;
-        return (
-          <Carte key={j} className="p-5">
-            <h3 className="mb-3 font-display font-semibold text-navy-900">{label}</h3>
-            <ul className="space-y-2">
-              {items.map((c, i) => (
-                <li key={i} className="rounded-xl border border-navy-900/10 p-3">
-                  <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
-                  <p className="font-medium text-navy-900">{c.activite || c.matiere || "—"}</p>
-                  <p className="text-xs text-navy-900/50">
-                    {[c.activite && c.matiere, c.enseignant, c.salle].filter(Boolean).join(" · ")}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </Carte>
-        );
-      })}
-    </div>
+    <Carte className="p-4">
+      <GrilleEmploi creneaux={creneaux.map((c) => pourGrille(c))} />
+    </Carte>
   );
 }
 

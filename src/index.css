@@ -149,7 +149,9 @@
      cette instruction, les navigateurs les suppriment à l'impression « pour
      économiser l'encre » et il ne reste qu'un tableau nu. */
   .document-caisse,
-  .document-caisse * {
+  .document-caisse *,
+  .grille-edt,
+  .grille-edt * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

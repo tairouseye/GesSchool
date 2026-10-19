@@ -7,6 +7,7 @@ import { genererEDT } from "@/lib/generateurEDT.js";
 import { getAnneeCourante, getClasses, getMatieres, getNiveaux } from "@/lib/academique.js";
 import { getEnseignants } from "@/lib/enseignants.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
+import GrilleEmploi from "@/composants/GrilleEmploi.jsx";
 
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 const ONGLETS = [
@@ -74,6 +75,10 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
   const [creneaux, setCreneaux] = useState([]);
   const [modale, setModale] = useState(null);
   const [imprimer, setImprimer] = useState(false);
+  // ⚠️ AFFICHER ET MODIFIER SONT DEUX MODES. L'affichage montre la semaine
+  // comme l'école l'imprime ; la saisie garde ses cartes par jour, où l'on
+  // ajoute et supprime. Mélanger les deux encombrait la lecture.
+  const [mode, setMode] = useState("affichage");
   const [erreur, setErreur] = useState("");
   const classeLibelle = classes.find((c) => c.id === classeId)?.libelle || "";
 
@@ -98,12 +103,31 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
             {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
           </select>
         </label>
-        {classeId && creneaux.length > 0 && (
-          <Bouton variante="fantome" onClick={() => setImprimer(true)}>🖨️ Imprimer / PDF</Bouton>
+        {classeId && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="Mode" className="inline-flex rounded-xl border border-navy-900/15 bg-white p-1 text-sm">
+              {[["affichage", "Affichage"], ["modifier", "✏️ Modifier"]].map(([k, l]) => (
+                <button key={k} type="button" aria-pressed={mode === k} onClick={() => setMode(k)}
+                  className={`rounded-lg px-3 py-1.5 font-medium transition ${mode === k ? "bg-navy-900 text-creme" : "text-navy-900/70 hover:text-navy-900"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            {creneaux.length > 0 && (
+              <Bouton variante="fantome" onClick={() => setImprimer(true)}>🖨️ Imprimer / PDF</Bouton>
+            )}
+          </div>
         )}
       </div>
 
-      {classeId && (
+      {classeId && mode === "affichage" && (
+        <Carte className="p-4">
+          <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c))}
+            vide="Aucun créneau pour cette classe. Passez en mode « Modifier » pour en ajouter." />
+        </Carte>
+      )}
+
+      {classeId && mode === "modifier" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {api.JOURS.map(([j, label]) => {
             const items = creneaux.filter((c) => c.jour === j);
@@ -118,13 +142,13 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
                 ) : (
                   <ul className="space-y-2">
                     {items.map((c) => (
-                      <li key={c.id} className="rounded-xl border border-navy-900/10 p-3">
+                      <li key={c.id} className={`rounded-xl border border-navy-900/10 p-3 ${c.matiere_id ? "" : "bg-navy-900/5"}`}>
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
                             <p className="font-medium text-navy-900">{api.intitule(c) || "—"}</p>
                             <p className="text-xs text-navy-900/50">
-                              {[c.activite && c.matieres?.libelle,
+                              {[c.matiere_id ? (c.activite && c.matieres?.libelle) : "Sans cours",
                                 c.enseignants && `${c.enseignants.prenom} ${c.enseignants.nom}`,
                                 c.salle].filter(Boolean).join(" · ")}
                             </p>
@@ -146,7 +170,11 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
       <ModaleCreneau
         jour={modale} onFermer={() => setModale(null)} matieres={matieres} enseignants={enseignants} salles={salles}
         onCreer={(data) => wrap(async () => {
-          await api.creerCreneau(ecoleId, { ...data, activite: data.activite.trim() || null, enseignant_id: data.enseignant_id || null, salle: data.salle || null, classe_id: classeId, jour: modale });
+          const { sansCours, ...c } = data;
+          await api.creerCreneau(ecoleId, {
+            ...c, activite: c.activite.trim() || null, classe_id: classeId, jour: modale, salle: c.salle || null,
+            matiere_id: sansCours ? null : c.matiere_id, enseignant_id: sansCours ? null : (c.enseignant_id || null),
+          });
           setModale(null);
         })}
       />
@@ -165,17 +193,6 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
 // Grille hebdomadaire imprimable (créneaux × jours).
 // parEnseignant : la cellule montre la classe (au lieu de l'enseignant).
 function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false }) {
-  // Lignes = plages horaires distinctes (par heure de début), triées.
-  const bandes = [];
-  const vues = new Set();
-  for (const c of [...creneaux].sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)))) {
-    const k = hhmm(c.heure_debut);
-    if (vues.has(k)) continue;
-    vues.add(k);
-    bandes.push({ debut: c.heure_debut, fin: c.heure_fin });
-  }
-  const cellule = (jour, debut) => creneaux.find((c) => c.jour === jour && hhmm(c.heure_debut) === hhmm(debut));
-
   return (
     <div className="zone-impression bg-white p-6">
       <div className="mb-4 flex items-center justify-between border-b border-navy-900/15 pb-3">
@@ -191,49 +208,7 @@ function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-xs">
-          <thead>
-            <tr className="bg-navy-900 text-creme">
-              <th className="border border-navy-900/20 px-2 py-2 font-medium">Horaire</th>
-              {api.JOURS.map(([j, l]) => <th key={j} className="border border-navy-900/20 px-2 py-2 font-medium">{l}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {bandes.length === 0 && (
-              <tr><td colSpan={api.JOURS.length + 1} className="border border-navy-900/15 px-2 py-3 text-center text-navy-900/40">Aucun cours planifié.</td></tr>
-            )}
-            {bandes.map((b, i) => (
-              <tr key={i}>
-                <td className="border border-navy-900/15 px-2 py-2 font-mono text-[10px] text-navy-900/60 whitespace-nowrap">
-                  {hhmm(b.debut)}–{hhmm(b.fin)}
-                </td>
-                {api.JOURS.map(([j]) => {
-                  const c = cellule(j, b.debut);
-                  return (
-                    <td key={j} className="border border-navy-900/15 px-2 py-2 align-top">
-                      {c ? (
-                        <>
-                          <p className="font-semibold text-navy-900">
-                            {parEnseignant ? (c.classes?.libelle || "—") : (api.intitule(c) || "—")}
-                          </p>
-                          <p className="text-[10px] text-navy-900/55">
-                            {[hhmm(c.heure_fin) !== hhmm(b.fin) && `${hhmm(c.heure_debut)}–${hhmm(c.heure_fin)}`,
-                              parEnseignant
-                                ? api.intitule(c)
-                                : c.enseignants && `${c.enseignants.prenom} ${c.enseignants.nom}`,
-                              c.salle].filter(Boolean).join(" · ")}
-                          </p>
-                        </>
-                      ) : <span className="text-navy-900/20">—</span>}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant }))} />
 
       <p className="mt-4 text-right text-[10px] text-navy-900/40">{ecole?.nom} · {ecole?.sigle}</p>
     </div>
@@ -241,12 +216,15 @@ function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false
 }
 
 function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer }) {
-  const [f, setF] = useState({ heure_debut: "08:00", heure_fin: "09:00", matiere_id: "", activite: "", enseignant_id: "", salle: "" });
+  const [f, setF] = useState({ heure_debut: "08:00", heure_fin: "09:00", matiere_id: "", activite: "", enseignant_id: "", salle: "", sansCours: false });
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  // Un moment sans cours (accueil, récréation, repas) n'a pas de matière : il
+  // s'affiche en bandeau gris, sous son libellé, dans l'emploi du temps.
+  const valide = f.sansCours ? !!f.activite.trim() : !!f.matiere_id;
   const label = (api.JOURS.find((x) => x[0] === jour) || [])[1];
   return (
     <Modale ouvert={jour != null} onFermer={onFermer} titre={`Créneau — ${label || ""}`}>
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!f.matiere_id) return; onCreer(f); }}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (!valide) return; onCreer(f); }}>
         <div className="grid grid-cols-2 gap-4">
           {/* ⚠️ Pas de 15 minutes (step=900 s) : les horaires scolaires ne se
               saisissent pas à la minute. Pourquoi 15 et non 30 : un pas de 15
@@ -256,33 +234,44 @@ function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer 
           <Champ label="Début" type="time" step={900} value={f.heure_debut} onChange={(e) => maj("heure_debut", e.target.value)} />
           <Champ label="Fin" type="time" step={900} value={f.heure_fin} onChange={(e) => maj("heure_fin", e.target.value)} />
         </div>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Matière *</span>
-          <select value={f.matiere_id} onChange={(e) => maj("matiere_id", e.target.value)} required
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
-            <option value="">— Choisir —</option>
-            {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
-          </select>
+        <label className="flex items-center gap-2 text-sm text-navy-900/80">
+          <input type="checkbox" checked={f.sansCours} onChange={(e) => maj("sansCours", e.target.checked)} className="h-4 w-4 accent-navy-900" />
+          Moment sans cours (accueil, récréation, repas…)
         </label>
-        <Champ label="Activité (facultatif)" value={f.activite} onChange={(e) => maj("activite", e.target.value)}
-          placeholder="Conjugaison, Activités de mesure…" />
-        <label className="block">
+        {f.sansCours ? (
+          <Champ label="Libellé *" value={f.activite} onChange={(e) => maj("activite", e.target.value)}
+            placeholder="Pause goûter – Récréation" required />
+        ) : (
+          <>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Matière *</span>
+              <select value={f.matiere_id} onChange={(e) => maj("matiere_id", e.target.value)} required
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
+                <option value="">— Choisir —</option>
+                {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
+              </select>
+            </label>
+            <Champ label="Activité (facultatif)" value={f.activite} onChange={(e) => maj("activite", e.target.value)}
+              placeholder="Conjugaison, Activités de mesure…" />
+          </>
+        )}
+        {!f.sansCours && <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Enseignant</span>
           <select value={f.enseignant_id} onChange={(e) => maj("enseignant_id", e.target.value)}
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">—</option>
             {enseignants.map((en) => <option key={en.id} value={en.id}>{en.prenom} {en.nom}</option>)}
           </select>
-        </label>
+        </label>}
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Salle</span>
-          <input list="salles-dispo" value={f.salle} onChange={(e) => maj("salle", e.target.value)} placeholder="Salle 3…"
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Salle ou groupe</span>
+          <input list="salles-dispo" value={f.salle} onChange={(e) => maj("salle", e.target.value)} placeholder="Salle 3, G1…"
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
           <datalist id="salles-dispo">{salles.map((s) => <option key={s.id} value={s.nom} />)}</datalist>
         </label>
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit" disabled={!f.matiere_id}>Ajouter</Bouton>
+          <Bouton type="submit" disabled={!valide}>Ajouter</Bouton>
         </div>
       </form>
     </Modale>
@@ -348,27 +337,9 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
         creneaux.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/40">Aucun cours affecté à cet enseignant.</Carte>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {api.JOURS.map(([j, label]) => {
-              const items = creneaux.filter((c) => c.jour === j).sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)));
-              return (
-                <Carte key={j} className="flex flex-col p-5">
-                  <h3 className="mb-3 font-display font-semibold text-navy-900">{label}</h3>
-                  {items.length === 0 ? <p className="text-sm text-navy-900/30">Libre</p> : (
-                    <ul className="space-y-2">
-                      {items.map((c) => (
-                        <li key={c.id} className="rounded-xl border border-navy-900/10 p-3">
-                          <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
-                          <p className="font-medium text-navy-900">{c.classes?.libelle || "—"}</p>
-                          <p className="text-xs text-navy-900/50">{[api.intitule(c), c.salle].filter(Boolean).join(" · ")}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Carte>
-              );
-            })}
-          </div>
+          <Carte className="p-4">
+            <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant: true }))} />
+          </Carte>
         )
       )}
 

@@ -11,6 +11,32 @@ export const JOURS = [
 // saisie, sinon la matière. La matière reste le domaine du bulletin (mig. 204).
 export const intitule = (c) => c.activite || c.matieres?.libelle || "";
 
+// Un groupe de classe est noté dans le champ salle (« G1 », « G2 ») : on le
+// met devant l'activité plutôt que derrière, comme sur l'emploi du temps papier.
+const GROUPE = /^G\d+$/i;
+
+// Créneau de la base → case de <GrilleEmploi>. Un créneau SANS matière est un
+// moment sans cours (accueil, récréation, repas) : il s'affiche en gris.
+// `matiere`/`enseignant` à plat : c'est la forme que rend le RPC parent.
+export function pourGrille(c, { parEnseignant = false } = {}) {
+  const matiere = c.matieres?.libelle ?? c.matiere ?? "";
+  const enseignant = c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : c.enseignant;
+  const groupe = c.salle && GROUPE.test(c.salle) ? c.salle.toUpperCase() : "";
+  const libelle = c.activite || matiere || "—";
+  const base = { jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, pause: !c.matiere_id && !matiere, couleur: matiere };
+  if (parEnseignant) {
+    return { ...base, titre: c.classes?.libelle || "—", sous: [groupe, libelle].filter(Boolean).join(" · "), detail: groupe ? "" : c.salle };
+  }
+  return {
+    ...base,
+    // La matière ne se répète pas dans chaque case : la couleur la porte, et
+    // la légende sous la grille la nomme.
+    titre: groupe ? `${groupe} · ${libelle}` : libelle,
+    sous: "",
+    detail: [enseignant, groupe ? "" : c.salle].filter(Boolean).join(" · "),
+  };
+}
+
 export async function getCreneaux(ecoleId, classeId) {
   const { data, error } = await supabase
     .from("emplois_du_temps")
