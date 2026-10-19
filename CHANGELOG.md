@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.267.0] — Une activité sur chaque créneau d'emploi du temps, distincte de la matière (migration 204)
+- **LE BESOIN** : Tut'Tank a remis ses emplois du temps en PDF, et ses matières suivent le curriculum de l'éducation de base. À l'élémentaire, la matière est le DOMAINE du bulletin (Langue et communication, Mathématiques, ESVS, EPSA) ; l'emploi du temps, lui, montre la séance (Conjugaison, Activités de mesure, IST…). Un créneau ne portait qu'une matière : charger les domaines faisait perdre ce détail aux familles.
+- **`emplois_du_temps.activite`** (mig. 204) : un libellé libre et FACULTATIF. Vide, l'affichage retombe sur la matière : les emplois du temps existants et le générateur automatique ne changent pas. La matière reste la référence pour les notes, les bulletins, les volumes horaires et la charge des enseignants.
+- **Affichage** : l'activité en titre, la matière en dessous, dans l'onglet par classe, la vue par enseignant, la grille imprimable et l'espace parent (`enfant_emploi` rend désormais l'activité). La fenêtre d'ajout d'un créneau a un champ « Activité (facultatif) ».
+- **Grille imprimable** : un cours qui couvre plusieurs lignes (Remédiation 15h00–17h00) affiche ses vraies heures dans sa case.
+- **Passage d'année** : `ouvrir_annee_scolaire` recopie l'activité avec le reste du créneau.
+
 ## [2.266.0] — Les Paramètres en sous-pages, et les saisies non enregistrées signalées (sans migration)
 - **LE CONSTAT DE L'AUDIT (P2)** : neuf réglages empilés sur une seule page, chacun avec son « Enregistrer », et un « Enregistré ✓ » affiché tout en haut, loin du bouton cliqué. Rien ne disait qu'une saisie était en attente. Trois rangements ont été maquettés ([docs/maquette-parametres.html](docs/maquette-parametres.html)) ; **le promoteur a retenu la sous-page par rubrique**.
 - **Quatre groupes, une rubrique par page** : Établissement (Identité et coordonnées · Ce que l'école couvre · Apparence), Scolarité (Notation et bulletins · Signataires · Champs élève · Matricule), Finances (Relances automatiques · Paiement en ligne), Abonnement (Modules actifs). Sur ordinateur, menu des rubriques à gauche ; sur téléphone, la liste puis la rubrique en plein écran avec « ‹ Paramètres ». Le paiement en ligne et les modules restent à part du profil, comme le demande l'audit.
