@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.268 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.269 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -580,6 +580,8 @@ GesSchool **génère automatiquement** les emplois du temps sous contraintes (au
 - **✏️ Modifier** : la saisie, jour par jour — **+ Ajouter** un créneau, **✕** pour le supprimer (avec confirmation).
 
 **🖨️ Imprimer / PDF** reprend la même grille, avec l'en-tête de l'école — préférez l'orientation **Paysage**. L'onglet **Par enseignant** et l'**espace parent** montrent aussi cette grille.
+
+**Aux couleurs de l'école.** La grille reprend la charte saisie dans **Paramètres → Apparence** : la ligne des jours dans la **couleur primaire**, un filet dans la **couleur secondaire** sous le bandeau (logo, nom de l'école, année, classe), et des teintes claires pour les matières — la couleur de l'école va à la matière qui a le plus de cours. Les textes restent lisibles quelle que soit la charte. Sans couleurs saisies, la grille garde le bleu et le doré de GesSchool.
 
 **Matière et activité.** Un créneau porte une **matière** (le domaine du bulletin : *Langue et communication*, *Mathématiques*…) et, au besoin, une **activité** (la séance précise : *Conjugaison*, *Activités de mesure*…). La grille affiche l'activité ; la couleur dit la matière. Les notes, bulletins et volumes horaires, eux, suivent la matière. L'activité est facultative : sans elle, c'est la matière qui s'affiche.
 

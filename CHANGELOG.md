@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.269.0] — L'emploi du temps aux couleurs de l'école, avec son logo (migration 205)
+- **LE BESOIN** : le promoteur veut que l'emploi du temps suive la charte graphique de l'école et porte son logo.
+- **`charteEcole.js`** : les couleurs de la grille viennent de `ecoles.couleur_primaire` / `couleur_secondaire` (déjà utilisées par la facture et le reçu). Ligne des jours en primaire ; colonne des heures et pauses en teintes très légères de la primaire ; matières en teintes claires qui partent de la secondaire, puis de la primaire, puis tournent sur le cercle des couleurs en restant distinctes. **La teinte de l'école va à la matière la plus présente dans la semaine.**
+- **🔴 LISIBLE QUELLE QUE SOIT LA CHARTE** : texte navy ≥ 4,5:1 sur toutes les teintes de matière ; en-tête en blanc ou navy selon la primaire, et une primaire de luminosité moyenne (un gris) est foncée juste assez pour le blanc ; nom de l'école en navy si la primaire est trop claire. Épreuve `test/charteEcole.test.mjs` sur six chartes, dont un jaune, un gris et une couleur invalide.
+- **Bandeau** au-dessus de la grille : logo, nom de l'école, année, et la classe (ou l'enseignant) à droite, avec un filet dans la couleur secondaire. Dans la gestion, à l'impression et dans l'espace parent.
+- **`mes_enfants`** (mig. 205) rend aussi les deux couleurs de l'école de l'enfant, en fin de liste ; droits rétablis à l'identique.
+
 ## [2.268.0] — L'emploi du temps affiché comme l'emploi du temps papier ; afficher et remplir séparés (sans migration)
 - **LE BESOIN** : le promoteur veut retrouver, dans l'application et chez les parents, le format des emplois du temps remis par l'école (Tut'Tank) — une grille heures × jours — et non une liste par jour à dérouler. « Il faut dissocier le remplissage du calendrier de l'affichage. »
 - **`GrilleEmploi`** (nouveau composant) : les heures en lignes, les jours en colonnes. Les lignes sont les heures RÉELLEMENT présentes (08h00, 08h30, 09h30…), pas une grille fixe de 30 min ; un cours de deux heures couvre deux lignes. Une couleur par matière, nommée dans une légende. Deux groupes sur le même horaire (« G1 », « G2 » dans le champ salle) partagent la case, G1 d'abord.
