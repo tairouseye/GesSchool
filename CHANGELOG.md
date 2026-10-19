@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.268.0] — L'emploi du temps affiché comme l'emploi du temps papier ; afficher et remplir séparés (sans migration)
+- **LE BESOIN** : le promoteur veut retrouver, dans l'application et chez les parents, le format des emplois du temps remis par l'école (Tut'Tank) — une grille heures × jours — et non une liste par jour à dérouler. « Il faut dissocier le remplissage du calendrier de l'affichage. »
+- **`GrilleEmploi`** (nouveau composant) : les heures en lignes, les jours en colonnes. Les lignes sont les heures RÉELLEMENT présentes (08h00, 08h30, 09h30…), pas une grille fixe de 30 min ; un cours de deux heures couvre deux lignes. Une couleur par matière, nommée dans une légende. Deux groupes sur le même horaire (« G1 », « G2 » dans le champ salle) partagent la case, G1 d'abord.
+- **🔴 AFFICHER ET MODIFIER SONT DEUX MODES** dans l'onglet « Par classe » : **Affichage** (la grille, par défaut) et **✏️ Modifier** (les cartes par jour, avec + Ajouter et ✕). L'impression, l'onglet « Par enseignant » et l'**espace parent** passent à la même grille.
+- **Moments sans cours** : un créneau SANS matière (accueil, récréation, repas) s'affiche en bandeau gris sous son libellé ; saisi à l'identique tous les jours, il devient un seul bandeau sur la semaine. Case « Moment sans cours » dans la fenêtre d'ajout. Une plage où aucun jour n'a cours, sans moment saisi, est grisée « Pause ». Aucune migration : `matiere_id` était déjà facultatif.
+- **Impression** : les couleurs de la grille sont conservées (`print-color-adjust: exact`).
+
 ## [2.267.0] — Une activité sur chaque créneau d'emploi du temps, distincte de la matière (migration 204)
 - **LE BESOIN** : Tut'Tank a remis ses emplois du temps en PDF, et ses matières suivent le curriculum de l'éducation de base. À l'élémentaire, la matière est le DOMAINE du bulletin (Langue et communication, Mathématiques, ESVS, EPSA) ; l'emploi du temps, lui, montre la séance (Conjugaison, Activités de mesure, IST…). Un créneau ne portait qu'une matière : charger les domaines faisait perdre ce détail aux familles.
 - **`emplois_du_temps.activite`** (mig. 204) : un libellé libre et FACULTATIF. Vide, l'affichage retombe sur la matière : les emplois du temps existants et le générateur automatique ne changent pas. La matière reste la référence pour les notes, les bulletins, les volumes horaires et la charge des enseignants.

@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.267 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.268 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -575,9 +575,17 @@ GesSchool **génère automatiquement** les emplois du temps sous contraintes (au
 4. **Par enseignant** : l'emploi du temps individuel d'un prof (imprimable) et sa **grille de disponibilité** — cliquez un créneau pour le marquer **indisponible** ; la génération n'y placera aucun cours.
 5. **⚡ Générer** : une **checklist de préparation** (Grille ✓ · Volumes ✓ · Salles · Affectations) rappelle ce qui manque. Cochez les classes → **Générer l'aperçu** → un **rapport** indique les séances placées et, le cas échéant, les **heures non placées avec leur raison** (grille pleine, prof déjà pris, prof indisponible, salle indisponible, pas d'affectation). **Appliquer** écrase l'emploi du temps des classes choisies (retouche manuelle possible ensuite).
 
-**Onglet Emplois du temps** : consultation par classe + retouche manuelle (ajouter/supprimer un créneau, avec confirmation) et **🖨️ Imprimer / PDF** (grille hebdomadaire avec en-tête de l'école — préférez l'orientation **Paysage**).
+**Onglet Par classe** : choisissez la classe, puis l'un des deux modes.
+- **Affichage** (par défaut) : la semaine présentée comme l'emploi du temps papier — les heures en lignes, les jours en colonnes, un cours de deux heures sur deux lignes, une couleur par matière (légende sous la grille), les pauses en bandeau gris. Deux groupes sur le même horaire partagent la case (« G1 · Psychomotricité / G2 · Jeux »).
+- **✏️ Modifier** : la saisie, jour par jour — **+ Ajouter** un créneau, **✕** pour le supprimer (avec confirmation).
 
-**Matière et activité.** Un créneau porte une **matière** (le domaine du bulletin : *Langue et communication*, *Mathématiques*…) et, au besoin, une **activité** (la séance précise : *Conjugaison*, *Activités de mesure*…). L'emploi du temps affiche l'activité en titre et la matière en dessous ; les notes, bulletins et volumes horaires, eux, suivent la matière. L'activité est facultative : sans elle, c'est la matière qui s'affiche. Les familles voient la même chose dans l'espace parent.
+**🖨️ Imprimer / PDF** reprend la même grille, avec l'en-tête de l'école — préférez l'orientation **Paysage**. L'onglet **Par enseignant** et l'**espace parent** montrent aussi cette grille.
+
+**Matière et activité.** Un créneau porte une **matière** (le domaine du bulletin : *Langue et communication*, *Mathématiques*…) et, au besoin, une **activité** (la séance précise : *Conjugaison*, *Activités de mesure*…). La grille affiche l'activité ; la couleur dit la matière. Les notes, bulletins et volumes horaires, eux, suivent la matière. L'activité est facultative : sans elle, c'est la matière qui s'affiche.
+
+**Moments sans cours.** Cochez **« Moment sans cours »** à l'ajout d'un créneau pour saisir l'accueil, la récréation ou le repas avec son libellé (« Pause goûter – Récréation ») : il n'a pas de matière et s'affiche en bandeau gris. Quand le même moment est saisi tous les jours, il forme un seul bandeau sur la semaine. Une plage où aucun jour n'a cours, sans moment saisi, s'affiche simplement « Pause ».
+
+**Groupes.** Le champ **Salle ou groupe** accepte « G1 », « G2 »… : le groupe s'affiche devant l'activité.
 
 ---
 
