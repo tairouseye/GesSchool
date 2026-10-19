@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.269 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.270 · mise à jour du 19 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -805,7 +805,7 @@ Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant
 - **Suivi des acquis** (préscolaire) : apparaît dès que l’école a observé quelque chose (§20).
 - La **photo de l’enfant** s’affiche sur sa carte et dans l’en-tête de sa fiche, dès que l’école l’a prise (§23).
 > ⚠️ **Un bulletin n’apparaît que lorsque l’école l’a publié** (§7.2). S’il manque, il est encore en relecture — ce n’est pas une panne.
-- **Paiements** : régler une facture par **mobile money** (numéro de l'école + référence affichés) → **Déclarer le paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4).
+- **Paiements** : une **synthèse** en tête (total facturé, total payé, reste à payer), puis chaque facture avec son échéance, son montant, le déjà-payé, le solde et son état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Régler par **mobile money** (numéro de l'école + référence affichés) → **Déclarer un paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4). Un paiement validé devient un **reçu**, accessible par **✅ Reçu** sur la facture (le plus récent s'ouvre, les autres sont à un clic) ; la liste des déclarations ne garde que celles **en attente** ou **rejetées**, avec le motif. Une facture **annulée** ne compte plus et ne se paie plus — la base refuse aussi une déclaration sur une facture annulée, et la caisse ne peut plus en valider une déposée avant l'annulation.
 - **Absences** : **Justifier** une absence → l'école valide.
 - **Documents** : **Demander** un document → suivre le statut.
 - En-tête : 💬 **Messagerie** et 🔔 **Alertes** (+ **Activer** les notifications push).

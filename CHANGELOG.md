@@ -5,6 +5,17 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.270.0] — Espace parent, « Paiements » : la situation de l'enfant d'un coup d'œil (migrations 206 et 207)
+- **LE BESOIN** : que le parent comprenne immédiatement la situation financière de son enfant, retrouve le reçu d'un paiement validé, et ne voie plus une déclaration validée mêlée à celles en attente.
+- **Synthèse** en tête : total facturé, total payé, reste à payer. **🔴 Les factures annulées et les brouillons n'y comptent plus** — le reste à payer additionnait jusqu'ici les annulées, et la pastille de la rubrique aussi.
+- **Chaque facture** : numéro, échéance, montant, déjà payé, solde, état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Une annulée n'est plus proposée au paiement (ni déclaration, ni en ligne). Liste lisible sur téléphone, à la place de l'ancien tableau.
+- **Reçus** : bouton **✅ Reçu** / **Reçus (n)** sur toute facture qui a des encaissements ; le plus récent s'ouvre, les autres restent dans le sélecteur « Pièce ». **🧾 Facture** reste disponible avant tout paiement.
+- **Déclarations** : seules celles en attente ou rejetées (avec le motif) sont listées ; une validée est devenue un reçu. Une déclaration en attente est signalée sur sa facture. « Payer d'avance » reçoit toujours toutes les déclarations.
+- **Mig. 206** : `enfant_factures` rend `nb_paiements` et `dernier_paiement_id`, `enfant_declarations` rend `facture_id`. Même verrou `_parent_possede`, aucune policy touchée, exécution réservée à `authenticated`.
+- **Mig. 207 — garde-fou côté base** : `_verifier_declaration` refuse une facture annulée ou en brouillon (déclarations parent et étudiant) ; `valider_declaration` refuse une déclaration dont la facture a été annulée depuis. **🔴 Droit retiré** : `_verifier_declaration` n'est plus exécutable directement par `authenticated` — appelée seule, elle révélait le reste dû de n'importe quelle facture.
+- **Fonction `paiement` (paiement en ligne)** : même refus, placé APRÈS le contrôle d'accès. ⚠️ Cette fonction n'est pas déployée sur Supabase (aucun prestataire configuré) : le garde-fou prendra effet à sa mise en service.
+- Logique dans `src/lib/situationParent.js`, épreuve `test/situationParent.test.mjs` (12 tests).
+
 ## [2.269.1] — Facture et reçu lisibles sur téléphone (sans migration)
 - **LE CONSTAT** : sur téléphone, la facture et le reçu débordaient à droite — nom de l'élève coupé, colonne « Total » et montant total hors de l'écran, zone de signature trop large.
 - **Sous 640 px** : l'en-tête s'empile (logo au-dessus du titre) ; l'élève devient une ligne « Élève : » sous le numéro, la date et l'objet, au lieu de passer sous l'arc décoratif ; le tableau ne garde que Description et Total, la quantité passant sous la description quand elle n'est pas 1 (« 2 × 32 500 ») ; le bas du reçu passe sur une colonne.

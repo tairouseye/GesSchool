@@ -42,15 +42,21 @@ En haut : 💬 **Messagerie** pour écrire à l'école, et 🔔 **Alertes**.
 
 ## 3. Payer une facture
 
-1. Tuile **Paiements** → **Payer** sur la facture concernée.
+1. Tuile **Paiements** → **Déclarer un paiement** sur la facture concernée.
 2. Choisissez **Wave**, **Orange Money** ou **Free Money** → le numéro de l'école s'affiche.
 3. Payez depuis votre application mobile money, en mettant le **numéro de facture** en référence.
 4. Revenez et **déclarez le paiement** : le montant, la référence de la transaction, et **joignez une preuve** (capture d'écran ou photo du bordereau).
-5. L'école vérifie et valide : la facture passe à « payée ».
+5. L'école vérifie et valide : la facture passe à « réglée » (ou « partiellement réglée »), et le bouton **✅ Reçu** apparaît sur la facture.
 
 > **Joignez toujours la preuve.** C'est ce qui permet au secrétariat de valider sans vous rappeler, et donc d'aller vite.
 
-Vous pouvez payer **en plusieurs fois** : la facture passera par « partiellement payée ».
+Vous pouvez payer **en plusieurs fois** : la facture passera par « partiellement réglée ».
+
+**Lire la situation de votre enfant.** En haut de **Paiements**, trois chiffres : **total facturé**, **total payé** et **reste à payer**. Chaque facture montre son échéance, son montant, ce qui est déjà payé, le solde, et son état : *à payer*, *partiellement réglée*, *réglée* ou *annulée*. Une facture annulée ne compte plus et ne se paie plus.
+
+**Vos reçus.** Chaque paiement validé par l'école donne un reçu : bouton **✅ Reçu** (ou **Reçus (2)**…) sur la facture. Le plus récent s'ouvre ; les autres sont à un clic. **🧾 Facture** reste toujours disponible, même avant tout paiement.
+
+**Vos déclarations.** Seules celles **en attente** ou **rejetées** sont listées — avec le motif du rejet, pour savoir quoi corriger. Une déclaration validée disparaît de cette liste : elle est devenue un reçu.
 
 ---
 
