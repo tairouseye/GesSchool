@@ -63,35 +63,43 @@ export default function DocumentCaisse({
 
   return (
     <div className="zone-impression document-caisse bg-white" style={{ border: `10px solid ${cadre}` }}>
-      <div className="relative overflow-hidden bg-white px-6 pb-5 pt-6 sm:px-8">
+      {/* ⚠️ TÉLÉPHONE : sous 640 px, l'en-tête s'empile, le tableau ne garde que
+          Description et Total (la quantité passe sous la description), et le
+          bas du reçu passe sur une colonne. Rien ne change au-delà, ni à
+          l'impression (une page A4 est plus large que le seuil). */}
+      <div className="relative overflow-hidden bg-white px-4 pb-5 pt-6 sm:px-8">
         {/* Arc décoratif du modèle : un demi-disque débordant par le haut. */}
         <div aria-hidden="true"
           className="pointer-events-none absolute -top-24 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full"
           style={{ backgroundColor: teinte(bandeau, 0.9) }} />
 
         {/* --- En-tête --- */}
-        <div className="relative flex items-start justify-between gap-4">
-          <div>
+        <div className="relative flex flex-col-reverse items-start justify-between gap-3 sm:flex-row sm:gap-4">
+          <div className="min-w-0">
             <h2 className="font-display text-3xl font-extrabold uppercase tracking-tight"
               style={{ color: primaire }}>
               {recu ? "Reçu" : "Facture"}
             </h2>
             <dl className="mt-3 space-y-1 text-sm text-navy-900">
-              <div className="flex gap-2"><dt className="w-14 text-navy-900/60">N° :</dt><dd className="font-mono font-medium">{numero || "—"}</dd></div>
-              <div className="flex gap-2"><dt className="w-14 text-navy-900/60">Date :</dt><dd className="font-medium">{dateFr(date)}</dd></div>
-              <div className="flex gap-2"><dt className="w-14 text-navy-900/60">Objet :</dt><dd className="font-medium">{objet || "Frais de scolarité"}</dd></div>
+              <div className="flex gap-2"><dt className="w-14 shrink-0 text-navy-900/60">N° :</dt><dd className="whitespace-nowrap font-mono font-medium">{numero || "—"}</dd></div>
+              <div className="flex gap-2"><dt className="w-14 shrink-0 text-navy-900/60">Date :</dt><dd className="font-medium">{dateFr(date)}</dd></div>
+              <div className="flex gap-2"><dt className="w-14 shrink-0 text-navy-900/60">Objet :</dt><dd className="min-w-0 font-medium">{objet || "Frais de scolarité"}</dd></div>
+              {/* Téléphone : l'élève vient ici, sinon il passe sous l'arc décoratif. */}
+              {destinataire && (
+                <div className="flex gap-2 sm:hidden"><dt className="w-14 shrink-0 text-navy-900/60">Élève :</dt><dd className="min-w-0 break-words font-semibold">{destinataire}</dd></div>
+              )}
             </dl>
           </div>
-          <div className="shrink-0 text-right">
+          <div className="sm:shrink-0 sm:text-right">
             {/* `Cachet` hérite de la couleur par `currentColor` : on la pose
                 sur le conteneur, il n'accepte pas de style. */}
             {ecole?.logo_url
-              ? <img src={ecole.logo_url} alt="" className="ml-auto h-20 w-20 object-contain" />
+              ? <img src={ecole.logo_url} alt="" className="h-14 w-14 object-contain sm:ml-auto sm:h-20 sm:w-20" />
               : <span className="block" style={{ color: primaire }}>
                   <Cachet size={64} sigle={ecole?.sigle || "GS"} className="ml-auto" />
                 </span>}
             {destinataire && (
-              <p className="mt-2 max-w-[13rem] text-sm font-semibold text-navy-900">{destinataire}</p>
+              <p className="mt-2 hidden max-w-[13rem] text-sm font-semibold text-navy-900 sm:block">{destinataire}</p>
             )}
           </div>
         </div>
@@ -102,7 +110,7 @@ export default function DocumentCaisse({
             <tr style={{ backgroundColor: bandeau }}>
               {["Description", "Qté", "Prix", "Total"].map((t, i) => (
                 <th key={t}
-                  className={`px-3 py-2 text-xs font-bold uppercase tracking-wider ${i === 0 ? "text-left" : i === 1 ? "text-center" : "text-right"}`}
+                  className={`px-2 py-2 text-xs font-bold uppercase tracking-wider sm:px-3 ${i === 0 ? "text-left" : i === 1 ? "hidden text-center sm:table-cell" : i === 2 ? "hidden text-right sm:table-cell" : "text-right"}`}
                   style={{ color: recu ? "#FFFFFF" : primaire }}>
                   {t}
                 </th>
@@ -112,10 +120,15 @@ export default function DocumentCaisse({
           <tbody>
             {lignes.map((l, i) => (
               <tr key={l.id || i} style={i % 2 === 1 ? { backgroundColor: teinte(bandeau, 0.16) } : undefined}>
-                <td className="px-3 py-2 text-navy-900">{l.libelle}</td>
-                <td className="px-3 py-2 text-center font-mono text-navy-900/70">{l.quantite ?? 1}</td>
-                <td className="px-3 py-2 text-right font-mono text-navy-900/70">{fmt(l.prix_unitaire ?? l.montant)}</td>
-                <td className="px-3 py-2 text-right font-mono font-medium text-navy-900">{fmt(l.montant)}</td>
+                <td className="px-2 py-2 text-navy-900 sm:px-3">
+                  {l.libelle}
+                  {Number(l.quantite ?? 1) !== 1 && (
+                    <span className="block font-mono text-xs text-navy-900/60 sm:hidden">{l.quantite} × {fmt(l.prix_unitaire ?? l.montant)}</span>
+                  )}
+                </td>
+                <td className="hidden px-3 py-2 text-center font-mono text-navy-900/70 sm:table-cell">{l.quantite ?? 1}</td>
+                <td className="hidden px-3 py-2 text-right font-mono text-navy-900/70 sm:table-cell">{fmt(l.prix_unitaire ?? l.montant)}</td>
+                <td className="whitespace-nowrap px-2 py-2 text-right font-mono font-medium text-navy-900 sm:px-3">{fmt(l.montant)}</td>
               </tr>
             ))}
             {/* Le carnet imprimé garde des lignes vides : sur un document
@@ -126,9 +139,9 @@ export default function DocumentCaisse({
           </tbody>
           <tfoot>
             <tr style={{ borderTop: `2px solid ${cadre}` }}>
-              <td colSpan={2} />
-              <td className="px-3 py-2 text-right font-display text-lg font-bold uppercase" style={{ color: primaire }}>Total</td>
-              <td className="px-3 py-2 text-right font-mono text-lg font-bold text-navy-900">
+              <td colSpan={2} className="hidden sm:table-cell" />
+              <td className="px-2 py-2 text-left font-display text-base font-bold uppercase sm:px-3 sm:text-right sm:text-lg" style={{ color: primaire }}>Total</td>
+              <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-base font-bold text-navy-900 sm:px-3 sm:text-lg">
                 {fmt(total)} {devise}
               </td>
             </tr>
@@ -148,7 +161,7 @@ export default function DocumentCaisse({
 
         {/* --- Bas de document : diffère selon la pièce --- */}
         {recu ? (
-          <div className="mt-5 grid grid-cols-2 gap-6">
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             <div>
               <p className="text-sm font-bold" style={{ color: primaire }}>Paiement effectué par :</p>
               <p className="mt-1 text-sm text-navy-900">{paiement?.payeur || destinataire || "—"}</p>
@@ -156,11 +169,11 @@ export default function DocumentCaisse({
                 {[paiement?.mode, paiement?.reference ? `réf. ${paiement.reference}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <div className="flex flex-col items-end justify-end">
+            <div className="flex flex-col items-start justify-end sm:items-end">
               <p className="text-sm font-bold" style={{ color: primaire }}>Signature</p>
               {ecole?.cachet_url
                 ? <img src={ecole.cachet_url} alt="" className="mt-1 h-20 object-contain" />
-                : <div className="mt-1 h-16 w-40 border-b border-navy-900/25" />}
+                : <div className="mt-1 h-16 w-40 max-w-full border-b border-navy-900/25" />}
             </div>
           </div>
         ) : (
