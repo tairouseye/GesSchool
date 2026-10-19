@@ -122,7 +122,8 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
 
       {classeId && mode === "affichage" && (
         <Carte className="p-4">
-          <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c))}
+          <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c))} ecole={ecole}
+            entete={enteteEcole(ecole, annee, `Classe ${classeLibelle}`)}
             vide="Aucun créneau pour cette classe. Passez en mode « Modifier » pour en ajouter." />
         </Carte>
       )}
@@ -190,25 +191,20 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
   );
 }
 
+// Le bandeau de la grille : logo et nom de l'école, l'année, et à droite la
+// classe ou l'enseignant.
+const enteteEcole = (ecole, annee, titre) => ({
+  logo: ecole?.logo_url, nom: ecole?.nom, titre,
+  sous: `Emploi du temps${annee ? ` · ${annee.libelle}` : ""}`,
+});
+
 // Grille hebdomadaire imprimable (créneaux × jours).
 // parEnseignant : la cellule montre la classe (au lieu de l'enseignant).
 function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false }) {
   return (
     <div className="zone-impression bg-white p-6">
-      <div className="mb-4 flex items-center justify-between border-b border-navy-900/15 pb-3">
-        <div className="flex items-center gap-3">
-          {ecole?.logo_url && <img src={ecole.logo_url} alt="" className="h-12 w-12 object-contain" />}
-          <div>
-            <p className="font-display text-lg font-bold text-navy-900">{ecole?.nom}</p>
-            <p className="text-xs text-navy-900/50">Emploi du temps{annee ? ` · ${annee.libelle}` : ""}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="font-display text-base font-semibold text-navy-900">{titre}</p>
-        </div>
-      </div>
-
-      <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant }))} />
+      <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant }))} ecole={ecole}
+        entete={enteteEcole(ecole, annee, titre)} />
 
       <p className="mt-4 text-right text-[10px] text-navy-900/40">{ecole?.nom} · {ecole?.sigle}</p>
     </div>
@@ -338,7 +334,8 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
           <Carte className="p-6 text-sm text-navy-900/40">Aucun cours affecté à cet enseignant.</Carte>
         ) : (
           <Carte className="p-4">
-            <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant: true }))} />
+            <GrilleEmploi creneaux={creneaux.map((c) => api.pourGrille(c, { parEnseignant: true }))} ecole={ecole}
+              entete={enteteEcole(ecole, annee, nom)} />
           </Carte>
         )
       )}

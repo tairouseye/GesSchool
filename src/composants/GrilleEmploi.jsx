@@ -16,24 +16,27 @@
 // moment sans cours ; s'il a le même libellé tous les jours, il devient un
 // seul bandeau. Un intervalle où AUCUN jour n'a de cours est aussi grisé :
 // sans libellé saisi, on ne sait pas si c'est la récréation ou le repas.
+//
+// Couleurs : celles de l'école (charteEcole.js) — l'en-tête dans sa couleur
+// primaire, les matières en teintes claires qui partent de sa couleur
+// secondaire. Le logo et le nom de l'école coiffent la grille (`entete`).
 import { JOURS } from "@/lib/emploi.js";
+import { charteEmploi } from "@/lib/charteEcole.js";
 
 const enMinutes = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + (m || 0); };
 const affiche = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}h${String(min % 60).padStart(2, "0")}`;
 
-// Teintes claires, lisibles avec du texte navy. Une teinte par matière, dans
-// l'ordre alphabétique des matières de la grille : deux classes de la même
-// école peuvent donc avoir des couleurs différentes, mais une grille n'a
-// jamais deux matières de la même couleur tant qu'il y en a moins de dix.
-const TEINTES = [
-  "bg-sky-100", "bg-emerald-100", "bg-amber-100", "bg-rose-100", "bg-violet-100",
-  "bg-teal-100", "bg-orange-100", "bg-lime-100", "bg-indigo-100", "bg-pink-100",
-];
-
-// `legende` : la couleur → la matière, sous la grille. Inutile quand la couleur
-// ne porte pas la matière (vue par enseignant, où le titre est la classe).
-export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié.", legende = true }) {
-  if (!creneaux.length) return <p className="py-6 text-center text-sm text-navy-900/40">{vide}</p>;
+// Une teinte par matière. La première teinte (celle de l'école) va à la
+// matière la plus présente dans la semaine, et ainsi de suite : l'emploi du
+// temps « porte » la couleur de l'école là où il y a le plus de cours. Deux
+// classes peuvent donc avoir des couleurs différentes, mais une grille n'a
+// jamais deux matières de la même couleur. La légende reste alphabétique.
+//
+// `ecole` : la fiche école (couleurs). `entete` : { logo, nom, titre, sous },
+// le bandeau au-dessus de la grille ; absent, la grille est nue.
+export default function GrilleEmploi({ creneaux, ecole, entete, vide = "Aucun cours planifié.", legende = true }) {
+  const bandeau = entete && <EnTeteEmploi {...entete} couleur={charteEmploi(ecole, 1)} />;
+  if (!creneaux.length) return <>{bandeau}<p className="py-6 text-center text-sm text-navy-900/40">{vide}</p></>;
 
   const jours = JOURS.filter(([j]) => j <= 5 || creneaux.some((c) => c.jour === j));
   const colonne = Object.fromEntries(jours.map(([j], i) => [j, i + 2]));
@@ -43,7 +46,12 @@ export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié."
   const intervalles = bornes.slice(0, -1).map((d, i) => [d, bornes[i + 1]]);
 
   const cles = [...new Set(creneaux.filter((c) => !c.pause).map((c) => c.couleur || c.titre))].sort((a, b) => a.localeCompare(b, "fr"));
-  const teinte = (c) => TEINTES[cles.indexOf(c.couleur || c.titre) % TEINTES.length];
+  const charte = charteEmploi(ecole, cles.length);
+  const poids = {};
+  for (const c of creneaux) if (!c.pause) poids[c.couleur || c.titre] = (poids[c.couleur || c.titre] || 0) + 1;
+  const rang = [...cles].sort((a, b) => poids[b] - poids[a] || a.localeCompare(b, "fr"));
+  const couleurDe = (k) => charte.matieres[rang.indexOf(k)];
+  const teinte = (c) => couleurDe(c.couleur || c.titre);
 
   // Créneaux regroupés par case (jour + heures) : deux groupes G1 / G2 sur le
   // même horaire partagent une case, l'un sous l'autre.
@@ -72,17 +80,19 @@ export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié."
   for (const [d, f] of intervalles) if (!occupe(d, f)) bandeaux.push({ cle: `trou|${d}`, d, f, titre: "Pause" });
 
   return (
-    <div className="grille-edt overflow-x-auto">
+    <div className="grille-edt">
+      {bandeau}
+      <div className="overflow-x-auto">
       <div className="grid min-w-[44rem] gap-px border border-navy-900/15 bg-navy-900/15 text-xs"
         style={{ gridTemplateColumns: `6.5rem repeat(${jours.length}, minmax(7.5rem, 1fr))`, gridAutoRows: "minmax(2.6rem, auto)" }}>
-        <div className="bg-navy-900 px-2 py-2 font-semibold text-creme" style={{ gridRow: 1, gridColumn: 1 }}>Horaire</div>
+        <div className="px-2 py-2 font-semibold" style={{ ...charte.entete, gridRow: 1, gridColumn: 1 }}>Horaire</div>
         {jours.map(([j, l]) => (
-          <div key={j} className="bg-navy-900 px-2 py-2 text-center font-semibold text-creme" style={{ gridRow: 1, gridColumn: colonne[j] }}>{l}</div>
+          <div key={j} className="px-2 py-2 text-center font-semibold" style={{ ...charte.entete, gridRow: 1, gridColumn: colonne[j] }}>{l}</div>
         ))}
 
         {intervalles.map(([d, f]) => (
-          <div key={`h${d}`} className="flex items-center bg-navy-900/5 px-2 font-mono text-[11px] font-semibold text-navy-900/70"
-            style={{ gridRow: ligne(d), gridColumn: 1 }}>
+          <div key={`h${d}`} className="flex items-center px-2 font-mono text-[11px] font-semibold text-navy-900/70"
+            style={{ background: charte.heures, gridRow: ligne(d), gridColumn: 1 }}>
             {affiche(d)} – {affiche(f)}
           </div>
         ))}
@@ -93,8 +103,8 @@ export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié."
         )))}
 
         {bandeaux.map((b) => (
-          <div key={b.cle} className="flex items-center justify-center bg-gray-200 px-2 text-center italic text-navy-900/70"
-            style={{ gridRow: `${ligne(b.d)} / ${ligne(b.f)}`, gridColumn: `2 / ${jours.length + 2}` }}>
+          <div key={b.cle} className="flex items-center justify-center px-2 text-center italic text-navy-900/70"
+            style={{ background: charte.pause, gridRow: `${ligne(b.d)} / ${ligne(b.f)}`, gridColumn: `2 / ${jours.length + 2}` }}>
             {b.titre}
           </div>
         ))}
@@ -108,8 +118,8 @@ export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié."
           const pause = visibles.every((c) => c.pause);
           return (
             <div key={k}
-              className={`flex flex-col items-center justify-center gap-1 px-2 py-1.5 text-center ${pause ? "bg-gray-200 italic text-navy-900/70" : teinte(visibles[0])}`}
-              style={{ gridRow: `${ligne(d)} / ${ligne(f)}`, gridColumn: colonne[jour] }}>
+              className={`flex flex-col items-center justify-center gap-1 px-2 py-1.5 text-center ${pause ? "italic text-navy-900/70" : ""}`}
+              style={{ background: pause ? charte.pause : teinte(visibles[0]), gridRow: `${ligne(d)} / ${ligne(f)}`, gridColumn: colonne[jour] }}>
               {visibles.map((c, i) => (
                 <div key={i} className="leading-tight">
                   <p className="font-medium text-navy-900">{c.titre}</p>
@@ -122,16 +132,34 @@ export default function GrilleEmploi({ creneaux, vide = "Aucun cours planifié."
           );
         })}
       </div>
+      </div>
 
       {legende && cles.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-navy-900/70">
-          {cles.map((k, i) => (
+          {cles.map((k) => (
             <li key={k} className="flex items-center gap-1.5">
-              <span className={`inline-block h-3 w-3 rounded-sm border border-navy-900/15 ${TEINTES[i % TEINTES.length]}`} />{k}
+              <span className="inline-block h-3 w-3 rounded-sm border border-navy-900/15" style={{ background: couleurDe(k) }} />{k}
             </li>
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// Bandeau au-dessus de la grille : logo et nom de l'école à gauche, la classe
+// (ou l'enseignant) à droite, un filet dans la couleur secondaire.
+function EnTeteEmploi({ logo, nom, titre, sous, couleur }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-4 border-b-4 pb-3" style={{ borderColor: couleur.secondaire }}>
+      <div className="flex min-w-0 items-center gap-3">
+        {logo && <img src={logo} alt="" className="h-12 w-12 shrink-0 object-contain" />}
+        <div className="min-w-0">
+          {nom && <p className="truncate font-display text-lg font-bold" style={{ color: couleur.titre }}>{nom}</p>}
+          {sous && <p className="text-xs text-navy-900/60">{sous}</p>}
+        </div>
+      </div>
+      {titre && <p className="shrink-0 text-right font-display text-base font-semibold" style={{ color: couleur.titre }}>{titre}</p>}
     </div>
   );
 }

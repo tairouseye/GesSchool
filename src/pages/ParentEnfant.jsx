@@ -272,7 +272,7 @@ export default function ParentEnfant() {
       ) : onglet === "cahier" ? (
         <Cahier entrees={cahier} />
       ) : onglet === "emploi" ? (
-        <Emploi creneaux={emploi} />
+        <Emploi creneaux={emploi} enfant={enfant} />
       ) : onglet === "fournitures" ? (
         <Fournitures items={fournitures} enfant={enfant} />
       ) : onglet === "annonces" ? (
@@ -414,13 +414,16 @@ function Notes({ notes }) {
 
 // La semaine de l'enfant, présentée comme l'emploi du temps que l'école
 // imprime (heures × jours), et non plus jour par jour en liste à dérouler.
-function Emploi({ creneaux }) {
+// Couleurs et logo : ceux de l'école de l'enfant (mes_enfants, mig. 205).
+function Emploi({ creneaux, enfant }) {
   if (creneaux.length === 0) {
     return <Carte className="p-6 text-sm text-navy-900/40">Aucun emploi du temps disponible.</Carte>;
   }
   return (
     <Carte className="p-4">
-      <GrilleEmploi creneaux={creneaux.map((c) => pourGrille(c))} />
+      <GrilleEmploi creneaux={creneaux.map((c) => pourGrille(c))}
+        ecole={{ couleur_primaire: enfant?.couleur_primaire, couleur_secondaire: enfant?.couleur_secondaire }}
+        entete={{ logo: enfant?.logo, nom: enfant?.ecole, titre: enfant?.classe ? `Classe ${enfant.classe}` : "", sous: "Emploi du temps" }} />
     </Carte>
   );
 }
