@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.269.1] — Facture et reçu lisibles sur téléphone (sans migration)
+- **LE CONSTAT** : sur téléphone, la facture et le reçu débordaient à droite — nom de l'élève coupé, colonne « Total » et montant total hors de l'écran, zone de signature trop large.
+- **Sous 640 px** : l'en-tête s'empile (logo au-dessus du titre) ; l'élève devient une ligne « Élève : » sous le numéro, la date et l'objet, au lieu de passer sous l'arc décoratif ; le tableau ne garde que Description et Total, la quantité passant sous la description quand elle n'est pas 1 (« 2 × 32 500 ») ; le bas du reçu passe sur une colonne.
+- **Au-delà, et à l'impression, rien ne change** : une page A4 est plus large que le seuil.
+
 ## [2.269.0] — L'emploi du temps aux couleurs de l'école, avec son logo (migration 205)
 - **LE BESOIN** : le promoteur veut que l'emploi du temps suive la charte graphique de l'école et porte son logo.
 - **`charteEcole.js`** : les couleurs de la grille viennent de `ecoles.couleur_primaire` / `couleur_secondaire` (déjà utilisées par la facture et le reçu). Ligne des jours en primaire ; colonne des heures et pauses en teintes très légères de la primaire ; matières en teintes claires qui partent de la secondaire, puis de la primaire, puis tournent sur le cercle des couleurs en restant distinctes. **La teinte de l'école va à la matière la plus présente dans la semaine.**
