@@ -122,10 +122,11 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
-                            <p className="font-medium text-navy-900">{c.matieres?.libelle || "—"}</p>
+                            <p className="font-medium text-navy-900">{api.intitule(c) || "—"}</p>
                             <p className="text-xs text-navy-900/50">
-                              {c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : ""}
-                              {c.salle ? ` · ${c.salle}` : ""}
+                              {[c.activite && c.matieres?.libelle,
+                                c.enseignants && `${c.enseignants.prenom} ${c.enseignants.nom}`,
+                                c.salle].filter(Boolean).join(" · ")}
                             </p>
                           </div>
                           <IconeBouton aria-label="Supprimer le créneau" title="Supprimer"
@@ -145,7 +146,7 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
       <ModaleCreneau
         jour={modale} onFermer={() => setModale(null)} matieres={matieres} enseignants={enseignants} salles={salles}
         onCreer={(data) => wrap(async () => {
-          await api.creerCreneau(ecoleId, { ...data, enseignant_id: data.enseignant_id || null, salle: data.salle || null, classe_id: classeId, jour: modale });
+          await api.creerCreneau(ecoleId, { ...data, activite: data.activite.trim() || null, enseignant_id: data.enseignant_id || null, salle: data.salle || null, classe_id: classeId, jour: modale });
           setModale(null);
         })}
       />
@@ -214,13 +215,14 @@ function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false
                       {c ? (
                         <>
                           <p className="font-semibold text-navy-900">
-                            {parEnseignant ? (c.classes?.libelle || "—") : (c.matieres?.libelle || "—")}
+                            {parEnseignant ? (c.classes?.libelle || "—") : (api.intitule(c) || "—")}
                           </p>
                           <p className="text-[10px] text-navy-900/55">
-                            {parEnseignant
-                              ? (c.matieres?.libelle || "")
-                              : (c.enseignants ? `${c.enseignants.prenom} ${c.enseignants.nom}` : "")}
-                            {c.salle ? ` · ${c.salle}` : ""}
+                            {[hhmm(c.heure_fin) !== hhmm(b.fin) && `${hhmm(c.heure_debut)}–${hhmm(c.heure_fin)}`,
+                              parEnseignant
+                                ? api.intitule(c)
+                                : c.enseignants && `${c.enseignants.prenom} ${c.enseignants.nom}`,
+                              c.salle].filter(Boolean).join(" · ")}
                           </p>
                         </>
                       ) : <span className="text-navy-900/20">—</span>}
@@ -239,7 +241,7 @@ function EmploiImprimable({ ecole, annee, titre, creneaux, parEnseignant = false
 }
 
 function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer }) {
-  const [f, setF] = useState({ heure_debut: "08:00", heure_fin: "09:00", matiere_id: "", enseignant_id: "", salle: "" });
+  const [f, setF] = useState({ heure_debut: "08:00", heure_fin: "09:00", matiere_id: "", activite: "", enseignant_id: "", salle: "" });
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const label = (api.JOURS.find((x) => x[0] === jour) || [])[1];
   return (
@@ -262,6 +264,8 @@ function ModaleCreneau({ jour, onFermer, matieres, enseignants, salles, onCreer 
             {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
           </select>
         </label>
+        <Champ label="Activité (facultatif)" value={f.activite} onChange={(e) => maj("activite", e.target.value)}
+          placeholder="Conjugaison, Activités de mesure…" />
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Enseignant</span>
           <select value={f.enseignant_id} onChange={(e) => maj("enseignant_id", e.target.value)}
@@ -356,7 +360,7 @@ function PanneauEnseignant({ ecoleId, ecole, annee, enseignants, grille }) {
                         <li key={c.id} className="rounded-xl border border-navy-900/10 p-3">
                           <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
                           <p className="font-medium text-navy-900">{c.classes?.libelle || "—"}</p>
-                          <p className="text-xs text-navy-900/50">{c.matieres?.libelle || ""}{c.salle ? ` · ${c.salle}` : ""}</p>
+                          <p className="text-xs text-navy-900/50">{[api.intitule(c), c.salle].filter(Boolean).join(" · ")}</p>
                         </li>
                       ))}
                     </ul>

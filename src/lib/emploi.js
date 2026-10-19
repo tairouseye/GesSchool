@@ -7,6 +7,10 @@ export const JOURS = [
   [4, "Jeudi"], [5, "Vendredi"], [6, "Samedi"],
 ];
 
+// Ce qu'on affiche d'un créneau : l'activité (« Conjugaison ») quand elle est
+// saisie, sinon la matière. La matière reste le domaine du bulletin (mig. 204).
+export const intitule = (c) => c.activite || c.matieres?.libelle || "";
+
 export async function getCreneaux(ecoleId, classeId) {
   const { data, error } = await supabase
     .from("emplois_du_temps")

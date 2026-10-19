@@ -428,9 +428,9 @@ function Emploi({ creneaux }) {
               {items.map((c, i) => (
                 <li key={i} className="rounded-xl border border-navy-900/10 p-3">
                   <p className="font-mono text-xs text-or-600">{hhmm(c.heure_debut)} – {hhmm(c.heure_fin)}</p>
-                  <p className="font-medium text-navy-900">{c.matiere || "—"}</p>
+                  <p className="font-medium text-navy-900">{c.activite || c.matiere || "—"}</p>
                   <p className="text-xs text-navy-900/50">
-                    {c.enseignant || ""}{c.salle ? ` · ${c.salle}` : ""}
+                    {[c.activite && c.matiere, c.enseignant, c.salle].filter(Boolean).join(" · ")}
                   </p>
                 </li>
               ))}
