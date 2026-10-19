@@ -10,6 +10,10 @@ import {
   enfantFactureDetail, avanceOptions, declarerAvance,
 } from "@/lib/parent.js";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
+import {
+  facturesVisibles, syntheseFactures, resteFacture, etatFacture, peutPayer, estAnnulee,
+  declarationsAffichees, enAttenteParFacture, aDesRecus, recuParDefaut,
+} from "@/lib/situationParent.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
 import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
@@ -171,7 +175,8 @@ export default function ParentEnfant() {
   const notesGatees = acces.requiert && acces.statut !== "autorise";
 
   // Badges calculés depuis les données déjà chargées (aucune requête en plus).
-  const impayes = factures.filter((f) => (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0) > 0).length;
+  //  Une facture annulée ou un brouillon ne doit rien : ni pastille, ni dette.
+  const impayes = syntheseFactures(factures).aRegler;
   const demandesEnCours = demandes.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
   const badges = {
     paiements: impayes, documents: demandesEnCours,
@@ -873,7 +878,8 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
   const [payer, setPayer] = useState(null); // facture à régler (flux manuel)
   // Volontairement pas « document » : ce nom masquerait l'objet global du DOM
   // dans tout le composant.
-  const [factureDoc, setFactureDoc] = useState(null); // id de la facture à imprimer
+  // { id, type: "facture" | "recu", paiementId } : la pièce à ouvrir.
+  const [factureDoc, setFactureDoc] = useState(null);
   const [enLigne, setEnLigne] = useState({ actif: false });
   const [encours, setEncours] = useState(null); // id de facture en cours de redirection
 
@@ -888,66 +894,120 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
     } catch (e) { onErreur(e.message || "Paiement en ligne indisponible."); setEncours(null); }
   }
 
-  const totalReste = factures.reduce((s, f) => s + ((Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0)), 0);
+  const visibles = facturesVisibles(factures);
+  const synthese = syntheseFactures(factures);
   const aDesNumeros = MODES_MOBILE.some(([k]) => infos?.[k]);
-  const statutLib = { en_attente: "En attente", valide: "Validé", rejete: "Rejeté" };
-  const statutTon = { en_attente: "text-or-600", valide: "text-emerald-700", rejete: "text-rose-700" };
+  const statutLib = { en_attente: "En attente", rejete: "Rejeté" };
+  const statutTon = { en_attente: "text-or-600", rejete: "text-rose-700" };
+  //  🔴 UNE DÉCLARATION VALIDÉE N'EST PLUS UNE DÉCLARATION : c'est un
+  //  encaissement, et il se consulte en reçu sur sa facture. Ici, seulement
+  //  ce qui attend la caisse ou ce qu'elle a refusé (avec son motif).
+  const aSuivre = declarationsAffichees(declarations);
+  const declareSur = enAttenteParFacture(declarations);
 
   return (
     <div className="space-y-4">
-      {factures.length > 0 ? (
+      {visibles.length > 0 ? (
         <Carte className="p-5">
-          <p className="text-sm text-navy-900/50">Reste à payer</p>
-          <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalReste)} <span className="text-sm font-normal">XOF</span></p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-sm text-navy-900/60">Total facturé</p>
+              <p className="mt-1 font-display text-xl font-bold text-navy-900">{fmt(synthese.facture)} <span className="text-xs font-normal">XOF</span></p>
+            </div>
+            <div>
+              <p className="text-sm text-navy-900/60">Total payé</p>
+              <p className="mt-1 font-display text-xl font-bold text-emerald-700">{fmt(synthese.paye)} <span className="text-xs font-normal">XOF</span></p>
+            </div>
+            <div>
+              <p className="text-sm text-navy-900/60">Reste à payer</p>
+              <p className={`mt-1 font-display text-2xl font-bold ${synthese.reste > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                {fmt(synthese.reste)} <span className="text-xs font-normal">XOF</span>
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-navy-900/70">
+            {synthese.reste > 0
+              ? `${synthese.aRegler} facture${synthese.aRegler > 1 ? "s" : ""} à régler.`
+              : "Tout est réglé."}
+          </p>
         </Carte>
       ) : (
         <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>
       )}
 
       {/*  Le paiement anticipé (mig. 202) : AVANT la liste, et même sans
-          aucune facture — c'est précisément le cas où il sert. */}
+          aucune facture — c'est précisément le cas où il sert. Il reçoit
+          TOUTES les déclarations : une avance validée y reste « payée ». */}
       <PayerAvance eleveId={eleveId} infos={infos} aDesNumeros={aDesNumeros}
         declarations={declarations} onChange={onChange} onErreur={onErreur} />
 
-      {factures.length > 0 && (
-      <Carte className="overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
-            <tr><th className="px-4 py-2 font-medium">N°</th><th className="px-4 py-2 font-medium">Échéance</th><th className="px-4 py-2 text-right font-medium">Reste</th><th className="px-4 py-2"></th></tr>
-          </thead>
-          <tbody>
-            {factures.map((f) => {
-              const reste = (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0);
-              return (
-                <tr key={f.id} className="border-t border-navy-900/5">
-                  <td className="px-4 py-2 font-mono text-xs">{f.numero}</td>
-                  <td className="px-4 py-2 font-mono text-xs">{f.date_echeance || "—"}</td>
-                  <td className={`px-4 py-2 text-right font-mono ${reste > 0 ? "text-rose-700" : "text-emerald-700"}`}>{fmt(reste)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex flex-wrap items-center justify-end gap-1.5">
-                      {reste > 0 && enLigne.actif && (
-                        <button onClick={() => payerEnLigne(f, reste)} disabled={encours === f.id}
-                          className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-60">
-                          {encours === f.id ? "…" : "💳 En ligne"}
-                        </button>
-                      )}
-                      {reste > 0 && aDesNumeros && (
-                        <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Déclarer</button>
-                      )}
-                      {/* Le parent réclamait systématiquement sa facture au
-                          secrétariat : il peut désormais l'éditer lui-même. */}
-                      <button onClick={() => setFactureDoc(f.id)}
-                        className="rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/70 hover:border-or-500">
-                        🧾 Facture
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Carte>
+      {visibles.length > 0 && (
+        <Carte className="divide-y divide-navy-900/5 overflow-hidden">
+          {visibles.map((f) => {
+            const reste = resteFacture(f);
+            const e = etatFacture(f);
+            const payable = peutPayer(f);
+            const nbRecus = Number(f.nb_paiements) || 0;
+            return (
+              <div key={f.id} className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-medium text-navy-900">{f.numero}</p>
+                    <p className="text-xs text-navy-900/60">Échéance : {f.date_echeance ? fmtDate(f.date_echeance) : "—"}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${e.ton}`}>{e.label}</span>
+                </div>
+
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-navy-900/60">Montant</dt>
+                    <dd className={`font-mono ${estAnnulee(f) ? "text-navy-900/60 line-through" : "text-navy-900"}`}>{fmt(f.montant_total)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-navy-900/60">Déjà payé</dt>
+                    <dd className="font-mono text-emerald-700">{fmt(f.montant_paye)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-navy-900/60">Solde</dt>
+                    <dd className={`font-mono font-semibold ${reste > 0 ? "text-rose-700" : "text-navy-900/70"}`}>{fmt(reste)}</dd>
+                  </div>
+                </dl>
+
+                {declareSur[f.id] > 0 && (
+                  <p className="mt-2 text-xs text-or-700">
+                    ⏳ Paiement de {fmt(declareSur[f.id])} XOF déclaré, en attente de validation par l&apos;école.
+                  </p>
+                )}
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  {payable && enLigne.actif && (
+                    <button onClick={() => payerEnLigne(f, reste)} disabled={encours === f.id}
+                      className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-60">
+                      {encours === f.id ? "…" : "💳 En ligne"}
+                    </button>
+                  )}
+                  {payable && aDesNumeros && (
+                    <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">
+                      Déclarer un paiement
+                    </button>
+                  )}
+                  {/* Le parent réclamait systématiquement sa facture au
+                      secrétariat : il peut l'éditer lui-même, payée ou non. */}
+                  <button onClick={() => setFactureDoc({ id: f.id, type: "facture" })}
+                    className="rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/70 hover:border-or-500">
+                    🧾 Facture
+                  </button>
+                  {aDesRecus(f) && (
+                    <button onClick={() => setFactureDoc({ id: f.id, type: "recu", paiementId: f.dernier_paiement_id })}
+                      className="rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
+                      ✅ {nbRecus > 1 ? `Reçus (${nbRecus})` : "Reçu"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </Carte>
       )}
 
       {enLigne.actif && (
@@ -960,11 +1020,11 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
         <p className="text-xs text-navy-900/40">Le paiement n'est pas encore configuré par l'établissement.</p>
       )}
 
-      {declarations.length > 0 && (
+      {aSuivre.length > 0 && (
         <Carte className="p-5">
-          <h3 className="mb-2 font-display font-semibold text-navy-900">Mes déclarations</h3>
+          <h3 className="mb-2 font-display font-semibold text-navy-900">Déclarations en attente ou rejetées</h3>
           <ul className="space-y-1 text-sm">
-            {declarations.map((d) => (
+            {aSuivre.map((d) => (
               <li key={d.id}>
                 <div className="flex items-center justify-between">
                   <span className="text-navy-900/70">
@@ -985,6 +1045,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
               </li>
             ))}
           </ul>
+          <p className="mt-3 text-xs text-navy-900/50">Un paiement validé par l&apos;école se retrouve en reçu, sur sa facture.</p>
         </Carte>
       )}
 
@@ -1001,7 +1062,10 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
         }}
       />
 
-      {factureDoc && <ModaleDocument factureId={factureDoc} onFermer={() => setFactureDoc(null)} />}
+      {factureDoc && (
+        <ModaleDocument factureId={factureDoc.id} initial={factureDoc.type} paiementId={factureDoc.paiementId}
+          onFermer={() => setFactureDoc(null)} />
+      )}
     </div>
   );
 }
@@ -1164,7 +1228,11 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
 // Facture et reçus d'une facture, imprimables par le parent lui-même.
 // Tout arrive en un seul appel (migration 142) : le document s'affiche d'un
 // bloc, il ne se compose pas progressivement sous les yeux du parent.
-function ModaleDocument({ factureId, onFermer }) {
+//
+// `initial = "recu"` : ouvert depuis le bouton « Reçu », le document montre
+// d'emblée un reçu — celui de `paiementId`, sinon le plus récent. Les autres
+// restent à un clic dans le sélecteur « Pièce ».
+function ModaleDocument({ factureId, onFermer, initial = "facture", paiementId = null }) {
   const [d, setD] = useState(null);
   const [erreur, setErreur] = useState("");
   const [apercu, setApercu] = useState({ type: "facture", paiement: null });
@@ -1172,10 +1240,15 @@ function ModaleDocument({ factureId, onFermer }) {
   useEffect(() => {
     let vivant = true;
     enfantFactureDetail(factureId)
-      .then((r) => { if (vivant) setD(r); })
+      .then((r) => {
+        if (!vivant) return;
+        setD(r);
+        const p = initial === "recu" ? recuParDefaut(r?.paiements, paiementId) : null;
+        if (p) setApercu({ type: "recu", paiement: p });
+      })
       .catch((e) => { if (vivant) setErreur(e.message); });
     return () => { vivant = false; };
-  }, [factureId]);
+  }, [factureId, initial, paiementId]);
 
   const f = d?.facture;
   const recu = apercu.type === "recu";

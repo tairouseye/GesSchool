@@ -166,7 +166,7 @@ async function handleInitier(req: Request) {
   // Propriété : ce parent est-il tuteur de l'élève de cette facture ?
   const { data: fac } = await admin
     .from("factures")
-    .select("id, ecole_id, eleve_id, montant_total, montant_paye, numero, eleves(prenom, nom)")
+    .select("id, ecole_id, eleve_id, montant_total, montant_paye, numero, statut, eleves(prenom, nom)")
     .eq("id", facture_id).maybeSingle();
   if (!fac) return json({ error: "Facture introuvable." }, 404);
 
@@ -176,6 +176,12 @@ async function handleInitier(req: Request) {
     .eq("eleve_id", fac.eleve_id);
   const tuteur = (lien || []).map((l: any) => l.tuteurs).find((t: any) => t?.profil_id === uid);
   if (!tuteur) return json({ error: "Accès refusé." }, 403);
+
+  // Mig. 207 : même refus que les déclarations — une facture annulée ne doit
+  // plus rien, un brouillon n'est pas encore émis. APRÈS le contrôle d'accès :
+  // l'état d'une facture ne se dit qu'à un parent de l'élève.
+  if (fac.statut === "annulee") return json({ error: "Cette facture a été annulée : elle ne se paie plus." }, 400);
+  if (fac.statut === "brouillon") return json({ error: "Cette facture n'a pas encore été émise par l'école." }, 400);
 
   const reste = (Number(fac.montant_total) || 0) - (Number(fac.montant_paye) || 0);
   const base = Math.min(Number(montant), reste);
