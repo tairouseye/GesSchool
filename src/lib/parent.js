@@ -28,9 +28,11 @@ export async function alertesEnfant(eleveId) {
 
 // Consentement (supérieur) : état de l'accès du parent aux notes d'un étudiant.
 // Renvoie { requiert, statut } — requiert=true si l'étudiant est au supérieur.
+// ⚠️ Une erreur REMONTE : la convertir en « pas de consentement requis »
+// affichait « Aucune note » à un parent dont la connexion avait échoué.
 export async function monAccesNotes(eleveId) {
   const { data, error } = await supabase.rpc("mon_acces_notes", { p_eleve: eleveId });
-  if (error) return { requiert: false, statut: null };
+  if (error) throw error;
   const r = Array.isArray(data) ? data[0] : data;
   return { requiert: !!r?.requiert, statut: r?.statut || null };
 }
@@ -48,8 +50,9 @@ export async function marquerAlertesLues(eleveId, categorie) {
   const { data: u } = await supabase.auth.getUser();
   const uid = u?.user?.id;
   if (!uid || !eleveId || !categorie) return;
-  await supabase.from("notifications").update({ lu: true })
+  const { error } = await supabase.from("notifications").update({ lu: true })
     .eq("destinataire_id", uid).eq("eleve_id", eleveId).eq("categorie", categorie).eq("lu", false);
+  if (error) throw error;
 }
 
 // Cantine & transport de l'enfant (0 ou 1 abonnement).

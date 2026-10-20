@@ -29,6 +29,7 @@ import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composant
 import Photo from "@/composants/Photo.jsx";
 import { enfantAcquis } from "@/lib/acquis.js";
 import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
+import { messageErreur } from "@/lib/erreurs.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -61,14 +62,29 @@ export default function ParentEnfant() {
   const [transport, setTransport] = useState(null);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
+  //  Échec PARTIEL du chargement initial (une requête sur six) : on le dit,
+  //  sans vider ce qui a pu être lu.
+  const [erreurInitiale, setErreurInitiale] = useState("");
+  //  `mes_enfants` a répondu, mais cet enfant n'y est pas (adresse modifiée,
+  //  enfant détaché) : la base refuse déjà tout, on l'explique.
+  const [inconnu, setInconnu] = useState(false);
 
   const [acquis, setAcquis] = useState([]);   // suivi des acquis (préscolaire, mig. 172)
   const [aDesAcquis, setADesAcquis] = useState(false);
   const [alertes, setAlertes] = useState({}); // pastilles « nouveau » par catégorie
   const [acces, setAcces] = useState({ requiert: false, statut: null }); // consentement notes (supérieur)
 
-  const loadedRef = useRef(new Set());      // sections déjà chargées (dédup)
-  const [charge, setCharge] = useState({}); // idem, pour piloter le rendu
+  const loadedRef = useRef(new Set());      // sections chargées ou en cours (dédup)
+  //  État de chaque rubrique : absent = en cours, { ok } = chargée,
+  //  { erreur } = échec. ⚠️ Avant, un échec laissait le squelette affiché
+  //  pour toujours : seul le succès marquait la rubrique comme chargée.
+  const [etats, setEtats] = useState({});
+
+  //  L'enfant affiché. Une réponse qui arrive APRÈS un changement d'enfant
+  //  (connexion lente) est ignorée : sans ce garde, les notes de l'aîné
+  //  pouvaient s'afficher sous le nom du cadet.
+  const enfantCourant = useRef(id);
+  useEffect(() => { enfantCourant.current = id; }, [id]);
 
   // Sections disponibles (Cantine/Transport seulement si abonnement).
   //  La tuile « Suivi des acquis » n'apparaît que lorsque l'école a
@@ -88,51 +104,101 @@ export default function ParentEnfant() {
 
   // Chargement INITIAL minimal : en-tête (enfant), badges (factures, demandes)
   // et visibilité des tuiles Cantine/Transport. Le reste est chargé à l'ouverture
-  // de chaque section (lazy-load) → page enfant bien plus légère sur mobile
-  // (5 requêtes au lieu de 14, dont beaucoup pour des onglets jamais ouverts).
+  // de chaque section (lazy-load) → page enfant bien plus légère sur mobile.
+  //
+  // ⚠️ `allSettled`, pas `all` : un seul échec (la cantine, par exemple)
+  // vidait TOUT — factures comprises — et la rubrique Paiements annonçait
+  // ensuite « Aucune facture » à un parent qui en avait.
   const chargerInitial = useCallback(async () => {
-    try {
-      const [enf, f, dem, can, tra, al, acc] = await Promise.all([
-        mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id), alertesEnfant(id), monAccesNotes(id),
-      ]);
-      setEnfant((enf || []).find((x) => x.eleve_id === id) || null);
-      //  Sonde discrète : si la RPC refuse (consentement non accordé) ou ne
-      //  rend rien, la tuile reste simplement absente.
-      enfantAcquis(id, null).then((a) => setADesAcquis((a || []).length > 0)).catch(() => setADesAcquis(false));
-      setFactures(f); setDemandes(dem); setCantine(can); setTransport(tra); setAlertes(al || {}); setAcces(acc || { requiert: false, statut: null });
-    } catch (e) { setErreur(e.message); }
+    const pour = id;
+    const [enf, f, dem, can, tra, al] = await Promise.allSettled([
+      mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id), alertesEnfant(id),
+    ]);
+    if (enfantCourant.current !== pour) return;
+    const val = (r, defaut) => (r.status === "fulfilled" ? r.value ?? defaut : defaut);
+    const liste = enf.status === "fulfilled" ? enf.value || [] : null;
+    setEnfant(liste ? liste.find((x) => x.eleve_id === pour) || null : null);
+    setInconnu(liste != null && !liste.some((x) => x.eleve_id === pour));
+    setFactures(val(f, [])); setDemandes(val(dem, [])); setCantine(val(can, null)); setTransport(val(tra, null));
+    setAlertes(val(al, {}));
+    const echec = [enf, f, dem, can, tra].find((r) => r.status === "rejected");
+    setErreurInitiale(echec ? echec.reason?.message || "Erreur de chargement." : "");
+    //  Sonde discrète : si la RPC refuse (consentement non accordé) ou ne
+    //  rend rien, la tuile reste simplement absente.
+    enfantAcquis(pour, null)
+      .then((a) => { if (enfantCourant.current === pour) setADesAcquis((a || []).length > 0); })
+      .catch(() => { if (enfantCourant.current === pour) setADesAcquis(false); });
   }, [id]);
 
   // Charge les données d'UNE section, une seule fois (sauf `force`).
+  //  Chaque rubrique relit ce qu'elle affiche (Paiements relit les factures,
+  //  Documents les demandes…) : un échec du chargement initial ne se
+  //  transforme donc jamais en rubrique « vide ».
   const chargerSection = useCallback(async (cle, force = false) => {
     if (!cle || (loadedRef.current.has(cle) && !force)) return;
+    loadedRef.current.add(cle);
+    const pour = id;
+    const appliquer = (fn) => { if (enfantCourant.current === pour) fn(); };
     try {
-      if (cle === "notes") setNotes(await enfantNotes(id));
-      else if (cle === "bulletins") setBulletins(await enfantBulletins(id));
-      else if (cle === "cahier") setCahier(await enfantCahier(id));
-      else if (cle === "emploi") setEmploi(await enfantEmploi(id));
-      else if (cle === "fournitures") setFournitures(await enfantFournitures(id));
-      else if (cle === "absences") setAbsences(await enfantAbsences(id));
-      else if (cle === "acquis") setAcquis(await enfantAcquis(id, null));
-      else if (cle === "cantine") setMenu(await enfantMenuCantine(id));
-      else if (cle === "annonces") setAnnonces(await annoncesEnfant(id));
-      else if (cle === "paiements") {
-        const [i, d] = await Promise.all([ecolePaiementInfos(id), enfantDeclarations(id)]);
-        setInfos(i); setDeclarations(d);
+      if (cle === "notes" || cle === "bulletins" || cle === "acquis") {
+        //  Le consentement (supérieur) se relit avec la rubrique : en cas
+        //  d'échec, on n'affiche ni « aucune note » ni l'écran de demande.
+        const charge = { notes: enfantNotes, bulletins: enfantBulletins, acquis: (e) => enfantAcquis(e, null) }[cle];
+        const [acc, d] = await Promise.all([monAccesNotes(id), charge(id)]);
+        appliquer(() => {
+          setAcces(acc);
+          if (cle === "notes") setNotes(d); else if (cle === "bulletins") setBulletins(d); else setAcquis(d);
+        });
       }
-      // "documents" (demandes déjà chargées) et "transport" (déjà chargé) : rien de plus.
-      loadedRef.current.add(cle);
-      setCharge((c) => ({ ...c, [cle]: true }));
-    } catch (e) { setErreur(e.message); }
+      else if (cle === "cahier") { const d = await enfantCahier(id); appliquer(() => setCahier(d)); }
+      else if (cle === "emploi") { const d = await enfantEmploi(id); appliquer(() => setEmploi(d)); }
+      else if (cle === "fournitures") { const d = await enfantFournitures(id); appliquer(() => setFournitures(d)); }
+      else if (cle === "absences") { const d = await enfantAbsences(id); appliquer(() => setAbsences(d)); }
+      else if (cle === "annonces") { const d = await annoncesEnfant(id); appliquer(() => setAnnonces(d)); }
+      else if (cle === "documents") { const d = await mesDemandes(); appliquer(() => setDemandes(d)); }
+      else if (cle === "transport") { const d = await enfantTransport(id); appliquer(() => setTransport(d)); }
+      else if (cle === "cantine") {
+        const [c, m] = await Promise.all([enfantCantine(id), enfantMenuCantine(id)]);
+        appliquer(() => { setCantine(c); setMenu(m); });
+      }
+      else if (cle === "paiements") {
+        const [f, i, d] = await Promise.all([enfantFactures(id), ecolePaiementInfos(id), enfantDeclarations(id)]);
+        appliquer(() => { setFactures(f); setInfos(i); setDeclarations(d); });
+      }
+      appliquer(() => setEtats((s) => ({ ...s, [cle]: { ok: true } })));
+    } catch (e) {
+      appliquer(() => {
+        loadedRef.current.delete(cle);
+        setEtats((s) => ({ ...s, [cle]: { erreur: e.message || "Erreur de chargement." } }));
+      });
+    }
   }, [id]);
 
+  // Nouvelle tentative : la rubrique repasse en chargement (squelette).
+  const reessayer = (cle) => {
+    setEtats((s) => { const n = { ...s }; delete n[cle]; return n; });
+    chargerSection(cle, true);
+  };
+
   // Montée / changement d'enfant : (ré)initialise et charge l'essentiel.
+  //  Les données de l'enfant précédent sont effacées : jamais affichées,
+  //  même un instant, sous le nom du nouveau.
   useEffect(() => {
     setChargement(true);
     loadedRef.current = new Set();
-    setCharge({});
+    setEtats({});
+    setErreur(""); setErreurInitiale(""); setInconnu(false);
+    setEnfant(null); setNotes([]); setBulletins([]); setAcquis([]); setADesAcquis(false);
+    setFactures([]); setInfos({}); setDeclarations([]); setAbsences([]); setCahier([]);
+    setEmploi([]); setFournitures([]); setAnnonces([]); setCantine(null); setMenu([]); setTransport(null);
+    setAlertes({}); setAcces({ requiert: false, statut: null });
+    chargerInitial().finally(() => { if (enfantCourant.current === id) setChargement(false); });
+  }, [chargerInitial, id]);
+
+  const relancerInitial = () => {
+    setChargement(true);
     chargerInitial().finally(() => setChargement(false));
-  }, [chargerInitial]);
+  };
 
   // Grille → rubrique (ou retour) : on repart du haut de la page. Entre deux
   // rubriques, c'est la barre qui ramène au début du contenu.
@@ -177,7 +243,11 @@ export default function ParentEnfant() {
   // Badges calculés depuis les données déjà chargées (aucune requête en plus).
   //  Une facture annulée ou un brouillon ne doit rien : ni pastille, ni dette.
   const impayes = syntheseFactures(factures).aRegler;
-  const demandesEnCours = demandes.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
+  //  `mes_demandes` couvre toute la fratrie : on ne garde que CET enfant
+  //  (`eleve_id`, mig. 208). Sans la colonne (base pas encore migrée), on
+  //  conserve l'ancien comportement plutôt que de tout masquer.
+  const demandesEnfant = demandes.filter((d) => d.eleve_id === undefined || d.eleve_id === id);
+  const demandesEnCours = demandesEnfant.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
   const badges = {
     paiements: impayes, documents: demandesEnCours,
     notes: alertes.note || 0, absences: alertes.absence || 0,
@@ -187,7 +257,7 @@ export default function ParentEnfant() {
 
   return (
     <div className="space-y-5">
-      {onglet === null ? (
+      {onglet === null || inconnu ? (
         <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
       ) : (
         <>
@@ -211,9 +281,28 @@ export default function ParentEnfant() {
         </>
       )}
       <Alerte ton="erreur">{erreur}</Alerte>
+      {!chargement && !inconnu && erreurInitiale && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-or-500/40 bg-or-500/10 px-4 py-3 text-sm text-or-700" role="status">
+          <span>Certaines informations n&apos;ont pas pu être chargées ({messageErreur(erreurInitiale)}).</span>
+          <button type="button" onClick={relancerInitial}
+            className="min-h-10 rounded-lg border border-or-500/50 bg-white px-3 text-xs font-semibold text-navy-900 hover:border-or-600">
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {chargement ? (
-        <SkeletonListe lignes={4} />
+        <div role="status" aria-label="Chargement"><SkeletonListe lignes={4} /></div>
+      ) : inconnu ? (
+        <Carte className="p-6 text-center">
+          <p className="font-display text-lg font-semibold text-navy-900">Enfant introuvable</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-navy-900/60">
+            Cet enfant n&apos;est pas rattaché à votre compte. Revenez à la liste de vos enfants.
+          </p>
+          <Link to="/parent" className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-navy-900 px-4 text-sm font-semibold text-creme">
+            Mes enfants
+          </Link>
+        </Carte>
       ) : onglet === null ? (
         <>
           {/* En-tête + grille de tuiles colorées (accueil de l'enfant) */}
@@ -264,12 +353,14 @@ export default function ParentEnfant() {
             {sectionActive && <Icone name={sectionActive.cle} className="h-6 w-6 text-or-600" />}
             {sectionActive?.label}
           </h2>
-          {!charge[onglet] ? (
-        <SkeletonListe lignes={4} />
+          {!etats[onglet] ? (
+        <div role="status" aria-label={`Chargement : ${sectionActive?.label || "rubrique"}`}><SkeletonListe lignes={4} /></div>
+      ) : etats[onglet].erreur ? (
+        <ErreurRubrique message={etats[onglet].erreur} onReessayer={() => reessayer(onglet)} />
       ) : onglet === "notes" ? (
-        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Notes notes={notes} />
+        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Notes notes={notes} lienBulletins={lienRubrique("bulletins")} />
       ) : onglet === "bulletins" ? (
-        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Bulletins bulletins={bulletins} onErreur={setErreur} />
+        notesGatees ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} /> : <Bulletins bulletins={bulletins} />
       ) : onglet === "acquis" ? (
         notesGatees
           ? <ConsentementNotes statut={acces.statut} enCours={demandeEnCours} onDemander={demanderAcces} />
@@ -283,15 +374,15 @@ export default function ParentEnfant() {
       ) : onglet === "annonces" ? (
         <AnnoncesEnfant items={annonces} enfant={enfant} />
       ) : onglet === "paiements" ? (
-        <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} onErreur={setErreur} />
+        <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} />
       ) : onglet === "documents" ? (
-        <Documents eleveId={id} demandes={demandes} onChange={rafraichir} onErreur={setErreur} />
+        <Documents eleveId={id} demandes={demandesEnfant} onChange={rafraichir} />
       ) : onglet === "cantine" ? (
         <CantineParent cantine={cantine} menu={menu} />
       ) : onglet === "transport" ? (
         <TransportParent transport={transport} />
       ) : (
-        <Absences absences={absences} onChange={rafraichir} onErreur={setErreur} />
+        <Absences absences={absences} onChange={rafraichir} />
       )}
         </>
       )}
@@ -369,9 +460,32 @@ function TransportParent({ transport }) {
   );
 }
 
-function Notes({ notes }) {
-  if (notes.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune note pour l'instant.</Carte>;
-  // Regroupe par période puis matière ; calcule la moyenne par matière (pondérée par coef d'éval, sur /20)
+// Une rubrique dont le chargement a échoué : on le DIT, avec de quoi réessayer.
+// Jamais un « aucune donnée », qui serait une affirmation fausse.
+function ErreurRubrique({ message, onReessayer }) {
+  return (
+    <Carte className="p-6 text-center" role="alert">
+      <p className="font-display font-semibold text-navy-900">Cette rubrique n&apos;a pas pu être chargée.</p>
+      <p className="mx-auto mt-1 max-w-md text-sm text-navy-900/60">{messageErreur(message)}</p>
+      <Bouton className="mt-4" variante="fantome" onClick={onReessayer}>Réessayer</Bouton>
+    </Carte>
+  );
+}
+
+// ⚠️ PAS DE MOYENNE GÉNÉRALE ICI. Celle qui s'affichait était une moyenne
+// SIMPLE des matières, alors que le bulletin pondère chaque matière par son
+// coefficient (calculerBulletins, src/lib/bulletins.js) : un parent lisait
+// deux moyennes générales différentes pour la même période. Les coefficients
+// des matières ne sont pas transmis au parent ; la seule valeur officielle
+// est celle du bulletin publié, vers lequel on renvoie.
+//
+// La moyenne PAR MATIÈRE suit exactement la règle du bulletin (notes ramenées
+// sur 20, pondérées par le coefficient de l'évaluation, évaluations archivées
+// exclues — mig. 208) : elle est exacte, mais PROVISOIRE tant que la période
+// n'est pas close, et exprimée sur 20 (le bulletin peut utiliser un autre
+// barème).
+function Notes({ notes, lienBulletins }) {
+  if (notes.length === 0) return <Carte className="p-6 text-sm text-navy-900/50">Aucune note pour l&apos;instant.</Carte>;
   const parPeriode = {};
   for (const n of notes) {
     const p = (parPeriode[n.periode] ||= { ordre: n.ordre, matieres: {} });
@@ -387,32 +501,46 @@ function Notes({ notes }) {
     <div className="space-y-5">
       {periodes.map(([periode, p]) => {
         const matieres = Object.entries(p.matieres);
-        const moyGen = matieres.reduce((s, [, m]) => s + (m.sC ? m.sN / m.sC : 0), 0) / (matieres.length || 1);
         return (
           <Carte key={periode} className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-navy-900/10 px-6 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-navy-900/10 px-4 py-3 sm:px-6">
               <h3 className="font-display font-semibold text-navy-900">{periode}</h3>
-              <span className="text-sm text-navy-900/60">Moyenne : <span className="font-mono font-bold text-navy-900">{moyGen.toFixed(2)}</span>/20</span>
+              <Link to={lienBulletins} className="text-xs font-medium text-navy-700 underline-offset-2 hover:text-or-600 hover:underline">
+                Moyenne générale : voir le bulletin
+              </Link>
             </div>
-            <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
-                <tr><th className="px-6 py-2 font-medium">Matière</th><th className="px-6 py-2 font-medium">Notes</th><th className="px-6 py-2 text-right font-medium">Moyenne</th></tr>
-              </thead>
-              <tbody>
-                {matieres.map(([matiere, m]) => (
-                  <tr key={matiere} className="border-t border-navy-900/5">
-                    <td className="px-6 py-2 font-medium text-navy-900">{matiere}</td>
-                    <td className="px-6 py-2 font-mono text-xs text-navy-900/60">
-                      {m.notes.map((x, i) => `${x.valeur}/${x.bareme}`).join(" · ")}
-                    </td>
-                    <td className="px-6 py-2 text-right font-mono">{m.sC ? (m.sN / m.sC).toFixed(2) : "—"}</td>
+            {/* Sur téléphone, le tableau défile horizontalement s'il déborde ;
+                la zone est atteignable au clavier pour défiler aussi. */}
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Notes — ${periode}`}>
+              <table className="w-full min-w-[18rem] text-left text-sm">
+                <caption className="sr-only">Notes de la période {periode}, et moyenne provisoire par matière sur 20</caption>
+                <thead className="bg-creme text-navy-900/60">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 font-medium sm:px-6">Matière</th>
+                    <th scope="col" className="px-4 py-2 font-medium sm:px-6">Notes</th>
+                    <th scope="col" className="whitespace-nowrap px-4 py-2 text-right font-medium sm:px-6">Moy. /20</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {matieres.map(([matiere, m]) => (
+                    <tr key={matiere} className="border-t border-navy-900/5 align-top">
+                      <th scope="row" className="px-4 py-2 font-medium text-navy-900 sm:px-6">{matiere}</th>
+                      <td className="px-4 py-2 font-mono text-xs text-navy-900/70 sm:px-6">
+                        {m.notes.map((x) => `${x.valeur}/${x.bareme}`).join(" · ")}
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono sm:px-6">{m.sC ? (m.sN / m.sC).toFixed(2) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Carte>
         );
       })}
+      <p className="text-xs text-navy-900/50">
+        Moyennes par matière <b>provisoires</b>, sur 20 : elles évoluent avec les nouvelles notes.
+        La moyenne générale officielle, pondérée par les coefficients des matières, figure sur le bulletin publié par l&apos;école.
+      </p>
     </div>
   );
 }
@@ -433,30 +561,42 @@ function Emploi({ creneaux, enfant }) {
   );
 }
 
-function Bulletins({ bulletins, onErreur }) {
+// Barème d'affichage de l'école (mig. 208). Le bulletin est enregistré dans
+// ce barème : écrire « /20 » en dur était faux pour une école notée sur 10.
+// Base pas encore migrée → 20, l'ancien affichage.
+const baremeDe = (b) => Number(b?.bareme) || 20;
+
+function Bulletins({ bulletins }) {
   const [sel, setSel] = useState(null);
   const [lignes, setLignes] = useState([]);
+  const [ouverture, setOuverture] = useState(null); // id du bulletin en cours d'ouverture
+  const [erreur, setErreur] = useState("");
 
   async function ouvrir(b) {
+    setOuverture(b.id); setErreur("");
     try { setLignes(await enfantBulletinLignes(b.id)); setSel(b); }
-    catch (e) { onErreur(e.message); }
+    catch (e) { setErreur(e.message); }
+    finally { setOuverture(null); }
   }
 
   if (bulletins.length === 0) {
-    return <Carte className="p-6 text-sm text-navy-900/40">Aucun bulletin publié pour le moment.</Carte>;
+    return <Carte className="p-6 text-sm text-navy-900/50">Aucun bulletin publié pour le moment.</Carte>;
   }
   return (
     <div className="space-y-2">
+      <Alerte ton="erreur">{erreur}</Alerte>
       {bulletins.map((b) => (
         <Carte key={b.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
             <p className="font-display font-semibold text-navy-900">{b.periode}</p>
-            <p className="text-xs text-navy-900/50">
-              Moyenne {b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}/20
+            <p className="text-xs text-navy-900/60">
+              Moyenne {b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}/{baremeDe(b)}
               {b.rang ? ` · Rang ${b.rang}${b.effectif ? "/" + b.effectif : ""}` : ""} · {b.mention || "—"}
             </p>
           </div>
-          <Bouton variante="fantome" onClick={() => ouvrir(b)}>Voir / Imprimer</Bouton>
+          <Bouton variante="fantome" onClick={() => ouvrir(b)} disabled={ouverture === b.id}>
+            {ouverture === b.id ? "Ouverture…" : "Voir / Imprimer"}
+          </Bouton>
         </Carte>
       ))}
 
@@ -478,8 +618,8 @@ function Bulletins({ bulletins, onErreur }) {
 function BulletinParent({ b, lignes }) {
   const totalCoef = lignes.reduce((s, l) => s + Number(l.coefficient || 0), 0);
   return (
-    <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-8">
-      <div className="flex items-start justify-between">
+    <div className="zone-impression relative overflow-hidden rounded-xl border border-navy-900/10 bg-white p-4 sm:p-8 print:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {b.logo && <img src={b.logo} alt="" className="h-14 w-14 shrink-0 object-contain" />}
           <div>
@@ -494,9 +634,10 @@ function BulletinParent({ b, lignes }) {
         </div>
       </div>
 
-      <table className="mt-6 w-full text-left text-sm">
+      <div className="mt-6 overflow-x-auto print:overflow-visible" tabIndex={0} role="region" aria-label="Moyennes par matière">
+      <table className="w-full min-w-[30rem] text-left text-sm print:min-w-0">
         <thead className="border-b border-navy-900/15 text-navy-900/50">
-          <tr><th className="py-2 font-medium">Matière</th><th className="py-2 text-center font-medium">Moyenne</th><th className="py-2 text-center font-medium">Coef.</th><th className="py-2 text-center font-medium">Pts</th><th className="py-2 font-medium">Appréciation</th></tr>
+          <tr><th className="py-2 font-medium">Matière</th><th className="py-2 text-center font-medium">Moy. /{baremeDe(b)}</th><th className="py-2 text-center font-medium">Coef.</th><th className="py-2 text-center font-medium">Pts</th><th className="py-2 font-medium">Appréciation</th></tr>
         </thead>
         <tbody>
           {lignes.map((l, i) => (
@@ -511,11 +652,12 @@ function BulletinParent({ b, lignes }) {
           {lignes.length === 0 && <tr><td colSpan={5} className="py-3 text-navy-900/40">—</td></tr>}
         </tbody>
       </table>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-navy-900 p-4 text-creme">
           <p className="text-xs text-creme/60">Moyenne générale</p>
-          <p className="font-display text-2xl font-bold">{b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}<span className="text-sm font-normal">/20</span></p>
+          <p className="font-display text-2xl font-bold">{b.moyenne != null ? Number(b.moyenne).toFixed(2) : "—"}<span className="text-sm font-normal">/{baremeDe(b)}</span></p>
         </div>
         <div className="rounded-xl bg-or-500 p-4 text-navy-900">
           <p className="text-xs text-navy-900/60">Rang</p>
@@ -595,10 +737,14 @@ function ConsentementNotes({ statut, enCours, onDemander }) {
   );
 }
 
-function Documents({ eleveId, demandes, onChange, onErreur }) {
+// L'erreur s'affiche AU-DESSUS DU FORMULAIRE : en haut de page, elle sortait
+// de l'écran d'un téléphone, et la demande semblait partie.
+function Documents({ eleveId, demandes, onChange }) {
   const [type, setType] = useState("scolarite");
   const [message, setMessage] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const onErreur = setErreur;
   const fmtD = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
   const lib = { en_attente: "En attente", en_cours: "En cours", pret: "Prêt ✓", rejete: "Rejeté" };
   const ton = { en_attente: "text-or-600", en_cours: "text-navy-900/60", pret: "text-emerald-700", rejete: "text-rose-700" };
@@ -630,6 +776,7 @@ function Documents({ eleveId, demandes, onChange, onErreur }) {
               className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
           </label>
         </div>
+        <div className="mt-3"><Alerte ton="erreur">{erreur}</Alerte></div>
         <div className="mt-3 flex justify-end">
           <Bouton onClick={envoyer} disabled={envoi}>{envoi ? "Envoi…" : "Envoyer la demande"}</Bouton>
         </div>
@@ -687,22 +834,32 @@ function Cahier({ entrees }) {
 function PiecesJointes({ fichiers }) {
   const liste = Array.isArray(fichiers) ? fichiers : [];
   if (liste.length === 0) return null;
+  //  ⚠️ Un échec était silencieux : le parent touchait la pièce jointe et
+  //  rien ne se passait.
+  const [echec, setEchec] = useState("");
   async function ouvrir(f) {
-    const url = await lienFichier(f.chemin).catch(() => null);
-    if (url) window.open(url, "_blank", "noopener");
+    setEchec("");
+    try {
+      const url = await lienFichier(f.chemin);
+      if (!url) throw new Error("Pièce jointe indisponible.");
+      window.open(url, "_blank", "noopener");
+    } catch (e) { setEchec(`« ${f.nom_fichier} » n'a pas pu être ouverte : ${messageErreur(e)}`); }
   }
   return (
+    <>
+    {echec && <p className="mt-2 text-xs text-rose-700" role="alert">{echec}</p>}
     <ul className="mt-2 flex flex-wrap gap-2">
       {liste.map((f) => (
         <li key={f.id}>
           <button type="button" onClick={() => ouvrir(f)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-navy-900/10 bg-white px-2.5 py-1 text-xs text-navy-900/75 active:border-or-500">
             📎 <span className="max-w-44 truncate">{f.nom_fichier}</span>
             <span className="text-navy-900/35">{poids(f.taille)}</span>
           </button>
         </li>
       ))}
     </ul>
+    </>
   );
 }
 
@@ -874,16 +1031,30 @@ function Fournitures({ items, enfant }) {
   );
 }
 
-function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur }) {
+function Paiements({ factures, infos, declarations, eleveId, onChange }) {
+  //  Erreur du paiement en ligne : affichée DANS la rubrique, pas en haut de
+  //  page, hors de l'écran d'un téléphone.
+  const [erreur, setErreur] = useState("");
+  const onErreur = setErreur;
   const [payer, setPayer] = useState(null); // facture à régler (flux manuel)
   // Volontairement pas « document » : ce nom masquerait l'objet global du DOM
   // dans tout le composant.
   // { id, type: "facture" | "recu", paiementId } : la pièce à ouvrir.
   const [factureDoc, setFactureDoc] = useState(null);
   const [enLigne, setEnLigne] = useState({ actif: false });
+  //  Échec de lecture ≠ « pas configuré » : sans ce drapeau, une coupure
+  //  réseau faisait dire « Le paiement n'est pas encore configuré ».
+  const [pspEchec, setPspEchec] = useState(false);
   const [encours, setEncours] = useState(null); // id de facture en cours de redirection
 
-  useEffect(() => { pspEtatEleve(eleveId).then(setEnLigne).catch(() => {}); }, [eleveId]);
+  useEffect(() => {
+    let vivant = true;
+    setPspEchec(false);
+    pspEtatEleve(eleveId)
+      .then((r) => { if (vivant) setEnLigne(r || { actif: false }); })
+      .catch(() => { if (vivant) { setEnLigne({ actif: false }); setPspEchec(true); } });
+    return () => { vivant = false; };
+  }, [eleveId]);
 
   // Paiement automatique : on demande l'URL au prestataire puis on redirige.
   async function payerEnLigne(f, reste) {
@@ -907,6 +1078,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
 
   return (
     <div className="space-y-4">
+      <Alerte ton="erreur">{erreur}</Alerte>
       {visibles.length > 0 ? (
         <Carte className="p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -939,7 +1111,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
           aucune facture — c'est précisément le cas où il sert. Il reçoit
           TOUTES les déclarations : une avance validée y reste « payée ». */}
       <PayerAvance eleveId={eleveId} infos={infos} aDesNumeros={aDesNumeros}
-        declarations={declarations} onChange={onChange} onErreur={onErreur} />
+        declarations={declarations} onChange={onChange} />
 
       {visibles.length > 0 && (
         <Carte className="divide-y divide-navy-900/5 overflow-hidden">
@@ -979,27 +1151,28 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
                   </p>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                {/* Boutons de 40 px de haut : ils se touchent au doigt. */}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   {payable && enLigne.actif && (
                     <button onClick={() => payerEnLigne(f, reste)} disabled={encours === f.id}
-                      className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-60">
+                      className="min-h-10 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-60">
                       {encours === f.id ? "…" : "💳 En ligne"}
                     </button>
                   )}
                   {payable && aDesNumeros && (
-                    <button onClick={() => setPayer({ ...f, reste })} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">
+                    <button onClick={() => setPayer({ ...f, reste })} className="min-h-10 rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">
                       Déclarer un paiement
                     </button>
                   )}
                   {/* Le parent réclamait systématiquement sa facture au
                       secrétariat : il peut l'éditer lui-même, payée ou non. */}
                   <button onClick={() => setFactureDoc({ id: f.id, type: "facture" })}
-                    className="rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/70 hover:border-or-500">
+                    className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/70 hover:border-or-500">
                     🧾 Facture
                   </button>
                   {aDesRecus(f) && (
                     <button onClick={() => setFactureDoc({ id: f.id, type: "recu", paiementId: f.dernier_paiement_id })}
-                      className="rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
+                      className="min-h-10 rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
                       ✅ {nbRecus > 1 ? `Reçus (${nbRecus})` : "Reçu"}
                     </button>
                   )}
@@ -1017,7 +1190,13 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
         </p>
       )}
       {!aDesNumeros && !enLigne.actif && (
-        <p className="text-xs text-navy-900/40">Le paiement n'est pas encore configuré par l'établissement.</p>
+        pspEchec ? (
+          <p className="text-xs text-navy-900/60">
+            Le paiement en ligne n&apos;a pas pu être vérifié (connexion ?). Rouvrez cette rubrique pour réessayer.
+          </p>
+        ) : (
+          <p className="text-xs text-navy-900/50">Le paiement n&apos;est pas encore configuré par l&apos;établissement.</p>
+        )
       )}
 
       {aSuivre.length > 0 && (
@@ -1052,13 +1231,13 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
       <ModalePayer
         facture={payer} infos={infos} eleveId={eleveId}
         onFermer={() => setPayer(null)}
+        /*  Une erreur REMONTE à la modale, qui l'affiche : relayée à la page,
+            elle s'écrivait DERRIÈRE la modale restée ouverte, invisible. */
         onDeclare={async (data) => {
-          try {
-            const preuve = data.fichier ? await televerserPreuve(eleveId, data.fichier) : null;
-            await declarerPaiement(payer.id, data.montant, data.mode, data.reference, preuve);
-            setPayer(null);
-            await onChange();
-          } catch (e) { onErreur(e.message); }
+          const preuve = data.fichier ? await televerserPreuve(eleveId, data.fichier) : null;
+          await declarerPaiement(payer.id, data.montant, data.mode, data.reference, preuve);
+          setPayer(null);
+          await onChange();
         }}
       />
 
@@ -1075,18 +1254,21 @@ function Paiements({ factures, infos, declarations, eleveId, onChange, onErreur 
 // Le parent coche des mois, pas un montant : le tarif vient de la base, et
 // c'est elle qui recalcule le total déclaré. À la validation par la caisse,
 // la facture du mois est créée déjà réglée, et le parent est prévenu.
-function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange, onErreur }) {
+function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange }) {
   const [groupes, setGroupes] = useState([]);
+  const [echec, setEchec] = useState(false);
   const [version, setVersion] = useState(0);
   const [ouvert, setOuvert] = useState(false);
 
   useEffect(() => {
     let vivant = true;
-    //  Silencieux : sans tarif mensuel ni inscription, rien à proposer, et
-    //  la carte n'apparaît simplement pas.
+    setEchec(false);
+    //  Sans tarif mensuel ni inscription, la liste revient VIDE et la carte
+    //  n'apparaît simplement pas. Un ÉCHEC, lui, n'est pas une liste vide :
+    //  on le dit, avec de quoi réessayer.
     avanceOptions(eleveId)
       .then((l) => { if (vivant) setGroupes(grouperParMois(l)); })
-      .catch(() => { if (vivant) setGroupes([]); });
+      .catch(() => { if (vivant) { setGroupes([]); setEchec(true); } });
     return () => { vivant = false; };
   }, [eleveId, version]);
 
@@ -1096,7 +1278,16 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange,
 
   //  La déclaration passe par le mobile money de l'école : sans numéro
   //  configuré, le parent paie au guichet, et la caisse encaisse l'avance.
-  if (!aDesNumeros || (groupes.length === 0 && couvertes.length === 0)) return null;
+  if (!aDesNumeros) return null;
+  if (echec) {
+    return (
+      <Carte className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-navy-900/70">
+        <span>Le paiement d&apos;avance n&apos;a pas pu être chargé.</span>
+        <Bouton variante="fantome" onClick={() => setVersion((v) => v + 1)}>Réessayer</Bouton>
+      </Carte>
+    );
+  }
+  if (groupes.length === 0 && couvertes.length === 0) return null;
 
   return (
     <Carte className="flex flex-wrap items-center justify-between gap-3 p-5">
@@ -1128,13 +1319,12 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange,
           groupes={groupes} infos={infos}
           onFermer={() => setOuvert(false)}
           onDeclare={async ({ mois, mode, reference, fichier }) => {
-            try {
-              const preuve = await televerserPreuve(eleveId, fichier);
-              await declarerAvance(eleveId, mois, mode, reference, preuve);
-              setOuvert(false);
-              setVersion((v) => v + 1);
-              await onChange();
-            } catch (e) { onErreur(e.message); }
+            //  L'erreur remonte à la modale, qui l'affiche (cf. ModalePayer).
+            const preuve = await televerserPreuve(eleveId, fichier);
+            await declarerAvance(eleveId, mois, mode, reference, preuve);
+            setOuvert(false);
+            setVersion((v) => v + 1);
+            await onChange();
           }}
         />
       )}
@@ -1149,6 +1339,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
   const [reference, setReference] = useState("");
   const [fichier, setFichier] = useState(null);
   const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
 
   const total = totalDesMois(groupes, choisis);
   const numero = infos?.[mode];
@@ -1211,11 +1402,17 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
           {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
         </label>
 
+        <Alerte ton="erreur">{erreur}</Alerte>
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton
             disabled={envoi || choisis.length === 0 || !fichier}
-            onClick={async () => { setEnvoi(true); await onDeclare({ mois: choisis, mode, reference, fichier }); setEnvoi(false); }}
+            onClick={async () => {
+              setEnvoi(true); setErreur("");
+              try { await onDeclare({ mois: choisis, mode, reference, fichier }); }
+              catch (e) { setErreur(e.message); }
+              finally { setEnvoi(false); }
+            }}
           >
             {envoi ? "Envoi…" : `Déclarer ${fmt(total)} XOF`}
           </Bouton>
@@ -1262,7 +1459,8 @@ function ModaleDocument({ factureId, onFermer, initial = "facture", paiementId =
       <Alerte ton="erreur">{erreur}</Alerte>
 
       {!d ? (
-        <p className="text-sm text-navy-900/40">Chargement…</p>
+        //  En échec, l'alerte ci-dessus suffit : pas de « Chargement… » éternel à côté.
+        erreur ? null : <p className="text-sm text-navy-900/50" role="status">Chargement…</p>
       ) : !ecoleStyle ? (
         <p className="text-sm text-navy-900/50">
           Document indisponible à l&apos;impression pour cet établissement.
@@ -1318,15 +1516,23 @@ function ModaleDocument({ factureId, onFermer, initial = "facture", paiementId =
 }
 
 function ModalePayer({ facture, infos, onFermer, onDeclare }) {
-  const [mode, setMode] = useState("wave");
+  //  Premier mode CONFIGURÉ par l'école (comme pour l'avance) : « wave » en
+  //  dur présélectionnait un mode sans numéro, et le parent déclarait un
+  //  paiement Wave à une école qui n'a pas Wave.
+  const modeParDefaut = (MODES_MOBILE.find(([k]) => infos?.[k]) || ["wave"])[0];
+  const [mode, setMode] = useState(modeParDefaut);
   const [montant, setMontant] = useState("");
   const [reference, setReference] = useState("");
   const [fichier, setFichier] = useState(null);
   const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
 
   useEffect(() => {
-    if (facture) { setMontant(String(Math.round(facture.reste || 0))); setReference(""); setMode("wave"); setFichier(null); }
-  }, [facture]);
+    if (facture) {
+      setMontant(String(Math.round(facture.reste || 0))); setReference(""); setMode(modeParDefaut);
+      setFichier(null); setErreur("");
+    }
+  }, [facture, modeParDefaut]);
 
   if (!facture) return null;
   const numero = infos?.[mode];
@@ -1373,11 +1579,17 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
           {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
         </label>
 
+        <Alerte ton="erreur">{erreur}</Alerte>
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton
             disabled={envoi || !montant || !fichier}
-            onClick={async () => { setEnvoi(true); await onDeclare({ montant: Number(montant), mode, reference, fichier }); setEnvoi(false); }}
+            onClick={async () => {
+              setEnvoi(true); setErreur("");
+              try { await onDeclare({ montant: Number(montant), mode, reference, fichier }); }
+              catch (e) { setErreur(e.message); }
+              finally { setEnvoi(false); }
+            }}
           >
             {envoi ? "Envoi…" : "Déclarer le paiement"}
           </Bouton>
@@ -1387,7 +1599,7 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
   );
 }
 
-function Absences({ absences, onChange, onErreur }) {
+function Absences({ absences, onChange }) {
   const [justif, setJustif] = useState(null); // absence à justifier
   if (absences.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune absence enregistrée 🎉</Carte>;
   const lib = { non_justifie: "Non justifié", en_attente: "En attente", justifie: "Justifié" };
@@ -1407,7 +1619,7 @@ function Absences({ absences, onChange, onErreur }) {
           <div className="flex items-center gap-3">
             <span className={`text-xs font-medium ${ton[a.statut] || ""}`}>{lib[a.statut] || a.statut}</span>
             {a.statut === "non_justifie" && (
-              <button onClick={() => setJustif(a)} className="rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Justifier</button>
+              <button onClick={() => setJustif(a)} className="min-h-10 rounded-lg bg-navy-900 px-3 py-1 text-xs font-medium text-creme">Justifier</button>
             )}
           </div>
         </Carte>
@@ -1416,8 +1628,8 @@ function Absences({ absences, onChange, onErreur }) {
       <ModaleJustif
         absence={justif} onFermer={() => setJustif(null)}
         onEnvoyer={async (texte) => {
-          try { await justifierAbsenceParent(justif.id, texte); setJustif(null); await onChange(); }
-          catch (e) { onErreur(e.message); }
+          //  L'erreur remonte à la modale, qui l'affiche (cf. ModalePayer).
+          await justifierAbsenceParent(justif.id, texte); setJustif(null); await onChange();
         }}
       />
     </div>
@@ -1427,7 +1639,8 @@ function Absences({ absences, onChange, onErreur }) {
 function ModaleJustif({ absence, onFermer, onEnvoyer }) {
   const [texte, setTexte] = useState("");
   const [envoi, setEnvoi] = useState(false);
-  useEffect(() => { if (absence) setTexte(""); }, [absence]);
+  const [erreur, setErreur] = useState("");
+  useEffect(() => { if (absence) { setTexte(""); setErreur(""); } }, [absence]);
   if (!absence) return null;
   return (
     <Modale ouvert={!!absence} onFermer={onFermer} titre={`Justifier l'absence du ${absence.date_abs}`}>
@@ -1438,11 +1651,17 @@ function ModaleJustif({ absence, onFermer, onEnvoyer }) {
             placeholder="Ex. : enfant malade, rendez-vous médical…"
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
         </label>
-        <p className="text-xs text-navy-900/40">Votre justification sera transmise à l'établissement pour validation.</p>
+        <p className="text-xs text-navy-900/50">Votre justification sera transmise à l'établissement pour validation.</p>
+        <Alerte ton="erreur">{erreur}</Alerte>
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton disabled={envoi || !texte.trim()}
-            onClick={async () => { setEnvoi(true); await onEnvoyer(texte.trim()); setEnvoi(false); }}>
+            onClick={async () => {
+              setEnvoi(true); setErreur("");
+              try { await onEnvoyer(texte.trim()); }
+              catch (e) { setErreur(e.message); }
+              finally { setEnvoi(false); }
+            }}>
             {envoi ? "…" : "Envoyer"}
           </Bouton>
         </div>

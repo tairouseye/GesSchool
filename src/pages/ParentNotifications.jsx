@@ -31,20 +31,34 @@ export default function ParentNotifications() {
   const [enfants, setEnfants] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
+  //  La liste n'a JAMAIS pu être lue : on ne dit pas « Aucune alerte ».
+  const [echec, setEchec] = useState(false);
+  const [action, setAction] = useState(null); // id en cours de marquage, ou "toutes"
 
   const recharger = async () => {
-    try {
-      // Les notifications portent `eleve_id` mais pas le nom de l'enfant :
-      // la table `eleves` est fermée au parent. On le retrouve par
-      // `mes_enfants`, qu'il a déjà le droit de lire.
-      const [n, e] = await Promise.all([mesNotifications(), mesEnfants()]);
-      setItems(n);
-      setEnfants(e);
-    } catch (e) {
-      setErreur(e.message);
-    } finally {
-      setChargement(false);
+    // Les notifications portent `eleve_id` mais pas le nom de l'enfant :
+    // la table `eleves` est fermée au parent. On le retrouve par
+    // `mes_enfants`, qu'il a déjà le droit de lire.
+    //  ⚠️ `allSettled` : les noms des enfants sont un complément. Leur échec
+    //  ne doit pas empêcher d'afficher les alertes elles-mêmes.
+    const [n, e] = await Promise.allSettled([mesNotifications(), mesEnfants()]);
+    if (n.status === "fulfilled") {
+      setItems(n.value); setEchec(false); setErreur("");
+    } else {
+      setErreur(n.reason?.message || "Erreur de chargement.");
+      setEchec(true);
     }
+    if (e.status === "fulfilled") setEnfants(e.value);
+    setChargement(false);
+  };
+
+  // Marquer lu : l'échec se DIT (avant, la promesse rejetée était ignorée et
+  // le bouton semblait sans effet).
+  const marquer = async (cle, fn) => {
+    setAction(cle); setErreur("");
+    try { await fn(); await recharger(); }
+    catch (er) { setErreur(er.message); }
+    finally { setAction(null); }
   };
 
   useEffect(() => { recharger(); }, []);
@@ -66,15 +80,17 @@ export default function ParentNotifications() {
       <div className="flex items-center justify-between">
         <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
         {nonLues > 0 && (
-          <Bouton variante="fantome" onClick={async () => { await marquerToutesLues(); recharger(); }}>
-            Tout marquer comme lu
+          <Bouton variante="fantome" disabled={action === "toutes"} onClick={() => marquer("toutes", marquerToutesLues)}>
+            {action === "toutes" ? "…" : "Tout marquer comme lu"}
           </Bouton>
         )}
       </div>
 
       <div>
         <h1 className="font-display text-2xl font-bold text-navy-900">Alertes</h1>
-        <p className="text-sm text-navy-900/50">{nonLues > 0 ? `${nonLues} non lue(s)` : "Tout est à jour."}</p>
+        <p className="text-sm text-navy-900/60">
+          {chargement || echec ? "" : nonLues > 0 ? `${nonLues} non lue(s)` : "Tout est à jour."}
+        </p>
       </div>
 
       <Alerte ton="erreur">{erreur}</Alerte>
@@ -82,7 +98,12 @@ export default function ParentNotifications() {
       <ActivationPush onErreur={setErreur} />
 
       {chargement ? (
-        <SkeletonListe lignes={4} />
+        <div role="status" aria-label="Chargement des alertes"><SkeletonListe lignes={4} /></div>
+      ) : echec && items.length === 0 ? (
+        <EtatVide icone="📶" titre="Les alertes n'ont pas pu être chargées"
+          action={<Bouton onClick={() => { setChargement(true); recharger(); }}>Réessayer</Bouton>}>
+          Vérifiez votre connexion, puis réessayez.
+        </EtatVide>
       ) : items.length === 0 ? (
         <EtatVide icone="🔔" titre="Aucune alerte">Vous n'avez aucune notification pour le moment.</EtatVide>
       ) : (
@@ -115,13 +136,14 @@ export default function ParentNotifications() {
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 {lienAlerte(n) && (
                   <Link to={lienAlerte(n)} onClick={() => { if (!n.lu) marquerLue(n.id).catch(() => {}); }}
-                    className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800">
+                    className="inline-flex min-h-10 items-center rounded-lg bg-navy-900 px-3 text-xs font-semibold text-creme hover:bg-navy-800">
                     Voir
                   </Link>
                 )}
                 {!n.lu && (
-                  <button onClick={async () => { await marquerLue(n.id); recharger(); }} className="text-xs text-navy-700 hover:text-or-600">
-                    marquer lu
+                  <button onClick={() => marquer(n.id, () => marquerLue(n.id))} disabled={action === n.id}
+                    className="min-h-10 px-1 text-xs text-navy-700 hover:text-or-600 disabled:opacity-50">
+                    {action === n.id ? "…" : "marquer lu"}
                   </button>
                 )}
               </div>

@@ -52,7 +52,7 @@ export default function ParentMessagerie() {
     try {
       const m = await conversationMessages(ecoleId);
       // Réponse tardive d'une école qu'on a quittée entre-temps : ignorée.
-      if (ecoleCourante.current === ecoleId) setFil({ ecoleId, messages: m, echec: false });
+      if (ecoleCourante.current === ecoleId) { setFil({ ecoleId, messages: m, echec: false }); setErreur(""); }
     } catch (e) {
       setErreur(e.message);
       if (ecoleCourante.current === ecoleId) setFil({ ecoleId, messages: [], echec: true });
@@ -116,7 +116,13 @@ export default function ParentMessagerie() {
             {!filPret ? (
               <ChargementFil label="Chargement des messages" />
             ) : fil.echec ? (
-              <p className="text-center text-sm text-navy-900/70">Les messages n'ont pas pu être affichés.</p>
+              <div className="text-center text-sm text-navy-900/70">
+                <p>Les messages n&apos;ont pas pu être affichés.</p>
+                <Bouton className="mt-3" variante="fantome"
+                  onClick={() => { setFil({ ecoleId: null, messages: [], echec: false }); charger(); }}>
+                  Réessayer
+                </Bouton>
+              </div>
             ) : messages.length === 0 ? (
               <p className="text-center text-sm text-navy-900/40">Démarrez la conversation avec l'établissement.</p>
             ) : (

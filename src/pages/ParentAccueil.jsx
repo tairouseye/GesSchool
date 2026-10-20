@@ -26,15 +26,23 @@ export default function ParentAccueil() {
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
 
+  //  ⚠️ « Aucun enfant rattaché » N'EST AFFICHÉ QU'APRÈS UNE RÉPONSE RÉUSSIE.
+  //  Un échec réseau l'affichait sous le message d'erreur : un parent pouvait
+  //  croire ses enfants détachés et ressaisir un code.
+  const [echec, setEchec] = useState(false);
   const charger = useCallback(async () => {
+    setErreur("");
     try {
       setEnfants(await mesEnfants());
+      setEchec(false);
     } catch (e) {
       setErreur(e.message);
+      setEchec(true);
     } finally {
       setChargement(false);
     }
   }, []);
+  const reessayer = () => { setChargement(true); charger(); };
 
   useEffect(() => { charger(); }, [charger]);
 
@@ -50,7 +58,12 @@ export default function ParentAccueil() {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       {chargement ? (
-        <SkeletonListe lignes={2} />
+        <div role="status" aria-label="Chargement de vos enfants"><SkeletonListe lignes={2} /></div>
+      ) : echec && enfants.length === 0 ? (
+        <EtatVide icone="📶" titre="Vos enfants n'ont pas pu être chargés"
+          action={<Bouton onClick={reessayer}>Réessayer</Bouton>}>
+          Vérifiez votre connexion, puis réessayez.
+        </EtatVide>
       ) : enfants.length === 0 ? (
         <EtatVide icone="👪" titre="Aucun enfant rattaché"
           action={<Bouton onClick={() => setModale(true)}>+ Ajouter un enfant</Bouton>}>
