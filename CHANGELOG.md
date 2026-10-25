@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.273.0] — Inscription ou réinscription, et dernier mois facturé (migration 211)
+- **LE CONSTAT** (grille de Tut'Tank, 25/10/2026) : « Inscription » (obligatoire, 100 000 / 55 000) et « Réinscription » (80 000 / 45 000) ; sans distinction, l'échéancier réclamait l'inscription aux anciens. Et l'année court jusqu'au 31 juillet quand les mensualités s'arrêtent en juin (9 mois).
+- **Frais « Pour »** : tous · nouveaux (inscription) · anciens (réinscription). **Nouvel élève** : déduit (aucune inscription dans une année antérieure de l'école), corrigeable sur la fiche (bouton **Tarif**, gestionnaire des frais). L'échéancier et la facturation en lot appliquent ce choix.
+- **« Mensualités facturées jusqu'en… »** (bas de la grille tarifaire) : le dernier mois de mensualité, sans toucher aux dates de l'année.
+- Épreuves : `supabase/tests/essai_211_inscription.sql` (nouveau → inscription, ancien → réinscription, saisie prioritaire, 9 mensualités sur 10 mois), `test/parent.securite.test.mjs` (gardes des deux nouvelles RPC).
+
 ## [2.272.0] — Le statut de paiement en couleur, l'échéancier mois par mois, le tarif de l'élève et la fratrie (migration 210)
 - **LE BESOIN** (promoteur, 25/10/2026, à l'import de Tut'Tank) : que l'école comme les parents voient d'un coup d'œil où en est chaque élève — 🔴 en retard, 🟢 à jour, 🔵 en avance — et, dans le détail, les mois payés et ceux dus. Et gérer les élèves à tarif réduit (22 chez Tut'Tank, presque tous des fratries) et ceux qui ne paient pas.
 - **🔴 LE STATUT VIENT DE L'ÉCHÉANCIER, PLUS DES SEULES FACTURES.** On ne facture que ce qui est payé : un mois dû n'a donc pas de facture, et l'ancien calcul (« une facture échue impayée ») aurait dit « à jour » à une famille qui n'a rien payé. L'échéancier liste l'inscription puis chaque mois de l'année, d'après la grille tarifaire du niveau ; une ligne est payée quand la facture de même libellé est réglée. **Échéance le 5, retard à partir du 6.** Une école sans frais obligatoires garde l'ancien comportement.

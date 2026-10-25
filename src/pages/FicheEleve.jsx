@@ -8,7 +8,7 @@ import { genererCodeTuteur } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { getAnneeCourante, getClasses, getChampsEleve, getSousNiveaux, sousNiveauxDeClasse } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir, peutGererTarifs, peutVoirEcheancier } from "@/lib/permissions.js";
-import { eleveEcheancier, fratrieEleve, definirTarifEleve } from "@/lib/paiements.js";
+import { eleveEcheancier, fratrieEleve, definirTarifEleve, definirNouveauEleve } from "@/lib/paiements.js";
 import { etat as etatPaiement } from "@/lib/paiementStatut.js";
 import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
@@ -358,6 +358,10 @@ export default function FicheEleve() {
         onEnregistrer={async (t) => {
           try {
             await definirTarifEleve(id, t);
+            //  « Nouvel élève » (mig. 211) : seulement s'il a changé.
+            if (t.nouveau !== undefined && t.nouveau !== (echeancier?.tarif?.nouveau_saisi ?? null)) {
+              await definirNouveauEleve(id, t.nouveau);
+            }
             setModaleTarif(false);
             toast.succes("Tarif enregistré.");
             chargerPaiement();
@@ -634,18 +638,27 @@ function ModaleTarif({ ouvert, onFermer, tarif, onEnregistrer }) {
   const [mensualite, setMensualite] = useState("");
   const [motif, setMotif] = useState("fratrie");
   const [exonere, setExonere] = useState(false);
+  // "" = déduit (aucune inscription antérieure) · "oui" · "non"
+  const [nouveau, setNouveau] = useState("");
+  const avecNouveau = tarif && "nouveau" in tarif;
   const [enCours, setEnCours] = useState(false);
   useEffect(() => {
     if (!ouvert) return;
     setMensualite(tarif?.mensualite != null ? String(Number(tarif.mensualite)) : "");
     setMotif(tarif?.motif && tarif.motif !== "exonere" ? tarif.motif : "fratrie");
     setExonere(!!tarif?.exonere);
+    setNouveau(tarif?.nouveau_saisi === true ? "oui" : tarif?.nouveau_saisi === false ? "non" : "");
   }, [ouvert, tarif]);
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Tarif de l'élève">
       <form className="space-y-4" onSubmit={async (e) => {
         e.preventDefault(); setEnCours(true);
-        try { await onEnregistrer({ mensualite: exonere ? null : mensualite, motif, exonere }); }
+        try {
+          await onEnregistrer({
+            mensualite: exonere ? null : mensualite, motif, exonere,
+            ...(avecNouveau ? { nouveau: nouveau === "oui" ? true : nouveau === "non" ? false : null } : {}),
+          });
+        }
         finally { setEnCours(false); }
       }}>
         <label className="flex items-center gap-2 text-sm">
@@ -667,6 +680,17 @@ function ModaleTarif({ ouvert, onFermer, tarif, onEnregistrer }) {
               </select>
             </label>
           </>
+        )}
+        {avecNouveau && (
+          <label className="block text-sm">
+            <span className="mb-1 block text-navy-900/70">Cette année, l'élève paie</span>
+            <select value={nouveau} onChange={(e) => setNouveau(e.target.value)}
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              <option value="">Automatique — {tarif.nouveau ? "l'inscription (nouvel élève)" : "la réinscription (ancien)"}</option>
+              <option value="oui">L'inscription (nouvel élève)</option>
+              <option value="non">La réinscription (ancien élève)</option>
+            </select>
+          </label>
         )}
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>

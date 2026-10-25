@@ -148,12 +148,12 @@ test("aucune garde d'accès ne compare _eleve_courant() sans coalesce", () => {
 test("échéancier (mig. 210) : internes fermées, RPC gardées", () => {
   const revoqueClients = (nom) => SQL.some(({ sql }) =>
     new RegExp(String.raw`revoke\s+execute\s+on\s+function\s+public\.${nom}\([^)]*\)\s+from\s+[^;]*authenticated`, "i").test(sql));
-  for (const nom of ["_echeancier", "_statut_paiement", "_tarif_scolarite", "_frais_eleve", "_fratrie", "_echeancier_json", "_garder_tarif_inscription"]) {
+  for (const nom of ["_echeancier", "_statut_paiement", "_tarif_scolarite", "_frais_eleve", "_fratrie", "_echeancier_json", "_garder_tarif_inscription", "_est_nouveau"]) {
     assert.ok(derniereDefinition(nom), `${nom} : introuvable`);
     assert.ok(revoqueClients(nom), `${nom} : reste exécutable par authenticated`);
   }
   const POUVOIR = /a_acces\('(encaissement|p_voir_impayes|p_frais|eleves)'\)/;
-  for (const nom of ["eleve_echeancier", "fratrie_eleve", "definir_tarif_eleve", "tarifs_eleves"]) {
+  for (const nom of ["eleve_echeancier", "fratrie_eleve", "definir_tarif_eleve", "tarifs_eleves", "definir_nouveau_eleve", "definir_fin_facturation"]) {
     const d = derniereDefinition(nom);
     assert.ok(d, `${nom} : introuvable`);
     assert.match(d.corps, /ecole_courante\(\)/, `${nom} (${d.f}) ne vérifie pas l'école`);

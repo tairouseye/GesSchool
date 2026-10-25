@@ -308,6 +308,9 @@ export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList
     for (const fr of fraisList) {
       const libelle = fr.recurrent && moisLbl ? `${fr.libelle} — ${moisLbl}` : fr.libelle;
       if (dejaEleve.has(libelle)) continue;
+      //  Inscription pour les nouveaux, réinscription pour les anciens (mig. 211).
+      if (t && fr.public === "nouveaux" && !t.nouveau) continue;
+      if (t && fr.public === "anciens" && t.nouveau) continue;
       const prix = t?.frais_id && t.frais_id === fr.id && t.montant != null ? Number(t.montant) : Number(fr.montant);
       if (!(prix > 0)) continue;
       lignes.push({ frais_id: fr.id, libelle, quantite: 1, prix_unitaire: prix });
@@ -466,6 +469,19 @@ export async function definirTarifEleve(eleveId, { mensualite, motif, exonere })
     p_motif: motif || null,
     p_exonere: !!exonere,
   });
+  if (error) throw error;
+}
+
+// « Nouvel élève » (paie l'inscription) ou ancien (la réinscription).
+// `null` = déduit : aucune inscription antérieure dans l'école (mig. 211).
+export async function definirNouveauEleve(eleveId, nouveau) {
+  const { error } = await supabase.rpc("definir_nouveau_eleve", { p_eleve: eleveId, p_nouveau: nouveau });
+  if (error) throw error;
+}
+
+// Dernier mois de mensualité de l'année ('AAAA-MM'), ou null = fin de l'année.
+export async function definirFinFacturation(anneeId, mois) {
+  const { error } = await supabase.rpc("definir_fin_facturation", { p_annee: anneeId, p_mois: mois || null });
   if (error) throw error;
 }
 

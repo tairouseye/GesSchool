@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.272 · mise à jour du 25 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.273 · mise à jour du 25 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -492,10 +492,13 @@ Pour chaque frais :
 | **Portée** | **toute l'école** · **par cycle** (une scolarité identique pour tout l'élémentaire) · **par niveau** (un tarif propre, par exemple une classe d'examen) |
 | **Mensuel** | le frais se répète chaque mois |
 | **Obligatoire** | il sera pré-coché à la facturation en lot |
+| **Pour** | **tous les élèves** · **nouveaux** (l'inscription) · **anciens** (la réinscription). Un nouvel élève n'a jamais été inscrit dans l'école une année précédente ; la fiche élève (bouton **Tarif**) permet de corriger ce choix |
 
 > ⚠️ **Attention à la portée en Montessori.** Si votre classe s'appelle « TPS/PS » et que vous posez le tarif sur « TPS », il ne s'appliquera **à personne** : c'est le niveau de la classe qui compte, pas le sous-niveau de l'enfant (§2.4).
 
 Chaque frais reste **modifiable** ou supprimable.
+
+**Mensualités facturées jusqu'en…** (bas de la grille) : le dernier mois de mensualité. L'année peut durer jusqu'en juillet et les mensualités s'arrêter en juin : réglez-le ici, sans toucher aux dates de l'année.
 
 **Réduction de fratrie** (sous la grille) : à partir de combien d'enfants inscrits la réduction s'applique (2, 3, 4…), en **%** ou en **montant**, pour tous les cycles ou un seul. Les frères et sœurs sont reconnus **tout seuls**, par leur **responsable commun** sur la fiche élève : rien d'autre à saisir. La réduction porte sur la **scolarité mensuelle** de chaque enfant de la fratrie.
 

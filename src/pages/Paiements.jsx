@@ -344,8 +344,11 @@ function cibleFrais(fr) {
 }
 
 function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange, onErreur }) {
-  const vide = { libelle: "", montant: "", recurrent: false, obligatoire: true, cible: "" };
+  const vide = { libelle: "", montant: "", recurrent: false, obligatoire: true, cible: "", public: "tous" };
   const [f, setF] = useState(vide);
+  //  La colonne `public` n'existe qu'après la mig. 211 : on ne l'envoie que
+  //  si elle est connue (sinon l'enregistrement d'un frais échouerait).
+  const avecPublic = frais.some((fr) => "public" in fr) || f.public !== "tous";
   const [editId, setEditId] = useState(null);
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const cibleDe = (fr) => (fr.cycle_id ? `c:${fr.cycle_id}` : fr.niveau_id ? `n:${fr.niveau_id}` : "");
@@ -354,6 +357,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
     setF({
       libelle: fr.libelle || "", montant: String(fr.montant ?? ""),
       recurrent: !!fr.recurrent, obligatoire: !!fr.obligatoire, cible: cibleDe(fr),
+      public: fr.public || "tous",
     });
   };
   const annuler = () => { setEditId(null); setF(vide); };
@@ -378,6 +382,8 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
                 <span className="ml-2 rounded bg-navy-900/5 px-1.5 py-0.5 text-[10px] text-navy-900/40">optionnel</span>
               )}
               <span className="ml-2 text-xs text-navy-900/40">({cibleFrais(fr)})</span>
+              {fr.public === "nouveaux" && <span className="ml-2 rounded bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-700">nouveaux élèves</span>}
+              {fr.public === "anciens" && <span className="ml-2 rounded bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-700">anciens élèves</span>}
             </div>
             <div className="flex items-center gap-4">
               <span className="font-mono text-sm">{fmt(fr.montant)} {devise}</span>
@@ -404,12 +410,14 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
                 libelle: f.libelle.trim(), montant: Number(f.montant),
                 recurrent: f.recurrent, obligatoire: f.obligatoire,
                 niveau_id, cycle_id,
+                ...(avecPublic ? { public: f.public } : {}),
               });
             } else {
               await api.creerFrais(ecoleId, {
                 libelle: f.libelle.trim(), montant: Number(f.montant),
                 recurrent: f.recurrent, obligatoire: f.obligatoire,
                 niveau_id, cycle_id, annee_id: annee?.id || null,
+                ...(avecPublic ? { public: f.public } : {}),
               });
             }
             setF(vide); setEditId(null);
@@ -432,6 +440,15 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
             </optgroup>
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pour</span>
+          <select value={f.public} onChange={(e) => maj("public", e.target.value)}
+            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="tous">Tous les élèves</option>
+            <option value="nouveaux">Nouveaux (inscription)</option>
+            <option value="anciens">Anciens (réinscription)</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 pb-3 text-sm text-navy-900/70">
           <input type="checkbox" checked={f.recurrent} onChange={(e) => maj("recurrent", e.target.checked)} /> Mensuel
         </label>
@@ -441,9 +458,44 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
         <Bouton type="submit">{editId ? "Enregistrer" : "+ Ajouter"}</Bouton>
         {editId && <Bouton type="button" variante="fantome" onClick={annuler}>Annuler</Bouton>}
       </form>
+      <FinFacturation annee={annee} onChange={onChange} onErreur={onErreur} />
     </Carte>
   );
 }
+
+// Le dernier mois de mensualité (mig. 211) : l'année peut durer jusqu'en
+// juillet et les mensualités s'arrêter en juin. Sans réglage : fin d'année.
+function FinFacturation({ annee, onChange, onErreur }) {
+  const [enCours, setEnCours] = useState(false);
+  if (!annee?.date_debut || !annee?.date_fin || !("fin_facturation" in annee)) return null;
+  const mois = [];
+  const d = new Date(`${annee.date_debut.slice(0, 7)}-01T00:00:00`);
+  const fin = annee.date_fin.slice(0, 7);
+  for (let i = 0; i < 24; i++) {
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (m > fin) break;
+    mois.push(m);
+    d.setMonth(d.getMonth() + 1);
+  }
+  const actuel = annee.fin_facturation ? annee.fin_facturation.slice(0, 7) : "";
+  return (
+    <label className="mt-5 flex flex-wrap items-center gap-2 border-t border-navy-900/10 pt-4 text-sm text-navy-900/70">
+      Mensualités facturées jusqu'en
+      <select value={actuel} disabled={enCours}
+        onChange={async (e) => {
+          setEnCours(true);
+          try { await api.definirFinFacturation(annee.id, e.target.value || null); onChange(); }
+          catch (er) { onErreur(er.message); }
+          finally { setEnCours(false); }
+        }}
+        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+        <option value="">fin de l'année ({libelleMoisCourt(fin)})</option>
+        {mois.map((m) => <option key={m} value={m}>{libelleMoisCourt(m)}</option>)}
+      </select>
+    </label>
+  );
+}
+const libelleMoisCourt = (m) => api.libelleMois(m) || m;
 
 // La réduction de fratrie (mig. 210) : selon le nombre d'enfants inscrits
 // qui partagent un responsable. Elle s'applique au frais de SCOLARITÉ (le
