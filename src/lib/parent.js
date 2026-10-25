@@ -173,6 +173,20 @@ export async function declarerPaiement(factureId, montant, mode, reference, preu
   if (error) throw error;
 }
 
+// --- Échéancier (mig. 210) ---
+// { statut, lignes } : les mois payés, dus et à venir de l'enfant, et son
+// état (en_retard | a_jour | en_avance | exonere | non_facture).
+// `null` tant que la migration 210 n'est pas appliquée : l'écran garde alors
+// la seule synthèse des factures.
+export async function enfantEcheancier(eleveId) {
+  const { data, error } = await supabase.rpc("enfant_echeancier", { p_eleve: eleveId });
+  if (error) {
+    if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) return null;
+    throw error;
+  }
+  return data;
+}
+
 // --- Paiement anticipé (mig. 202) ---
 // Les mois qu'on peut payer d'avance, avec le tarif mensuel de la classe.
 // Une ligne par frais et par mois : à regrouper avec `grouperParMois`.

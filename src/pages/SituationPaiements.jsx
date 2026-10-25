@@ -23,8 +23,14 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-di
 const TONS = {
   success: "bg-success-50 text-success-600 ring-success-500/25",
   danger: "bg-danger-50 text-danger-600 ring-danger-500/25",
+  info: "bg-sky-50 text-sky-700 ring-sky-500/25",
   neutre: "bg-navy-900/5 text-navy-900/50 ring-navy-900/10",
 };
+
+//  Le dû d'une ligne : celui de l'échéancier (mig. 210) quand il existe —
+//  les mois dus n'y sont pas forcément facturés —, sinon le reste échu des
+//  factures (avant la 210).
+const duDe = (l) => (l.du != null ? Number(l.du) : Number(l.echu) || 0);
 
 export default function SituationPaiements() {
   const { ecoleId, ecole } = useAuth();
@@ -71,8 +77,8 @@ export default function SituationPaiements() {
 
   const synthese = useMemo(() => resume(lignes), [lignes]);
   const totaux = useMemo(() => lignes.reduce((t, l) => ({
-    reste: t.reste + (Number(l.reste) || 0),
-    echu: t.echu + (Number(l.echu) || 0),
+    reste: t.reste + Math.max(Number(l.reste) || 0, duDe(l)),
+    echu: t.echu + duDe(l),
   }), { reste: 0, echu: 0 }), [lignes]);
   const visibles = filtre ? lignes.filter((l) => l.statut === filtre) : lignes;
 
@@ -147,7 +153,7 @@ export default function SituationPaiements() {
                     const e = etatPaiement(l.statut);
                     return (
                       <tr key={l.eleve_id} className="border-t border-navy-900/5">
-                        <td className="px-4 py-2.5 font-medium text-navy-900">
+                        <td className={`px-4 py-2.5 font-medium ${e.texte || "text-navy-900"}`}>
                           {`${l.prenom || ""} ${l.nom || ""}`.trim()}
                           {l.matricule && <span className="ml-2 font-mono text-xs font-normal text-navy-900/45">{l.matricule}</span>}
                         </td>
@@ -160,10 +166,10 @@ export default function SituationPaiements() {
                         </td>
                         <td className="px-4 py-2.5 text-right font-mono">{fmt(l.total)}</td>
                         <td className="px-4 py-2.5 text-right font-mono">{fmt(l.paye)}</td>
-                        <td className={`px-4 py-2.5 text-right font-mono ${Number(l.echu) > 0 ? "text-danger-600" : ""}`}>
-                          {fmt(l.reste)}
-                          {Number(l.echu) > 0 && Number(l.echu) < Number(l.reste) && (
-                            <span className="block text-xs">dont {fmt(l.echu)} échu</span>
+                        <td className={`px-4 py-2.5 text-right font-mono ${duDe(l) > 0 ? "text-danger-600" : ""}`}>
+                          {fmt(Math.max(Number(l.reste) || 0, duDe(l)))}
+                          {duDe(l) > 0 && duDe(l) < Number(l.reste) && (
+                            <span className="block text-xs">dont {fmt(duDe(l))} échu</span>
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-xs text-navy-900/60">

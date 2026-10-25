@@ -289,18 +289,28 @@ export function libelleMois(mois) {
 //   fois par mois.
 // - Frais PONCTUEL : facturé une seule fois par an.
 // Retourne { crees, ignores }.
+//
+// ⚠️ LE TARIF DE L'ÉLÈVE (mig. 210) : un élève exonéré n'est pas facturé, et
+// la scolarité d'un élève à tarif propre ou réduit par la fratrie est
+// facturée à SON montant — sinon la facturation en lot repartirait au plein
+// tarif pour les 22 réductions de Tut'Tank.
 export async function genererFacturesEnLot(ecoleId, anneeId, eleveIds, fraisList, echeance, mois) {
   const moisLbl = libelleMois(mois);
   const deja = await getLibellesDejaFactures(ecoleId, anneeId);
+  const tarifs = await tarifsEleves(anneeId, eleveIds);
   let crees = 0;
   let ignores = 0;
   for (const eleveId of eleveIds) {
+    const t = tarifs[eleveId];
+    if (t?.exonere) { ignores++; continue; }
     const dejaEleve = deja[eleveId] || new Set();
     const lignes = [];
     for (const fr of fraisList) {
       const libelle = fr.recurrent && moisLbl ? `${fr.libelle} — ${moisLbl}` : fr.libelle;
       if (dejaEleve.has(libelle)) continue;
-      lignes.push({ frais_id: fr.id, libelle, quantite: 1, prix_unitaire: Number(fr.montant) });
+      const prix = t?.frais_id && t.frais_id === fr.id && t.montant != null ? Number(t.montant) : Number(fr.montant);
+      if (!(prix > 0)) continue;
+      lignes.push({ frais_id: fr.id, libelle, quantite: 1, prix_unitaire: prix });
     }
     if (lignes.length === 0) {
       ignores++;
@@ -414,6 +424,69 @@ export async function getDeclarations(ecoleId, statut = "en_attente") {
     for (const d of lignes) d.declarant = nom[d.declare_par] || null;
   }
   return lignes;
+}
+
+// --- Échéancier, tarif de l'élève, fratrie (mig. 210) ---
+
+// Fonction absente : la migration 210 n'est pas encore appliquée. L'appli
+// continue alors comme avant (plein tarif, pas d'échéancier).
+const fonctionAbsente = (e) => e?.code === "PGRST202" || /could not find the function|does not exist/i.test(e?.message || "");
+
+// Par élève : { exonere, frais_id, montant } — le montant de SA scolarité.
+export async function tarifsEleves(anneeId, eleveIds) {
+  if (!anneeId || !eleveIds?.length) return {};
+  const { data, error } = await supabase.rpc("tarifs_eleves", { p_annee: anneeId, p_eleves: eleveIds });
+  if (error) { if (fonctionAbsente(error)) return {}; throw error; }
+  const map = {};
+  for (const r of data || []) map[r.eleve_id] = r;
+  return map;
+}
+
+// { statut, lignes: [{ mois, libelle, recurrent, montant, echeance, paye, etat }] }
+// `null` si la migration 210 n'est pas appliquée.
+export async function eleveEcheancier(eleveId) {
+  const { data, error } = await supabase.rpc("eleve_echeancier", { p_eleve: eleveId });
+  if (error) { if (fonctionAbsente(error)) return null; throw error; }
+  return data;
+}
+
+// Frères et sœurs (parent commun), avec leur classe et — si on a le droit de
+// le voir — leur état de paiement.
+export async function fratrieEleve(eleveId) {
+  const { data, error } = await supabase.rpc("fratrie_eleve", { p_eleve: eleveId });
+  if (error) { if (fonctionAbsente(error)) return []; throw error; }
+  return data ?? [];
+}
+
+// Mensualité propre (null = tarif du niveau), motif, exonération.
+export async function definirTarifEleve(eleveId, { mensualite, motif, exonere }) {
+  const { error } = await supabase.rpc("definir_tarif_eleve", {
+    p_eleve: eleveId,
+    p_mensualite: mensualite === "" || mensualite == null ? null : Number(mensualite),
+    p_motif: motif || null,
+    p_exonere: !!exonere,
+  });
+  if (error) throw error;
+}
+
+// Règles de réduction de fratrie de l'école.
+export async function getReglesFratrie(ecoleId) {
+  const { data, error } = await supabase
+    .from("regles_fratrie").select("id, nb_enfants, type, valeur, cycle_id, cycles(libelle)")
+    .eq("ecole_id", ecoleId).order("nb_enfants");
+  if (error) { if (error.code === "42P01" || /regles_fratrie/.test(error.message || "")) return null; throw error; }
+  return data ?? [];
+}
+export async function creerRegleFratrie(ecoleId, r) {
+  const { error } = await supabase.from("regles_fratrie").insert({
+    ecole_id: ecoleId, nb_enfants: Number(r.nb_enfants), type: r.type,
+    valeur: Number(r.valeur), cycle_id: r.cycle_id || null,
+  });
+  if (error) throw error;
+}
+export async function supprimerRegleFratrie(id) {
+  const { error } = await supabase.from("regles_fratrie").delete().eq("id", id);
+  if (error) throw error;
 }
 
 // --- Paiement anticipé (mig. 202) ---

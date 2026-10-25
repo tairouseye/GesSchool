@@ -7,8 +7,10 @@ import {
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
   alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
-  enfantFactureDetail, avanceOptions, declarerAvance,
+  enfantFactureDetail, avanceOptions, declarerAvance, enfantEcheancier,
 } from "@/lib/parent.js";
+import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
+import { etat as etatPaiement, resumeEcheancier } from "@/lib/paiementStatut.js";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
 import {
   facturesVisibles, syntheseFactures, resteFacture, etatFacture, peutPayer, estAnnulee,
@@ -1046,6 +1048,18 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   //  réseau faisait dire « Le paiement n'est pas encore configuré ».
   const [pspEchec, setPspEchec] = useState(false);
   const [encours, setEncours] = useState(null); // id de facture en cours de redirection
+  //  L'échéancier (mig. 210) : les mois payés et dus, et l'état de l'enfant.
+  //  `null` : migration non appliquée ou échec — on garde alors la seule
+  //  synthèse des factures, qui reste juste. Relu quand les factures changent
+  //  (déclaration validée, avance…).
+  const [echeancier, setEcheancier] = useState(null);
+  useEffect(() => {
+    let vivant = true;
+    enfantEcheancier(eleveId)
+      .then((r) => { if (vivant) setEcheancier(r); })
+      .catch(() => { if (vivant) setEcheancier(null); });
+    return () => { vivant = false; };
+  }, [eleveId, factures]);
 
   useEffect(() => {
     let vivant = true;
@@ -1076,10 +1090,40 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   const aSuivre = declarationsAffichees(declarations);
   const declareSur = enAttenteParFacture(declarations);
 
+  const ech = echeancier && Array.isArray(echeancier.lignes) && (echeancier.lignes.length > 0 || echeancier.statut === "exonere")
+    ? echeancier : null;
+  const resEch = ech ? resumeEcheancier(ech.lignes) : null;
+  const etatEnfant = ech ? etatPaiement(ech.statut) : null;
+
   return (
     <div className="space-y-4">
       <Alerte ton="erreur">{erreur}</Alerte>
-      {visibles.length > 0 ? (
+      {ech ? (
+        //  🔴 LA COULEUR EST SUR LE TOTAL PAYÉ (demande du promoteur) :
+        //  rouge en retard, vert à jour, bleu en avance — avec le libellé à
+        //  côté, jamais la couleur seule.
+        <Carte className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-navy-900/60">Total payé</p>
+              <p className={`mt-1 font-display text-2xl font-bold ${etatEnfant.texte || "text-navy-900"}`}>
+                {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">XOF</span>
+              </p>
+            </div>
+            <BadgeStatut statut={ech.statut} />
+          </div>
+          {resEch.totalDu > 0 && (
+            <p className="mt-2 text-sm font-medium text-rose-700">
+              À régler maintenant : {fmt(resEch.totalDu)} XOF
+              ({resEch.dus.length} échéance{resEch.dus.length > 1 ? "s" : ""})
+            </p>
+          )}
+          <p className="mt-1 text-sm text-navy-900/60">{etatEnfant.explication}</p>
+          <div className="mt-4">
+            <Echeancier donnees={ech} />
+          </div>
+        </Carte>
+      ) : visibles.length > 0 ? (
         <Carte className="p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>

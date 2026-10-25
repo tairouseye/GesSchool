@@ -7,7 +7,10 @@ import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { getAnneeCourante, getClasses, getChampsEleve, getSousNiveaux, sousNiveauxDeClasse } from "@/lib/academique.js";
-import { peutEditerEleves, peutGererParents, peutVoir } from "@/lib/permissions.js";
+import { peutEditerEleves, peutGererParents, peutVoir, peutGererTarifs, peutVoirEcheancier } from "@/lib/permissions.js";
+import { eleveEcheancier, fratrieEleve, definirTarifEleve } from "@/lib/paiements.js";
+import { etat as etatPaiement } from "@/lib/paiementStatut.js";
+import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
@@ -37,6 +40,13 @@ export default function FicheEleve() {
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [codes, setCodes] = useState({}); // tuteur_id -> code parent
   const [champsPerso, setChampsPerso] = useState([]);
+  // Échéancier et fratrie (mig. 210). `undefined` = en cours, `null` =
+  // indisponible (droit absent ou migration non appliquée) : le bloc se tait.
+  const voitEcheancier = peutVoirEcheancier(roles);
+  const gereTarif = peutGererTarifs(roles);
+  const [echeancier, setEcheancier] = useState(undefined);
+  const [fratrie, setFratrie] = useState([]);
+  const [modaleTarif, setModaleTarif] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -67,6 +77,13 @@ export default function FicheEleve() {
   useEffect(() => {
     recharger();
   }, [recharger]);
+
+  const chargerPaiement = useCallback(() => {
+    if (voitEcheancier) eleveEcheancier(id).then(setEcheancier).catch(() => setEcheancier(null));
+    else setEcheancier(null);
+    fratrieEleve(id).then(setFratrie).catch(() => setFratrie([]));
+  }, [id, voitEcheancier]);
+  useEffect(() => { chargerPaiement(); }, [chargerPaiement]);
 
   const wrap = async (fn, msg) => {
     try {
@@ -283,8 +300,70 @@ export default function FicheEleve() {
               </ul>
             )}
           </Carte>
+
+          {/* Paiements de l'année : mois payés, dus, à venir (mig. 210) */}
+          {voitEcheancier && echeancier !== null && (
+            <Carte className="p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-display text-lg font-semibold text-navy-900">
+                  Paiements {annee?.libelle ? `· ${annee.libelle}` : ""}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {echeancier && <BadgeStatut statut={echeancier.statut} />}
+                  {gereTarif && echeancier && (
+                    <button onClick={() => setModaleTarif(true)} className="text-xs text-navy-700 hover:text-or-500">Tarif</button>
+                  )}
+                </div>
+              </div>
+              {echeancier === undefined ? (
+                <p className="text-sm text-navy-900/50">Chargement…</p>
+              ) : (
+                <>
+                  <NoteTarif tarif={echeancier.tarif} />
+                  <Echeancier donnees={echeancier} />
+                </>
+              )}
+            </Carte>
+          )}
+
+          {/* Fratrie : les élèves qui ont un responsable en commun */}
+          {fratrie.length > 0 && (
+            <Carte className="p-6">
+              <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">
+                Fratrie <span className="text-sm font-normal text-navy-900/50">· {fratrie.length + 1} enfants inscrits</span>
+              </h3>
+              <ul className="space-y-2">
+                {fratrie.map((f) => (
+                  <li key={f.eleve_id}>
+                    <button onClick={() => navigate(`/eleves/${f.eleve_id}`)}
+                      className="flex w-full items-center justify-between rounded-xl border border-navy-900/10 px-4 py-2.5 text-left text-sm hover:border-or-500">
+                      <span className={`font-medium ${(f.statut && etatPaiement(f.statut).texte) || "text-navy-900"}`}>
+                        {f.prenom} {f.nom}
+                        <span className="ml-2 text-xs font-normal text-navy-900/50">{f.classe || "—"}</span>
+                      </span>
+                      {f.statut && <BadgeStatut statut={f.statut} />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Carte>
+          )}
         </div>
       </div>
+
+      <ModaleTarif
+        ouvert={modaleTarif}
+        onFermer={() => setModaleTarif(false)}
+        tarif={echeancier?.tarif}
+        onEnregistrer={async (t) => {
+          try {
+            await definirTarifEleve(id, t);
+            setModaleTarif(false);
+            toast.succes("Tarif enregistré.");
+            chargerPaiement();
+          } catch (e) { toast.erreur(e.message || "Une erreur est survenue."); }
+        }}
+      />
 
       {/* Modale édition élève */}
       <ModaleEditEleve
@@ -525,6 +604,73 @@ function ModaleInscription({ ouvert, onFermer, classes, sousNiveaux = [], annee,
         <div className="flex justify-end gap-2">
           <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
           <Bouton type="submit" disabled={!classeId}>Valider</Bouton>
+        </div>
+      </form>
+    </Modale>
+  );
+}
+
+// Ce que l'élève paie, quand ce n'est pas le tarif de sa classe.
+function NoteTarif({ tarif }) {
+  if (!tarif) return null;
+  const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
+  if (tarif.exonere) {
+    return <p className="mb-3 rounded-lg bg-navy-900/5 px-3 py-2 text-xs text-navy-900/70">Exonéré : rien n'est dû.</p>;
+  }
+  const special = tarif.mensualite != null || (tarif.tarif_niveau != null && Number(tarif.montant) !== Number(tarif.tarif_niveau));
+  if (!special) return null;
+  const pourquoi = tarif.mensualite == null ? "réduction de fratrie" : tarif.motif === "fratrie" ? "fratrie" : "tarif propre";
+  return (
+    <p className="mb-3 rounded-lg bg-or-500/10 px-3 py-2 text-xs text-navy-900/70">
+      Mensualité de l'élève : <b>{fmt(tarif.montant)} XOF</b>
+      {tarif.tarif_niveau != null && <> au lieu de {fmt(tarif.tarif_niveau)}</>} ({pourquoi}).
+    </p>
+  );
+}
+
+// Le tarif propre à l'élève (mig. 210) : mensualité, motif, exonération.
+// Vide = le tarif du niveau, moins la règle de fratrie éventuelle.
+function ModaleTarif({ ouvert, onFermer, tarif, onEnregistrer }) {
+  const [mensualite, setMensualite] = useState("");
+  const [motif, setMotif] = useState("fratrie");
+  const [exonere, setExonere] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  useEffect(() => {
+    if (!ouvert) return;
+    setMensualite(tarif?.mensualite != null ? String(Number(tarif.mensualite)) : "");
+    setMotif(tarif?.motif && tarif.motif !== "exonere" ? tarif.motif : "fratrie");
+    setExonere(!!tarif?.exonere);
+  }, [ouvert, tarif]);
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Tarif de l'élève">
+      <form className="space-y-4" onSubmit={async (e) => {
+        e.preventDefault(); setEnCours(true);
+        try { await onEnregistrer({ mensualite: exonere ? null : mensualite, motif, exonere }); }
+        finally { setEnCours(false); }
+      }}>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={exonere} onChange={(e) => setExonere(e.target.checked)} />
+          Exonéré — l'élève ne paie ni l'inscription ni les mensualités
+        </label>
+        {!exonere && (
+          <>
+            <Champ label="Mensualité de l'élève (XOF)" type="number" min="0" step="500"
+              value={mensualite} onChange={(e) => setMensualite(e.target.value)}
+              placeholder={tarif?.tarif_niveau != null ? `Tarif de la classe : ${Number(tarif.tarif_niveau).toLocaleString("fr-FR")}` : ""} />
+            <p className="-mt-2 text-xs text-navy-900/50">Laisser vide pour appliquer le tarif de la classe (et la règle de fratrie).</p>
+            <label className="block text-sm">
+              <span className="mb-1 block text-navy-900/70">Motif</span>
+              <select value={motif} onChange={(e) => setMotif(e.target.value)}
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+                <option value="fratrie">Fratrie</option>
+                <option value="autre">Autre</option>
+              </select>
+            </label>
+          </>
+        )}
+        <div className="flex justify-end gap-2">
+          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+          <Bouton type="submit" disabled={enCours}>{enCours ? "Enregistrement…" : "Enregistrer"}</Bouton>
         </div>
       </form>
     </Modale>

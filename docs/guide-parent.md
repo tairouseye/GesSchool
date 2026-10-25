@@ -52,7 +52,12 @@ En haut : 💬 **Messagerie** pour écrire à l'école, et 🔔 **Alertes**.
 
 Vous pouvez payer **en plusieurs fois** : la facture passera par « partiellement réglée ».
 
-**Lire la situation de votre enfant.** En haut de **Paiements**, trois chiffres : **total facturé**, **total payé** et **reste à payer**. Chaque facture montre son échéance, son montant, ce qui est déjà payé, le solde, et son état : *à payer*, *partiellement réglée*, *réglée* ou *annulée*. Une facture annulée ne compte plus et ne se paie plus.
+**Lire la situation de votre enfant.** En haut de **Paiements**, le **total payé** s'affiche dans une couleur, avec son libellé :
+- 🔴 **En retard** : un mois n'est pas payé alors qu'il est dû. Chaque mois se paie **au plus tard le 5** ; il passe en retard **à partir du 6** ;
+- 🟢 **À jour** : tout ce qui était dû est payé ;
+- 🔵 **En avance** : vous avez déjà payé un ou plusieurs mois à venir.
+
+Juste dessous, **chaque mois** de l'année : payé, en retard, ou à venir (avec sa date limite), et le montant **à régler maintenant**. Chaque facture montre son échéance, son montant, ce qui est déjà payé, le solde, et son état : *à payer*, *partiellement réglée*, *réglée* ou *annulée*. Une facture annulée ne compte plus et ne se paie plus.
 
 **Vos reçus.** Chaque paiement validé par l'école donne un reçu : bouton **✅ Reçu** (ou **Reçus (2)**…) sur la facture. Le plus récent s'ouvre ; les autres sont à un clic. **🧾 Facture** reste toujours disponible, même avant tout paiement.
 

@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.271 · mise à jour du 20 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.272 · mise à jour du 25 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -497,6 +497,14 @@ Pour chaque frais :
 
 Chaque frais reste **modifiable** ou supprimable.
 
+**Réduction de fratrie** (sous la grille) : à partir de combien d'enfants inscrits la réduction s'applique (2, 3, 4…), en **%** ou en **montant**, pour tous les cycles ou un seul. Les frères et sœurs sont reconnus **tout seuls**, par leur **responsable commun** sur la fiche élève : rien d'autre à saisir. La réduction porte sur la **scolarité mensuelle** de chaque enfant de la fratrie.
+
+**Le tarif d'un élève** (fiche élève → bloc **Paiements** → **Tarif**, réservé au gestionnaire des frais) :
+- **Mensualité de l'élève** : son montant à lui, quand il ne paie pas le tarif de sa classe (arrangement, fratrie au cas par cas). Elle passe **avant** la règle de fratrie. Vide = tarif de la classe.
+- **Exonéré** : l'élève ne paie **rien** — ni inscription ni mensualités. Il n'apparaît dans aucun impayé, et la facturation en lot l'ignore.
+
+La facturation en lot et le paiement anticipé appliquent ce tarif : un élève à 45 000 est facturé 45 000, pas au tarif de sa classe.
+
 ### 10.2 Facturer
 
 **Un élève à la fois** — **+ Nouvelle facture** : l'élève, une **date d'échéance**, puis les lignes (**+ Ajouter une ligne**, ou choisissez dans **Frais à facturer**).
@@ -543,7 +551,19 @@ Dans les deux cas, **la facture du mois est créée au moment où vous validez, 
 
 Pour le **responsable pédagogique**, le comptable et le secrétariat (pouvoir **« Voir l'état de paiement des familles »**) : tous les élèves de votre périmètre, **sans choisir de classe**. Tapez un nom ou un matricule, ou filtrez par classe ou par état.
 
-Pour chaque élève : l'état (🔴 Retard · 🟢 À jour · ⚪ Non facturé), le **facturé**, le **payé**, le **reste** (dont la part **échue**), les **mois payés d'avance**, une avance en attente de validation, la prochaine échéance et le dernier paiement.
+Pour chaque élève : l'état, le **facturé**, le **payé**, le **reste** (dont la part **échue**), les **mois payés d'avance**, une avance en attente de validation, la prochaine échéance et le dernier paiement. Le **nom de l'élève prend la couleur de son état**.
+
+**Les états de paiement** — calculés sur **l'échéancier** de l'élève (l'inscription, puis chaque mois de l'année, d'après la grille tarifaire et son tarif), et non sur les seules factures émises :
+
+| État | Signification |
+|---|---|
+| 🔴 **En retard** | un mois (ou l'inscription) n'est pas payé et son échéance est passée. **Un mois est dû le 5 : il passe en retard à partir du 6.** |
+| 🟢 **À jour** | tout ce qui était dû est payé |
+| 🔵 **En avance** | à jour, et au moins un mois **à venir** est déjà payé |
+| ⚪ **Exonéré** | rien n'est dû |
+| ⚪ **Non facturé** | aucun frais obligatoire défini pour la classe, et aucune facture |
+
+Le même état colore le nom de l'élève dans la **liste des élèves** (filtrée sur une classe). Sur la **fiche élève**, le bloc **Paiements** détaille chaque échéance — payée, en retard, à venir — et le bloc **Fratrie** liste ses frères et sœurs, chacun avec sa couleur.
 
 > C'est un écran de **lecture** : on n'y encaisse pas, on n'y relance pas. Les numéros de facture et le détail des paiements restent à la caisse. Une responsable cloisonnée sur un cycle ne voit que les élèves de ce cycle.
 
@@ -805,7 +825,7 @@ Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant
 - **Suivi des acquis** (préscolaire) : apparaît dès que l’école a observé quelque chose (§20).
 - La **photo de l’enfant** s’affiche sur sa carte et dans l’en-tête de sa fiche, dès que l’école l’a prise (§23).
 > ⚠️ **Un bulletin n’apparaît que lorsque l’école l’a publié** (§7.2). S’il manque, il est encore en relecture — ce n’est pas une panne.
-- **Paiements** : une **synthèse** en tête (total facturé, total payé, reste à payer), puis chaque facture avec son échéance, son montant, le déjà-payé, le solde et son état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Régler par **mobile money** (numéro de l'école + référence affichés) → **Déclarer un paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4). Un paiement validé devient un **reçu**, accessible par **✅ Reçu** sur la facture (le plus récent s'ouvre, les autres sont à un clic) ; la liste des déclarations ne garde que celles **en attente** ou **rejetées**, avec le motif. Une facture **annulée** ne compte plus et ne se paie plus — la base refuse aussi une déclaration sur une facture annulée, et la caisse ne peut plus en valider une déposée avant l'annulation.
+- **Paiements** : en tête, le **total payé**, dans la couleur de l'état de l'enfant — 🔴 **en retard**, 🟢 **à jour**, 🔵 **en avance** (un mois à venir déjà payé) —, le montant **à régler maintenant**, et la liste de **chaque mois** : payé, en retard (un mois est dû le 5), ou à venir. Puis chaque facture avec son échéance, son montant, le déjà-payé, le solde et son état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Régler par **mobile money** (numéro de l'école + référence affichés) → **Déclarer un paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4). Un paiement validé devient un **reçu**, accessible par **✅ Reçu** sur la facture (le plus récent s'ouvre, les autres sont à un clic) ; la liste des déclarations ne garde que celles **en attente** ou **rejetées**, avec le motif. Une facture **annulée** ne compte plus et ne se paie plus — la base refuse aussi une déclaration sur une facture annulée, et la caisse ne peut plus en valider une déposée avant l'annulation.
 - **Absences** : **Justifier** une absence → l'école valide.
 - **Documents** : **Demander** un document → suivre le statut.
 - En-tête : 💬 **Messagerie** et 🔔 **Alertes** (+ **Activer** les notifications push).

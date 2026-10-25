@@ -213,6 +213,19 @@ export function peutGererParents(roles) {
   return estRoleComplet(roles) || (roles || []).includes("direction");
 }
 
+// Le tarif d'un élève (mensualité propre, exonération) et les règles de
+// fratrie : le gestionnaire des frais — pouvoir `p_frais` en base (mig. 210),
+// que seul le comptable reçoit par défaut. La base reste juge.
+export function peutGererTarifs(roles) {
+  return estRoleComplet(roles) || (roles || []).includes("comptable");
+}
+
+// L'échéancier d'un élève (montants compris) : mêmes rôles que la situation
+// des paiements (mig. 203) — jamais l'enseignant ni le surveillant.
+export function peutVoirEcheancier(roles) {
+  return peutVoir(roles, "situation_paiements") || peutVoir(roles, "paiements");
+}
+
 // L'édition des élèves (CRUD / inscriptions) est réservée au côté Gestion.
 export function peutEditerEleves(roles) {
   return estRoleComplet(roles) || (roles || []).some((r) => ["comptable", "secretaire"].includes(r));

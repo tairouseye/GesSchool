@@ -40,13 +40,14 @@ test("🔴 le résumé compte AUSSI les familles sans facture", async () => {
     { statut: "en_retard" },
     ...Array.from({ length: 7 }, () => ({ statut: "non_facture" })),
   ]);
-  assert.deepEqual(r, { en_retard: 1, a_jour: 2, non_facture: 7, total: 10 });
+  assert.deepEqual(r, { en_retard: 1, a_jour: 2, en_avance: 0, exonere: 0, non_facture: 7, total: 10 });
 });
 
 test("le résumé est robuste", async () => {
   const { resume } = await P();
-  assert.deepEqual(resume([]), { en_retard: 0, a_jour: 0, non_facture: 0, total: 0 });
-  assert.deepEqual(resume(), { en_retard: 0, a_jour: 0, non_facture: 0, total: 0 });
+  const vide = { en_retard: 0, a_jour: 0, en_avance: 0, exonere: 0, non_facture: 0, total: 0 };
+  assert.deepEqual(resume([]), vide);
+  assert.deepEqual(resume(), vide);
   // Une ligne mal formée est comptée comme « non facturé », jamais ignorée :
   // un total qui ne correspond pas à l'effectif serait pire.
   assert.equal(resume([{}, { statut: "x" }]).non_facture, 2);
@@ -67,8 +68,58 @@ test("la phrase dit ce qu'il y a à faire", async () => {
 
 test("les états sont ordonnés par urgence", async () => {
   const { ORDRE, ETATS } = await P();
-  assert.deepEqual(ORDRE, ["en_retard", "a_jour", "non_facture"]);
+  assert.deepEqual(ORDRE, ["en_retard", "a_jour", "en_avance", "exonere", "non_facture"]);
   for (const c of ORDRE) {
     assert.ok(ETATS[c].label && ETATS[c].pastille && ETATS[c].explication, `état incomplet : ${c}`);
   }
+});
+
+// =====================================================================
+//  Mig. 210 — l'échéancier : rouge / vert / bleu, et l'exonéré
+// =====================================================================
+test("🔴 rouge, vert, bleu : chaque état a sa couleur ET son libellé", async () => {
+  const { etat } = await P();
+  assert.match(etat("en_retard").texte, /rose/);
+  assert.match(etat("a_jour").texte, /emerald/);
+  assert.match(etat("en_avance").texte, /sky/);
+  // La couleur n'est jamais seule : un libellé et une pastille l'accompagnent.
+  for (const c of ["en_retard", "a_jour", "en_avance", "exonere"]) {
+    assert.ok(etat(c).label && etat(c).pastille, c);
+  }
+});
+
+test("🔴 un élève exonéré n'est ni en retard ni « sans facture »", async () => {
+  const { etat, resume } = await P();
+  assert.equal(etat("exonere").ton, "neutre");
+  assert.match(etat("exonere").explication, /rien n'est dû/);
+  const r = resume([{ statut: "exonere" }, { statut: "en_avance" }, { statut: "a_jour" }]);
+  assert.equal(r.exonere, 1);
+  assert.equal(r.en_retard, 0);
+  assert.equal(r.total, 3);
+});
+
+test("la phrase signale les familles en avance", async () => {
+  const { resume, phrase } = await P();
+  assert.equal(phrase(resume([{ statut: "a_jour" }, { statut: "en_avance" }])),
+    "Les 2 familles sont à jour · 1 en avance.");
+});
+
+test("l'échéancier : payé, dû, à venir — et le reste dû d'une ligne entamée", async () => {
+  const { resumeEcheancier, libelleLigne } = await P();
+  const r = resumeEcheancier([
+    { libelle: "Inscription", mois: null, montant: 55000, paye: 55000, etat: "paye" },
+    { libelle: "Scolarité — Octobre 2026", mois: "2026-10", montant: 55000, paye: 55000, etat: "paye" },
+    { libelle: "Scolarité — Novembre 2026", mois: "2026-11", montant: 55000, paye: 0, etat: "en_retard" },
+    { libelle: "Scolarité — Décembre 2026", mois: "2026-12", montant: 55000, paye: 0, etat: "partiel" },
+    { libelle: "Scolarité — Janvier 2027", mois: "2027-01", montant: 55000, paye: 0, etat: "a_venir" },
+  ]);
+  assert.equal(r.payes.length, 2);
+  assert.equal(r.dus.length, 2);
+  assert.equal(r.aVenir.length, 1);
+  assert.equal(r.totalPaye, 110000);
+  assert.equal(r.totalDu, 110000);
+  assert.equal(r.totalAnnee, 275000);
+  assert.equal(libelleLigne({ libelle: "Scolarité — Octobre 2026", mois: "2026-10" }), "Octobre 2026");
+  assert.equal(libelleLigne({ libelle: "Inscription", mois: null }), "Inscription");
+  assert.deepEqual(resumeEcheancier(null).payes, []);
 });

@@ -232,10 +232,13 @@ export default function Paiements() {
             onSaveIdentite={(v) => wrap(() => api.setIdentiteLegale(ecoleId, v), "Mentions enregistrées.")}
           />
         ) : (
-          <PanneauFrais
-            ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} cycles={cycles} devise={devise}
-            onChange={recharger} onErreur={setErreur}
-          />
+          <div className="space-y-6">
+            <PanneauFrais
+              ecoleId={ecoleId} annee={annee} frais={frais} niveaux={niveaux} cycles={cycles} devise={devise}
+              onChange={recharger} onErreur={setErreur}
+            />
+            <PanneauFratrie ecoleId={ecoleId} cycles={cycles} devise={devise} onErreur={setErreur} />
+          </div>
         )}
       </div>
 
@@ -437,6 +440,77 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
         </label>
         <Bouton type="submit">{editId ? "Enregistrer" : "+ Ajouter"}</Bouton>
         {editId && <Bouton type="button" variante="fantome" onClick={annuler}>Annuler</Bouton>}
+      </form>
+    </Carte>
+  );
+}
+
+// La réduction de fratrie (mig. 210) : selon le nombre d'enfants inscrits
+// qui partagent un responsable. Elle s'applique au frais de SCOLARITÉ (le
+// mensuel obligatoire le plus élevé) de chaque enfant de la fratrie. Une
+// mensualité saisie sur la fiche d'un élève reste prioritaire : c'est la
+// place des arrangements au cas par cas.
+function PanneauFratrie({ ecoleId, cycles, devise, onErreur }) {
+  const [regles, setRegles] = useState(undefined); // undefined : en cours · null : indisponible
+  const vide = { nb_enfants: "2", type: "pourcentage", valeur: "", cycle_id: "" };
+  const [r, setR] = useState(vide);
+  const charger = useCallback(() => {
+    api.getReglesFratrie(ecoleId).then(setRegles).catch(() => setRegles(null));
+  }, [ecoleId]);
+  useEffect(() => { charger(); }, [charger]);
+  if (regles === null) return null;
+  const decrire = (x) => `${x.type === "pourcentage" ? `${Number(x.valeur)} %` : `${fmt(x.valeur)} ${devise}`} de moins par enfant`;
+  return (
+    <Carte className="p-6">
+      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Réduction de fratrie</h3>
+      <p className="mb-4 text-xs text-navy-900/40">
+        Les frères et sœurs sont reconnus par leur <b>responsable commun</b>. La réduction porte sur la
+        <b> scolarité mensuelle</b> de chaque enfant, à partir du nombre d'enfants inscrits indiqué. Une mensualité
+        saisie sur la fiche d'un élève (bouton « Tarif ») passe avant la règle.
+      </p>
+      {regles === undefined ? (
+        <p className="text-sm text-navy-900/40">Chargement…</p>
+      ) : (
+        <div className="space-y-2">
+          {regles.length === 0 && <p className="text-sm text-navy-900/40">Aucune réduction de fratrie.</p>}
+          {regles.map((x) => (
+            <div key={x.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3 text-sm">
+              <span>
+                <b>{x.nb_enfants} enfants et plus</b> : {decrire(x)}
+                <span className="ml-2 text-xs text-navy-900/40">({x.cycles?.libelle ? `cycle ${x.cycles.libelle}` : "tous les cycles"})</span>
+              </span>
+              <button onClick={async () => { try { await api.supprimerRegleFratrie(x.id); charger(); } catch (e) { onErreur(e.message); } }}
+                className="text-xs text-rose-700 hover:underline">supprimer</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <form className="mt-4 flex flex-wrap items-end gap-2" onSubmit={async (e) => {
+        e.preventDefault();
+        if (!r.valeur) return;
+        try { await api.creerRegleFratrie(ecoleId, r); setR(vide); charger(); } catch (er) { onErreur(er.message); }
+      }}>
+        <div className="w-36"><Champ label="À partir de (enfants)" value={r.nb_enfants}
+          onChange={(e) => setR((s) => ({ ...s, nb_enfants: e.target.value.replace(/[^0-9]/g, "") }))} /></div>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Réduction</span>
+          <select value={r.type} onChange={(e) => setR((s) => ({ ...s, type: e.target.value }))}
+            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="pourcentage">en %</option>
+            <option value="montant">en {devise}</option>
+          </select>
+        </label>
+        <div className="w-28"><Champ label="Valeur" value={r.valeur}
+          onChange={(e) => setR((s) => ({ ...s, valeur: e.target.value.replace(/[^0-9.]/g, "") }))} /></div>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Cycle</span>
+          <select value={r.cycle_id} onChange={(e) => setR((s) => ({ ...s, cycle_id: e.target.value }))}
+            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <option value="">Tous</option>
+            {cycles.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+          </select>
+        </label>
+        <Bouton type="submit">+ Ajouter</Bouton>
       </form>
     </Carte>
   );

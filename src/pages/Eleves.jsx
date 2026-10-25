@@ -339,7 +339,12 @@ export default function Eleves() {
                               </span>
                             }
                           />
-                          <span className="font-medium text-navy-900">{e.nom} {e.prenom}</span>
+                          {/* Le nom prend la couleur de l'état de paiement (mig. 210) —
+                              rouge, vert, bleu — en plus de la pastille : la
+                              couleur n'est jamais la seule information. */}
+                          <span className={`font-medium ${(paiements[e.id] && etatPaiement(paiements[e.id].statut).texte) || "text-navy-900"}`}>
+                            {e.nom} {e.prenom}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-navy-900/60">{e.sexe || "—"}</td>
@@ -757,6 +762,7 @@ function PastillePaiement({ etat: valeur }) {
   const tons = {
     success: "bg-success-50 text-success-600 ring-success-500/25",
     danger: "bg-danger-50 text-danger-600 ring-danger-500/25",
+    info: "bg-sky-50 text-sky-700 ring-sky-500/25",
     neutre: "bg-navy-900/5 text-navy-900/50 ring-navy-900/10",
   };
   return (

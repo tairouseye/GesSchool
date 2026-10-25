@@ -72,6 +72,7 @@ const GARDEES = [
   "enfant_cantine", "enfant_cantine_menu", "enfant_transport",
   "ecole_paiement_infos", "psp_etat_eleve", "declarer_paiement",
   "avance_options", "declarer_avance",
+  "enfant_echeancier",
 ];
 const GARDE = /_parent_possede\s*\(|_peut_payer_pour\s*\(/;
 
@@ -139,4 +140,29 @@ test("aucune garde d'accès ne compare _eleve_courant() sans coalesce", () => {
       }
     }
   }
+});
+
+//  Mig. 210 : l'échéancier, le tarif, la fratrie. Les fonctions internes ne
+//  sont appelables par aucun client (elles ne vérifient aucun droit) ; les
+//  RPC du personnel vérifient l'école ET un pouvoir, et refusent `anon`.
+test("échéancier (mig. 210) : internes fermées, RPC gardées", () => {
+  const revoqueClients = (nom) => SQL.some(({ sql }) =>
+    new RegExp(String.raw`revoke\s+execute\s+on\s+function\s+public\.${nom}\([^)]*\)\s+from\s+[^;]*authenticated`, "i").test(sql));
+  for (const nom of ["_echeancier", "_statut_paiement", "_tarif_scolarite", "_frais_eleve", "_fratrie", "_echeancier_json", "_garder_tarif_inscription"]) {
+    assert.ok(derniereDefinition(nom), `${nom} : introuvable`);
+    assert.ok(revoqueClients(nom), `${nom} : reste exécutable par authenticated`);
+  }
+  const POUVOIR = /a_acces\('(encaissement|p_voir_impayes|p_frais|eleves)'\)/;
+  for (const nom of ["eleve_echeancier", "fratrie_eleve", "definir_tarif_eleve", "tarifs_eleves"]) {
+    const d = derniereDefinition(nom);
+    assert.ok(d, `${nom} : introuvable`);
+    assert.match(d.corps, /ecole_courante\(\)/, `${nom} (${d.f}) ne vérifie pas l'école`);
+    assert.match(d.corps, POUVOIR, `${nom} (${d.f}) ne vérifie aucun pouvoir`);
+    assert.match(d.corps, /coalesce\(/, `${nom} (${d.f}) : garde sans coalesce (leçon de la mig. 209)`);
+    assert.equal(anonPeutExecuter(nom), false, `${nom} : exécutable par anon`);
+  }
+  //  Le tarif d'un élève est un acte de caisse : la policy d'écriture
+  //  d'`inscriptions` (p_eleves_editer) ne doit pas suffire à le changer.
+  const g = derniereDefinition("_garder_tarif_inscription");
+  assert.match(g.corps, /a_acces\('p_frais'\)/);
 });
