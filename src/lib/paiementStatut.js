@@ -107,3 +107,63 @@ export function libelleLigne(l) {
   if (l.mois && typeof l.libelle === "string" && l.libelle.includes(" — ")) return l.libelle.split(" — ").slice(1).join(" — ");
   return l.libelle || "";
 }
+
+// =====================================================================
+//  Le DÉTAIL des paiements d'un élève (mig. 212), au format demandé par
+//  le promoteur (26/10/2026) : Description · Montant · Statut · Date ·
+//  Mode de paiement. L'inscription, chaque mois, puis les autres frais
+//  facturés (sortie pédagogique…).
+//  Statuts du modèle : « Payé », « Impayé » (échéance passée), « En
+//  attente » (pas encore dû) ; plus « Payé en partie » et « Payé
+//  d'avance » (le bleu du code couleur).
+// =====================================================================
+
+export const MODES_PAIEMENT = {
+  especes: "Espèces", wave: "Wave", orange_money: "Orange Money", free_money: "Free Money",
+  virement: "Virement", cheque: "Chèque", carte: "Carte",
+};
+
+/** « Espèces », « Wave, Espèces »… ; "" sans paiement. */
+export function libelleMode(modes) {
+  if (!modes) return "";
+  return String(modes).split(",").map((m) => m.trim()).filter(Boolean)
+    .map((m) => MODES_PAIEMENT[m] || m).join(", ");
+}
+
+const STATUTS_DETAIL = {
+  paye: { txt: "Payé", ton: "success" },
+  avance: { txt: "Payé d'avance", ton: "info" },
+  en_retard: { txt: "Impayé", ton: "danger" },
+  partiel: { txt: "Payé en partie", ton: "warning" },
+  a_venir: { txt: "En attente", ton: "neutre" },
+};
+
+/** Le mois « Octobre » d'une ligne « Mensualité — Octobre 2026 ». */
+function descriptionLigne(l) {
+  const lib = libelleLigne(l);
+  return l?.mois ? lib.replace(/\s+\d{4}$/, "") : lib;
+}
+
+/**
+ * Les lignes du détail. `moisCourant` : 'AAAA-MM' (aujourd'hui par défaut) —
+ * un mois payé après lui est « payé d'avance ».
+ */
+export function lignesDetail(donnees, moisCourant) {
+  const d = new Date();
+  const mc = moisCourant || `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const lignes = Array.isArray(donnees?.lignes) ? donnees.lignes : [];
+  const autres = Array.isArray(donnees?.autres) ? donnees.autres : [];
+  const une = (l, autre) => {
+    let cle = STATUTS_DETAIL[l?.etat] ? l.etat : "a_venir";
+    if (cle === "paye" && l.mois && l.mois > mc) cle = "avance";
+    return {
+      cle: (autre ? "autre:" : "") + (l?.libelle || ""),
+      description: descriptionLigne(l),
+      montant: Number(l?.montant) || 0,
+      statut: { cle, ...STATUTS_DETAIL[cle] },
+      date: l?.date_paiement || null,
+      mode: libelleMode(l?.mode),
+    };
+  };
+  return [...lignes.map((l) => une(l, false)), ...autres.map((l) => une(l, true))];
+}

@@ -1,4 +1,4 @@
-import { etat as etatPaiement, resumeEcheancier, libelleLigne } from "@/lib/paiementStatut.js";
+import { etat as etatPaiement, resumeEcheancier, libelleLigne, lignesDetail } from "@/lib/paiementStatut.js";
 
 // L'échéancier d'un élève (mig. 210) : ce qui est dû, payé, à venir.
 // Partagé par la fiche élève (école) et la rubrique Paiements (parent).
@@ -79,6 +79,64 @@ export default function Echeancier({ donnees }) {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+// « 15/08/26 » : le format du modèle du promoteur. La date vient de la base
+// ('AAAA-MM-JJ') : on la découpe, sans passer par un fuseau horaire.
+const dateCourte = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || "");
+  return m ? `${m[3]}/${m[2]}/${m[1].slice(2)}` : "—";
+};
+
+const TONS_DETAIL = {
+  success: "text-emerald-700",
+  info: "text-sky-700",
+  danger: "text-rose-700",
+  warning: "text-amber-700",
+  neutre: "text-navy-900/50",
+};
+
+/**
+ * Le détail des paiements d'un élève (mig. 212), au format du promoteur :
+ * Description · Montant · Statut · Date · Mode de paiement.
+ */
+export function DetailPaiements({ donnees }) {
+  const lignes = lignesDetail(donnees);
+  if (donnees?.statut === "exonere" && lignes.length === 0) {
+    return <p className="text-sm text-navy-900/60">Élève exonéré : rien n'est dû pour cette année.</p>;
+  }
+  if (lignes.length === 0) {
+    return <p className="text-sm text-navy-900/50">Aucun frais n'est encore défini pour cette classe.</p>;
+  }
+  return (
+    //  Défilement horizontal DANS le tableau sur un petit écran : la page,
+    //  elle, ne défile jamais de côté.
+    <div className="overflow-x-auto rounded-xl border border-navy-900/10">
+      <table className="w-full min-w-[30rem] text-left text-sm">
+        <caption className="sr-only">Détail des paiements</caption>
+        <thead className="bg-navy-900/[0.03] text-xs text-navy-900/60">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-medium">Description</th>
+            <th scope="col" className="px-3 py-2 text-right font-medium">Montant</th>
+            <th scope="col" className="px-3 py-2 font-medium">Statut</th>
+            <th scope="col" className="px-3 py-2 font-medium">Date</th>
+            <th scope="col" className="px-3 py-2 font-medium">Mode de paiement</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-navy-900/5">
+          {lignes.map((l) => (
+            <tr key={l.cle}>
+              <td className="px-3 py-2 font-medium text-navy-900">{l.description}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-navy-900/80">{fmt(l.montant)}</td>
+              <td className={`whitespace-nowrap px-3 py-2 text-xs font-semibold ${TONS_DETAIL[l.statut.ton] || TONS_DETAIL.neutre}`}>{l.statut.txt}</td>
+              <td className="whitespace-nowrap px-3 py-2 tabular-nums text-navy-900/70">{dateCourte(l.date)}</td>
+              <td className="px-3 py-2 text-navy-900/70">{l.mode || "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

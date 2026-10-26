@@ -57,7 +57,9 @@ Vous pouvez payer **en plusieurs fois** : la facture passera par « partiellemen
 - 🟢 **À jour** : tout ce qui était dû est payé ;
 - 🔵 **En avance** : vous avez déjà payé un ou plusieurs mois à venir.
 
-Juste dessous, **chaque mois** de l'année : payé, en retard, ou à venir (avec sa date limite), et le montant **à régler maintenant**. Chaque facture montre son échéance, son montant, ce qui est déjà payé, le solde, et son état : *à payer*, *partiellement réglée*, *réglée* ou *annulée*. Une facture annulée ne compte plus et ne se paie plus.
+Juste dessous, le montant **à régler maintenant**. Le bouton **Détails**, à côté du total, ouvre le tableau complet : l'inscription, **chaque mois** de l'année, puis les autres frais (sortie pédagogique…), avec pour chacun le **montant**, le **statut** (*Payé*, *Payé d'avance*, *Impayé*, *Payé en partie* ou *En attente* s'il n'est pas encore dû), la **date** et le **mode de paiement**. Sur un téléphone, faites glisser le tableau de côté pour voir toutes les colonnes.
+
+Chaque facture montre son échéance, son montant, ce qui est déjà payé, le solde, et son état : *à payer*, *partiellement réglée*, *réglée* ou *annulée*. Une facture annulée ne compte plus et ne se paie plus.
 
 **Vos reçus.** Chaque paiement validé par l'école donne un reçu : bouton **✅ Reçu** (ou **Reçus (2)**…) sur la facture. Le plus récent s'ouvre ; les autres sont à un clic. **🧾 Facture** reste toujours disponible, même avant tout paiement.
 

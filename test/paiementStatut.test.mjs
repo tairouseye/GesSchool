@@ -123,3 +123,34 @@ test("l'échéancier : payé, dû, à venir — et le reste dû d'une ligne enta
   assert.equal(libelleLigne({ libelle: "Inscription", mois: null }), "Inscription");
   assert.deepEqual(resumeEcheancier(null).payes, []);
 });
+
+// --- Le détail des paiements (mig. 212) ------------------------------------
+test("détail : description, statut du modèle, date et mode", async () => {
+  const { lignesDetail } = await P();
+  const L = lignesDetail({
+    lignes: [
+      { libelle: "Inscription", montant: 100000, etat: "paye", date_paiement: "2026-08-15", mode: "especes" },
+      { mois: "2026-10", libelle: "Mensualité — Octobre 2026", montant: 60000, etat: "paye", date_paiement: "2026-09-12", mode: "wave,especes" },
+      { mois: "2026-11", libelle: "Mensualité — Novembre 2026", montant: 60000, etat: "en_retard" },
+      { mois: "2026-12", libelle: "Mensualité — Décembre 2026", montant: 60000, etat: "a_venir" },
+      { mois: "2027-01", libelle: "Mensualité — Janvier 2027", montant: 60000, etat: "paye", mode: "orange_money" },
+    ],
+    autres: [{ libelle: "Sortie pédagogique", montant: 12000, etat: "a_venir" }],
+  }, "2026-11");
+  assert.deepEqual(L.map((l) => l.description),
+    ["Inscription", "Octobre", "Novembre", "Décembre", "Janvier", "Sortie pédagogique"]);
+  assert.deepEqual(L.map((l) => l.statut.txt),
+    ["Payé", "Payé", "Impayé", "En attente", "Payé d'avance", "En attente"]);
+  assert.equal(L[1].mode, "Wave, Espèces");
+  assert.equal(L[4].mode, "Orange Money");
+  assert.equal(L[2].mode, "");
+  assert.equal(L[0].date, "2026-08-15");
+  assert.equal(L[2].date, null);
+  assert.equal(new Set(L.map((l) => l.cle)).size, L.length, "clés uniques");
+});
+
+test("détail : sans échéancier ou ancienne base (sans `autres`), pas d'erreur", async () => {
+  const { lignesDetail } = await P();
+  assert.deepEqual(lignesDetail(null), []);
+  assert.equal(lignesDetail({ lignes: [{ libelle: "Inscription", montant: 1, etat: "bizarre" }] })[0].statut.txt, "En attente");
+});

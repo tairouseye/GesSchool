@@ -9,7 +9,7 @@ import {
   alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
   enfantFactureDetail, avanceOptions, declarerAvance, enfantEcheancier,
 } from "@/lib/parent.js";
-import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
+import { BadgeStatut, DetailPaiements } from "@/composants/Echeancier.jsx";
 import { etat as etatPaiement, resumeEcheancier } from "@/lib/paiementStatut.js";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
 import {
@@ -1053,6 +1053,9 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   //  synthèse des factures, qui reste juste. Relu quand les factures changent
   //  (déclaration validée, avance…).
   const [echeancier, setEcheancier] = useState(null);
+  //  Le détail (Description · Montant · Statut · Date · Mode) s'ouvre à la
+  //  demande, depuis le bouton « Détails » à côté du total payé.
+  const [detail, setDetail] = useState(false);
   useEffect(() => {
     let vivant = true;
     enfantEcheancier(eleveId)
@@ -1110,7 +1113,14 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
                 {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">XOF</span>
               </p>
             </div>
-            <BadgeStatut statut={ech.statut} />
+            <div className="flex items-center gap-2">
+              <BadgeStatut statut={ech.statut} />
+              <button type="button" onClick={() => setDetail((v) => !v)} aria-expanded={detail}
+                aria-controls="detail-paiements"
+                className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/80 hover:border-or-500">
+                {detail ? "Masquer le détail" : "Détails"}
+              </button>
+            </div>
           </div>
           {resEch.totalDu > 0 && (
             <p className="mt-2 text-sm font-medium text-rose-700">
@@ -1119,9 +1129,11 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
             </p>
           )}
           <p className="mt-1 text-sm text-navy-900/60">{etatEnfant.explication}</p>
-          <div className="mt-4">
-            <Echeancier donnees={ech} />
-          </div>
+          {detail && (
+            <div id="detail-paiements" className="mt-4">
+              <DetailPaiements donnees={ech} />
+            </div>
+          )}
         </Carte>
       ) : visibles.length > 0 ? (
         <Carte className="p-5">
