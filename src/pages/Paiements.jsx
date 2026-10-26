@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets, SkeletonListe, TableauDefilant } from "@/composants/ui.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
@@ -165,7 +165,8 @@ export default function Paiements() {
                 {factures.length === 0 ? "Aucune facture. Créez-en une avec « + Nouvelle facture »." : "Aucun résultat."}
               </p>
             ) : (
-              <table className="w-full text-left text-sm">
+              <TableauDefilant label="Liste des factures">
+                <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="bg-creme text-navy-900/50">
                   <tr>
                     <th className="px-6 py-3 font-medium">N°</th>
@@ -198,7 +199,8 @@ export default function Paiements() {
                     );
                   })}
                 </tbody>
-              </table>
+                </table>
+              </TableauDefilant>
             )}
 
             {/* Pagination SERVEUR — le total vient du COUNT de la RPC. */}
@@ -294,7 +296,8 @@ function PanneauEnLigne({ ecoleId, devise, onErreur }) {
   const dt = (d) => (d ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
   return (
     <Carte className="overflow-hidden">
-      <table className="w-full text-left text-sm">
+      <TableauDefilant label="Transactions de paiement en ligne">
+        <table className="w-full min-w-[680px] text-left text-sm">
         <thead className="bg-creme text-navy-900/50">
           <tr>
             <th className="px-5 py-3 font-medium">Date</th>
@@ -318,7 +321,8 @@ function PanneauEnLigne({ ecoleId, devise, onErreur }) {
             );
           })}
         </tbody>
-      </table>
+        </table>
+      </TableauDefilant>
     </Carte>
   );
 }
@@ -576,7 +580,8 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   }
   return (
     <Carte className="overflow-hidden">
-      <table className="w-full text-left text-sm">
+      <TableauDefilant label="Déclarations de paiement">
+        <table className="w-full min-w-[850px] text-left text-sm">
         <thead className="bg-creme text-navy-900/50">
           <tr>
             <th className="px-5 py-3 font-medium">Élève</th>
@@ -619,7 +624,8 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </TableauDefilant>
       <p className="border-t border-navy-900/10 p-4 text-xs text-navy-900/40">
         « Valider » enregistre l'encaissement et solde la facture automatiquement ;
         pour une avance, la facture des mois payés est créée déjà réglée.

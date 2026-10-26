@@ -113,8 +113,8 @@ export default function AccueilPedagogie() {
                 const s = STATUTS_JUSTIF[a.statut] || STATUTS_JUSTIF.non_justifie;
                 const tons = { rouge: "text-rose-700", or: "text-or-600", vert: "text-emerald-700" };
                 return (
-                  <li key={a.id} className="flex items-center justify-between py-2 text-sm">
-                    <span className="font-medium text-navy-900">{a.eleves?.prenom} {a.eleves?.nom}</span>
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
+                    <span className="min-w-0 flex-1 font-medium text-navy-900">{a.eleves?.prenom} {a.eleves?.nom}</span>
                     <span className="text-navy-900/50">{a.classes?.libelle || "—"}</span>
                     <span className="font-mono text-xs text-navy-900/50">{fmtDate(a.date_abs)}</span>
                     <span className="capitalize text-navy-900/60">{a.type}</span>
@@ -129,4 +129,3 @@ export default function AccueilPedagogie() {
     </>
   );
 }
-

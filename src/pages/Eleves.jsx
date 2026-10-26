@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe, TableauDefilant } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
@@ -290,7 +290,8 @@ export default function Eleves() {
               <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun {L.s} ne correspond à votre recherche.</EtatVide>
             )
           ) : (
-            <table className="w-full text-left text-sm">
+            <TableauDefilant label="Liste des élèves">
+              <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-creme text-navy-900/50">
                 <tr>
                   {peutEditer && (
@@ -370,7 +371,8 @@ export default function Eleves() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </TableauDefilant>
           )}
 
           {/* Pagination SERVEUR. Le total vient du `count: exact` de la

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee, TableauDefilant } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codeBulletin } from "@/lib/verification.js";
@@ -243,7 +243,8 @@ export default function Bulletins() {
             {resultats.eleves.length === 0 ? (
               <EtatVide icone="🎓" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe pour cette période.</EtatVide>
             ) : (
-              <table className="w-full text-left text-sm">
+              <TableauDefilant label="Résultats des bulletins">
+                <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="bg-creme text-navy-900/50">
                   <tr>
                     <th className="px-6 py-3 font-medium">Rang</th>
@@ -270,7 +271,8 @@ export default function Bulletins() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </TableauDefilant>
             )}
           </Carte>
         )}

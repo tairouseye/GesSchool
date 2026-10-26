@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SansAnnee, TableauDefilant } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses, getMesMatieresParClasse, matieresAutorisees } from "@/lib/appel.js";
@@ -323,7 +323,8 @@ function GrilleNotes({ ecoleId, classeId, anneeId, evaluation, onErreur }) {
       {eleves.length === 0 ? (
         <EtatVide icone="✎" titre="Aucun élève inscrit">Inscrivez des élèves dans cette classe pour saisir les notes.</EtatVide>
       ) : (
-        <table className="w-full text-left text-sm">
+        <TableauDefilant label="Saisie des notes">
+          <table className="w-full min-w-[520px] text-left text-sm">
           <thead className="bg-creme text-navy-900/50">
             <tr>
               <th className="px-5 py-2 font-medium">Élève</th>
@@ -358,7 +359,8 @@ function GrilleNotes({ ecoleId, classeId, anneeId, evaluation, onErreur }) {
               );
             })}
           </tbody>
-        </table>
+          </table>
+        </TableauDefilant>
       )}
     </Carte>
   );

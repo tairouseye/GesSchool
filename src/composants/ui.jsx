@@ -37,6 +37,22 @@ export function Onglets({ items, actif, onChange }) {
   );
 }
 
+export function TableauDefilant({ children, label }) {
+  return (
+    <div
+      role="region"
+      aria-label={`${label} — défilement horizontal`}
+      tabIndex={0}
+      className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500"
+    >
+      <p className="px-4 py-2 text-xs text-navy-900/45 sm:hidden">
+        Faites défiler horizontalement pour voir toutes les colonnes.
+      </p>
+      {children}
+    </div>
+  );
+}
+
 // --- Bouton-icône : zone tactile confortable (~36 px) + libellé accessible ---
 export function IconeBouton({ children, className = "", ...props }) {
   return (
