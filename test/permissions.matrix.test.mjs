@@ -137,9 +137,11 @@ test("Pédagogie et Gestion : AUCUNE entrée ne flotte hors section", () => {
   // Les accueils et les transverses (Membres, À signer, Paramètres) étaient
   // volontairement libres. Ils ne le sont plus : sans en-tête, ils ne
   // pouvaient pas se replier sur téléphone, où ces deux espaces comptent une
-  // vingtaine d'entrées. Ils sont désormais rangés sous « Établissement ».
+  // vingtaine d'entrées. Ils sont désormais rangés sous « Établissement »
+  // (Gestion) ou « Administration » (Pédagogie). Seule exception : l'accueil
+  // de Pédagogie, un lien unique en tête — il n'y a rien à replier.
   for (const id of ["pedagogie", "gestion"]) {
-    const orphelines = P.espaceParId(id).items.filter((i) => !i.groupe);
+    const orphelines = P.espaceParId(id).items.filter((i) => !i.groupe && i.cle !== "_pedagogie");
     assert.deepEqual(orphelines.map((i) => i.cle), [],
       `toute entrée de ${id} doit porter un groupe`);
   }
@@ -179,13 +181,26 @@ test("une page d'atterrissage est du travail, jamais un utilitaire", () => {
 test("« Établissement » ouvre le menu, et le lien d'accueil reste le premier", () => {
   // Regrouper ne doit pas déplacer l'accueil en pied de menu : c'est la page
   // d'atterrissage de l'espace, et `premiereRoute` s'appuie sur cet ordre.
-  for (const [id, cleAccueil] of [["gestion", "_gestion"], ["pedagogie", "_pedagogie"]]) {
-    const items = P.espaceParId(id).items;
-    assert.equal(items[0].cle, cleAccueil, `${id} : l'accueil doit rester en première position`);
-    assert.equal(items[0].groupe, "Établissement");
-    // Et le groupe doit précéder les sections métier, pas s'y intercaler.
-    const sections = P.grouperItems(items).map((s) => s.groupe);
-    assert.equal(sections[0], "Établissement", `${id} : « Établissement » doit ouvrir le menu`);
+  const items = P.espaceParId("gestion").items;
+  assert.equal(items[0].cle, "_gestion", "gestion : l'accueil doit rester en première position");
+  assert.equal(items[0].groupe, "Établissement");
+  // Et le groupe doit précéder les sections métier, pas s'y intercaler.
+  const sections = P.grouperItems(items).map((s) => s.groupe);
+  assert.equal(sections[0], "Établissement", "gestion : « Établissement » doit ouvrir le menu");
+});
+
+test("Pédagogie : l'accueil en tête, la gestion (« Administration ») en pied de menu", () => {
+  //  Un enseignant ouvre Pédagogie pour travailler : membres, paramètres,
+  //  paiements et codes d'accès ne doivent pas passer devant l'appel.
+  const items = P.espaceParId("pedagogie").items;
+  assert.equal(items[0].cle, "_pedagogie", "l'accueil doit rester en première position");
+  for (const type of ["ecole", "superieur"]) {
+    const sections = P.grouperItems(items.filter((i) => P.itemPourType(i, type))).map((s) => s.groupe);
+    assert.equal(sections.at(-1), "Administration", `${type} : « Administration » doit fermer le menu`);
+  }
+  const admin = items.filter((i) => i.groupe === "Administration").map((i) => i.cle);
+  for (const cle of ["membres", "signatures", "parametres", "situation_paiements", "codes_parents"]) {
+    assert.ok(admin.includes(cle), `${cle} relève de la gestion : il doit être sous « Administration »`);
   }
 });
 

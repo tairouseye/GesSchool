@@ -57,7 +57,7 @@ export const ESPACES = [
       // Finances
       { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements", groupe: "Finances" },
       { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement", groupe: "Finances" },
-      { to: "/situation-paiements", label: "Situation des paiements", icone: "📊", cle: "situation_paiements", groupe: "Finances" },
+      { to: "/situation-paiements", label: "Situation des paiements", icone: "💳", cle: "situation_paiements", groupe: "Finances" },
       { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite", groupe: "Finances" },
 
       // Services aux familles
@@ -88,11 +88,12 @@ export const ESPACES = [
     // `types` = types d'établissement où l'item s'affiche ; absent = tous.
     // La branche académique bascule ainsi entre « école » et « supérieur » (LMD).
     items: [
-      // Même regroupement qu'en Gestion : voir le commentaire là-bas.
-      { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true, groupe: "Établissement" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
-      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
+      // L'accueil reste le premier lien. Tout ce qui relève de la GESTION
+      // (membres, signatures, paramètres, paiements, codes d'accès) est rangé
+      // en bas, sous « Administration » : un enseignant ou un surveillant
+      // ouvre ce menu pour faire l'appel ou saisir des notes, pas pour régler
+      // l'établissement — le travail pédagogique doit venir en premier.
+      { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
 
       // Au quotidien
       { to: "/appel", label: "Feuille de présence", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
@@ -109,11 +110,9 @@ export const ESPACES = [
 
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
-      { to: "/situation-paiements", label: "Situation des paiements", icone: "📊", cle: "situation_paiements", groupe: "Élèves & structure" },
       { to: "/photos", label: "Photos des élèves", labelSup: "Photos des étudiants", icone: "📷", cle: "photos", groupe: "Élèves & structure" },
-      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Élèves & structure" },
-      { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure" },
+      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Élèves & structure" },
       { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/admissions", label: "Admissions", icone: "📨", cle: "admissions", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"], groupe: "Élèves & structure" },
@@ -135,13 +134,19 @@ export const ESPACES = [
       // Vie scolaire
       { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
       { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"], groupe: "Vie scolaire" },
-      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Vie scolaire" },
 
       // Communication — la direction y a droit (ACCES) mais ces pages ne
       // vivaient que dans Gestion, espace auquel elle n'accède pas.
       { to: "/annonces", label: "Annonces", icone: "📣", cle: "annonces", groupe: "Communication" },
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie", groupe: "Communication" },
 
+      // Administration — en dernier, voir le commentaire de l'accueil.
+      { to: "/situation-paiements", label: "Situation des paiements", icone: "💳", cle: "situation_paiements", groupe: "Administration" },
+      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Administration" },
+      { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Administration" },
+      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Administration", transverse: true },
+      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Administration", transverse: true },
+      { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Administration", transverse: true },
     ],
   },
   {
