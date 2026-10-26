@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.274.0] — Le détail des paiements pour le parent : date et mode de paiement (migration 212)
+- **LE BESOIN** (promoteur, 26/10/2026, modèle manuscrit « Paiements ») : à côté du total payé en couleur, un **détail** de la situation de l'enfant — Description · Montant · Statut · Date · Mode de paiement.
+- **Espace parent → Paiements** : bouton **Détails** à côté du total payé. Le tableau liste l'inscription, chaque mois, puis les autres frais facturés (sortie pédagogique…). Statuts : *Payé*, *Payé d'avance* (bleu), *Impayé* (échéance passée), *Payé en partie*, *En attente* (pas encore dû). Sur téléphone, le tableau défile de côté, la page jamais.
+- **Mig. 212** : `_echeancier_json` rend, pour chaque ligne payée, la **date** du dernier paiement et le(s) **mode(s)**, et une rubrique `autres` (lignes de factures hors échéancier, ni brouillon ni annulée), sans effet sur le statut. Gardes inchangées (`enfant_echeancier`, `eleve_echeancier`) ; fonction toujours fermée à tout client.
+- Le front supporte une base sans la 212 : date et mode affichent « — ».
+- Épreuves : `test/paiementStatut.test.mjs` (lignes du détail, statuts, modes), `supabase/tests/essai_212_detail.sql` (lecture seule : dates et modes présents, fonction fermée).
+
 ## [2.273.0] — Inscription ou réinscription, et dernier mois facturé (migration 211)
 - **LE CONSTAT** (grille de Tut'Tank, 25/10/2026) : « Inscription » (obligatoire, 100 000 / 55 000) et « Réinscription » (80 000 / 45 000) ; sans distinction, l'échéancier réclamait l'inscription aux anciens. Et l'année court jusqu'au 31 juillet quand les mensualités s'arrêtent en juin (9 mois).
 - **Frais « Pour »** : tous · nouveaux (inscription) · anciens (réinscription). **Nouvel élève** : déduit (aucune inscription dans une année antérieure de l'école), corrigeable sur la fiche (bouton **Tarif**, gestionnaire des frais). L'échéancier et la facturation en lot appliquent ce choix.

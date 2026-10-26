@@ -21,3 +21,8 @@ docs/*.mov
 
 # Photos de visite : donnees personnelles d eleves, jamais dans un depot public
 docs/Images/
+
+# Données d'école (élèves, parents, paiements) : jamais dans le dépôt.
+# Les requêtes générées avec ces données sont nommées donnees_*.sql.
+TutTank/
+supabase/tests/donnees_*.sql
