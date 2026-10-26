@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.275.0] — Menu Pédagogie : le travail d'abord, la gestion en bas
+- **LE BESOIN** (promoteur, 26/10/2026, revue côté Tut'Tank) : dans l'espace Pédagogie, les écrans de gestion passaient avant le travail pédagogique — Membres et Paramètres juste sous l'accueil, Situation des paiements et Codes parents mêlés aux élèves.
+- **Pédagogie** : Accueil en tête, puis Au quotidien · Élèves & structure · Évaluation · Vie scolaire · Communication ; nouvelle section **Administration** en pied de menu (Situation des paiements, Codes parents, Codes étudiants, Membres, À signer, Paramètres). L'écran des droits d'accès suit le même regroupement.
+- **Fournitures** quitte Vie scolaire pour **Élèves & structure** (la liste se tient par niveau, à côté de Niveaux & classes).
+- **Situation des paiements** prend l'icône 💳 (Gestion et Pédagogie) : 📊 reste à Assiduité, qui partageait la même.
+- Aucune page d'atterrissage ne change. Épreuves : `test/permissions.matrix.test.mjs` (accueil en tête, « Administration » ferme le menu Pédagogie, à l'école comme au supérieur).
+
 ## [2.274.0] — Le détail des paiements pour le parent : date et mode de paiement (migration 212)
 - **LE BESOIN** (promoteur, 26/10/2026, modèle manuscrit « Paiements ») : à côté du total payé en couleur, un **détail** de la situation de l'enfant — Description · Montant · Statut · Date · Mode de paiement.
 - **Espace parent → Paiements** : bouton **Détails** à côté du total payé. Le tableau liste l'inscription, chaque mois, puis les autres frais facturés (sortie pédagogique…). Statuts : *Payé*, *Payé d'avance* (bleu), *Impayé* (échéance passée), *Payé en partie*, *En attente* (pas encore dû). Sur téléphone, le tableau défile de côté, la page jamais.
