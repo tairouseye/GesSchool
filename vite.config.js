@@ -32,7 +32,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      //  « prompt » : la nouvelle version attend, et le bandeau MiseAJour.jsx
+      //  propose de l'installer (promoteur, 27/10/2026). En autoUpdate elle
+      //  s'installait en silence et l'écran restait sur l'ancienne.
+      registerType: "prompt",
       manifest: {
         name: "GesSchool — Gestion scolaire",
         short_name: "GesSchool",
@@ -51,11 +54,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-        // Purge les anciens caches précachés à chaque mise à jour du SW +
-        // prise de contrôle immédiate (évite les chunks périmés après déploiement).
+        // Purge les anciens caches précachés à chaque mise à jour du SW.
+        // Plus de skipWaiting/clientsClaim : la nouvelle version ATTEND que
+        // l'utilisateur clique « Mettre à jour » (ou rouvre l'appli).
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
         // Handler de notifications push ajouté au service worker généré.
         importScripts: ["push-sw.js"],
         // Pas de navigateFallback absolu : routage géré par HashRouter

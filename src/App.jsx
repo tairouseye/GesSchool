@@ -12,6 +12,7 @@ import { estRoleComplet } from "@/lib/permissions.js";
 import Layout from "@/composants/Layout.jsx";
 import ParentLayout from "@/pages/ParentLayout.jsx";
 import Connexion from "@/pages/Connexion.jsx";
+import MiseAJour from "@/composants/MiseAJour.jsx";
 
 // Pages : chargées à la demande (un chunk par page). L'app reste légère et
 // les modules non ouverts ne pèsent pas sur le chargement initial.
@@ -155,6 +156,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Feedback>
+      <MiseAJour />
       <HashRouter>
         <ErrorBoundary>
         <Suspense fallback={<ChargementPage />}>
