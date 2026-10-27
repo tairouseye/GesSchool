@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programme du mois — maquette</title>
+<style>
+  :root{
+    --navy:#0b1f3a; --or:#c9a227; --cream:#f7f5ef;
+    --bg:#eef0f4; --panel:#ffffff; --ink:#1b2433; --muted:#6b7688; --line:#e4e7ee;
+    --vert:#047857; --vert-bg:#ecfdf5;
+    --shadow:0 1px 2px rgba(16,28,54,.05), 0 10px 26px rgba(16,28,54,.08);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a; --cream:#162238; --vert-bg:#0f2a22; --vert:#6ee7b7;}
+  }
+  :root[data-theme="dark"]{ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a; --cream:#162238; --vert-bg:#0f2a22; --vert:#6ee7b7;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 16px 72px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:700;color:var(--or)}
+  h1{font-size:clamp(22px,4vw,30px);margin:4px 0 6px;letter-spacing:-.02em}
+  .lead{color:var(--muted);font-size:14.5px;max-width:68ch;margin:0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;margin-top:28px;align-items:start}
+  .legende h2{font-size:16px;margin:0 0 4px}
+  .legende p{color:var(--muted);font-size:13px;margin:0 0 12px}
+
+  /* téléphone */
+  .tel{background:var(--panel);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);overflow:hidden;max-width:390px;margin:0 auto}
+  .barre{background:var(--navy);color:#fff;padding:14px 16px;font-weight:700;font-size:14px;display:flex;justify-content:space-between}
+  .rub{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .rub span{white-space:nowrap;font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .rub span.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .corps{padding:14px;display:grid;gap:14px}
+  .carte{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}
+  .carte h3{margin:0;font-size:15px}
+  .sous{font-size:12px;color:var(--muted);margin-top:2px}
+  .mois{display:flex;gap:6px;overflow-x:auto;margin:12px 0 4px}
+  .mois span{white-space:nowrap;font-size:12px;padding:5px 10px;border-radius:10px;background:var(--cream);color:var(--muted)}
+  .mois span.on{background:var(--or);color:#1b1400;font-weight:700}
+  .mois span.off{opacity:.35}
+  details{border-top:1px solid var(--line);padding:10px 0 2px}
+  details:first-of-type{border-top:none}
+  summary{cursor:pointer;font-weight:600;font-size:13.5px;list-style:none;display:flex;justify-content:space-between}
+  summary::after{content:"▾";color:var(--muted)}
+  details:not([open]) summary::after{content:"▸"}
+  .sd{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--or);font-weight:700;margin:10px 0 4px}
+  .act{font-size:12.5px;font-weight:600;margin:8px 0 4px}
+  .palier{font-size:12px;background:var(--vert-bg);color:var(--vert);border-radius:8px;padding:6px 8px;margin-bottom:6px}
+  .sem{display:grid;grid-template-columns:54px 1fr;gap:6px;font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .sem b{color:var(--muted);font-weight:600;font-size:11.5px}
+  .sem.cette{background:rgba(201,162,39,.12);border-radius:6px;padding:4px 6px}
+  .btn{display:inline-block;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);background:var(--panel)}
+  .btn.plein{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .vide{font-size:12.5px;color:var(--muted);background:var(--cream);border-radius:10px;padding:10px}
+  .grise{opacity:.55}
+
+  /* écran d'import */
+  .ecran{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+  .ecran h3{margin:0 0 10px;font-size:15px}
+  .champ{display:grid;gap:4px;margin-bottom:10px;font-size:13px}
+  .champ label{color:var(--muted);font-size:12px;font-weight:600}
+  .sel{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel)}
+  .choix{display:flex;gap:6px;flex-wrap:wrap}
+  .choix span{font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
+  .choix span.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .nouveau{outline:2px dashed var(--or);outline-offset:4px;border-radius:10px}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Maquette · à valider avant développement</div>
+  <h1>Le programme du mois, dans « Documents » chez le parent</h1>
+  <p class="lead">Le parent voit le programme officiel (IEF) du <strong>niveau réel de son enfant</strong> : CI pour un élève de CI dans la classe « CI/CP A », jamais celui du CP. Le mois en cours s'ouvre seul, et le parent peut choisir un autre mois déjà importé. Les contenus sont donnés à titre d'exemple.</p>
+
+  <div class="cols">
+    <!-- 1. Téléphone du parent -->
+    <div>
+      <div class="legende">
+        <h2>① Le parent : Documents</h2>
+        <p>En haut, le programme du mois ; en dessous, la demande de document, qui ne change pas.</p>
+      </div>
+      <div class="tel">
+        <div class="barre"><span>Awa · CI/CP A</span><span>≡</span></div>
+        <div class="rub">
+          <span>Paiements</span><span>Fournitures</span><span>Emploi du temps</span><span>Cahier de textes</span><span>Notes</span><span class="on">Documents</span>
+        </div>
+        <div class="corps">
+          <div class="carte">
+            <h3>📘 Programme du mois · CI</h3>
+            <div class="sous">Programmation officielle de l'IEF, pour le niveau de votre enfant</div>
+            <div class="mois">
+              <span>Octobre</span><span class="on">Novembre</span><span class="off">Décembre</span><span class="off">Janvier</span>
+            </div>
+            <div class="sous">Les mois grisés ne sont pas encore publiés par l'école.</div>
+
+            <details open>
+              <summary>Langue et communication</summary>
+              <div class="sd">Communication orale</div>
+              <div class="act">Expression orale</div>
+              <div class="palier">Objectif du mois : s'exprimer clairement pour parler de soi et de sa famille.</div>
+              <div class="sem"><b>Sem. 1</b><span>Se présenter : nom, prénom, âge</span></div>
+              <div class="sem cette"><b>Sem. 2</b><span>Présenter les membres de sa famille <em>· cette semaine</em></span></div>
+              <div class="sem"><b>Sem. 3</b><span>Décrire sa maison</span></div>
+              <div class="sem"><b>Sem. 4</b><span>Évaluation / remédiation</span></div>
+              <div class="act">Récitation</div>
+              <div class="sem"><b>Tout le mois</b><span>Apprendre une récitation sur la famille</span></div>
+            </details>
+            <details>
+              <summary>Mathématiques</summary>
+            </details>
+            <details>
+              <summary>Éducation à la science et à la vie sociale</summary>
+            </details>
+            <details>
+              <summary>Éducation physique, sportive et artistique</summary>
+            </details>
+            <div style="margin-top:12px"><span class="btn">🖨️ Imprimer le programme</span></div>
+          </div>
+
+          <div class="carte grise">
+            <h3>Demander un document</h3>
+            <div class="sous">(inchangé : certificat de scolarité, attestation…)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Cas sans programme -->
+    <div>
+      <div class="legende">
+        <h2>② Si rien n'est encore importé</h2>
+        <p>Pas de tableau vide : une phrase qui dit ce qui manque, et c'est du côté de l'école.</p>
+      </div>
+      <div class="tel">
+        <div class="barre"><span>Moussa · TPS/PS A</span><span>≡</span></div>
+        <div class="corps">
+          <div class="carte">
+            <h3>📘 Programme du mois · PS</h3>
+            <div class="vide" style="margin-top:10px">L'école n'a pas encore publié le programme de PS pour novembre.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legende" style="margin-top:28px">
+        <h2>③ L'école : Programmation officielle</h2>
+        <p>À l'import, pour une classe double, un choix de plus : le niveau réel que vise le document. C'est ce qui permet de ranger le programme du CI à part de celui du CP.</p>
+      </div>
+      <div class="ecran">
+        <h3>Importer la planification</h3>
+        <div class="champ"><label>Niveau</label><div class="sel">CI/CP ▾</div></div>
+        <div class="champ nouveau"><label>Pour quel niveau de la classe ? <em>(nouveau)</em></label>
+          <div class="choix"><span class="on">CI</span><span>CP</span><span>Les deux</span></div>
+        </div>
+        <div class="champ"><label>Mois</label><div class="sel">Novembre ▾</div></div>
+        <span class="btn plein">Enregistrer la planification</span>
+        <div class="note">Pour un niveau simple (CM1, CM2), rien ne change : ce choix n'apparaît pas.<br>
+          Pour l'enseignante, dans le cahier de textes, « Reprendre la programmation » propose celle du CI <em>et</em> du CP pour une classe CI/CP.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

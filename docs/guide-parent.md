@@ -30,7 +30,7 @@ Touchez le nom de votre enfant : des tuiles colorées s'ouvrent.
 | **Suivi des acquis** | au préscolaire, où en est votre enfant (voir plus bas) |
 | **Bulletins** | le bulletin de chaque trimestre, avec les appréciations et la décision |
 | **Absences** | et de quoi les **justifier** |
-| **Documents** | demander un certificat ou une attestation |
+| **Documents** | le programme officiel du mois pour le niveau de votre enfant, et la demande d'un certificat ou d'une attestation |
 | **Annonces** | les messages de l'école |
 | **Cantine** · **Transport** | seulement si votre enfant y est abonné |
 

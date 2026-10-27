@@ -18,7 +18,7 @@ import { supabase } from "@/lib/supabase.js";
 export async function getProgrammations(ecoleId, { niveauId, anneeId, mois } = {}) {
   let q = supabase
     .from("programmations")
-    .select("*, niveaux(libelle)")
+    .select("*, niveaux(libelle), sous_niveaux(libelle)")
     .eq("ecole_id", ecoleId);
   if (niveauId) q = q.eq("niveau_id", niveauId);
   if (anneeId) q = q.eq("annee_id", anneeId);
@@ -80,12 +80,15 @@ export async function moisImportes(ecoleId, { niveauId, anneeId }) {
  * domaines dans la même transaction : un échec sur le troisième ne doit pas
  * laisser un mois à moitié importé, que personne ne remarquerait.
  */
-export async function importerProgrammation({ niveauId, anneeId, mois, source, domaines }) {
+//  `sousNiveauId` (mig. 214) : le niveau réel visé dans une classe double
+//  (CI dans « CI/CP ») ; vide = tout le niveau.
+export async function importerProgrammation({ niveauId, sousNiveauId, anneeId, mois, source, domaines }) {
   const { data, error } = await supabase.rpc("importer_programmation", {
     p_niveau: niveauId,
     p_annee: anneeId,
     p_mois: mois,
     p_source: source || null,
+    p_sous_niveau: sousNiveauId || null,
     // On n'envoie que ce que la base stocke : inutile de lui faire porter
     // les champs de travail de l'analyseur.
     p_domaines: (domaines ?? []).map((g) => ({

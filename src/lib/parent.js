@@ -142,6 +142,15 @@ export async function enfantEmploi(eleveId) {
   return data ?? [];
 }
 
+// Le programme officiel du mois (IEF) pour le niveau RÉEL de l'enfant
+// (mig. 214) : { niveau, mois, mois_disponibles, domaines: [{ domaine, lignes }] }.
+// `mois` absent = le mois en cours s'il est publié, sinon le dernier publié.
+export async function enfantProgramme(eleveId, mois = null) {
+  const { data, error } = await supabase.rpc("enfant_programme", { p_eleve: eleveId, p_mois: mois });
+  if (error) throw error;
+  return data ?? { niveau: null, mois: null, mois_disponibles: [], domaines: [] };
+}
+
 export async function enfantFournitures(eleveId) {
   const { data, error } = await supabase.rpc("enfant_fournitures", { p_eleve: eleveId });
   if (error) throw error;

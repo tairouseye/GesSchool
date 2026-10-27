@@ -72,7 +72,7 @@ const GARDEES = [
   "enfant_cantine", "enfant_cantine_menu", "enfant_transport",
   "ecole_paiement_infos", "psp_etat_eleve", "declarer_paiement",
   "avance_options", "declarer_avance",
-  "enfant_echeancier",
+  "enfant_echeancier", "enfant_programme",
 ];
 const GARDE = /_parent_possede\s*\(|_peut_payer_pour\s*\(/;
 

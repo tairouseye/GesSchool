@@ -7,10 +7,11 @@ import {
   enfantBulletins, enfantBulletinLignes, demanderDocument, mesDemandes, TYPES_DOCUMENT,
   enfantCantine, enfantMenuCantine, enfantTransport, mesEnfants,
   alertesEnfant, marquerAlertesLues, monAccesNotes, demanderAccesNotes,
-  enfantFactureDetail, avanceOptions, declarerAvance, enfantEcheancier,
+  enfantFactureDetail, avanceOptions, declarerAvance, enfantEcheancier, enfantProgramme,
 } from "@/lib/parent.js";
+import { MOIS as MOIS_PROGRAMME } from "@/lib/programmationIEF.js";
 import { BadgeStatut, DetailPaiements } from "@/composants/Echeancier.jsx";
-import { etat as etatPaiement, resumeEcheancier } from "@/lib/paiementStatut.js";
+import { etat as etatPaiement, resumeEcheancier, objetFacture } from "@/lib/paiementStatut.js";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
 import {
   facturesVisibles, syntheseFactures, resteFacture, etatFacture, peutPayer, estAnnulee,
@@ -764,6 +765,8 @@ function Documents({ eleveId, demandes, onChange }) {
 
   return (
     <div className="space-y-4">
+      <ProgrammeDuMois eleveId={eleveId} />
+
       <Carte className="p-5">
         <h3 className="mb-3 font-display font-semibold text-navy-900">Demander un document</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -802,6 +805,126 @@ function Documents({ eleveId, demandes, onChange }) {
           </ul>
         </Carte>
       )}
+    </div>
+  );
+}
+
+// Le programme officiel du mois (mig. 214), maquette validée le 27/10/2026
+// (docs/maquette-programme-parent.html) : le niveau RÉEL de l'enfant (CI dans
+// « CI/CP »), le mois en cours par défaut, les autres mois publiés au choix,
+// par domaine puis semaine. Lecture seule ; la base ne rend rien d'un autre
+// niveau.
+
+function ProgrammeDuMois({ eleveId }) {
+  const [donnees, setDonnees] = useState(null);
+  const [mois, setMois] = useState(null);
+  const [erreur, setErreur] = useState("");
+  const [ouvert, setOuvert] = useState(0);
+
+  useEffect(() => {
+    let vivant = true;
+    setErreur("");
+    enfantProgramme(eleveId, mois)
+      .then((d) => { if (vivant) { setDonnees(d); setOuvert(0); } })
+      .catch((e) => { if (vivant) setErreur(messageErreur(e)); });
+    return () => { vivant = false; };
+  }, [eleveId, mois]);
+
+  if (erreur) return <Carte className="p-5"><Alerte ton="erreur">{erreur}</Alerte></Carte>;
+  if (!donnees) return <Carte className="p-5"><SkeletonListe lignes={3} /></Carte>;
+  if (!donnees.niveau) return null;
+
+  const nomMois = (m) => (MOIS_PROGRAMME.find(([n]) => Number(n) === Number(m)) || [, ""])[1];
+  const dispo = new Set((donnees.mois_disponibles || []).map(Number));
+  //  Les mois de l'année scolaire, d'octobre à juillet, grisés s'ils ne sont
+  //  pas encore publiés.
+  const moisAnnee = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7];
+  const maintenant = new Date();
+  const semaineCourante = Number(donnees.mois) === maintenant.getMonth() + 1
+    ? Math.min(Math.ceil(maintenant.getDate() / 7), 6) : null;
+
+  return (
+    <Carte className="zone-impression p-5">
+      <h3 className="font-display font-semibold text-navy-900">📘 Programme du mois · {donnees.niveau}</h3>
+      <p className="mt-0.5 text-xs text-navy-900/50">Programmation officielle de l'IEF, pour le niveau de votre enfant.</p>
+
+      <div className="no-print mt-3 flex gap-1.5 overflow-x-auto pb-1">
+        {moisAnnee.map((m) => (
+          <button key={m} type="button" disabled={!dispo.has(m)} onClick={() => setMois(m)}
+            className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${Number(donnees.mois) === m
+              ? "bg-or-500 font-semibold text-navy-900" : dispo.has(m) ? "bg-creme text-navy-900/70" : "bg-creme text-navy-900/25"}`}>
+            {nomMois(m)}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 hidden text-sm font-medium text-navy-900 print:block">{nomMois(donnees.mois)}</p>
+
+      {donnees.domaines.length === 0 ? (
+        <p className="mt-3 rounded-xl bg-creme p-3 text-sm text-navy-900/60">
+          L'école n'a pas encore publié le programme de {donnees.niveau} pour {nomMois(donnees.mois).toLowerCase()}.
+        </p>
+      ) : (
+        <div className="mt-2 divide-y divide-navy-900/10">
+          {donnees.domaines.map((d, i) => (
+            <div key={d.domaine} className="py-2.5">
+              <button type="button" onClick={() => setOuvert(ouvert === i ? -1 : i)}
+                className="flex w-full items-center justify-between text-left text-sm font-semibold text-navy-900">
+                {d.domaine}<span className="no-print text-navy-900/40">{ouvert === i ? "▾" : "▸"}</span>
+              </button>
+              <div className={ouvert === i ? "" : "hidden print:block"}>
+                <LignesProgramme lignes={d.lignes} semaineCourante={semaineCourante} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {donnees.domaines.length > 0 && (
+        <div className="no-print mt-3">
+          <Bouton variante="fantome" onClick={() => window.print()}>🖨️ Imprimer le programme</Bouton>
+        </div>
+      )}
+    </Carte>
+  );
+}
+
+//  Regroupées comme le document de l'IEF : sous-domaine, activité, puis les
+//  semaines (même lecture que l'écran Programmation officielle).
+function LignesProgramme({ lignes, semaineCourante }) {
+  const groupes = [];
+  for (const l of lignes || []) {
+    const cle = `${l.sous_domaine || ""}|${l.rubrique || ""}|${l.activite || ""}`;
+    const dernier = groupes[groupes.length - 1];
+    if (dernier && dernier.cle === cle) dernier.lignes.push(l);
+    else groupes.push({ cle, tete: l, lignes: [l] });
+  }
+  return (
+    <div className="mt-1">
+      {groupes.map((g, i) => (
+        <div key={i} className="mt-2">
+          {g.tete.sous_domaine && (i === 0 || groupes[i - 1].tete.sous_domaine !== g.tete.sous_domaine) && (
+            <div className="mt-2 text-[11px] font-bold uppercase tracking-wide text-or-600">{g.tete.sous_domaine}</div>
+          )}
+          {(g.tete.activite || g.tete.rubrique) && (
+            <div className="mt-1 text-xs font-semibold text-navy-900/80">{g.tete.activite || g.tete.rubrique}</div>
+          )}
+          {g.tete.palier && (
+            <div className="mt-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs text-emerald-800">Objectif : {g.tete.palier}</div>
+          )}
+          <ul className="mt-1">
+            {g.lignes.map((l, k) => (
+              <li key={k} className={`grid grid-cols-[4.5rem_1fr] gap-2 border-b border-dashed border-navy-900/10 py-1 text-sm text-navy-900/80 ${
+                semaineCourante && l.semaine === semaineCourante ? "rounded bg-or-500/10" : ""}`}>
+                <span className="text-xs font-medium text-navy-900/45">{l.semaine ? `Sem. ${l.semaine}` : "Tout le mois"}</span>
+                <span className="whitespace-pre-wrap">
+                  {l.contenu}
+                  {semaineCourante && l.semaine === semaineCourante && <em className="ml-1 text-xs text-or-600">· cette semaine</em>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1546,7 +1669,7 @@ function ModaleDocument({ factureId, onFermer, initial = "facture", paiementId =
             ecole={d.ecole} identite={d.identite} mobile={d.mobile}
             numero={recu ? `${f.numero}-R${rangRecu}` : f.numero}
             date={recu ? apercu.paiement?.date_paiement : f.date_emission}
-            objet={f.notes || "Frais de scolarité"}
+            objet={objetFacture(d.lignes, f.notes)}
             destinataire={[`${d.eleve?.prenom || ""} ${d.eleve?.nom || ""}`.trim(), d.eleve?.matricule]
               .filter(Boolean).join(" · ")}
             lignes={recu

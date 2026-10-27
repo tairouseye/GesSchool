@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, EtatVide, Badge, Modale, SkeletonListe } from "@/composants/ui.jsx";
-import { getAnneeCourante, getNiveaux } from "@/lib/academique.js";
+import { getAnneeCourante, getNiveaux, getSousNiveaux } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import { lireDocx } from "@/lib/docxTableaux.js";
 import { lireEntete, analyserTableau, resumer, grouperParDomaine, MOIS, COURS_CONNUS } from "@/lib/programmationIEF.js";
@@ -28,6 +28,7 @@ export default function Programmation() {
   const confirmer = useConfirm();
   const [annee, setAnnee] = useState(null);
   const [niveaux, setNiveaux] = useState([]);
+  const [sousNiveaux, setSousNiveaux] = useState([]); // CI, CP… dans « CI/CP » (mig. 164/214)
   const [niveauId, setNiveauId] = useState("");
   const [liste, setListe] = useState([]);
   const [chargement, setChargement] = useState(true);
@@ -38,9 +39,10 @@ export default function Programmation() {
   useEffect(() => {
     (async () => {
       try {
-        const [an, nv] = await Promise.all([getAnneeCourante(ecoleId), getNiveaux(ecoleId)]);
+        const [an, nv, sn] = await Promise.all([getAnneeCourante(ecoleId), getNiveaux(ecoleId), getSousNiveaux(ecoleId)]);
         setAnnee(an);
         setNiveaux(nv);
+        setSousNiveaux(sn);
       } catch (e) { setErreur(e.message); }
     })();
   }, [ecoleId]);
@@ -75,13 +77,19 @@ export default function Programmation() {
       const en = lireEntete(entete);
       // Le cours lu ne sert qu'à PROPOSER le niveau ; c'est l'utilisateur
       // qui tranche. Un rapprochement par libellé, jamais par position.
+      const norm = (x) => (x || "").toUpperCase().replace(/\s+/g, "");
+      //  Un document « CI » vise le CI de la classe double « CI/CP » : le
+      //  sous-niveau propose aussi son niveau (mig. 214).
+      const snPropose = en.cours ? sousNiveaux.find((s) => norm(s.libelle) === en.cours) : null;
       const propose = en.cours
-        ? niveaux.find((n) => (n.libelle || "").toUpperCase().replace(/\s+/g, "") === en.cours)
+        ? (niveaux.find((n) => norm(n.libelle) === en.cours)
+           || (snPropose && niveaux.find((n) => n.id === snPropose.niveau_id)))
         : null;
       setLecture({
         nomFichier: fichier.name, entete, en, domaines, lignes,
         resume: resumer(lignes),
         niveauId: propose?.id || niveauId || "",
+        sousNiveauId: snPropose && snPropose.niveau_id === propose?.id ? snPropose.id : "",
         mois: en.mois ? String(en.mois) : "",
       });
       if (propose) setNiveauId(propose.id);
@@ -96,13 +104,16 @@ export default function Programmation() {
     if (!niveau) { toast.erreur("Choisissez le niveau concerné."); return; }
     if (!lecture.mois) { toast.erreur("Choisissez le mois concerné."); return; }
     const domaines = grouperParDomaine(lecture.lignes);
+    const sn = sousNiveaux.find((s) => s.id === lecture.sousNiveauId);
+    const cible = sn ? `${niveau.libelle} · ${sn.libelle}` : niveau.libelle;
     const deja = liste.filter((p) => p.niveau_id === niveau.id && p.mois === Number(lecture.mois)
+      && (p.sous_niveau_id || "") === (lecture.sousNiveauId || "")
       && domaines.some((d) => d.domaine === p.domaine));
     if (deja.length && !await confirmer(
-      `${niveau.libelle} — ${nomMois(lecture.mois)} : ${deja.length} programmation(s) déjà importée(s) seront REMPLACÉES. Continuer ?`)) return;
+      `${cible} — ${nomMois(lecture.mois)} : ${deja.length} programmation(s) déjà importée(s) seront REMPLACÉES. Continuer ?`)) return;
     try {
       const r = await api.importerProgrammation({
-        niveauId: niveau.id, anneeId: annee.id, mois: Number(lecture.mois),
+        niveauId: niveau.id, sousNiveauId: lecture.sousNiveauId || null, anneeId: annee.id, mois: Number(lecture.mois),
         source: lecture.nomFichier, domaines,
       });
       toast.succes(`${r.lignes} contenus importés dans ${r.programmations} domaine(s).`);
@@ -114,8 +125,10 @@ export default function Programmation() {
   const parNiveau = useMemo(() => {
     const m = new Map();
     for (const p of liste) {
-      const k = p.niveau_id;
-      if (!m.has(k)) m.set(k, { libelle: p.niveaux?.libelle || "—", mois: new Map() });
+      //  Une carte par niveau ET niveau réel : « CI/CP · CI », « CI/CP · CP ».
+      const k = `${p.niveau_id}|${p.sous_niveau_id || ""}`;
+      const lib = [p.niveaux?.libelle || "—", p.sous_niveaux?.libelle].filter(Boolean).join(" · ");
+      if (!m.has(k)) m.set(k, { libelle: lib, mois: new Map() });
       const e = m.get(k);
       if (!e.mois.has(p.mois)) e.mois.set(p.mois, []);
       e.mois.get(p.mois).push(p);
@@ -154,12 +167,13 @@ export default function Programmation() {
           </label>
           <p className="mt-3 text-xs text-navy-900/40">
             La planification est enregistrée <b>par niveau</b> : celle de CM1 vaut pour CM1 A comme pour CM1 B.
+            Dans une classe double (CI/CP), précisez le niveau réel visé : c'est lui que voient les parents.
           </p>
         </Carte>
 
         {lecture && (
           <Apercu
-            lecture={lecture} niveaux={niveaux}
+            lecture={lecture} niveaux={niveaux} sousNiveaux={sousNiveaux}
             onChange={(k, v) => setLecture((s) => ({ ...s, [k]: v }))}
             onAnnuler={() => setLecture(null)}
             onValider={enregistrer}
@@ -212,12 +226,15 @@ export default function Programmation() {
 // =====================================================================
 //  L'aperçu — ce que l'écran a compris, avant d'écrire quoi que ce soit
 // =====================================================================
-function Apercu({ lecture, niveaux, onChange, onAnnuler, onValider }) {
+function Apercu({ lecture, niveaux, sousNiveaux = [], onChange, onAnnuler, onValider }) {
   const { en, resume, domaines, lignes } = lecture;
   const [ouvert, setOuvert] = useState(domaines[0] || null);
   const niveau = niveaux.find((n) => n.id === lecture.niveauId);
-  const coursInconnu = en.cours && !niveaux.some(
-    (n) => (n.libelle || "").toUpperCase().replace(/\s+/g, "") === en.cours);
+  const snDuNiveau = sousNiveaux.filter((s) => s.niveau_id === lecture.niveauId);
+  const sn = snDuNiveau.find((s) => s.id === lecture.sousNiveauId);
+  const norm = (x) => (x || "").toUpperCase().replace(/\s+/g, "");
+  const coursInconnu = en.cours && !niveaux.some((n) => norm(n.libelle) === en.cours)
+    && !sousNiveaux.some((s) => norm(s.libelle) === en.cours);
 
   return (
     <Carte className="border-or-500/40 p-5 sm:p-6">
@@ -249,7 +266,7 @@ function Apercu({ lecture, niveaux, onChange, onAnnuler, onValider }) {
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Niveau concerné *</span>
-          <select value={lecture.niveauId} onChange={(e) => onChange("niveauId", e.target.value)}
+          <select value={lecture.niveauId} onChange={(e) => { onChange("niveauId", e.target.value); onChange("sousNiveauId", ""); }}
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">— Choisir —</option>
             {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
@@ -264,6 +281,25 @@ function Apercu({ lecture, niveaux, onChange, onAnnuler, onValider }) {
           </select>
         </label>
       </div>
+
+      {/* Classe double : le niveau réel visé (mig. 214). « Les deux » = programme commun. */}
+      {snDuNiveau.length > 0 && (
+        <div className="mt-3">
+          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pour quel niveau de la classe ?</span>
+          <div className="flex flex-wrap gap-1.5">
+            {[...snDuNiveau.map((s) => [s.id, s.libelle]), ["", "Les deux"]].map(([id, lib]) => (
+              <button key={id || "tous"} type="button" onClick={() => onChange("sousNiveauId", id)}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${(lecture.sousNiveauId || "") === id
+                  ? "bg-navy-900 text-creme" : "border border-navy-900/15 text-navy-900/60"}`}>
+                {lib}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-navy-900/45">
+            Les parents ne voient que le programme du niveau de leur enfant.
+          </p>
+        </div>
+      )}
 
       {resume.total === 0 ? (
         <Alerte ton="erreur">
@@ -298,7 +334,7 @@ function Apercu({ lecture, niveaux, onChange, onAnnuler, onValider }) {
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <Bouton variante="fantome" onClick={onAnnuler}>Annuler</Bouton>
         <Bouton onClick={onValider} disabled={!lecture.niveauId || !lecture.mois || resume.total === 0}>
-          Enregistrer {niveau ? `pour ${niveau.libelle}` : ""}
+          Enregistrer {niveau ? `pour ${sn ? sn.libelle : niveau.libelle}` : ""}
         </Bouton>
       </div>
     </Carte>
