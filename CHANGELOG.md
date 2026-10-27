@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.277.0] — Espace parent : les paiements en tête des rubriques
+- **LE BESOIN** (promoteur, 27/10/2026) : réordonner les rubriques de l'enfant dans l'espace parent.
+- **Nouvel ordre** (tuiles de l'accueil et barre de rubriques) : Paiements · Fournitures · Emploi du temps · Cahier de textes · Notes (Suivi des acquis au préscolaire) · Bulletins · Absences · Documents · Annonces · puis Cantine et Transport si l'enfant y est abonné.
+- Aucune adresse ne change ; guide parent et mode d'emploi suivent le même ordre.
+
 ## [2.276.0] — Annuler une relance, et le suivi des mensualités exportable en Excel et PDF (migration 213)
 - **LE BESOIN** (promoteur, 27/10/2026, Tut'Tank) : pouvoir retirer une relance partie à tort ; et, dans la situation des paiements, la synthèse « à l'image du fichier de suivi de Mme Kane », exportable en Excel et en PDF.
 - **Recouvrement → Historique** : bouton **Annuler** par relance, et sélection multiple (**Annuler la sélection**). `annuler_relances(uuid[])` (garde `p_relancer`) retire la notification « Rappel de paiement » du fil du parent et marque la relance `annulee` (`annulee_le`, `annulee_par`). La ligne reste au journal : le palier automatique ne repart pas. Un push déjà reçu ne se rattrape pas.

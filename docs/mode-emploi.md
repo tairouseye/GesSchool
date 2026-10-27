@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.276 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.277 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -829,8 +829,8 @@ Ce qui **persiste** d'une année à l'autre (à ne pas refaire) : niveaux, cycle
 Fiche élève → Responsables → **Code parent** → communiquer le code au parent.
 
 ### 17.2 Côté parent
-Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant, onglets :
-- **Notes**, **Bulletins** (avec appréciations & décision), **Cahier de textes**, **Emploi du temps**, **Fournitures**, et si abonné **🍽️ Cantine** / **🚌 Transport**.
+Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant, des tuiles dans cet ordre : Paiements, Fournitures, Emploi du temps, Cahier de textes, Notes (ou Suivi des acquis au préscolaire), Bulletins, Absences, Documents, Annonces, puis Cantine et Transport si l'enfant y est abonné.
+- **Fournitures**, **Emploi du temps**, **Cahier de textes**, **Notes**, **Bulletins** (avec appréciations & décision), et si abonné **🍽️ Cantine** / **🚌 Transport**.
 - **Suivi des acquis** (préscolaire) : apparaît dès que l’école a observé quelque chose (§20).
 - La **photo de l’enfant** s’affiche sur sa carte et dans l’en-tête de sa fiche, dès que l’école l’a prise (§23).
 > ⚠️ **Un bulletin n’apparaît que lorsque l’école l’a publié** (§7.2). S’il manque, il est encore en relecture — ce n’est pas une panne.
