@@ -154,3 +154,14 @@ test("détail : sans échéancier ou ancienne base (sans `autres`), pas d'erreur
   assert.deepEqual(lignesDetail(null), []);
   assert.equal(lignesDetail({ lignes: [{ libelle: "Inscription", montant: 1, etat: "bizarre" }] })[0].statut.txt, "En attente");
 });
+
+test("l'objet d'une facture ou d'un reçu : le libellé de la grille, pas la note interne", async () => {
+  const { objetFacture } = await P();
+  // Relevé sur un reçu de Tut'Tank (27/10/2026) : « Import Tut'Tank 2026-2027 — inscription ».
+  assert.equal(objetFacture([{ libelle: "Réinscription" }], "Import Tut'Tank 2026-2027 — inscription"), "Réinscription");
+  assert.equal(objetFacture([{ libelle: "Mensualité — Octobre 2026" }, { libelle: "Mensualité — Novembre 2026" }]),
+    "Mensualité — Octobre 2026 + Mensualité — Novembre 2026");
+  assert.equal(objetFacture([{ libelle: "Tenue" }, { libelle: "Tenue" }]), "Tenue", "un libellé répété ne compte qu'une fois");
+  assert.equal(objetFacture([], "Paiement anticipé"), "Paiement anticipé", "sans lignes : la note");
+  assert.equal(objetFacture(null, null), "Frais de scolarité");
+});

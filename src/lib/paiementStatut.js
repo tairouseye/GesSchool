@@ -108,6 +108,19 @@ export function libelleLigne(l) {
   return l.libelle || "";
 }
 
+/**
+ * L'« Objet » d'une facture ou d'un reçu : les libellés de ses lignes, tels
+ * que la grille tarifaire les nomme (« Réinscription », « Mensualité —
+ * Octobre 2026 »). Demandé par le promoteur (27/10/2026) : la note interne
+ * de la facture (« Import Tut'Tank… », « Paiement anticipé… ») n'a rien à
+ * faire sur un document remis au parent. Repli : la note, puis « Frais de
+ * scolarité ».
+ */
+export function objetFacture(lignes, notes) {
+  const libs = [...new Set((lignes || []).map((l) => (l?.libelle || "").trim()).filter(Boolean))];
+  return libs.join(" + ") || (notes || "").trim() || "Frais de scolarité";
+}
+
 // =====================================================================
 //  Le DÉTAIL des paiements d'un élève (mig. 212), au format demandé par
 //  le promoteur (26/10/2026) : Description · Montant · Statut · Date ·

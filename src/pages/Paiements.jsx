@@ -15,6 +15,7 @@ import { getComptes } from "@/lib/comptabilite.js";
 import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois } from "@/lib/avance.js";
+import { objetFacture } from "@/lib/paiementStatut.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -1051,7 +1052,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                   ? `${facture.numero}-R${facture.paiements.findIndex((x) => x.id === apercu.paiement?.id) + 1}`
                   : facture.numero}
                 date={apercu.type === "recu" ? apercu.paiement?.date_paiement : facture.date_emission}
-                objet={facture.notes || "Frais de scolarité"}
+                objet={objetFacture(facture.facture_lignes, facture.notes)}
                 destinataire={[`${facture.eleves?.prenom || ""} ${facture.eleves?.nom || ""}`.trim(),
                                facture.eleves?.matricule].filter(Boolean).join(" · ")}
                 lignes={apercu.type === "recu"
