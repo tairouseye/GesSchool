@@ -22,14 +22,14 @@ Touchez le nom de votre enfant : des tuiles colorées s'ouvrent.
 
 | Tuile | Ce que vous y trouvez |
 |---|---|
-| **Notes** | les notes, évaluation par évaluation |
-| **Bulletins** | le bulletin de chaque trimestre, avec les appréciations et la décision |
-| **Suivi des acquis** | au préscolaire, où en est votre enfant (voir plus bas) |
-| **Cahier de textes** | ce qui a été fait en classe, et les devoirs |
-| **Emploi du temps** | la semaine de votre enfant, en grille comme l'emploi du temps papier (heures × jours) |
-| **Absences** | et de quoi les **justifier** |
 | **Paiements** | vos factures, et comment les régler |
 | **Fournitures** | la liste, imprimable |
+| **Emploi du temps** | la semaine de votre enfant, en grille comme l'emploi du temps papier (heures × jours) |
+| **Cahier de textes** | ce qui a été fait en classe, et les devoirs |
+| **Notes** | les notes, évaluation par évaluation |
+| **Suivi des acquis** | au préscolaire, où en est votre enfant (voir plus bas) |
+| **Bulletins** | le bulletin de chaque trimestre, avec les appréciations et la décision |
+| **Absences** | et de quoi les **justifier** |
 | **Documents** | demander un certificat ou une attestation |
 | **Annonces** | les messages de l'école |
 | **Cantine** · **Transport** | seulement si votre enfant y est abonné |

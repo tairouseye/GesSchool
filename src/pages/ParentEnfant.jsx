@@ -393,7 +393,13 @@ export default function ParentEnfant() {
 }
 
 // Sections de l'enfant, en tuiles « sombre élégant » (navy + icône dorée).
+//  Ordre demandé par le promoteur (27/10/2026) : les paiements en tête, puis
+//  ce dont la famille a besoin pour la rentrée et la semaine.
 const TUILES = [
+  { cle: "paiements",   label: "Paiements" },
+  { cle: "fournitures", label: "Fournitures" },
+  { cle: "emploi",      label: "Emploi du temps" },
+  { cle: "cahier",      label: "Cahier de textes" },
   { cle: "notes",       label: "Notes" },
   //  ⚠️ Au préscolaire on n'évalue pas, on OBSERVE : cette tuile remplace
   //  « Notes » pour les plus petits. Elle n'apparaît que si l'école a
@@ -401,11 +407,7 @@ const TUILES = [
   //  un parent sans rien lui apprendre (mig. 172).
   { cle: "acquis",      label: "Suivi des acquis" },
   { cle: "bulletins",   label: "Bulletins" },
-  { cle: "cahier",      label: "Cahier de textes" },
-  { cle: "emploi",      label: "Emploi du temps" },
-  { cle: "paiements",   label: "Paiements" },
   { cle: "absences",    label: "Absences" },
-  { cle: "fournitures", label: "Fournitures" },
   { cle: "documents",   label: "Documents" },
   { cle: "annonces",    label: "Annonces" },
   { cle: "cantine",     label: "Cantine" },
