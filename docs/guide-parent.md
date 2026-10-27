@@ -14,6 +14,10 @@ Suivez la scolarité de votre enfant et payez depuis votre téléphone.
 
 **Installez l'application** : sur téléphone, « Ajouter à l'écran d'accueil ». Elle s'ouvre alors comme une application normale — et sur iPhone, c'est **nécessaire** pour recevoir les notifications.
 
+**👆 Connectez-vous avec votre empreinte ou votre visage.** Après votre première connexion, GesSchool vous le propose : touchez **Activer**. Ensuite, sur la page de connexion, **« Se connecter avec l'empreinte ou le visage »** suffit. Votre empreinte reste sur votre téléphone. Pour retirer un téléphone perdu : **Mon compte**.
+
+**Mises à jour** : quand le bandeau **« Une nouvelle version de GesSchool est disponible »** apparaît, touchez **Mettre à jour**.
+
 ---
 
 ## 2. Suivre votre enfant

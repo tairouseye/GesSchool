@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion biométrique — maquette</title>
+<style>
+  :root{
+    --navy:#0b1f3a; --or:#c9a227; --cream:#f7f5ef;
+    --bg:#eef0f4; --panel:#ffffff; --ink:#1b2433; --muted:#6b7688; --line:#e4e7ee;
+    --vert:#047857; --vert-bg:#ecfdf5; --rouge:#be123c;
+    --shadow:0 1px 2px rgba(16,28,54,.05), 0 10px 26px rgba(16,28,54,.08);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a; --cream:#162238; --vert-bg:#0f2a22; --vert:#6ee7b7; --rouge:#fda4af;}
+  }
+  :root[data-theme="dark"]{ --bg:#0b1220; --panel:#111a2b; --ink:#e9edf4; --muted:#93a0b5; --line:#22304a; --cream:#162238; --vert-bg:#0f2a22; --vert:#6ee7b7; --rouge:#fda4af;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 16px 72px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:700;color:var(--or)}
+  h1{font-size:clamp(22px,4vw,30px);margin:4px 0 6px;letter-spacing:-.02em}
+  .lead{color:var(--muted);font-size:14.5px;max-width:72ch;margin:0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px;margin-top:28px;align-items:start}
+  .legende h2{font-size:15px;margin:0 0 4px}
+  .legende p{color:var(--muted);font-size:12.5px;margin:0 0 12px;min-height:48px}
+  .tel{border-radius:28px;box-shadow:var(--shadow);overflow:hidden;max-width:300px;margin:0 auto;border:1px solid var(--line)}
+  .sombre{background:var(--navy);padding:22px 16px 26px;color:#f7f5ef}
+  .logo{width:52px;height:52px;border-radius:50%;background:var(--or);margin:0 auto 8px}
+  .titre{text-align:center;font-weight:800;font-size:20px}
+  .titre span{color:var(--or)}
+  .sl{text-align:center;font-size:11px;opacity:.6;margin-bottom:14px}
+  .carte{background:#fff;color:#1b2433;border-radius:16px;padding:14px}
+  .onglets{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#f7f5ef;border-radius:10px;padding:3px;margin-bottom:12px}
+  .onglets span{text-align:center;font-size:12px;font-weight:600;padding:6px;border-radius:8px;color:#6b7688}
+  .onglets span.on{background:var(--navy);color:#fff}
+  .champ{border:1px solid #e4e7ee;border-radius:10px;padding:9px 10px;font-size:12px;color:#93a0b5;margin-bottom:8px}
+  .btn{display:block;text-align:center;font-size:12.5px;font-weight:600;padding:10px;border-radius:10px}
+  .btn.plein{background:var(--navy);color:#fff}
+  .btn.or{background:var(--or);color:#1b1400}
+  .btn.contour{border:1.5px solid var(--navy);color:var(--navy);background:#fff}
+  .ou{display:flex;align-items:center;gap:8px;font-size:11px;color:#93a0b5;margin:12px 0}
+  .ou::before,.ou::after{content:"";flex:1;height:1px;background:#e4e7ee}
+  .lien{text-align:center;font-size:11.5px;color:#334e7a;margin-top:8px}
+  .nouveau{outline:2px dashed var(--or);outline-offset:4px;border-radius:12px}
+  .clair{background:var(--panel);padding:14px;min-height:420px}
+  .barre{background:var(--navy);color:#fff;padding:12px 14px;font-weight:700;font-size:13px;display:flex;justify-content:space-between}
+  .invite{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}
+  .invite h3{margin:0 0 4px;font-size:14px}
+  .invite p{margin:0 0 10px;font-size:12px;color:var(--muted)}
+  .rangee{display:flex;gap:8px}
+  .rangee .btn{flex:1}
+  .btn.discret{color:var(--muted);border:1px solid var(--line)}
+  .panneau{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel);box-shadow:var(--shadow)}
+  .nom{font-weight:800;font-size:14px}
+  .role{font-size:11px;color:var(--muted);margin-bottom:10px}
+  .bloc{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .pas{font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px}
+  .pas.on{background:var(--vert-bg);color:var(--vert)}
+  .pas.off{background:rgba(201,162,39,.2);color:#9e7d18}
+  .petit{font-size:11px;color:var(--muted)}
+  .section h3{font-size:14px;margin:12px 0 4px}
+  .appareil{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:8px 0;font-size:12.5px}
+  .appareil b{display:block}
+  .retirer{color:var(--rouge);font-size:11.5px;font-weight:600}
+  .note{font-size:11.5px;color:var(--muted);background:var(--cream);border-radius:10px;padding:8px 10px;margin-top:10px}
+  .fenetre{position:relative}
+  .systeme{position:absolute;inset:auto 12px 18px 12px;background:rgba(30,30,30,.92);color:#fff;border-radius:16px;padding:14px;text-align:center;font-size:12px}
+  .systeme .ic{font-size:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Maquette · à valider avant développement</div>
+  <h1>Se connecter avec l'empreinte ou le visage</h1>
+  <p class="lead">C'est le téléphone qui reconnaît l'empreinte ou le visage. GesSchool ne voit et ne garde <strong>aucune</strong> donnée biométrique : il reçoit seulement la preuve que c'est bien le bon appareil. Le mot de passe reste toujours possible. Les éléments nouveaux sont entourés en pointillés dorés.</p>
+
+  <div class="cols">
+    <!-- ① Connexion -->
+    <div>
+      <div class="legende">
+        <h2>① Page de connexion</h2>
+        <p>Sous le formulaire habituel, un bouton de plus. Un toucher suffit, sans taper d'adresse e-mail.</p>
+      </div>
+      <div class="tel fenetre">
+        <div class="sombre">
+          <div class="logo"></div>
+          <div class="titre">Ges<span>School</span></div>
+          <div class="sl">L'école connectée, la gestion simplifiée</div>
+          <div class="carte">
+            <div class="onglets"><span class="on">Connexion</span><span>Inscription</span></div>
+            <div class="champ">E-mail</div>
+            <div class="champ">Mot de passe</div>
+            <span class="btn plein">Se connecter</span>
+            <div class="lien">Mot de passe oublié ?</div>
+            <div class="nouveau" style="margin-top:4px">
+              <div class="ou">ou</div>
+              <span class="btn contour">👆 Se connecter avec l'empreinte ou le visage</span>
+            </div>
+          </div>
+        </div>
+        <div class="systeme"><div class="ic">👆</div>Fenêtre du téléphone :<br><b>« Utiliser l'empreinte pour GesSchool »</b></div>
+      </div>
+    </div>
+
+    <!-- ② Invitation -->
+    <div>
+      <div class="legende">
+        <h2>② Proposition après connexion</h2>
+        <p>Une seule fois par téléphone, après une connexion par mot de passe, si le téléphone sait le faire. « Non merci » ne la fait plus revenir.</p>
+      </div>
+      <div class="tel">
+        <div class="barre"><span>Accueil</span><span>≡</span></div>
+        <div class="clair">
+          <div class="invite nouveau">
+            <h3>🔐 Connectez-vous plus vite la prochaine fois</h3>
+            <p>Activez la connexion par empreinte ou par visage sur ce téléphone. Votre empreinte reste sur le téléphone.</p>
+            <div class="rangee"><span class="btn discret">Non merci</span><span class="btn or">Activer</span></div>
+          </div>
+          <div class="petit" style="margin-top:14px">(… la suite de l'accueil, inchangée)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ Personnel -->
+    <div>
+      <div class="legende">
+        <h2>③ Personnel : panneau du compte</h2>
+        <p>À côté des notifications, la même présentation : un interrupteur pour ce téléphone. Sur ordinateur, au même endroit dans la barre latérale.</p>
+      </div>
+      <div class="tel">
+        <div class="barre"><span>Tut'Tank</span><span>👤</span></div>
+        <div class="clair">
+          <div class="panneau">
+            <div class="nom">Awa Ndiaye</div>
+            <div class="role">Comptable</div>
+            <div class="bloc"><span>🔔 Notifications activées</span><span class="pas on">ON</span></div>
+            <div class="bloc nouveau"><span>👆 Connexion par empreinte</span><span class="pas off">Activer</span></div>
+            <div class="petit nouveau" style="padding:2px 4px">Activée sur 1 appareil · <u>gérer</u></div>
+            <div style="margin-top:12px"><span class="btn discret">📖 Aide &amp; mode d'emploi</span></div>
+            <div style="margin-top:6px"><span class="btn plein">Déconnexion</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ Parent -->
+    <div>
+      <div class="legende">
+        <h2>④ Parent : Mon compte</h2>
+        <p>Sous « Changer mon mot de passe », la liste des appareils activés. On peut retirer un téléphone perdu ou changé.</p>
+      </div>
+      <div class="tel">
+        <div class="barre"><span>Mon compte</span><span>✕</span></div>
+        <div class="clair">
+          <div class="section">
+            <h3>Changer mon mot de passe</h3>
+            <div class="petit">(inchangé)</div>
+          </div>
+          <div class="section nouveau" style="padding:4px">
+            <h3>👆 Connexion par empreinte ou visage</h3>
+            <div class="appareil"><span><b>Google Password Manager</b><span class="petit">Activé le 27/10 · utilisé aujourd'hui</span></span><span class="retirer">Retirer</span></div>
+            <div class="appareil"><span><b>iCloud Keychain</b><span class="petit">Activé le 12/11 · jamais utilisé</span></span><span class="retirer">Retirer</span></div>
+            <div style="margin-top:10px"><span class="btn or">+ Activer sur ce téléphone</span></div>
+            <div class="note">Le nom affiché est celui que donne le téléphone. Si un téléphone est perdu, retirez-le ici : il ne pourra plus ouvrir votre compte.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

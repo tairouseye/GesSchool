@@ -18,5 +18,8 @@ export const supabase = createClient(url, anonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    //  Connexion par empreinte ou visage (passkeys, src/lib/biometrie.js).
+    //  Expérimental chez Supabase : sans cette option, les appels échouent.
+    experimental: { passkey: true },
   },
 });

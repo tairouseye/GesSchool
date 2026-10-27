@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Carte, ChampMotDePasse, Bouton, Alerte } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
+import { GestionBiometrie } from "@/composants/Biometrie.jsx";
 
 // Espace parent — « Mon compte » : changer son mot de passe.
 // La session étant active, Supabase autorise la mise à jour directe
@@ -78,6 +79,12 @@ export default function ParentCompte() {
             {enCours ? "Enregistrement…" : "Modifier le mot de passe"}
           </Bouton>
         </form>
+      </Carte>
+
+      {/* Connexion par empreinte ou visage (maquette, écran ④). */}
+      <Carte className="p-6">
+        <h2 className="mb-3 font-display text-base font-semibold text-navy-900">👆 Connexion par empreinte ou visage</h2>
+        <GestionBiometrie />
       </Carte>
     </div>
   );

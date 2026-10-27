@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
-import { ChargementPage } from "@/composants/ui.jsx";
+import { ChargementPage, Modale } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
 import { LIBELLES_ROLES } from "@/lib/permissions.js";
@@ -15,6 +15,7 @@ import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.
 import InvitePush from "@/composants/InvitePush.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
+import { GestionBiometrie, InviteBiometrie } from "@/composants/Biometrie.jsx";
 
 // Logo de l'école dans l'en-tête : image si l'école en a une, sinon le sceau (sigle).
 function LogoEcole({ logoUrl, sigle, size }) {
@@ -125,6 +126,7 @@ export default function Layout() {
   const [menu, setMenu] = useState(false);      // (desktop, hérité — non utilisé en mobile)
   const [tuiles, setTuiles] = useState(true);   // mobile : grille de tuiles de l'espace
   const [compte, setCompte] = useState(false);  // mobile : panneau compte / déconnexion
+  const [bio, setBio] = useState(false);        // fenêtre « Connexion par empreinte »
   const [pushEtat, setPushEtat] = useState(null); // 'actif' | 'inactif' | 'refuse' | 'non_supporte'
   const [pushMsg, setPushMsg] = useState("");
   const [tour, setTour] = useState(false);
@@ -412,6 +414,9 @@ export default function Layout() {
             className="mt-3 block rounded-lg border border-creme/20 px-3 py-1.5 text-center text-xs text-creme/80 hover:bg-navy-800">
             📖 Aide &amp; mode d&apos;emploi
           </a>
+          <button onClick={() => setBio(true)} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
+            👆 Connexion par empreinte
+          </button>
           <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
             Déconnexion
           </button>
@@ -456,6 +461,11 @@ export default function Layout() {
                 )}
                 {pushMsg && <p className="mt-1 px-1 text-[11px] text-navy-900/60">{pushMsg}</p>}
               </div>
+              <button type="button" onClick={() => { setCompte(false); setBio(true); }}
+                className="mt-2 flex w-full items-center justify-between rounded-lg border border-navy-900/10 px-3 py-2 text-sm text-navy-900/80">
+                <span>👆 Connexion par empreinte</span>
+                <span className="rounded-full bg-or-500/20 px-2 py-0.5 text-[10px] font-bold text-or-600">Gérer</span>
+              </button>
 
               <div className="mt-3 space-y-1.5">
                 {estSuperAdmin && (
@@ -477,9 +487,15 @@ export default function Layout() {
           </div>
         )}
 
+        {/* Connexion par empreinte ou visage (maquette, écran ③). */}
+        <Modale ouvert={bio} onFermer={() => setBio(false)} titre="👆 Connexion par empreinte ou visage">
+          {bio && <GestionBiometrie />}
+        </Modale>
+
         <main className="relative flex-1 overflow-auto">
           {/* Bannière d'invitation : mobile uniquement (desktop = interrupteur sidebar). */}
           <div className="px-4 pt-4 empty:hidden sm:px-8 lg:hidden"><InvitePush /></div>
+          <div className="px-4 pt-4 empty:hidden sm:px-8"><InviteBiometrie /></div>
           <Suspense fallback={<ChargementPage />}>
             <Outlet />
           </Suspense>

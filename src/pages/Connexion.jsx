@@ -7,6 +7,7 @@ import GesProSignature from "@/composants/GesProSignature.jsx";
 import { GESPRO } from "@/lib/gespro.js";
 import Logo from "@/composants/Logo.jsx";
 import { messageErreur } from "@/lib/erreurs.js";
+import { biometrieSupportee, connecterBiometrie, messageBiometrie } from "@/lib/biometrie.js";
 
 // Page Connexion / Inscription (onglets).
 export default function Connexion() {
@@ -18,6 +19,21 @@ export default function Connexion() {
   const [erreur, setErreur] = useState("");
   const [info, setInfo] = useState("");
   const [enCours, setEnCours] = useState(false);
+
+  // Empreinte ou visage (passkey) : pas d'e-mail à taper, le téléphone
+  // retrouve le compte. Une annulation n'est pas une erreur à afficher.
+  async function connexionBio() {
+    setErreur(""); setInfo(""); setEnCours(true);
+    try {
+      await connecterBiometrie();
+      navigate("/", { replace: true });
+    } catch (err) {
+      const m = messageBiometrie(err);
+      if (m !== "Opération annulée.") setErreur(m);
+    } finally {
+      setEnCours(false);
+    }
+  }
 
   async function soumettre(e) {
     e.preventDefault();
@@ -98,6 +114,18 @@ export default function Connexion() {
                 Mot de passe oublié ?
               </Link>
             </div>
+          )}
+
+          {mode === "connexion" && biometrieSupportee() && (
+            <>
+              <div className="my-4 flex items-center gap-3 text-xs text-navy-900/40">
+                <span className="h-px flex-1 bg-navy-900/10" />ou<span className="h-px flex-1 bg-navy-900/10" />
+              </div>
+              <button type="button" onClick={connexionBio} disabled={enCours}
+                className="w-full rounded-xl border-2 border-navy-900 px-4 py-2.5 text-sm font-semibold text-navy-900 hover:bg-navy-900/5 disabled:opacity-60">
+                👆 Se connecter avec l'empreinte ou le visage
+              </button>
+            </>
           )}
         </div>
 

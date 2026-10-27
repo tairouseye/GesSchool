@@ -10,6 +10,7 @@ import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import { TOUR_PARENT } from "@/lib/tours.js";
 import { libelleCompteur } from "@/lib/accessibilite.js";
+import { InviteBiometrie } from "@/composants/Biometrie.jsx";
 
 // Commande d'en-tête : 40 × 40 px, la taille d'un doigt. La pastille de
 // non-lus se pose dans ce carré, sans le déborder.
@@ -113,6 +114,7 @@ export default function ParentLayout() {
       <main className="mx-auto max-w-4xl space-y-4 p-6">
         {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
         <div className="empty:hidden lg:hidden"><InvitePush /></div>
+        <div className="empty:hidden"><InviteBiometrie /></div>
         <Suspense fallback={<ChargementPage />}>
           {/* Les compteurs sont déjà chargés ici, à chaque navigation : on les
               transmet plutôt que de les redemander depuis l'accueil. */}
