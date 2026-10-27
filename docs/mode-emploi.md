@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.277 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.278 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -836,7 +836,7 @@ Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant
 > ⚠️ **Un bulletin n’apparaît que lorsque l’école l’a publié** (§7.2). S’il manque, il est encore en relecture — ce n’est pas une panne.
 - **Paiements** : en tête, le **total payé**, dans la couleur de l'état de l'enfant — 🔴 **en retard**, 🟢 **à jour**, 🔵 **en avance** (un mois à venir déjà payé) —, le montant **à régler maintenant**, et la liste de **chaque mois** : payé, en retard (un mois est dû le 5), ou à venir. Puis chaque facture avec son échéance, son montant, le déjà-payé, le solde et son état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Régler par **mobile money** (numéro de l'école + référence affichés) → **Déclarer un paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4). Un paiement validé devient un **reçu**, accessible par **✅ Reçu** sur la facture (le plus récent s'ouvre, les autres sont à un clic) ; la liste des déclarations ne garde que celles **en attente** ou **rejetées**, avec le motif. Une facture **annulée** ne compte plus et ne se paie plus — la base refuse aussi une déclaration sur une facture annulée, et la caisse ne peut plus en valider une déposée avant l'annulation.
 - **Absences** : **Justifier** une absence → l'école valide.
-- **Documents** : **Demander** un document → suivre le statut.
+- **Documents** : le **programme du mois** du niveau de l'enfant (§21.3), puis **Demander** un document → suivre le statut.
 - En-tête : 💬 **Messagerie** et 🔔 **Alertes** (+ **Activer** les notifications push).
 - **Passer d'une rubrique à l'autre** : dans une rubrique, une **barre de rubriques** défile sous le nom de l'enfant — un toucher pour aller des Notes aux Paiements, sans revenir à la grille. Les pastilles (impayé, nouvelles notes) y restent visibles ; **« Toutes les rubriques »** ramène à la grille. Le **retour du téléphone** revient à la rubrique précédente.
 - Dans **Alertes**, le bouton **« Voir »** ouvre directement la bonne rubrique : une nouvelle facture mène à Paiements, une absence à Absences, une note à Notes.
@@ -919,12 +919,17 @@ L'inspection diffuse une **planification mensuelle** par cours. Plutôt que de l
 > ⚠️ **Vérifiez toujours le niveau et le mois.** Le document qui nous a été remis s'appelait « CE1 juin » et contenait du **CM1 d'avril**. C'est **l'en-tête du document** qui fait foi, jamais le nom du fichier — et c'est pour cela que l'écran vous demande de confirmer, même quand il a su lire.
 
 - La planification est enregistrée **par niveau** : celle de CM1 vaut pour CM1 A comme pour CM1 B.
+- **Classe double (CI/CP, TPS/PS…)** : l'écran demande en plus **« Pour quel niveau de la classe ? CI / CP / Les deux »**. Choisissez le niveau que vise le document : c'est lui que verront les **parents**. Un document dont l'en-tête dit « CI » propose tout seul « CI/CP » et « CI ». La liste **Déjà importé** sépare alors « CI/CP · CI » et « CI/CP · CP ».
 - Certains contenus sont rangés en **« tout le mois »** : le document fusionne parfois des cellules sur les quatre semaines, et nous préférons le dire plutôt que d'inventer une semaine.
 - Redéposer le même mois **remplace** la version précédente, domaine par domaine.
 
 ### 21.2 S'en servir (enseignante)
 
-Dans **Cahier de textes**, le bouton **📋 Reprendre la programmation** liste les contenus du mois pour le niveau de la classe, filtrables par domaine et par semaine. Un clic remplit la séance — **et le texte reste modifiable** : la planification décrit un objectif, pas le déroulé d'une séance.
+Dans **Cahier de textes**, le bouton **📋 Reprendre la programmation** liste les contenus du mois pour le niveau de la classe, filtrables par domaine et par semaine. Un clic remplit la séance — **et le texte reste modifiable** : la planification décrit un objectif, pas le déroulé d'une séance. Dans une classe double, l'enseignante voit les programmes des deux niveaux.
+
+### 21.3 Ce que voient les parents
+
+Chez le parent, onglet **Documents** : le **📘 Programme du mois** du **niveau réel de son enfant** (CI pour un élève de CI dans « CI/CP A »), avec le programme commun aux deux niveaux s'il y en a un, jamais celui de l'autre niveau. Le mois en cours s'ouvre par défaut, les autres mois publiés se choisissent d'un clic, la semaine en cours est surlignée, et le programme s'imprime. Tant que rien n'est importé pour son niveau, le parent lit simplement « L'école n'a pas encore publié le programme… ».
 
 ---
 

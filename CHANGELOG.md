@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.278.0] — Le programme du mois chez le parent, au niveau réel de l'enfant (migration 214) ; l'objet des reçus suit la grille tarifaire
+- **LE BESOIN** (promoteur, 27/10/2026, maquette `docs/maquette-programme-parent.html` validée) : la programmation officielle de l'IEF, déjà chargée pour le cahier de textes, doit apparaître chez le parent, dans Documents, et correspondre au niveau de son enfant. Et l'« Objet » des factures et reçus doit reprendre la grille tarifaire (« Réinscription »), pas la note d'import.
+- **Mig. 214** : `programmations.sous_niveau_id` (facultatif, NULL = tout le niveau), unicité niveau · année · mois · domaine · sous-niveau, cohérence sous-niveau ↔ niveau garantie par déclencheur. `importer_programmation(…, p_sous_niveau)` : réimporter remplace la version du MÊME niveau réel. `enfant_programme(eleve, mois)` (garde `_parent_possede`) : programmes communs + niveau réel de l'enfant, jamais l'autre niveau ; mois en cours, sinon dernier mois publié.
+- **Programmation officielle** : choix « Pour quel niveau de la classe ? CI / CP / Les deux » pour une classe double ; l'en-tête « CI » propose le bon niveau ; « Déjà importé » sépare « CI/CP · CI » et « CI/CP · CP ».
+- **Parent → Documents** : 📘 Programme du mois (mois au choix, domaines, semaine en cours surlignée, impression), au-dessus de la demande de document.
+- **Objet des factures et reçus** (caisse et parent) : `objetFacture()` — les libellés des lignes, donc ceux de la grille tarifaire ; la note interne n'est plus qu'un repli.
+- Épreuves : `supabase/tests/essai_214_programme_parent.sql` — OK en production le 27/10/2026 ; `test/parent.securite.test.mjs` (garde de `enfant_programme`) ; `test/paiementStatut.test.mjs` (objet des reçus).
+
 ## [2.277.0] — Espace parent : les paiements en tête des rubriques
 - **LE BESOIN** (promoteur, 27/10/2026) : réordonner les rubriques de l'enfant dans l'espace parent.
 - **Nouvel ordre** (tuiles de l'accueil et barre de rubriques) : Paiements · Fournitures · Emploi du temps · Cahier de textes · Notes (Suivi des acquis au préscolaire) · Bulletins · Absences · Documents · Annonces · puis Cantine et Transport si l'enfant y est abonné.
