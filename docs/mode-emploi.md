@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.275 · mise à jour du 26 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.276 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -570,6 +570,11 @@ Le même état colore le nom de l'élève dans la **liste des élèves** (filtr�
 
 > C'est un écran de **lecture** : on n'y encaisse pas, on n'y relance pas. Les numéros de facture et le détail des paiements restent à la caisse. Une responsable cloisonnée sur un cycle ne voit que les élèves de ce cycle.
 
+**Suivi des mensualités** (bouton en haut de l'écran) : la même information présentée comme le cahier de suivi tenu à la main — une ligne par élève (N°, matricule, nom, prénom, niveau, classe, mensualité, inscription), puis **une colonne par mois** avec le montant payé, et en bas le **total**, le **nombre d'élèves ayant payé** (« 45 / 123 ») et le **pourcentage**, mois par mois. Les cases sont colorées : 🟩 payé, 🟧 acompte, 🟥 mois en retard. Filtrez par classe si besoin.
+
+- **📊 Exporter en Excel** : le tableau dans un fichier Excel, avec les formules de total en bas (elles se recalculent si l'on corrige une case). Le fichier sort sans couleurs.
+- **🖨️ Imprimer / PDF** : la grille en A4 paysage, avec les couleurs et le logo. Pour un PDF, choisissez « Enregistrer au format PDF » comme imprimante.
+
 ### 10.5 Recouvrement (menu **Recouvrement**)
 
 La liste des impayés : montant total, retard, contact de la famille.
@@ -577,6 +582,7 @@ La liste des impayés : montant total, retard, contact de la famille.
 - **Relancer** envoie une notification (et un push si la famille l'a activé).
 - **WhatsApp** ouvre un message pré-rempli vers le numéro du parent — c'est le canal qui fonctionne le mieux au Sénégal.
 - L'**historique** des relances est conservé, ce qui évite de relancer deux fois la même famille le même jour.
+- **Annuler une relance** (onglet Historique) : bouton **Annuler** sur la ligne, ou cochez plusieurs relances puis **Annuler la sélection**. Le rappel disparaît des notifications du parent ; la relance reste dans l'historique, barrée et marquée « Annulée le … », et le même palier automatique ne repart pas. ⚠️ Une notification push déjà reçue sur le téléphone ne peut pas être reprise.
 
 Des **relances récurrentes** se configurent dans Paramètres : des paliers (par exemple 7, 15 et 30 jours de retard) déclenchent automatiquement une notification chaque matin.
 

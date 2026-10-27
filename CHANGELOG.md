@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.276.0] — Annuler une relance, et le suivi des mensualités exportable en Excel et PDF (migration 213)
+- **LE BESOIN** (promoteur, 27/10/2026, Tut'Tank) : pouvoir retirer une relance partie à tort ; et, dans la situation des paiements, la synthèse « à l'image du fichier de suivi de Mme Kane », exportable en Excel et en PDF.
+- **Recouvrement → Historique** : bouton **Annuler** par relance, et sélection multiple (**Annuler la sélection**). `annuler_relances(uuid[])` (garde `p_relancer`) retire la notification « Rappel de paiement » du fil du parent et marque la relance `annulee` (`annulee_le`, `annulee_par`). La ligne reste au journal : le palier automatique ne repart pas. Un push déjà reçu ne se rattrape pas.
+- **Situation des paiements → Suivi des mensualités** : grille N° · Matricule · Nom · Prénom · Niveau · Classe · Mensualité · Inscription · un mois par colonne · Total payé · Reste dû ; pied : totaux, nombre d'élèves ayant payé et pourcentage par mois. Cases colorées (payé / acompte / en retard), nom à la couleur du statut. `grille_mensualites(annee, classe)` lit l'échéancier (mig. 210/211) avec le payé réel (un acompte compte pour sa part) ; mêmes droits et même périmètre que `situation_paiements`, lecture seule.
+- **Export Excel** (formules SUM / COUNT en pied, comme le fichier de l'école ; sans couleurs, limite de la bibliothèque) et **PDF** par l'impression, en A4 paysage, couleurs conservées.
+- Épreuve : `supabase/tests/essai_213_relances_grille.sql` — OK en production le 27/10/2026 (126 élèves, grille cohérente avec l'échéancier ; relance annulée, notification retirée, journal gardé ; refus parent).
+
 ## [2.275.0] — Menu Pédagogie : le travail d'abord, la gestion en bas
 - **LE BESOIN** (promoteur, 26/10/2026, revue côté Tut'Tank) : dans l'espace Pédagogie, les écrans de gestion passaient avant le travail pédagogique — Membres et Paramètres juste sous l'accueil, Situation des paiements et Codes parents mêlés aux élèves.
 - **Pédagogie** : Accueil en tête, puis Au quotidien · Élèves & structure · Évaluation · Vie scolaire · Communication ; nouvelle section **Administration** en pied de menu (Situation des paiements, Codes parents, Codes étudiants, Membres, À signer, Paramètres). L'écran des droits d'accès suit le même regroupement.
