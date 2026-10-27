@@ -52,6 +52,15 @@ export async function relancerEleve(eleveId) {
   if (error) throw error;
 }
 
+// Annule des relances envoyées (mig. 213) : la notification sort du fil du
+// parent, la ligne reste au journal marquée « annulée ». Le push déjà reçu
+// ne se rattrape pas. Renvoie le nombre de relances annulées.
+export async function annulerRelances(ids) {
+  const { data, error } = await supabase.rpc("annuler_relances", { p_relances: ids });
+  if (error) throw error;
+  return data ?? 0;
+}
+
 // Lance toutes les relances dues de MON école (réservé gestion).
 export async function lancerTout() {
   const { data, error } = await supabase.rpc("relancer_tout");

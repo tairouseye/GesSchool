@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Carte, Alerte, EtatVide, SkeletonListe, Bouton, Modale, Table, Badge } from "@/composants/ui.jsx";
-import { useToast } from "@/composants/Feedback.jsx";
+import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
 import { getAnneeCourante } from "@/lib/academique.js";
@@ -12,6 +12,7 @@ const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) ||
 export default function Recouvrement() {
   const { ecoleId, ecole } = useAuth();
   const toast = useToast();
+  const confirmer = useConfirm();
   const devise = ecole?.devise || "XOF";
   const [annee, setAnnee] = useState(null);
   const [impayes, setImpayes] = useState([]);
@@ -24,6 +25,8 @@ export default function Recouvrement() {
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(null); // eleve_id en cours de relance push
   const [etatOuvert, setEtatOuvert] = useState(false);
+  const [choisies, setChoisies] = useState(new Set()); // relances cochées (historique)
+  const [annulation, setAnnulation] = useState(false);
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -78,6 +81,38 @@ export default function Recouvrement() {
     } finally {
       setEnCours(null);
     }
+  }
+
+  // Annuler des relances (mig. 213) : retirées du fil du parent, gardées au
+  // journal. Le push déjà reçu sur le téléphone ne se rattrape pas.
+  const annulables = relances.filter((r) => r.statut !== "annulee");
+  async function annuler(ids) {
+    if (ids.length === 0) return;
+    const ok = await confirmer({
+      titre: ids.length > 1 ? `Annuler ${ids.length} relances ?` : "Annuler cette relance ?",
+      message: "Le rappel sera retiré des notifications du parent et marqué « annulé » dans l'historique. "
+        + "Une notification push déjà reçue sur le téléphone ne peut pas être reprise.",
+      confirmer: "Annuler la relance",
+    });
+    if (!ok) return;
+    setErreur(""); setInfo(""); setAnnulation(true);
+    try {
+      const n = await relancesApi.annulerRelances(ids);
+      setInfo(n > 1 ? `${n} relances annulées.` : n === 1 ? "Relance annulée." : "Aucune relance à annuler.");
+      setChoisies(new Set());
+      setRelances(await relancesApi.getRelances(ecoleId));
+    } catch (e) {
+      setErreur(e.message);
+    } finally {
+      setAnnulation(false);
+    }
+  }
+  function basculer(id) {
+    setChoisies((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
   }
 
   return (
@@ -175,17 +210,49 @@ export default function Recouvrement() {
           relances.length === 0 ? (
             <EtatVide icone="🔔" titre="Aucune relance">Aucune relance envoyée pour l'instant.</EtatVide>
           ) : (
-            <Table
-              keyField="id"
-              rows={relances}
-              columns={[
-                { key: "date", label: "Date", render: (r) => <span className="font-mono text-xs text-navy-900/60">{new Date(r.envoye_le).toLocaleDateString("fr-FR")}</span> },
-                { key: "eleve", label: "Élève", render: (r) => (r.eleves ? `${r.eleves.prenom} ${r.eleves.nom}` : "—") },
-                { key: "canal", label: "Canal", render: (r) => <Badge ton={r.canal === "auto" ? "neutre" : "or"}>{r.canal}</Badge> },
-                { key: "montant", label: "Montant dû", align: "right", render: (r) => `${fmt(r.montant_du)} ${devise}` },
-                { key: "message", label: "Message", hideMobile: true, render: (r) => <span className="text-navy-900/60">{r.message}</span> },
-              ]}
-            />
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Bouton variante="fantome" disabled={annulation || choisies.size === 0}
+                  onClick={() => annuler([...choisies])}>
+                  {annulation ? "…" : `Annuler la sélection (${choisies.size})`}
+                </Bouton>
+                {annulables.length > 0 && (
+                  <button type="button" className="text-xs text-navy-900/50 underline"
+                    onClick={() => setChoisies(choisies.size === annulables.length ? new Set() : new Set(annulables.map((r) => r.id)))}>
+                    {choisies.size === annulables.length ? "Tout décocher" : "Tout cocher"}
+                  </button>
+                )}
+              </div>
+              <Table
+                keyField="id"
+                rows={relances}
+                columns={[
+                  { key: "choix", label: "", render: (r) => r.statut === "annulee" ? null : (
+                    <input type="checkbox" aria-label="Choisir cette relance" checked={choisies.has(r.id)}
+                      onChange={() => basculer(r.id)} className="h-4 w-4 accent-navy-900" />
+                  ) },
+                  { key: "date", label: "Date", render: (r) => <span className="font-mono text-xs text-navy-900/60">{new Date(r.envoye_le).toLocaleDateString("fr-FR")}</span> },
+                  { key: "eleve", label: "Élève", render: (r) => (r.eleves ? `${r.eleves.prenom} ${r.eleves.nom}` : "—") },
+                  { key: "canal", label: "Canal", render: (r) => <Badge ton={r.canal === "auto" ? "neutre" : "or"}>{r.canal}</Badge> },
+                  { key: "montant", label: "Montant dû", align: "right", render: (r) => `${fmt(r.montant_du)} ${devise}` },
+                  { key: "message", label: "Message", hideMobile: true, render: (r) => <span className={r.statut === "annulee" ? "text-navy-900/35 line-through" : "text-navy-900/60"}>{r.message}</span> },
+                  { key: "etat", label: "", align: "right", render: (r) => r.statut === "annulee" ? (
+                    <span className="whitespace-nowrap text-xs text-navy-900/45">
+                      Annulée{r.annulee_le ? ` le ${new Date(r.annulee_le).toLocaleDateString("fr-FR")}` : ""}
+                    </span>
+                  ) : (
+                    <button type="button" onClick={() => annuler([r.id])} disabled={annulation}
+                      className="rounded-lg border border-danger-500/40 px-3 py-1.5 text-xs font-semibold text-danger-600 hover:bg-danger-50 disabled:opacity-50">
+                      Annuler
+                    </button>
+                  ) },
+                ]}
+              />
+              <p className="text-xs text-navy-900/40">
+                « Annuler » retire le rappel des notifications du parent ; la relance reste dans l'historique,
+                marquée annulée, et le même palier automatique ne repart pas. Un push déjà reçu ne peut pas être repris.
+              </p>
+            </>
           )
         )}
       </div>

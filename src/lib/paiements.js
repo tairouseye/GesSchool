@@ -558,6 +558,19 @@ export async function situationPaiements(anneeId, { q = null, classeId = null } 
   return data ?? [];
 }
 
+// La grille de suivi des mensualités (mig. 213), à l'image du fichier tenu à
+// la main par l'école : une ligne par élève, ce qui est payé pour chaque mois.
+// `mois` = { "2026-10": { montant, paye, etat }, … }. Mêmes droits et même
+// périmètre que `situationPaiements`. Lecture seule.
+export async function grilleMensualites(anneeId, classeId = null) {
+  if (!anneeId) return [];
+  const { data, error } = await supabase.rpc("grille_mensualites", {
+    p_annee: anneeId, p_classe: classeId || null,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
 // Solde par élève (somme due - payé sur ses factures).
 //
 // N'utilise PLUS `getFactures`, devenue paginée : un solde calculé sur une

@@ -5,6 +5,7 @@ import { Carte, Alerte, EtatVide, SkeletonListe, SansAnnee } from "@/composants/
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { situationPaiements } from "@/lib/paiements.js";
 import { etat as etatPaiement, resume, phrase, ORDRE } from "@/lib/paiementStatut.js";
+import GrilleMensualites from "@/composants/GrilleMensualites.jsx";
 
 // GesSchool — la situation de paiement de chaque élève, d'un coup d'œil
 // (mig. 203).
@@ -16,6 +17,10 @@ import { etat as etatPaiement, resume, phrase, ORDRE } from "@/lib/paiementStatu
 // ⚠️ LECTURE SEULE. On ne montre ni numéro de facture ni détail des
 // paiements, et aucun bouton n'encaisse ou ne relance : ces actes restent à
 // la caisse. La base en est garante (RPC `situation_paiements`), pas cet écran.
+//
+// Deux vues : la liste, et le « suivi des mensualités » (mig. 213), une grille
+// mois par mois à l'image du fichier tenu à la main par l'école, exportable
+// en Excel et en PDF.
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
@@ -41,6 +46,7 @@ export default function SituationPaiements() {
   const [saisie, setSaisie] = useState("");
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState("");
+  const [vue, setVue] = useState("liste"); // 'liste' | 'grille'
   const [lignes, setLignes] = useState([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
@@ -108,6 +114,27 @@ export default function SituationPaiements() {
           </Carte>
         </div>
 
+        <div className="no-print inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
+          {[["liste", "Liste des élèves"], ["grille", "Suivi des mensualités"]].map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setVue(k)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${vue === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {vue === "grille" ? (
+          <Carte className="overflow-hidden">
+            <div className="no-print flex flex-wrap items-center gap-2 border-b border-navy-900/10 p-4">
+              <select value={classeId} onChange={(e) => setClasseId(e.target.value)}
+                className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+                <option value="">Toutes mes classes</option>
+                {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
+              </select>
+            </div>
+            <GrilleMensualites annee={annee} classeId={classeId} ecole={ecole} />
+          </Carte>
+        ) : (
         <Carte className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-2 border-b border-navy-900/10 p-4">
             <input value={saisie} onChange={(e) => setSaisie(e.target.value)} autoFocus
@@ -188,7 +215,8 @@ export default function SituationPaiements() {
             </div>
           )}
         </Carte>
-        <p className="text-xs text-navy-900/40">
+        )}
+        <p className="no-print text-xs text-navy-900/40">
           Montants en {devise}, factures annulées exclues. Pour encaisser ou relancer, voyez la caisse.
         </p>
       </div>
