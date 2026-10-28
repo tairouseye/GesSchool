@@ -202,8 +202,8 @@ function MiseEnRoute({ ecoleId, ecole }) {
   if (!etat) return null;
 
   const etapes = [
-    { ok: etat.niveaux > 0 && etat.classes > 0, label: "Structure (niveaux & classes)", detail: `${etat.niveaux} niveau(x) · ${etat.classes} classe(s)`, to: "/structure" },
-    { ok: etat.matieres > 0, label: "Matières", detail: `${etat.matieres} matière(s)`, to: "/structure" },
+    { ok: etat.niveaux > 0 && etat.classes > 0, label: "Structure (niveaux & classes)", detail: `${etat.niveaux} niveau(x) · ${etat.classes} classe(s)`, to: "/parametres/structure" },
+    { ok: etat.matieres > 0, label: "Matières", detail: `${etat.matieres} matière(s)`, to: "/parametres/structure" },
     { ok: etat.enseignants > 0, label: "Enseignants", detail: `${etat.enseignants} enseignant(s)`, to: "/enseignants" },
     { ok: etat.affectations > 0, label: "Affectations profs", detail: `${etat.affectations} affectation(s)`, to: "/enseignants" },
     { ok: etat.frais > 0, label: "Grille tarifaire", detail: `${etat.frais} frais`, to: "/paiements" },

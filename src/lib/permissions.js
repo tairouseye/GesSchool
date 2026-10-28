@@ -141,7 +141,7 @@ export const PAGES = [
   { cle: "bulletins", path: "/bulletins" },
   { cle: "paiements", path: "/paiements" },
   { cle: "recouvrement", path: "/recouvrement" },
-  { cle: "structure", path: "/structure" },
+  { cle: "structure", path: "/parametres/structure" },
   { cle: "filieres", path: "/filieres" },
   { cle: "inscriptions_sup", path: "/inscriptions-sup" },
   { cle: "notes_lmd", path: "/notes-lmd" },
@@ -171,6 +171,7 @@ const SECTIONS_PARAMETRES = {
   matricule: [],                              // format des matricules
   signataires: ["direction"],                 // signent bulletins & documents
   notation: ["direction"],                    // barème, mentions, bulletins
+  structure: ["direction"],                   // cycles, niveaux, classes (= ACCES.structure)
   champs_eleve: ["comptable", "secretaire"],  // fiche élève = Gestion
   relances: ["comptable"],                    // recouvrement
 };

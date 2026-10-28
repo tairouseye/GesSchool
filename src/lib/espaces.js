@@ -47,6 +47,11 @@ export const ESPACES = [
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
+      // Le corps enseignant est une affaire d'établissement (recrutement,
+      // affectations, professeur principal), pas un geste de classe : rangé
+      // à côté de Membres. La Structure académique, elle, est une rubrique
+      // de Paramètres (/parametres/structure).
+      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Établissement" },
 
       // Scolarité
       { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Scolarité" },
@@ -111,12 +116,15 @@ export const ESPACES = [
       // Élèves & structure
       { to: "/eleves", label: "Élèves", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Élèves & structure" },
       { to: "/photos", label: "Photos des élèves", labelSup: "Photos des étudiants", icone: "📷", cle: "photos", groupe: "Élèves & structure" },
-      { to: "/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure" },
+      // `horsMenu` : la Structure académique s'ouvre depuis Paramètres
+      // (28/10/2026), mais l'entrée reste ici parce que l'arbre des cases
+      // d'accès est CALCULÉ depuis ce menu (acces.js) — la retirer
+      // supprimerait la case `structure` que les policies citent.
+      { to: "/parametres/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure", horsMenu: true, transverse: true },
       { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Élèves & structure" },
       { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/admissions", label: "Admissions", icone: "📨", cle: "admissions", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"], groupe: "Élèves & structure" },
-      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Élèves & structure" },
 
       // Évaluation
       { to: "/notes", label: "Notes", labelMixte: "Notes (classes)", icone: "✎", cle: "notes", types: ["ecole"], groupe: "Évaluation" },
@@ -144,6 +152,9 @@ export const ESPACES = [
       { to: "/situation-paiements", label: "Situation des paiements", icone: "💳", cle: "situation_paiements", groupe: "Administration" },
       { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Administration" },
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Administration" },
+      // La direction n'a pas accès à Gestion : sans cette entrée, elle
+      // perdrait les enseignants et les affectations.
+      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Administration" },
       { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Administration", transverse: true },
       { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Administration", transverse: true },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Administration", transverse: true },

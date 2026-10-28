@@ -53,7 +53,7 @@ test("le promoteur voit toutes les rubriques, dans l'ordre des groupes", () => {
 });
 
 test("chaque responsable ne voit que son domaine", () => {
-  assert.deepEqual(pour(["direction"]), ["notation", "signataires"]);
+  assert.deepEqual(pour(["direction"]), ["structure", "notation", "signataires"]);
   assert.deepEqual(pour(["comptable"]), ["champs-eleve", "relances"]);
   assert.deepEqual(pour(["secretaire"]), ["champs-eleve"]);
   assert.deepEqual(pour(["enseignant"]), []);

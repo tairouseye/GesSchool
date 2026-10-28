@@ -17,6 +17,8 @@ import { PALIERS, COMBINAISONS, PEDAGOGIES, paliersDeclares, resume as resumePal
          combinaisonDe, trou, pedagogiePertinente, couvreSuperieur,
          profilAEnregistrer } from "@/lib/paliers.js";
 import { rubriquesVisibles, grouperRubriques } from "@/lib/parametresRubriques.js";
+import { couvreScolaire } from "@/lib/paliers.js";
+import Structure from "@/pages/Structure.jsx";
 import { useFormulaire, useSignalModif, PiedEnregistrer, FournisseurModif } from "@/composants/Enregistrement.jsx";
 
 const DEVISES = ["XOF", "XAF", "CDF", "USD", "EUR", "GNF", "MAD", "MRU"];
@@ -55,6 +57,7 @@ export default function Parametres() {
     voit: (s) => peutVoirSection(roles, s),
     estComplet,
     moduleOk: (m) => moduleActif(modulesActifs, m),
+    scolaireOk: couvreScolaire(ecole || {}),
   });
   const groupes = grouperRubriques(visibles);
   const demandee = visibles.find((r) => r.id === rubrique);
@@ -104,6 +107,7 @@ export default function Parametres() {
     identite: () => <Identite {...props} onSave={majEtablissement} />,
     couverture: () => <Couverture {...props} onSave={majEtablissement} />,
     apparence: () => <Apparence {...props} onSave={majEtablissement} />,
+    structure: () => <Structure integre />,
     notation: () => <NotationConfig {...props} />,
     signataires: () => <Signataires {...props} />,
     "champs-eleve": () => <ChampsEleveConfig {...props} />,
@@ -178,7 +182,7 @@ export default function Parametres() {
 
         {/* La rubrique. Sur téléphone, seulement si l'adresse en désigne une. */}
         {courante && (
-          <div ref={contenuRef} className={`min-w-0 max-w-2xl flex-1 ${rubrique ? "" : "hidden lg:block"}`}>
+          <div ref={contenuRef} className={`min-w-0 flex-1 ${courante.large ? "" : "max-w-2xl"} ${rubrique ? "" : "hidden lg:block"}`}>
             <a href="#/parametres" onClick={(e) => aller("/parametres", e)}
               className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-navy-700 lg:hidden">
               ‹ Paramètres

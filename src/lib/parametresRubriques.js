@@ -21,6 +21,12 @@ export const RUBRIQUES_PARAMETRES = [
     resume: "Paliers et pédagogie", section: "etablissement" },
   { id: "apparence", groupe: "Établissement", titre: "Apparence",
     resume: "Logo, cachet, couleurs", section: "etablissement" },
+  //  Cycles, niveaux, classes, matières, coefficients : sortie du menu
+  //  Pédagogie le 28/10/2026 (/structure redirige ici). École seulement —
+  //  le supérieur a ses Filières & maquettes.
+  { id: "structure", groupe: "Scolarité", titre: "Structure académique",
+    resume: "Cycles, niveaux, classes, matières", section: "structure", module: "structure",
+    scolaire: true, large: true },
   { id: "notation", groupe: "Scolarité", titre: "Notation et bulletins",
     resume: "Barème, mentions, affichage", section: "notation" },
   { id: "signataires", groupe: "Scolarité", titre: "Signataires",
@@ -41,8 +47,10 @@ export const RUBRIQUES_PARAMETRES = [
 //   voit(section)      → peutVoirSection(roles, section)
 //   estComplet         → estRoleComplet(roles) (promoteur)
 //   moduleOk(module)   → moduleActif(modulesActifs, module)
-export function rubriquesVisibles({ voit, estComplet, moduleOk }) {
+//   scolaireOk         → couvreScolaire(ecole) (absent = oui)
+export function rubriquesVisibles({ voit, estComplet, moduleOk, scolaireOk = true }) {
   return RUBRIQUES_PARAMETRES.filter((r) => {
+    if (r.scolaire && !scolaireOk) return false;
     if (r.promoteurSeul && !estComplet) return false;
     if (r.section && !voit(r.section)) return false;
     if (r.module && !moduleOk(r.module)) return false;

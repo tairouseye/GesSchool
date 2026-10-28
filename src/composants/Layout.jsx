@@ -164,7 +164,7 @@ export default function Layout() {
   // Menus d'un espace : uniquement les pages RÉELLEMENT ouvrables (rôle,
   // module actif, statut promoteur) — même critère que la garde de route,
   // pour ne jamais proposer un lien qui mènerait à un refus.
-  const menusDe = (e) => (e?.items || []).filter((it) => routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole));
+  const menusDe = (e) => (e?.items || []).filter((it) => !it.horsMenu && routeOuvrable(it, roles, estPromoteur, modulesActifs) && itemPourType(it, ecole));
 
   //  Libellé d'un item pour CET établissement : « Élèves » ou « Étudiants »,
   //  et « Notes (classes) » ou « Notes (UE) » quand les deux paliers

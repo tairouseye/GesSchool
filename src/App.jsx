@@ -29,7 +29,6 @@ const ParentMessagerie = lazy(() => import("@/pages/ParentMessagerie.jsx"));
 const ParentCompte = lazy(() => import("@/pages/ParentCompte.jsx"));
 const Messagerie = lazy(() => import("@/pages/Messagerie.jsx"));
 const TableauDeBord = lazy(() => import("@/pages/TableauDeBord.jsx"));
-const Structure = lazy(() => import("@/pages/Structure.jsx"));
 const Filieres = lazy(() => import("@/pages/Filieres.jsx"));
 const InscriptionsSup = lazy(() => import("@/pages/InscriptionsSup.jsx"));
 const NotesLMD = lazy(() => import("@/pages/NotesLMD.jsx"));
@@ -252,7 +251,8 @@ export default function App() {
             <Route path="/journal" element={<GardePromoteur><JournalAudit /></GardePromoteur>} />
             <Route path="/pedagogie" element={<Garde cle="_pedagogie"><AccueilPedagogie /></Garde>} />
             <Route path="/gestion" element={<Garde cle="_gestion"><TableauDeBord /></Garde>} />
-            <Route path="/structure" element={<Garde cle="structure"><Structure /></Garde>} />
+            {/* Rubrique de Paramètres depuis le 28/10/2026 : les anciens liens suivent. */}
+            <Route path="/structure" element={<Navigate to="/parametres/structure" replace />} />
             <Route path="/filieres" element={<Garde cle="filieres"><Filieres /></Garde>} />
             <Route path="/inscriptions-sup" element={<Garde cle="inscriptions_sup"><InscriptionsSup /></Garde>} />
             <Route path="/notes-lmd" element={<Garde cle="notes_lmd"><NotesLMD /></Garde>} />

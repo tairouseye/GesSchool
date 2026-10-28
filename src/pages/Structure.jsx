@@ -9,7 +9,9 @@ import { getMembres } from "@/lib/membres.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 
 // Phase 0.5 — Structure académique : cycles → niveaux → classes + matières.
-export default function Structure() {
+// `integre` : affichée comme rubrique de Paramètres (/parametres/structure),
+// donc sans en-tête de page ni marges propres.
+export default function Structure({ integre = false }) {
   const { ecoleId, roles } = useAuth();
   const confirmer = useConfirm();
   const toast = useToast();
@@ -98,19 +100,24 @@ export default function Structure() {
   if (chargement) {
     return (
       <>
-        <EnTete titre="Structure académique" />
-        <div className="p-8 text-navy-900/50">Chargement…</div>
+        {!integre && <EnTete titre="Structure académique" />}
+        <div className={`${integre ? "" : "p-8 "}text-navy-900/50`}>Chargement…</div>
       </>
     );
   }
 
   return (
     <>
-      <EnTete
-        titre="Structure académique"
-        sousTitre={annee ? `Année ${annee.libelle}` : "Aucune année courante"}
-      />
-      <div className="space-y-6 p-8">
+      {!integre && (
+        <EnTete
+          titre="Structure académique"
+          sousTitre={annee ? `Année ${annee.libelle}` : "Aucune année courante"}
+        />
+      )}
+      <div className={integre ? "space-y-4" : "space-y-4 p-4 sm:p-8"}>
+        {integre && (
+          <p className="text-xs text-navy-900/50">{annee ? `Année ${annee.libelle}` : "Aucune année courante"}</p>
+        )}
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <p className="rounded-xl bg-creme/60 px-4 py-2.5 text-xs text-navy-900/50">
@@ -120,8 +127,9 @@ export default function Structure() {
           Les cycles sont fixés à la création de l'école ; les niveaux et les classes se gèrent ici.
         </p>
 
-        {/* Cycles → Niveaux → Classes */}
-        <div className="space-y-5">
+        {/* Cycles → Niveaux → Classes. Tout est replié : on déroule le cycle,
+            puis le niveau, au lieu de faire défiler toute l'école. */}
+        <div className="space-y-3">
           {cycles.length === 0 && (
             <Carte className="p-6 text-sm text-navy-900/50">
               Aucun cycle activé. (Les cycles sont définis à la création de l'école.)
@@ -228,14 +236,12 @@ export default function Structure() {
 
 function CarteCycle({ cycle, niveaux, classes, sousNiveaux = [], enseignants, series, annee, onAjoutNiveau, onSupprNiveau, onGenererClasses, onSupprClasse, onProfPrincipal, onAjoutSousNiveau, onSupprSousNiveau }) {
   const [nouveauNiveau, setNouveauNiveau] = useState("");
+  const nbClasses = classes.filter((c) => niveaux.some((n) => n.id === c.niveau_id)).length;
   return (
-    <Carte className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-navy-900">{cycle.libelle}</h3>
-        <span className="rounded-full bg-navy-900/5 px-3 py-1 text-xs text-navy-900/50">
-          {niveaux.length} niveau{niveaux.length > 1 ? "x" : ""}
-        </span>
-      </div>
+    <Volet
+      titre={cycle.libelle}
+      resume={`${niveaux.length} niveau${niveaux.length > 1 ? "x" : ""} · ${nbClasses} classe${nbClasses > 1 ? "s" : ""}`}
+    >
 
       {/* Ajout d'un niveau — en haut : c'est l'action la plus recherchée. */}
       <form
@@ -286,6 +292,28 @@ function CarteCycle({ cycle, niveaux, classes, sousNiveaux = [], enseignants, se
         ))}
       </div>
 
+    </Volet>
+  );
+}
+
+// Une section repliable de la page : titre et résumé toujours visibles, le
+// contenu se déroule au toucher. Fermée par défaut — la page était un long
+// mur de formulaires. `hidden` garde les saisies en cours au repli.
+function Volet({ titre, resume, children, ouvertParDefaut = false }) {
+  const [ouvert, setOuvert] = useState(ouvertParDefaut);
+  return (
+    <Carte className="overflow-hidden">
+      <button type="button" onClick={() => setOuvert(!ouvert)} aria-expanded={ouvert}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-creme/40 sm:px-6">
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-semibold text-navy-900">{titre}</span>
+          {resume && <span className="block text-xs text-navy-900/50">{resume}</span>}
+        </span>
+        <span aria-hidden="true" className={`text-navy-900/40 transition ${ouvert ? "rotate-90" : ""}`}>▸</span>
+      </button>
+      <div hidden={!ouvert} className="border-t border-navy-900/10 px-5 pb-5 pt-4 sm:px-6">
+        {children}
+      </div>
     </Carte>
   );
 }
@@ -306,6 +334,7 @@ function construireLibelles(base, nombre, style) {
 }
 
 function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, annee, onSuppr, onGenerer, onSupprClasse, onProfPrincipal, onAjoutSousNiveau, onSupprSousNiveau }) {
+  const [ouvert, setOuvert] = useState(false);
   const [nouveauSN, setNouveauSN] = useState("");
   const [base, setBase] = useState(niveau.libelle);
   const [nombre, setNombre] = useState(1);
@@ -328,20 +357,29 @@ function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, a
   }
 
   return (
-    <div className="rounded-xl border border-navy-900/10 p-4">
-      <div className="flex items-center justify-between">
-        <span className="font-medium text-navy-900">
-          {niveau.libelle}
+    <div className="rounded-xl border border-navy-900/10">
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <button type="button" onClick={() => setOuvert(!ouvert)} aria-expanded={ouvert}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left">
+          <span aria-hidden="true" className="w-3 text-navy-900/40">{ouvert ? "▾" : "▸"}</span>
+          <span className="font-medium text-navy-900">{niveau.libelle}</span>
           {sousNiveaux.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-navy-900/45">
+            <span className="truncate text-xs text-navy-900/45">
               {sousNiveaux.map((x) => x.libelle).join(" · ")}
             </span>
           )}
-        </span>
-        <button onClick={onSuppr} className="text-xs text-rose-700 hover:underline">
+          <span className="ml-auto shrink-0 rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs text-navy-900/55">
+            {classes.length} classe{classes.length > 1 ? "s" : ""}
+          </span>
+        </button>
+        <button onClick={onSuppr} className="shrink-0 text-xs text-rose-700 hover:underline">
           supprimer
         </button>
       </div>
+
+      {/* `hidden` plutôt qu'un rendu conditionnel : une saisie en cours
+          survit au repli. */}
+      <div hidden={!ouvert} className="border-t border-navy-900/10 px-4 pb-4">
 
       {/* Sous-niveaux : seulement si le niveau en regroupe plusieurs.
           « TPS/PS » contient des élèves de TPS et de PS (Montessori) ; le
@@ -475,6 +513,7 @@ function LigneNiveau({ niveau, classes, sousNiveaux = [], enseignants, series, a
           <>Toutes ces classes existent déjà.</>
         )}
       </p>
+      </div>
     </div>
   );
 }
@@ -502,10 +541,10 @@ function PanneauPeriodes({ periodes, annee, onDater }) {
 
   if (!annee) return null;
   return (
-    <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">
-        Découpage de l&apos;année {annee.libelle}
-      </h3>
+    <Volet
+      titre={`Découpage de l'année ${annee.libelle}`}
+      resume={`${periodes.length} période${periodes.length > 1 ? "s" : ""}`}
+    >
       <p className="mb-4 text-xs text-navy-900/50">
         Les dates bornent ce qui se compte par période — les absences d&apos;un trimestre, par exemple.
         Elles sont facultatives : renseignez au moins celles du trimestre en cours.
@@ -559,7 +598,7 @@ function PanneauPeriodes({ periodes, annee, onDater }) {
           y serait comptée deux fois.
         </p>
       )}
-    </Carte>
+    </Volet>
   );
 }
 
@@ -568,8 +607,7 @@ function PanneauMatieres({ matieres, cycles, onAjout, onSuppr }) {
   const [code, setCode] = useState("");
   const [cycleId, setCycleId] = useState("");
   return (
-    <Carte className="p-6">
-      <h3 className="mb-4 font-display text-lg font-semibold text-navy-900">Matières</h3>
+    <Volet titre="Matières" resume={`${matieres.length} matière${matieres.length > 1 ? "s" : ""}`}>
 
       <div className="flex flex-wrap gap-2">
         {matieres.map((m) => (
@@ -626,7 +664,7 @@ function PanneauMatieres({ matieres, cycles, onAjout, onSuppr }) {
         </label>
         <Bouton type="submit">+ Ajouter</Bouton>
       </form>
-    </Carte>
+    </Volet>
   );
 }
 
@@ -635,9 +673,8 @@ function PanneauSeries({ series, onAjout, onSuppr, onSemer }) {
   const [code, setCode] = useState("");
   const [libelle, setLibelle] = useState("");
   return (
-    <Carte className="p-6">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-semibold text-navy-900">Séries (lycée)</h3>
+    <Volet titre="Séries (lycée)" resume={`${series.length} série${series.length > 1 ? "s" : ""}`}>
+      <div className="mb-1 flex flex-wrap items-center justify-end gap-2">
         <button onClick={onSemer} className="text-xs text-navy-700 hover:text-or-500">
           + Pré-remplir les séries standard
         </button>
@@ -676,7 +713,7 @@ function PanneauSeries({ series, onAjout, onSuppr, onSemer }) {
         </div>
         <Bouton type="submit">+ Ajouter</Bouton>
       </form>
-    </Carte>
+    </Volet>
   );
 }
 
@@ -708,8 +745,7 @@ function PanneauCoefficients({ matieres, niveaux, series, coefficients, onDefini
   };
 
   return (
-    <Carte className="p-6">
-      <h3 className="mb-1 font-display text-lg font-semibold text-navy-900">Grille de coefficients</h3>
+    <Volet titre="Grille de coefficients" resume="Par série ou par niveau">
       <p className="mb-4 text-xs text-navy-900/40">
         Saisis une fois les coefficients d'une série (ou d'un niveau) : ils s'appliquent
         automatiquement à toutes les classes concernées. Laisse vide (ou 0) pour ne pas compter une matière.
@@ -761,7 +797,7 @@ function PanneauCoefficients({ matieres, niveaux, series, coefficients, onDefini
           ))}
         </div>
       )}
-    </Carte>
+    </Volet>
   );
 }
 
@@ -839,9 +875,8 @@ function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDe
     (r) => ["direction", "admin_ecole", "secretaire"].includes(r)));
 
   return (
-    <Carte className="p-5 sm:p-6">
-      <h3 className="font-display text-lg font-semibold text-navy-900">Responsables de cycle</h3>
-      <p className="mt-1.5 text-sm text-navy-900/60">
+    <Volet titre="Responsables de cycle" resume="Signent le PV du conseil de classe">
+      <p className="text-sm text-navy-900/60">
         Qui répond de chaque cycle, et signe à ce titre le procès-verbal du conseil de classe.
       </p>
 
@@ -905,6 +940,6 @@ function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDe
           Seul le promoteur désigne les responsables de cycle.
         </p>
       )}
-    </Carte>
+    </Volet>
   );
 }

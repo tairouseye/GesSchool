@@ -814,12 +814,15 @@ function Documents({ eleveId, demandes, onChange }) {
 // « CI/CP »), le mois en cours par défaut, les autres mois publiés au choix,
 // par domaine puis semaine. Lecture seule ; la base ne rend rien d'un autre
 // niveau.
+// Depuis le 28/10/2026, le mois en cours s'ouvre sur LA SEMAINE EN COURS
+// (ses contenus et ceux « tout le mois ») ; « Tout le mois » reste à un geste.
 
 function ProgrammeDuMois({ eleveId }) {
   const [donnees, setDonnees] = useState(null);
   const [mois, setMois] = useState(null);
   const [erreur, setErreur] = useState("");
   const [ouvert, setOuvert] = useState(0);
+  const [toutLeMois, setToutLeMois] = useState(false);
 
   useEffect(() => {
     let vivant = true;
@@ -842,6 +845,13 @@ function ProgrammeDuMois({ eleveId }) {
   const maintenant = new Date();
   const semaineCourante = Number(donnees.mois) === maintenant.getMonth() + 1
     ? Math.min(Math.ceil(maintenant.getDate() / 7), 6) : null;
+  //  Un autre mois se lit en entier : la « semaine en cours » n'y a pas de sens.
+  const parSemaine = !!semaineCourante && !toutLeMois;
+  const domaines = parSemaine
+    ? donnees.domaines
+      .map((d) => ({ ...d, lignes: (d.lignes || []).filter((l) => l.semaine == null || l.semaine === semaineCourante) }))
+      .filter((d) => d.lignes.length > 0)
+    : donnees.domaines;
 
   return (
     <Carte className="zone-impression p-5">
@@ -850,29 +860,47 @@ function ProgrammeDuMois({ eleveId }) {
 
       <div className="no-print mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {moisAnnee.map((m) => (
-          <button key={m} type="button" disabled={!dispo.has(m)} onClick={() => setMois(m)}
+          <button key={m} type="button" disabled={!dispo.has(m)} onClick={() => { setMois(m); setToutLeMois(false); }}
             className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${Number(donnees.mois) === m
               ? "bg-or-500 font-semibold text-navy-900" : dispo.has(m) ? "bg-creme text-navy-900/70" : "bg-creme text-navy-900/25"}`}>
             {nomMois(m)}
           </button>
         ))}
       </div>
-      <p className="mt-1 hidden text-sm font-medium text-navy-900 print:block">{nomMois(donnees.mois)}</p>
+      <p className="mt-1 hidden text-sm font-medium text-navy-900 print:block">
+        {nomMois(donnees.mois)}{parSemaine ? ` · semaine ${semaineCourante}` : ""}
+      </p>
+
+      {semaineCourante && donnees.domaines.length > 0 && (
+        <div className="no-print mt-2 inline-flex rounded-lg bg-creme p-0.5 text-xs font-medium">
+          {[[false, `Cette semaine (sem. ${semaineCourante})`], [true, "Tout le mois"]].map(([v, lib]) => (
+            <button key={lib} type="button" onClick={() => { setToutLeMois(v); setOuvert(0); }}
+              className={`rounded-md px-2.5 py-1 ${toutLeMois === v ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/55"}`}>
+              {lib}
+            </button>
+          ))}
+        </div>
+      )}
 
       {donnees.domaines.length === 0 ? (
         <p className="mt-3 rounded-xl bg-creme p-3 text-sm text-navy-900/60">
           L'école n'a pas encore publié le programme de {donnees.niveau} pour {nomMois(donnees.mois).toLowerCase()}.
         </p>
+      ) : domaines.length === 0 ? (
+        <p className="mt-3 rounded-xl bg-creme p-3 text-sm text-navy-900/60">
+          Rien n'est prévu pour la semaine {semaineCourante} dans le programme de {nomMois(donnees.mois).toLowerCase()}.
+          {" "}<button type="button" onClick={() => setToutLeMois(true)} className="font-medium text-navy-700 underline">Voir tout le mois</button>
+        </p>
       ) : (
         <div className="mt-2 divide-y divide-navy-900/10">
-          {donnees.domaines.map((d, i) => (
+          {domaines.map((d, i) => (
             <div key={d.domaine} className="py-2.5">
               <button type="button" onClick={() => setOuvert(ouvert === i ? -1 : i)}
                 className="flex w-full items-center justify-between text-left text-sm font-semibold text-navy-900">
                 {d.domaine}<span className="no-print text-navy-900/40">{ouvert === i ? "▾" : "▸"}</span>
               </button>
               <div className={ouvert === i ? "" : "hidden print:block"}>
-                <LignesProgramme lignes={d.lignes} semaineCourante={semaineCourante} />
+                <LignesProgramme lignes={d.lignes} semaineCourante={parSemaine ? null : semaineCourante} />
               </div>
             </div>
           ))}
