@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.281.0] — Encarts partenaires sur l'écran de connexion (migration 215)
+- **LE BESOIN** (promoteur, 28/10/2026, maquette `docs/maquette-connexion-fond.html` validée) : réserver l'encart de la connexion aux partenaires de l'éducation, en alternance avec le conseil du mois, gérés par GesPro.
+- **Mig. 215** : table `encarts_partenaires` (partenaire, message ≤ 180, lien et logo en https seulement, période, actif, ordre), écriture et lecture réservées au super-admin. `encarts_connexion()` (ouverte à `anon`) ne rend que les encarts actifs et en période, six au plus — jamais la table.
+- **Connexion** : l'encart alterne conseil du mois et partenaires toutes les 7 s, en fondu, avec des points pour choisir ; pas de défilement si l'appareil demande moins d'animations ; sans partenaire (ou avant la migration), le conseil reste seul. Lien ouvert dans un nouvel onglet (`noopener`, `sponsored`).
+- **Console super-admin → 📣 Encarts de connexion** : liste avec état (En ligne / À venir / Terminé / Désactivé), création, modification, suppression, logo (bucket public `ecoles`, dossier `partenaires/`), aperçu.
+- **Correctif de livraison** : le déploiement de la 2.280.0 avait échoué (le mode d'emploi annonçait encore la 2.279) ; ses changements partent avec celle-ci.
+- Épreuve : `supabase/tests/essai_215_encarts.sql` (anon ne voit que l'encart en cours et pas la table ; lien non https refusé).
+
 ## [2.280.0] — La photo du mois à la connexion ; Structure académique dans Paramètres ; le programme de la semaine chez le parent
 - **LE BESOIN** (promoteur, 28/10/2026, maquette `docs/maquette-connexion-fond.html` validée) : un fond de connexion qui change au fil des mois, avec des messages éducatifs puis des partenaires de l'éducation ; l'icône du visage des applis bancaires ; ranger la Structure académique sous Gestion → Paramètres, en volets déroulants ; Enseignants & affectations sous Gestion ; le programme de la semaine en cours chez le parent.
 - **Connexion** : douze photos libres de droits (licence Unsplash), une par mois du calendrier scolaire (rentrée, droits de l'enfant, compositions, Francophonie, 4 avril, CFEE/BFEM, vacances…), en WebP (~1 Mo en tout, non précachées : seule la photo du mois est téléchargée), voile navy, carte translucide, **encart** crème avec le conseil du mois (`src/lib/fondsConnexion.js`). Hors ligne, le fond navy reste. Le bouton biométrique devient le **cadre de visée du visage**.

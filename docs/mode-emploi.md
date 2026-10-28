@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.279 · mise à jour du 27 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.281 · mise à jour du 28 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -1068,6 +1068,8 @@ Votre formule, son **palier d'effectif**, sa date d'échéance, et la liste des 
 ### 25.7 Console super-admin (réservée à l'éditeur)
 
 Toutes les écoles clientes, leur **plan d'abonnement**, leur **statut**, leurs **modules actifs** et le **nombre de comptes** (personnel et parents). Sert au support et à la facturation du logiciel, pas à la gestion d'une école.
+
+**📣 Encarts de connexion.** L'encart crème sous la carte de connexion affiche le conseil du mois ; on y ajoute des **partenaires de l'éducation** (librairies, fournitures, assurances scolaires…). **+ Nouvel encart** : partenaire, message (180 caractères), lien « En savoir plus » facultatif (https), logo facultatif, période (du… au…), case **Actif** pour suspendre sans supprimer. Un aperçu montre le rendu. Les encarts en ligne alternent avec le conseil du mois toutes les 7 secondes, pour toutes les écoles (l'écran de connexion est commun). La liste dit l'état de chacun : En ligne, À venir, Terminé, Désactivé.
 
 ---
 
