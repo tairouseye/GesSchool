@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Alerte } from "@/composants/ui.jsx";
@@ -24,6 +24,10 @@ export default function Connexion() {
   const [enCours, setEnCours] = useState(false);
   const [fond] = useState(() => fondDuMois());
   const [fondPret, setFondPret] = useState(false);
+  //  Photo déjà en cache : elle peut être chargée avant que React n'écoute
+  //  `onLoad`, et resterait alors invisible.
+  const photoRef = useRef(null);
+  useEffect(() => { if (photoRef.current?.complete && photoRef.current.naturalWidth) setFondPret(true); }, []);
 
   // Empreinte ou visage (passkey) : pas d'e-mail à taper, le téléphone
   // retrouve le compte. Une annulation n'est pas une erreur à afficher.
@@ -70,7 +74,7 @@ export default function Connexion() {
           attendant (ou hors ligne), le navy de la charte. Le voile navy
           garde le logo et les textes crème lisibles sur n'importe quelle
           photo. */}
-      <img src={fond.image} alt="" aria-hidden="true" onLoad={() => setFondPret(true)}
+      <img ref={photoRef} src={fond.image} alt="" aria-hidden="true" onLoad={() => setFondPret(true)}
         style={{ objectPosition: fond.position }}
         className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${fondPret ? "opacity-100" : "opacity-0"}`} />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-navy-900/70 via-navy-900/15 to-navy-900/85" />
@@ -87,16 +91,16 @@ export default function Connexion() {
           <p className="mt-2 font-mono text-[11px] text-creme/40">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
         </div>
 
-        {/* Téléphone : carte en verre, la photo passe à travers (comme les
-            applis bancaires). Ordinateur (sm:) : la carte blanche. */}
-        <div className="rounded-2xl border border-white/25 bg-navy-900/25 p-6 shadow-xl backdrop-blur-[3px] sm:border-0 sm:bg-white/90 sm:p-7 sm:backdrop-blur-md">
-          <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-white/15 p-1 sm:bg-creme">
+        {/* Carte en verre, sur téléphone comme sur ordinateur : la photo du
+            mois passe à travers (comme les applis bancaires). */}
+        <div className="rounded-2xl border border-white/25 bg-navy-900/35 p-6 shadow-xl backdrop-blur-md sm:p-7">
+          <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-white/15 p-1">
             {["connexion", "inscription"].map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setErreur(""); setInfo(""); }}
                 className={`rounded-lg py-2 text-sm font-semibold capitalize transition ${
-                  mode === m ? "bg-navy-900 text-creme" : "text-creme/85 hover:text-creme sm:text-navy-900/60 sm:hover:text-navy-900"
+                  mode === m ? "bg-navy-900 text-creme" : "text-creme/85 hover:text-creme"
                 }`}
               >
                 {m}
@@ -121,14 +125,14 @@ export default function Connexion() {
             <Alerte ton="succes">{info}</Alerte>
 
             <Bouton type="submit" variante="or" disabled={enCours}
-              className="w-full sm:bg-navy-900 sm:text-creme sm:hover:bg-navy-800">
+              className="w-full">
               {enCours ? "Patientez…" : mode === "connexion" ? "Se connecter" : "Créer le compte"}
             </Bouton>
           </form>
 
           {mode === "connexion" && (
             <div className="mt-4 text-center">
-              <Link to="/mot-de-passe-oublie" className="text-sm text-creme hover:text-or-400 sm:text-navy-700 sm:hover:text-or-500">
+              <Link to="/mot-de-passe-oublie" className="text-sm text-creme hover:text-or-400">
                 Mot de passe oublié ?
               </Link>
             </div>
@@ -136,16 +140,16 @@ export default function Connexion() {
 
           {mode === "connexion" && biometrieSupportee() && (
             <>
-              <div className="my-4 flex items-center gap-3 text-xs text-creme/75 sm:text-navy-900/40">
-                <span className="h-px flex-1 bg-white/30 sm:bg-navy-900/10" />ou<span className="h-px flex-1 bg-white/30 sm:bg-navy-900/10" />
+              <div className="my-4 flex items-center gap-3 text-xs text-creme/75">
+                <span className="h-px flex-1 bg-white/30" />ou<span className="h-px flex-1 bg-white/30" />
               </div>
               {/* Le cadre de visée seul, centré, comme dans les applis
                   bancaires : un geste que l'on reconnaît sans le lire. */}
               <button type="button" onClick={connexionBio} disabled={enCours}
                 aria-label="Se connecter avec l'empreinte ou le visage"
-                className="mx-auto flex w-fit flex-col items-center gap-1.5 rounded-2xl px-4 py-2 text-white hover:bg-white/10 disabled:opacity-60 sm:text-navy-900 sm:hover:bg-navy-900/5">
+                className="mx-auto flex w-fit flex-col items-center gap-1.5 rounded-2xl px-4 py-2 text-white hover:bg-white/10 disabled:opacity-60">
                 <Icone name="biometrie" className="h-12 w-12" />
-                <span className="text-xs font-medium text-creme/85 sm:text-navy-900/70">Empreinte ou visage</span>
+                <span className="text-xs font-medium text-creme/85">Empreinte ou visage</span>
               </button>
             </>
           )}
@@ -241,26 +245,25 @@ function EncartConnexion({ fond }) {
   );
 }
 
-// Champ de la page de connexion. Téléphone : souligné blanc sur la photo,
-// sans fond (16 px pour que l'iPhone ne zoome pas) ; ordinateur : le champ
-// habituel de l'appli. `champ-verre` neutralise le fond jaune de
+// Champ de la page de connexion : souligné blanc sur la photo, sans fond
+// (16 px pour que l'iPhone ne zoome pas). `champ-verre` neutralise le fond jaune de
 // l'autoremplissage du navigateur (index.css).
 function ChampConnexion({ label, motDePasse = false, type, ...props }) {
   const [voir, setVoir] = useState(false);
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-creme/85 sm:mb-1.5 sm:text-navy-900/70">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-creme/85">{label}</span>
       <div className="relative">
         <input
           type={motDePasse ? (voir ? "text" : "password") : type}
-          className={`champ-verre w-full border-0 border-b border-white/60 bg-transparent px-1 py-2.5 text-base text-white outline-none transition placeholder:text-white/55 focus:border-or-400 sm:rounded-xl sm:border sm:border-navy-900/15 sm:bg-white sm:px-4 sm:text-sm sm:text-navy-900 sm:placeholder:text-navy-900/40 sm:focus:border-or-500 sm:focus:ring-2 sm:focus:ring-or-500/20 ${motDePasse ? "pr-11" : ""}`}
+          className={`champ-verre w-full border-0 border-b border-white/60 bg-transparent px-1 py-2.5 text-base text-white outline-none transition placeholder:text-white/55 focus:border-or-400 ${motDePasse ? "pr-11" : ""}`}
           {...props}
         />
         {motDePasse && (
           <button type="button" onClick={() => setVoir((v) => !v)}
             aria-label={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
             title={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-            className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-white/75 transition hover:text-white sm:right-2 sm:text-navy-900/40 sm:hover:bg-navy-900/5 sm:hover:text-navy-900/70">
+            className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-white/75 transition hover:text-white">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               {voir ? (
                 <><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 004.2 4.2" /><path d="M9.9 5.1A9.5 9.5 0 0112 5c6.5 0 10 7 10 7a17.2 17.2 0 01-3.3 4.1M6.6 6.6A17.3 17.3 0 002 12s3.5 7 10 7a9.6 9.6 0 004.1-.9" /></>
