@@ -172,3 +172,16 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Connexion sur téléphone : l'autoremplissage du navigateur peint le champ
+   en jaune ou en blanc, texte sombre — illisible sur la carte en verre. */
+@media (max-width: 639px) {
+  .champ-verre:-webkit-autofill,
+  .champ-verre:-webkit-autofill:hover,
+  .champ-verre:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
+    -webkit-box-shadow: 0 0 0 1000px transparent inset;
+    transition: background-color 9999s ease-out 0s;
+  }
+}
