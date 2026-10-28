@@ -60,6 +60,10 @@ const P = {
   // Espace parent (en plus des partagés ci-dessus)
   absences: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>',
   documents: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+
+  // Connexion par le visage : le cadre de visée aux quatre coins, comme
+  // sur les téléphones (et les applis bancaires) — le geste est reconnu.
+  biometrie: '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M9 9v1.5M15 9v1.5"/><path d="M12.5 9v3.5h-1"/><path d="M9 15.5c1.8 1.4 4.2 1.4 6 0"/>',
 };
 
 const REPLI = '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12h6"/>';
