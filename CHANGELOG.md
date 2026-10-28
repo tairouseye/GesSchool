@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.282.0] — Connexion : la carte en verre dépoli, sur téléphone comme sur ordinateur
+- **LE BESOIN** (promoteur, 28/10/2026, comme l'écran de connexion d'une appli bancaire ; visuel comparé « verre léger / verre dépoli » sur trois mois, variante dépolie retenue) : sur téléphone la photo du mois était masquée par la carte blanche ; la rendre transparente, puis faire de même sur ordinateur.
+- **Carte en verre dépoli** (`bg-navy-900/35`, flou derrière la carte seulement) ; champs E-mail et Mot de passe soulignés en blanc, sans fond, en 16 px (pas de zoom sur iPhone) ; bouton **Se connecter** en or ; lien, séparateur et pictogramme du visage en blanc. L'autoremplissage du navigateur ne repeint plus le champ en jaune (`.champ-verre`).
+- **Correctif** : une photo déjà en cache pouvait se charger avant que la page n'écoute son chargement et rester invisible ; on vérifie désormais `complete` au montage.
+
 ## [2.281.0] — Encarts partenaires sur l'écran de connexion (migration 215)
 - **LE BESOIN** (promoteur, 28/10/2026, maquette `docs/maquette-connexion-fond.html` validée) : réserver l'encart de la connexion aux partenaires de l'éducation, en alternance avec le conseil du mois, gérés par GesPro.
 - **Mig. 215** : table `encarts_partenaires` (partenaire, message ≤ 180, lien et logo en https seulement, période, actif, ordre), écriture et lecture réservées au super-admin. `encarts_connexion()` (ouverte à `anon`) ne rend que les encarts actifs et en période, six au plus — jamais la table.
