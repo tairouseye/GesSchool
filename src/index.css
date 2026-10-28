@@ -166,3 +166,9 @@
   size: A4;
   margin: 10mm;
 }
+
+/* Encart de connexion : chaque message entre en fondu (Connexion.jsx). */
+@keyframes fondu {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}

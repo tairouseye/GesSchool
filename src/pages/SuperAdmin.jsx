@@ -8,7 +8,8 @@ import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, offresCatalogu
 import { FORMULES } from "@/lib/formules.js";
 import * as api from "@/lib/superadmin.js";
 import { MODULES } from "@/lib/modules.js";
-import { useToast } from "@/composants/Feedback.jsx";
+import { useToast, useConfirm } from "@/composants/Feedback.jsx";
+import * as encartsApi from "@/lib/encarts.js";
 
 const TONS = {
   actif: "bg-emerald-500/10 text-emerald-700",
@@ -82,10 +83,12 @@ export default function SuperAdmin() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <Onglets actif={onglet} onChange={setOnglet}
-          items={[["ecoles", "Écoles clientes"], ["tarification", "💰 Tarification"]]} />
+          items={[["ecoles", "Écoles clientes"], ["tarification", "💰 Tarification"], ["encarts", "📣 Encarts de connexion"]]} />
 
         {onglet === "tarification" ? (
           <Tarification nbEcolesReel={ecoles.length} onErreur={setErreur} />
+        ) : onglet === "encarts" ? (
+          <Encarts />
         ) : (
         <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -157,6 +160,173 @@ export default function SuperAdmin() {
         onDemonstration={(demo) => wrap(async () => { await api.marquerDemonstration(edit.ecole_id, demo); setEdit(null); },
           demo ? "École classée en démonstration." : "École reclassée en établissement réel.")}
       />
+    </div>
+  );
+}
+
+// Encarts partenaires de l'écran de connexion (migration 215). Réservés aux
+// partenaires de l'éducation (choix du promoteur, 28/10/2026) ; ils
+// alternent avec le conseil du mois, toutes les 7 secondes.
+const ETATS_ENCART = {
+  en_cours: ["En ligne", "bg-emerald-500/10 text-emerald-700"],
+  a_venir: ["À venir", "bg-or-500/15 text-or-600"],
+  termine: ["Terminé", "bg-navy-900/10 text-navy-900/60"],
+  desactive: ["Désactivé", "bg-navy-900/10 text-navy-900/50"],
+};
+const aujourdhui = () => new Date().toISOString().slice(0, 10);
+const NOUVEL_ENCART = () => ({ partenaire: "", message: "", lien: "", logo_url: "", debut: aujourdhui(), fin: "", actif: true, ordre: 0 });
+
+function Encarts() {
+  const toast = useToast();
+  const confirmer = useConfirm();
+  const [liste, setListe] = useState([]);
+  const [edit, setEdit] = useState(null);
+  const [erreur, setErreur] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+
+  const recharger = useCallback(async () => {
+    setErreur("");
+    try { setListe(await encartsApi.getEncarts()); }
+    catch (e) { setErreur(e.message); }
+  }, []);
+  useEffect(() => { recharger(); }, [recharger]);
+
+  async function enregistrer(e) {
+    e.preventDefault();
+    try {
+      await encartsApi.enregistrerEncart(edit);
+      setEdit(null); await recharger(); toast.succes("Encart enregistré.");
+    } catch (err) { toast.erreur(err.message || "Enregistrement impossible."); }
+  }
+  async function supprimer(x) {
+    if (!(await confirmer(`Supprimer l'encart de « ${x.partenaire} » ?`))) return;
+    try { await encartsApi.supprimerEncart(x.id); await recharger(); toast.succes("Encart supprimé."); }
+    catch (err) { toast.erreur(err.message); }
+  }
+  async function logo(file) {
+    if (!file) return;
+    setEnvoi(true);
+    try { const url = await encartsApi.televerserLogoPartenaire(file); setEdit((x) => ({ ...x, logo_url: url })); }
+    catch (err) { toast.erreur(err.message || "Envoi du logo impossible."); }
+    finally { setEnvoi(false); }
+  }
+  const fmt = (d) => (d ? new Date(`${d}T00:00`).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "");
+
+  return (
+    <div className="space-y-4">
+      <Alerte ton="erreur">{erreur}</Alerte>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <p className="max-w-2xl text-sm text-navy-900/60">
+          Sous la carte de connexion, pour toutes les écoles. Les partenaires en ligne alternent avec le
+          conseil du mois, toutes les 7 secondes. Réservé aux partenaires de l&apos;éducation.
+        </p>
+        <Bouton onClick={() => setEdit(NOUVEL_ENCART())}>+ Nouvel encart</Bouton>
+      </div>
+
+      <Carte className="overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-creme text-navy-900/50">
+            <tr>
+              <th className="px-5 py-3 font-medium">Partenaire</th>
+              <th className="px-5 py-3 font-medium">Message</th>
+              <th className="px-5 py-3 font-medium">Période</th>
+              <th className="px-5 py-3 font-medium">État</th>
+              <th className="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {liste.map((x) => {
+              const [lib, ton] = ETATS_ENCART[encartsApi.etatEncart(x, aujourdhui())];
+              return (
+                <tr key={x.id} className="border-t border-navy-900/5 align-top">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2 font-medium text-navy-900">
+                      {x.logo_url && <img src={x.logo_url} alt="" className="h-7 w-7 rounded object-contain" />}
+                      {x.partenaire}
+                    </div>
+                  </td>
+                  <td className="max-w-md px-5 py-3 text-navy-900/70">{x.message}</td>
+                  <td className="whitespace-nowrap px-5 py-3 text-xs text-navy-900/60">
+                    {fmt(x.debut)} → {x.fin ? fmt(x.fin) : "sans fin"}
+                  </td>
+                  <td className="px-5 py-3"><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ton}`}>{lib}</span></td>
+                  <td className="whitespace-nowrap px-5 py-3 text-right">
+                    <button onClick={() => setEdit({ ...x, lien: x.lien || "", logo_url: x.logo_url || "", fin: x.fin || "" })}
+                      className="text-xs font-medium text-navy-700 hover:text-or-500">modifier</button>
+                    <span className="mx-1.5 text-navy-900/20">·</span>
+                    <button onClick={() => supprimer(x)} className="text-xs font-medium text-rose-700 hover:text-rose-800">supprimer</button>
+                  </td>
+                </tr>
+              );
+            })}
+            {liste.length === 0 && (
+              <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-navy-900/40">
+                Aucun encart : l&apos;écran de connexion affiche le conseil du mois seul.
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </Carte>
+
+      <Modale ouvert={!!edit} onFermer={() => setEdit(null)} titre={edit?.id ? "Modifier l'encart" : "Nouvel encart"}>
+        {edit && (
+          <form onSubmit={enregistrer} className="space-y-4">
+            <Champ label="Partenaire" required maxLength={80} value={edit.partenaire}
+              onChange={(e) => setEdit({ ...edit, partenaire: e.target.value })} placeholder="Librairie du Plateau" />
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Message ({edit.message.length}/180)</span>
+              <textarea required maxLength={180} rows={3} value={edit.message}
+                onChange={(e) => setEdit({ ...edit, message: e.target.value })}
+                placeholder="Livres au programme : -10 % pour les familles GesSchool."
+                className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm text-navy-900 outline-none focus:border-or-500" />
+            </label>
+            <Champ label="Lien « En savoir plus » (facultatif, https://…)" type="url" pattern="https://.*"
+              value={edit.lien} onChange={(e) => setEdit({ ...edit, lien: e.target.value })} placeholder="https://" />
+            <div className="flex items-center gap-3">
+              {edit.logo_url
+                ? <img src={edit.logo_url} alt="" className="h-12 w-12 rounded-lg border border-navy-900/10 bg-white object-contain p-0.5" />
+                : <span className="grid h-12 w-12 place-items-center rounded-lg border border-dashed border-navy-900/20 text-xs text-navy-900/40">logo</span>}
+              <label className="cursor-pointer text-sm font-medium text-navy-700 hover:text-or-600">
+                {envoi ? "Envoi…" : edit.logo_url ? "Changer le logo" : "Ajouter un logo (facultatif)"}
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                  onChange={(e) => logo(e.target.files?.[0])} />
+              </label>
+              {edit.logo_url && (
+                <button type="button" onClick={() => setEdit({ ...edit, logo_url: "" })} className="text-xs text-rose-700">retirer</button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Champ label="Du" type="date" required value={edit.debut} onChange={(e) => setEdit({ ...edit, debut: e.target.value })} />
+              <Champ label="Au (facultatif)" type="date" min={edit.debut} value={edit.fin} onChange={(e) => setEdit({ ...edit, fin: e.target.value })} />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-navy-900/80">
+              <input type="checkbox" checked={edit.actif} onChange={(e) => setEdit({ ...edit, actif: e.target.checked })} />
+              Actif (décocher pour le suspendre sans le supprimer)
+            </label>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-navy-900/60">Aperçu</p>
+              <div className="rounded-2xl bg-navy-900 p-3">
+                <div className="flex items-center gap-3 rounded-2xl bg-creme px-4 py-3">
+                  {edit.logo_url && <img src={edit.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-navy-900/10 bg-white object-contain p-0.5" />}
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-or-600">Partenaire · {edit.partenaire || "…"}</p>
+                    <p className="mt-0.5 text-sm text-navy-900/80">
+                      {edit.message || "Votre message"}
+                      {edit.lien && <span className="font-semibold text-navy-700"> En savoir plus ›</span>}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Bouton type="button" variante="fantome" onClick={() => setEdit(null)}>Annuler</Bouton>
+              <Bouton type="submit" disabled={envoi}>Enregistrer</Bouton>
+            </div>
+          </form>
+        )}
+      </Modale>
     </div>
   );
 }

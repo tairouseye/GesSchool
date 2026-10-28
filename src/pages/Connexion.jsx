@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
@@ -8,6 +8,7 @@ import { GESPRO } from "@/lib/gespro.js";
 import Logo from "@/composants/Logo.jsx";
 import { Icone } from "@/composants/Icones.jsx";
 import { fondDuMois } from "@/lib/fondsConnexion.js";
+import { getEncartsConnexion } from "@/lib/encarts.js";
 import { messageErreur } from "@/lib/erreurs.js";
 import { biometrieSupportee, connecterBiometrie, messageBiometrie } from "@/lib/biometrie.js";
 
@@ -147,11 +148,7 @@ export default function Connexion() {
           )}
         </div>
 
-        {/* L'encart du mois : un message éducatif, plus tard un partenaire. */}
-        <div className="mt-4 rounded-2xl bg-creme/95 px-4 py-3 shadow-lg">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-or-600">{fond.type} · {fond.theme}</p>
-          <p className="mt-0.5 text-sm text-navy-900/80">{fond.message}</p>
-        </div>
+        <EncartConnexion fond={fond} />
 
         {ECOLES_REFERENCES.length > 0 && (
           <div className="mt-8">
@@ -172,6 +169,71 @@ export default function Connexion() {
         <GesProSignature ton="sombre" avecContacts avecSlogan={false} avecVersion={false} className="mt-6" />
       </div>
       </div>
+    </div>
+  );
+}
+
+// L'encart sous la carte : le conseil du mois, en alternance avec les
+// partenaires de l'éducation en cours (migration 215, saisis dans la console
+// super-admin). Sans partenaire, le conseil reste seul et rien ne défile.
+const DUREE_ENCART = 7000;
+
+function EncartConnexion({ fond }) {
+  const [partenaires, setPartenaires] = useState([]);
+  const [tour, setTour] = useState(0);
+
+  useEffect(() => {
+    let vivant = true;
+    getEncartsConnexion().then((p) => { if (vivant) setPartenaires(p); });
+    return () => { vivant = false; };
+  }, []);
+
+  const total = 1 + partenaires.length;
+  useEffect(() => {
+    if (total < 2) return undefined;
+    //  Pas de défilement automatique pour qui l'a désactivé dans son système.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const t = setInterval(() => setTour((n) => n + 1), DUREE_ENCART);
+    return () => clearInterval(t);
+  }, [total]);
+
+  const i = tour % total;
+  const p = i === 0 ? null : partenaires[i - 1];
+
+  return (
+    <div className="mt-4">
+      <div key={i} className="min-h-[4.5rem] animate-[fondu_.4s_ease-out] rounded-2xl bg-creme/95 px-4 py-3 shadow-lg">
+        {p ? (
+          <div className="flex items-center gap-3">
+            {p.logo_url && (
+              <img src={p.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-navy-900/10 bg-white object-contain p-0.5" />
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-or-600">Partenaire · {p.partenaire}</p>
+              <p className="mt-0.5 text-sm text-navy-900/80">
+                {p.message}
+                {p.lien && (
+                  <> <a href={p.lien} target="_blank" rel="noopener noreferrer sponsored"
+                    className="whitespace-nowrap font-semibold text-navy-700 hover:text-or-600">En savoir plus ›</a></>
+                )}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-or-600">{fond.type} · {fond.theme}</p>
+            <p className="mt-0.5 text-sm text-navy-900/80">{fond.message}</p>
+          </>
+        )}
+      </div>
+      {total > 1 && (
+        <div className="mt-2 flex justify-center gap-1.5">
+          {Array.from({ length: total }, (_, k) => (
+            <button key={k} type="button" onClick={() => setTour(k)} aria-label={`Message ${k + 1} sur ${total}`}
+              className={`h-1.5 rounded-full transition-all ${k === i ? "w-4 bg-or-500" : "w-1.5 bg-creme/50"}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
