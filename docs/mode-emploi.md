@@ -70,7 +70,9 @@ Au premier accès, l'écran **Bienvenue** propose quatre entrées :
 
 ## 2. Configuration initiale
 
-### 2.1 Structure académique (menu **Structure**)
+### 2.1 Structure académique (**Paramètres → Structure académique**)
+Depuis la v2.280.0, la structure est une rubrique de **Paramètres** (groupe Scolarité), et non plus une entrée du menu Pédagogie. La page est en **volets repliés** : touchez un cycle pour voir ses niveaux, puis un niveau pour voir ses classes et le formulaire de création ; Matières, Coefficients, Découpage de l'année et Responsables de cycle se déroulent de la même façon.
+
 Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficients**.
 - **Niveaux** : dans chaque cycle, taper un niveau (6e, CP, Seconde) → **+ Niveau**. ⚠️ L'**ordre** des niveaux doit être correct (6e avant 5e…) : il sert de base à la **promotion des élèves** au passage d'année (§16).
 - **Classes** (génération en lot) : base du nom + nombre + suffixe (A,B,C / 1,2,3 / aucun) + série + effectif → **+ Générer** (doublons ignorés).
@@ -113,9 +115,9 @@ C'est ici que vous déclarez **les paliers** de votre établissement, et c'est *
 | **Classique** | un niveau par classe |
 | **Montessori** | classes multi-niveaux (TPS/PS, CI/CP…) |
 
-En Montessori, précisez le **niveau réel** de chaque enfant avec les **sous-niveaux** (Structure → Niveaux & classes) : la classe s'appelle « TPS/PS A », et chaque enfant y est TPS **ou** PS. Le tarif, le programme et les fournitures restent posés sur le niveau de la classe ; le sous-niveau ne sert qu'à dire où en est l'enfant.
+En Montessori, précisez le **niveau réel** de chaque enfant avec les **sous-niveaux** (Paramètres → Structure académique → le cycle → le niveau) : la classe s'appelle « TPS/PS A », et chaque enfant y est TPS **ou** PS. Le tarif, le programme et les fournitures restent posés sur le niveau de la classe ; le sous-niveau ne sert qu'à dire où en est l'enfant.
 
-### 2.5 Découpage de l'année et responsables de cycle (menu **Structure**)
+### 2.5 Découpage de l'année et responsables de cycle (**Paramètres → Structure académique**)
 
 - **Découpage de l'année** : donnez à chaque trimestre (ou semestre) sa **date de début et de fin**. ⚠️ **Sans ces dates, les absences ne peuvent pas être comptées sur les bulletins** — l'application affiche alors « absences non comptabilisées » plutôt qu'un zéro trompeur. Deux périodes qui se chevauchent sont signalées, sans être interdites.
 - **Responsables de cycle** : désignez **qui répond de chaque cycle** (préscolaire, élémentaire…). C'est **indispensable** pour la signature du procès-verbal du conseil de classe (§7.3) — sans désignation, personne ne peut signer, pas même la direction. **Seul le promoteur** peut désigner : si la direction pouvait se désigner elle-même, sa signature ne vaudrait plus rien.
@@ -364,7 +366,7 @@ Cliquez l'évaluation : la liste des élèves de la classe apparaît.
 
 - **« Aucune évaluation »** → vous n'en avez pas encore créé pour cette classe, cette période et cette matière. Les trois filtres comptent.
 - **« Inscrivez des élèves dans cette classe »** → la classe est vide pour l'année en cours.
-- **« Un enseignant ne voit pas la matière »** → il n'y est pas **affecté** (Structure → affectations). Un enseignant ne saisit les notes que des classes **et** matières qui lui sont attribuées.
+- **« Un enseignant ne voit pas la matière »** → il n'y est pas **affecté** (Enseignants & affectations). Un enseignant ne saisit les notes que des classes **et** matières qui lui sont attribuées.
 
 ---
 
@@ -415,7 +417,7 @@ Dans le même panneau, le **PV** attend **deux signatures** :
 2. le **responsable de la gestion** (promoteur, comptable ou secrétariat).
 
 - Une **même personne ne peut pas poser les deux** : c'est tout le sens de l'exigence.
-- Le responsable pédagogique d'un **autre cycle** ne peut pas signer : désignez-les dans **Structure → Responsables de cycle** (voir §2.5).
+- Le responsable pédagogique d'un **autre cycle** ne peut pas signer : désignez-les dans **Paramètres → Structure académique → Responsables de cycle** (voir §2.5).
 - Publier sans PV signé **demande confirmation** mais n'est pas interdit : un conseil reporté ne doit pas bloquer l'école.
 - Chacun peut **retirer sa propre** signature, jamais celle d'un autre.
 
@@ -854,9 +856,11 @@ Un parent gère **tous ses enfants depuis un seul compte**, même dans des étab
 ## 18. Notifications push
 Parents et personnel peuvent **activer les notifications** (alerte même app fermée) : note, absence, facture, document prêt, embarquement transport, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.
 
+**La page de connexion change chaque mois** : une photo de la vie scolaire (rentrée, compositions, Francophonie, 4 avril, examens, vacances…) et, sous la carte, un **encart** avec le conseil du mois. Sans connexion internet, le fond bleu habituel s'affiche.
+
 **Mises à jour.** Quand une nouvelle version de GesSchool est publiée, un bandeau **« 🔄 Une nouvelle version de GesSchool est disponible »** apparaît en bas de l'écran. **Mettre à jour** l'installe en quelques secondes. **Plus tard** la laisse en attente : elle s'installera d'elle-même à la prochaine ouverture de l'appli. L'appli vérifie à l'ouverture, au retour sur l'onglet et toutes les 30 minutes.
 
-**👆 Se connecter avec l'empreinte ou le visage.** Sur un téléphone qui le permet, GesSchool propose une fois, après une connexion par mot de passe, **« Connectez-vous plus vite la prochaine fois »** → **Activer**. On peut aussi l'activer plus tard : personnel → panneau du compte (ou barre latérale) → **👆 Connexion par empreinte** ; parent → **Mon compte**. Ensuite, sur la page de connexion, **« Se connecter avec l'empreinte ou le visage »** suffit, sans taper son e-mail. C'est le **téléphone** qui reconnaît l'empreinte ou le visage : GesSchool ne les voit ni ne les garde jamais. Le mot de passe reste toujours valable. Un téléphone perdu ou changé se **retire** depuis la même liste d'appareils.
+**Se connecter avec l'empreinte ou le visage** (pictogramme du cadre de visée, sous « Se connecter »). Sur un téléphone qui le permet, GesSchool propose une fois, après une connexion par mot de passe, **« Connectez-vous plus vite la prochaine fois »** → **Activer**. On peut aussi l'activer plus tard : personnel → panneau du compte (ou barre latérale) → **👆 Connexion par empreinte** ; parent → **Mon compte**. Ensuite, sur la page de connexion, le pictogramme **Empreinte ou visage** suffit, sans taper son e-mail. C'est le **téléphone** qui reconnaît l'empreinte ou le visage : GesSchool ne les voit ni ne les garde jamais. Le mot de passe reste toujours valable. Un téléphone perdu ou changé se **retire** depuis la même liste d'appareils.
 
 ---
 
@@ -933,7 +937,7 @@ Dans **Cahier de textes**, le bouton **📋 Reprendre la programmation** liste l
 
 ### 21.3 Ce que voient les parents
 
-Chez le parent, onglet **Documents** : le **📘 Programme du mois** du **niveau réel de son enfant** (CI pour un élève de CI dans « CI/CP A »), avec le programme commun aux deux niveaux s'il y en a un, jamais celui de l'autre niveau. Le mois en cours s'ouvre par défaut, les autres mois publiés se choisissent d'un clic, la semaine en cours est surlignée, et le programme s'imprime. Tant que rien n'est importé pour son niveau, le parent lit simplement « L'école n'a pas encore publié le programme… ».
+Chez le parent, onglet **Documents** : le **📘 Programme du mois** du **niveau réel de son enfant** (CI pour un élève de CI dans « CI/CP A »), avec le programme commun aux deux niveaux s'il y en a un, jamais celui de l'autre niveau. Le mois en cours s'ouvre par défaut, les autres mois publiés se choisissent d'un clic, il s'ouvre sur **Cette semaine** (les contenus de la semaine en cours et ceux prévus pour tout le mois), **Tout le mois** affiche le reste, et le programme s'imprime. La semaine se compte simplement : du 1er au 7 = semaine 1, du 8 au 14 = semaine 2, etc. Tant que rien n'est importé pour son niveau, le parent lit simplement « L'école n'a pas encore publié le programme… ».
 
 ---
 
@@ -1089,8 +1093,8 @@ Toutes les écoles clientes, leur **plan d'abonnement**, leur **statut**, leurs 
 - **« Une page ne s'ouvre pas / reste blanche »** → cache de l'app dépassé après une mise à jour : l'appli se recharge normalement toute seule ; sinon **rechargez** (Ctrl+Maj+R), ou ouvrez en **navigation privée**, ou réinstallez la PWA.
 - **« Comment ajouter un responsable / une secrétaire ? »** → **Membres → + Inviter un membre** (§4). Si la personne a **déjà** un compte, ne lui renvoyez pas de code : **Membres → sa ligne → + Donner un accès…** (§4.3).
 - **« Le parent ne voit pas le bulletin »** → il est probablement en **brouillon** ou **validé** : ouvrez **Bulletins**, choisissez la classe, et utilisez **📤 Publier aux parents** dans le panneau « Circuit » (§7.2).
-- **« Personne ne peut signer le procès-verbal »** → aucun **responsable de cycle** n’est désigné. Le promoteur le fait dans **Structure → Responsables de cycle** (§2.5). La direction elle-même est refusée tant qu’elle n’est pas désignée.
-- **« Les absences ne sont pas comptées sur le bulletin »** → la période n’a pas de **dates** : **Structure → Découpage de l’année** (§2.5). L’application préfère ne rien afficher plutôt qu’un zéro faux.
+- **« Personne ne peut signer le procès-verbal »** → aucun **responsable de cycle** n’est désigné. Le promoteur le fait dans **Paramètres → Structure académique → Responsables de cycle** (§2.5). La direction elle-même est refusée tant qu’elle n’est pas désignée.
+- **« Les absences ne sont pas comptées sur le bulletin »** → la période n’a pas de **dates** : **Paramètres → Structure académique → Découpage de l’année** (§2.5). L’application préfère ne rien afficher plutôt qu’un zéro faux.
 - **« Toutes les familles apparaissent en retard de paiement »** → regardez la pastille : ⚪ **Non facturé** n’est pas 🔴 **Retard**. Il reste des factures à émettre (§19).
 - **« L'enseignant ne voit pas sa classe »** → vérifier son **code d'accès** et qu'il est **prof principal** ou **affecté** à une classe.
 - **« Impossible d'inscrire un élève »** → créer d'abord une classe via **Structure**.
@@ -1114,10 +1118,10 @@ Si vous ouvrez GesSchool pour la première fois, suivez cet ordre. Il n'est pas 
 
 ### Jour 2 — La structure académique (≈ 1 h 30, promoteur ou direction)
 
-1. **Structure → cycles, niveaux, classes** (§2.1). Créez les classes **avant** d'importer les élèves : c'est l'oubli numéro un.
+1. **Paramètres → Structure académique** : cycles, niveaux, classes (§2.1). Créez les classes **avant** d'importer les élèves : c'est l'oubli numéro un.
    - En **Montessori**, créez le niveau combiné (`TPS/PS`) puis ses **sous-niveaux** (TPS, PS) — §2.4.
-2. **Structure → Découpage de l'année** (§2.5) : les **dates** de chaque trimestre. Sans elles, les absences ne pourront pas être comptées sur les bulletins.
-3. **Structure → Responsables de cycle** (§2.5) : qui répond de chaque cycle. **Sans cela, personne ne pourra signer le procès-verbal du conseil de classe** — pas même la direction.
+2. **Structure académique → Découpage de l'année** (§2.5) : les **dates** de chaque trimestre. Sans elles, les absences ne pourront pas être comptées sur les bulletins.
+3. **Structure académique → Responsables de cycle** (§2.5) : qui répond de chaque cycle. **Sans cela, personne ne pourra signer le procès-verbal du conseil de classe** — pas même la direction.
 4. **Matières**, puis **coefficients** si vous les personnalisez.
 
 ### Jour 3 — Les élèves (≈ 2 h pour 100 élèves, secrétariat)
@@ -1137,7 +1141,7 @@ Si vous ouvrez GesSchool pour la première fois, suivez cet ordre. Il n'est pas 
 ### Jour 5 — L'équipe et les familles (≈ 1 h)
 
 1. **Membres → + Inviter un membre** (§4) : direction, comptable, secrétariat. Chacun gérera ensuite ses propres accès.
-2. **RH → Enseignants** : l'annuaire, puis les **affectations** (qui enseigne quoi, dans quelle classe).
+2. **Gestion → Établissement → Enseignants & affectations** (ou RH → Enseignants) : l'annuaire, puis les **affectations** (qui enseigne quoi, dans quelle classe).
    > Si, comme dans beaucoup d'écoles, ce sont les **responsables pédagogiques** qui font le travail des enseignantes, vous n'avez pas besoin de créer de comptes enseignants : la direction voit toutes les classes.
 3. **Codes parents** : générez-les et envoyez-les (§17.1). Le code est ce qui permet à une famille de créer son compte.
 

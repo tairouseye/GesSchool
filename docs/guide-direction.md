@@ -19,8 +19,8 @@ L'ordre compte : chaque étape a besoin de la précédente.
 Trois étapes qu'il ne faut pas sauter, parce qu'une fonction plus loin en dépend :
 
 - **Les classes avant l'import des élèves.** Sinon ils sont créés mais non inscrits.
-- **Les dates des trimestres** (Structure → Découpage de l'année). Sans elles, les absences ne peuvent pas être comptées sur les bulletins.
-- **Les responsables de cycle** (Structure → Responsables de cycle). Sans désignation, **personne ne peut signer le procès-verbal du conseil de classe** — pas même vous.
+- **Les dates des trimestres** (Paramètres → Structure académique → Découpage de l'année). Sans elles, les absences ne peuvent pas être comptées sur les bulletins.
+- **Les responsables de cycle** (Paramètres → Structure académique → Responsables de cycle). Sans désignation, **personne ne peut signer le procès-verbal du conseil de classe** — pas même vous.
 
 ---
 
@@ -175,9 +175,9 @@ Ce qui **persiste** et n'est pas à refaire : niveaux, cycles, matières, coeffi
 
 ## Si ça ne marche pas
 
-**« Personne ne peut signer le procès-verbal »** → aucun responsable de cycle n'est désigné. Structure → Responsables de cycle. Seul le promoteur peut désigner : si la direction pouvait se désigner elle-même, sa signature ne vaudrait rien.
+**« Personne ne peut signer le procès-verbal »** → aucun responsable de cycle n'est désigné. Paramètres → Structure académique → Responsables de cycle. Seul le promoteur peut désigner : si la direction pouvait se désigner elle-même, sa signature ne vaudrait rien.
 
-**« Les absences ne sont pas comptées sur le bulletin »** → la période n'a pas de dates. Structure → Découpage de l'année.
+**« Les absences ne sont pas comptées sur le bulletin »** → la période n'a pas de dates. Paramètres → Structure académique → Découpage de l'année.
 
 **« Le parent ne voit pas le bulletin »** → il est en brouillon ou validé. Panneau « Circuit » → **📤 Publier aux parents**.
 

@@ -55,7 +55,7 @@
 <p>L'ordre compte : chaque étape a besoin de la précédente.</p>
 <table><thead><tr><th>Jour</th><th>Ce qu'on fait</th></tr></thead><tbody><tr><td><strong>1</strong></td><td>L'établissement : nom, <strong>logo</strong>, <strong>cachet</strong>, devise · les <strong>paliers</strong> · le format de <strong>matricule</strong> · les <strong>signataires</strong></td></tr><tr><td><strong>2</strong></td><td>La structure : cycles, niveaux, <strong>classes</strong> · les <strong>dates</strong> des trimestres · les <strong>responsables de cycle</strong> · matières</td></tr><tr><td><strong>3</strong></td><td>Les élèves : import, photos</td></tr><tr><td><strong>4</strong></td><td>L'argent : grille tarifaire, facturation</td></tr><tr><td><strong>5</strong></td><td>L'équipe et les codes parents</td></tr></tbody></table>
 <p>Trois étapes qu'il ne faut pas sauter, parce qu'une fonction plus loin en dépend :</p>
-<ul><li><strong>Les classes avant l'import des élèves.</strong> Sinon ils sont créés mais non inscrits.</li><li><strong>Les dates des trimestres</strong> (Structure → Découpage de l'année). Sans elles, les absences ne peuvent pas être comptées sur les bulletins.</li><li><strong>Les responsables de cycle</strong> (Structure → Responsables de cycle). Sans désignation, <strong>personne ne peut signer le procès-verbal du conseil de classe</strong> — pas même vous.</li></ul>
+<ul><li><strong>Les classes avant l'import des élèves.</strong> Sinon ils sont créés mais non inscrits.</li><li><strong>Les dates des trimestres</strong> (Paramètres → Structure académique → Découpage de l'année). Sans elles, les absences ne peuvent pas être comptées sur les bulletins.</li><li><strong>Les responsables de cycle</strong> (Paramètres → Structure académique → Responsables de cycle). Sans désignation, <strong>personne ne peut signer le procès-verbal du conseil de classe</strong> — pas même vous.</li></ul>
 <hr/>
 <h2 id="2-declarer-ce-que-l-etablissement-couvre">2. Déclarer ce que l'établissement couvre</h2>
 <p><strong>Paramètres → Ce que l'école couvre</strong></p>
@@ -114,8 +114,8 @@
 <p>Ce qui <strong>persiste</strong> et n'est pas à refaire : niveaux, cycles, matières, coefficients, personnels, salles, membres et rôles.</p>
 <hr/>
 <h2 id="si-ca-ne-marche-pas">Si ça ne marche pas</h2>
-<p><strong>« Personne ne peut signer le procès-verbal »</strong> → aucun responsable de cycle n'est désigné. Structure → Responsables de cycle. Seul le promoteur peut désigner : si la direction pouvait se désigner elle-même, sa signature ne vaudrait rien.</p>
-<p><strong>« Les absences ne sont pas comptées sur le bulletin »</strong> → la période n'a pas de dates. Structure → Découpage de l'année.</p>
+<p><strong>« Personne ne peut signer le procès-verbal »</strong> → aucun responsable de cycle n'est désigné. Paramètres → Structure académique → Responsables de cycle. Seul le promoteur peut désigner : si la direction pouvait se désigner elle-même, sa signature ne vaudrait rien.</p>
+<p><strong>« Les absences ne sont pas comptées sur le bulletin »</strong> → la période n'a pas de dates. Paramètres → Structure académique → Découpage de l'année.</p>
 <p><strong>« Le parent ne voit pas le bulletin »</strong> → il est en brouillon ou validé. Panneau « Circuit » → <strong>📤 Publier aux parents</strong>.</p>
 <p><strong>« Toutes les familles apparaissent en retard »</strong> → ⚪ <strong>Non facturé</strong> n'est pas 🔴 <strong>Retard</strong>. Il reste des factures à émettre.</p>
 <p><strong>« Je ne vois pas un menu »</strong> → module désactivé (Paramètres → Modules), ou palier non déclaré (Paramètres → Ce que l'école couvre), ou rôle sans accès.</p>
