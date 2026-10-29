@@ -5,7 +5,7 @@ import { lierParent } from "@/lib/parent.js";
 import { lierEtudiant } from "@/lib/etudiant.js";
 import { lierEnseignant } from "@/lib/enseignants.js";
 import { rejoindre } from "@/lib/membres.js";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 
 // Landing pour un utilisateur connecté sans profil : créer une école (staff)
@@ -66,7 +66,7 @@ export default function Bienvenue() {
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-lg">
         <div className="mb-6 flex flex-col items-center text-creme">
-          <Cachet size={64} className="text-or-500" />
+          <Logo size={64} className="text-or-500" />
           <h1 className="mt-3 font-display text-2xl font-bold">Bienvenue sur GesSchool</h1>
           <p className="text-sm text-creme/60">{utilisateur?.email}</p>
         </div>

@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
@@ -45,7 +45,7 @@ export default function EtudiantLayout() {
       {/* Mêmes règles que l'en-tête parent : il doit tenir dans 320 px. */}
       <header className="flex items-center justify-between gap-3 border-b border-navy-900/10 bg-navy-900 px-4 py-4 text-creme sm:px-6">
         <Link to="/etudiant" aria-label="GesSchool — accueil de l'espace étudiant" className="flex min-w-0 items-center gap-3">
-          <Cachet size={36} className="shrink-0 text-or-500" />
+          <Logo size={36} className="shrink-0 text-or-500" />
           <span className="truncate font-display text-lg font-bold">
             Ges<span className="text-or-500">School</span> <span className="hidden text-sm font-normal text-creme/60 sm:inline">· Espace étudiant</span>
           </span>

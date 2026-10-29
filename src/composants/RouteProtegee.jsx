@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { peutVoir } from "@/lib/permissions.js";
 import { MODULES, moduleActif, moduleDeCle } from "@/lib/modules.js";
@@ -101,7 +101,7 @@ export function EcranSansAcces() {
   return (
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <Cachet size={72} className="text-or-500/60" />
+        <Logo size={72} className="text-or-500/60" />
         <h1 className="font-display text-xl font-bold">Aucun accès pour l'instant</h1>
         <p className="text-sm text-creme/70">
           {profil ? `${profil.prenom}, votre` : "Votre"} compte est bien rattaché à l'établissement,
@@ -167,7 +167,7 @@ function EcranProfilIllisible() {
   return (
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <Cachet size={72} className="text-or-500/60" />
+        <Logo size={72} className="text-or-500/60" />
         <h1 className="font-display text-xl font-bold">Connexion au serveur interrompue</h1>
         <p className="text-sm text-creme/70">
           Votre compte existe bien — c&apos;est la lecture de votre profil qui a échoué.
@@ -194,7 +194,7 @@ function EcranSuspendu() {
   return (
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 text-creme">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <Cachet size={72} className="text-or-500/60" />
+        <Logo size={72} className="text-or-500/60" />
         <h1 className="font-display text-xl font-bold">Compte suspendu</h1>
         <p className="text-sm text-creme/70">
           Votre accès a été suspendu par l'administration de l'établissement. Contactez votre responsable pour le réactiver.
@@ -211,7 +211,7 @@ function Ecran({ chargement, message }) {
   return (
     <div className="grid min-h-dscreen place-items-center bg-navy-900 text-creme">
       <div className="flex flex-col items-center gap-4">
-        <Cachet size={88} className={`text-or-500 ${chargement ? "animate-pulse" : ""}`} />
+        <Logo size={88} className={`text-or-500 ${chargement ? "animate-pulse" : ""}`} />
         <p className="text-sm text-creme/70">{chargement ? "Chargement…" : message}</p>
       </div>
     </div>

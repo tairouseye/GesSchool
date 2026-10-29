@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { entrerEcole } from "@/lib/pilotage.js";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets } from "@/composants/ui.jsx";
 import { HYPOTHESES_DEFAUT, calculerGrille, calculerGrilleOffres, offresCatalogue, simulerEchelle, totalFixes, getHypotheses, setHypotheses, appliquerOffres } from "@/lib/tarification.js";
 import { FORMULES } from "@/lib/formules.js";
@@ -69,7 +69,7 @@ export default function SuperAdmin() {
     <div className="min-h-dscreen bg-creme">
       <header className="flex items-center justify-between border-b border-navy-900/10 bg-navy-900 px-6 py-4 text-creme">
         <div className="flex items-center gap-3">
-          <Cachet size={36} className="text-or-500" />
+          <Logo size={36} className="text-or-500" />
           <span className="font-display text-lg font-bold">GesSchool · <span className="text-or-500">Super-admin</span></span>
         </div>
         <div className="flex items-center gap-3 text-sm">

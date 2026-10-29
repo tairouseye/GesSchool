@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Suspense } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
 import { compterNonLues, mesMessagesNonLus } from "@/lib/parent.js";
@@ -66,7 +66,7 @@ export default function ParentLayout() {
            à l'accueil. 320 px : 32 + 36 + 8 + 5 × 40 + 4 × 4 = 292 px. */}
       <header className="flex items-center justify-between gap-2 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme sm:px-6 sm:py-4">
         <Link to="/parent" aria-label="GesSchool — accueil de l'espace parent" className="flex min-w-0 items-center gap-3">
-          <Cachet size={36} className="shrink-0 text-or-500" />
+          <Logo size={36} className="shrink-0 text-or-500" />
           <span className="truncate font-display text-lg font-bold max-[519px]:hidden">
             Ges<span className="text-or-500">School</span> <span className="hidden text-sm font-normal text-creme/60 sm:inline">· Espace parent</span>
           </span>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { Bouton, Champ, ChampMotDePasse, Alerte } from "@/composants/ui.jsx";
 
 // Définition d'un nouveau mot de passe après clic sur le lien e-mail.
@@ -34,7 +34,7 @@ export default function ReinitMotDePasse() {
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-creme">
-          <Cachet size={64} className="text-or-500" />
+          <Logo size={64} className="text-or-500" />
           <h1 className="mt-3 font-display text-xl font-bold">Nouveau mot de passe</h1>
         </div>
         <div className="rounded-2xl bg-white p-7 shadow-xl">

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
-import Cachet from "@/composants/Cachet.jsx";
 import { Bouton, Champ, Alerte } from "@/composants/ui.jsx";
 
 // Réinitialisation par CODE à 6 chiffres (2 étapes) — évite le conflit

@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <rect width="100" height="100" rx="22" fill="#0B1F3A"/>
-  <circle cx="50" cy="50" r="34" fill="none" stroke="#C9A227" stroke-width="2"/>
-  <circle cx="50" cy="50" r="27" fill="none" stroke="#C9A227" stroke-width="1" stroke-dasharray="2 3"/>
-  <text x="50" y="58" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="26" font-weight="700" fill="#C9A227">GS</text>
+<rect width="100" height="100" rx="22" fill="#0B1F3A"/>
+<g transform="translate(50 50) scale(0.72) translate(-49 -51)">
+<path d="M80 10 C52 16 32 40 28 72 L33 76 C58 62 76 42 80 10 Z" fill="#C9A227"/>
+<path d="M74 18 C58 32 44 50 31 73" stroke="#0B1F3A" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+<path d="M30 74 L20 90" stroke="#C9A227" stroke-width="4" stroke-linecap="round"/>
+<path d="M18 92 H60" stroke="#C9A227" stroke-width="3" stroke-linecap="round" opacity=".55"/></g>
 </svg>

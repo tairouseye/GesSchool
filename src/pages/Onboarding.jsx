@@ -4,7 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { supabase } from "@/lib/supabase.js";
 import { CYCLES, anneeParDefaut } from "@/lib/cycles.js";
 import { PAYS, deviseDuPays } from "@/lib/pays.js";
-import Cachet from "@/composants/Cachet.jsx";
+import Logo from "@/composants/Logo.jsx";
 import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
 
 // Phase 0.4 — Assistant de création d'établissement (3 étapes).
@@ -83,7 +83,7 @@ export default function Onboarding() {
     <div className="grid min-h-dscreen place-items-center bg-navy-900 px-4 py-10">
       <div className="w-full max-w-xl">
         <div className="mb-5 flex flex-col items-center text-creme">
-          <Cachet size={64} className="text-or-500" />
+          <Logo size={64} className="text-or-500" />
           <h1 className="mt-3 font-display text-2xl font-bold">Créer votre établissement</h1>
           <p className="text-sm text-creme/60">Étape {etape} sur 3</p>
         </div>
