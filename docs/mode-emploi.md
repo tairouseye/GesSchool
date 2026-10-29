@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.283 · mise à jour du 29 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.284 · mise à jour du 29 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -181,16 +181,19 @@ C'est la bonne méthode pour une rentrée. Comptez une vingtaine de minutes pour
 
 ### 3.4 La fiche d'un élève
 
-Cliquez sur une ligne. Vous y trouvez quatre parties :
+Cliquez sur une ligne. En haut, un **bandeau** présente l'élève (photo, statut, classe, matricule, âge, naissance) avec les boutons **🪪 Carte scolaire** et **Inscrire** / **Changer de classe** ; le fil « Élèves › classe › nom » ramène à la liste. Dessous, trois onglets :
 
-- **État civil** et **photo** — « Ajouter une photo » / « Changer la photo ». Pour photographier toute une classe, préférez l'écran dédié (§23).
-- **Vos champs personnalisés**.
-- **Responsables** : les parents rattachés. Le bouton **Code parent** génère le code qui permettra à la famille de créer son compte (§17.1).
-- **Inscriptions** : l'historique année par année, avec la classe et — en Montessori — le **sous-niveau** réel de l'enfant (§2.4).
+- **Aperçu** : le résumé des paiements de l'année, l'inscription en cours, quelques repères, les **Responsables** et la **Fratrie**. Pour chaque parent rattaché, la fiche dit s'il a déjà activé l'appli ; le bouton **Code parent** génère le code qui lui permettra de créer son compte (§17.1). **+ Ajouter un responsable** est sous la liste.
+- **État civil & scolarité** : l'identité et **vos champs personnalisés** (bouton **Modifier**), puis les **Inscriptions** année par année, avec la classe et — en Montessori — le **sous-niveau** réel de l'enfant (§2.4).
+- **Paiements** : l'échéancier détaillé de l'année, mois par mois (voir « Situation des paiements », §10.4 ter, pour les couleurs).
+
+La **photo** se change sous la vignette du bandeau (« Ajouter une photo » / « Changer »). Pour photographier toute une classe, préférez l'écran dédié (§23).
+
+**Dans la liste**, la recherche (nom ou matricule) et les filtres **Classe** et **Statut** passent en bleu nuit quand ils sont actifs ; le nombre de résultats s'affiche à droite. Choisissez une classe pour voir la colonne **Paiement**.
 
 ### 3.5 Supprimer
 
-Deux façons : l'icône **🗑️** sur une ligne, ou les **cases à cocher** puis **« Supprimer la sélection »** pour plusieurs élèves.
+Trois façons : l'icône **corbeille** au bout d'une ligne ; les **cases à cocher**, puis **« Supprimer la sélection »** dans la barre bleu nuit qui apparaît, pour plusieurs élèves ; ou, sur la fiche, onglet **État civil & scolarité**, **Supprimer l'élève**.
 
 > ⚠️ **La suppression emporte tout ce qui est rattaché à l'élève** : inscriptions, notes, bulletins, factures, paiements, absences, documents. Une confirmation le rappelle. S'il s'agit d'un élève qui a quitté l'école, préférez passer son inscription en **Abandon** : vous gardez son dossier et son historique.
 
@@ -504,7 +507,7 @@ Chaque frais reste **modifiable** ou supprimable.
 
 **Réduction de fratrie** (sous la grille) : à partir de combien d'enfants inscrits la réduction s'applique (2, 3, 4…), en **%** ou en **montant**, pour tous les cycles ou un seul. Les frères et sœurs sont reconnus **tout seuls**, par leur **responsable commun** sur la fiche élève : rien d'autre à saisir. La réduction porte sur la **scolarité mensuelle** de chaque enfant de la fratrie.
 
-**Le tarif d'un élève** (fiche élève → bloc **Paiements** → **Tarif**, réservé au gestionnaire des frais) :
+**Le tarif d'un élève** (fiche élève → onglet **Paiements** → **Tarif**, réservé au gestionnaire des frais) :
 - **Mensualité de l'élève** : son montant à lui, quand il ne paie pas le tarif de sa classe (arrangement, fratrie au cas par cas). Elle passe **avant** la règle de fratrie. Vide = tarif de la classe.
 - **Exonéré** : l'élève ne paie **rien** — ni inscription ni mensualités. Il n'apparaît dans aucun impayé, et la facturation en lot l'ignore.
 
@@ -568,7 +571,7 @@ Pour chaque élève : l'état, le **facturé**, le **payé**, le **reste** (dont
 | ⚪ **Exonéré** | rien n'est dû |
 | ⚪ **Non facturé** | aucun frais obligatoire défini pour la classe, et aucune facture |
 
-Le même état colore le nom de l'élève dans la **liste des élèves** (filtrée sur une classe). Sur la **fiche élève**, le bloc **Paiements** détaille chaque échéance — payée, en retard, à venir — et le bloc **Fratrie** liste ses frères et sœurs, chacun avec sa couleur.
+Le même état colore le nom de l'élève dans la **liste des élèves** (filtrée sur une classe). La **fiche élève** s'ouvre sur un bandeau (photo, statut, classe, matricule, âge) et trois onglets : **Aperçu** résume les paiements de l'année (payé sur le total, ce qui est dû ou la prochaine échéance), l'inscription, les responsables — avec qui a déjà activé l'appli — et la **Fratrie**, chacun avec sa couleur ; **État civil & scolarité** regroupe l'identité (bouton **Modifier**) et l'historique des inscriptions ; **Paiements** détaille chaque échéance — payée, en retard, à venir — avec le bouton **Tarif**.
 
 > C'est un écran de **lecture** : on n'y encaisse pas, on n'y relance pas. Les numéros de facture et le détail des paiements restent à la caisse. Une responsable cloisonnée sur un cycle ne voit que les élèves de ce cycle.
 
@@ -799,7 +802,7 @@ Une comptabilité **SYSCOHADA**, en six onglets.
 ## 15. Tableaux de bord & mise en route
 
 Chaque accueil de secteur affiche, en haut, une zone **« À traiter »** (tuiles cliquables, code couleur) puis des indicateurs :
-- **Gestion** : déclarations à valider, élèves en impayé, échéances 7 j · taux de recouvrement, encaissé jour/semaine/mois, répartition par mode, top impayés.
+- **Gestion** : en haut, **« À faire aujourd'hui »**, une ligne par action avec son bouton — paiements mobiles à **Valider**, élèves en impayé à **Relancer**, échéances des 7 jours, documents à **Signer**, demandes de document à **Traiter**. Une ligne n'apparaît que si votre rôle a accès à l'écran qui la traite ; s'il n'y a rien, « Rien à traiter pour l'instant ✓ ». Puis les indicateurs (élèves inscrits, taux de recouvrement, encaissé ce mois avec sa courbe, reste à encaisser), les encaissements des 6 derniers mois (le mois en cours en or), le recouvrement de l'année, les principaux impayés et la répartition par mode. Le bouton **+ Encaisser un paiement** est en haut à droite.
 - **Pédagogie** : absences non justifiées, absences de la semaine · effectif & **moyenne par niveau** (colorée), filles/garçons, redoublants.
 - **RH** : salaires à payer, fiches à générer, contrats à échéance · masse salariale, répartition par fonction.
 
@@ -856,7 +859,7 @@ Un parent gère **tous ses enfants depuis un seul compte**, même dans des étab
 ## 18. Notifications push
 Parents et personnel peuvent **activer les notifications** (alerte même app fermée) : note, absence, facture, document prêt, embarquement transport, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.
 
-**La page de connexion change chaque mois** : une photo de la vie scolaire (rentrée, compositions, Francophonie, 4 avril, examens, vacances…) et, sous la carte, un **encart** avec le conseil du mois. La carte de connexion est en **verre** : la photo reste visible à travers, les champs sont soulignés en blanc et le bouton **Se connecter** est en or. Sur un téléphone tenu droit, la photo s'affiche en entier, ajustée à l'écran. Sans connexion internet, le fond bleu habituel s'affiche.
+**La page de connexion change chaque mois** : une photo de la vie scolaire (rentrée, compositions, Francophonie, 4 avril, examens, vacances…) et, sous la carte, un **encart** avec le conseil du mois. Le logo de GesSchool est une **plume** d'écolier, or sur bleu nuit (page de connexion, en-têtes, icône de l'appli installée) ; le cachet « GS » reste le tampon des documents officiels. La carte de connexion est en **verre** : la photo reste visible à travers, les champs sont soulignés en blanc et le bouton **Se connecter** est en or. Sur un téléphone tenu droit, la photo s'affiche en entier, ajustée à l'écran. Sans connexion internet, le fond bleu habituel s'affiche.
 
 **Affiche QR code pour l'école.** La page `gesschool.gesprosn.org/affiche-qr.html?ecole=Nom de l'école` donne une affiche A4 prête à imprimer (bouton **Imprimer l'affiche**) : un QR code que parents et personnel scannent avec l'appareil photo du téléphone pour ouvrir la page de connexion. Sans `?ecole=`, cliquer sur la ligne sous le logo pour écrire le nom de l'établissement.
 
