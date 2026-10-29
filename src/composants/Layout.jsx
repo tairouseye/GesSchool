@@ -288,7 +288,7 @@ export default function Layout() {
   return (
     // h-[100dvh] : hauteur RÉELLEMENT visible sur iOS Safari (la barre d'adresse
     // rétrécit la fenêtre) — évite que la barre du bas passe sous le navigateur.
-    <div className="flex h-[100dvh] overflow-hidden bg-creme text-navy-900">
+    <div className="flex h-[100dvh] overflow-hidden bg-fond text-navy-900">
       {/* Sidebar : desktop uniquement (sur mobile → barre basse + tuiles) */}
       <aside className="hidden w-64 flex-col bg-navy-900 text-creme lg:flex">
         <div className="flex items-center gap-3 px-6 py-5">
@@ -349,25 +349,19 @@ export default function Layout() {
               end={item.exact}
               onClick={() => setMenu(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition ${
-                  isActive ? "bg-or-500 font-semibold text-navy-900" : "text-creme/80 hover:bg-navy-800"
+                //  Page active : fond à peine éclairci et filet or à gauche
+                //  (maquette de refonte), au lieu du bloc doré plein.
+                `flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition ${
+                  isActive ? "bg-white/10 font-semibold text-white shadow-[inset_3px_0_0_rgb(var(--or-500))]" : "text-creme/80 hover:bg-white/5"
                 }`
               }
             >
-              {({ isActive }) => (
-                <>
-                  <span className="w-5 text-center">{item.icone}</span>
-                  {libItem(item)}
-                  {pastille(item.cle) > 0 && (
-                    // Sur l'onglet actif (fond doré), la pastille dorée serait
-                    // invisible : on inverse les couleurs.
-                    <span className={`ml-auto grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${
-                      isActive ? "bg-navy-900 text-or-500" : "bg-or-500 text-navy-900"
-                    }`}>
-                      {pastille(item.cle)}
-                    </span>
-                  )}
-                </>
+              <span className="w-5 text-center">{item.icone}</span>
+              {libItem(item)}
+              {pastille(item.cle) > 0 && (
+                <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1 text-[10px] font-bold text-navy-900">
+                  {pastille(item.cle)}
+                </span>
               )}
             </NavLink>
           ))}
@@ -607,7 +601,7 @@ export default function Layout() {
 // En-tête de page réutilisable (responsive).
 export function EnTete({ titre, sousTitre, action }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-creme/80 px-4 py-4 backdrop-blur sm:px-8 sm:py-5">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-white px-4 py-4 sm:px-8 sm:py-5">
       <div>
         <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{titre}</h1>
         {sousTitre && <p className="text-sm text-navy-900/50">{sousTitre}</p>}

@@ -39,6 +39,11 @@ export default {
           700: "rgb(var(--or-700) / <alpha-value>)",
         },
         creme: "#F7F5EF",
+        // Fond des pages de gestion (refonte du 29/10/2026) : un gris très
+        // clair, plus neutre que la crème, sur lequel les cartes blanches à
+        // bord fin se détachent sans ombre. Plus clair que la crème : le
+        // plancher de contraste (calculé sur la crème) reste vrai.
+        fond: "#F6F7F9",
         // Couleurs SÉMANTIQUES du design system (états : succès/alerte/danger/info).
         // Distinctes de l'accent « or » (qui reste l'accent de marque).
         success: { 50: "#ECFDF3", 500: "#12805C", 600: "#0F6B4E" },

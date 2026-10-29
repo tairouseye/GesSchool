@@ -5,31 +5,49 @@ import { messageErreur } from "@/lib/erreurs.js";
 
 // --- Indicateur clé (KPI) : valeur + libellé + sous-texte optionnel ---
 // ton : navy | or | vert | rouge ; tonValeur : classe couleur explicite (prioritaire).
-export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, chargement = false }) {
+// `serie` (facultatif) : quelques valeurs dans l'ordre du temps, tracées en
+// petite courbe sous le chiffre — la tendance se lit sans graphique.
+export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, serie, chargement = false }) {
   const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-700", rouge: "text-rose-700" };
+  const traits = { navy: "#0B1F3A", or: "rgb(var(--or-500))", vert: "#10b981", rouge: "#e11d48" };
   return (
     <Carte className="p-5">
-      <p className="text-sm text-navy-900/50">{label}</p>
+      <p className="text-sm font-medium text-navy-900/60">{label}</p>
       {chargement ? (
         <div className="mt-2 h-9 animate-pulse rounded bg-navy-900/5" />
       ) : (
-        <p className={`mt-2 font-display text-3xl font-bold ${tonValeur || tons[ton] || tons.navy}`}>
+        <p className={`mt-1.5 font-display text-3xl font-bold ${tonValeur || tons[ton] || tons.navy}`}>
           {valeur ?? "—"}{suffixe && <span className="ml-1 text-base font-normal text-navy-900/40">{suffixe}</span>}
         </p>
       )}
-      {sous && !chargement && <p className="mt-1 text-xs text-navy-900/45">{sous}</p>}
+      {sous && !chargement && <p className="mt-1 text-xs font-medium text-navy-900/55">{sous}</p>}
+      {serie?.length > 1 && !chargement && <Tendance serie={serie} couleur={traits[ton] || traits.or} />}
     </Carte>
   );
 }
 
-// --- Onglets : passent à la ligne pour rester tous visibles (pas de scroll
-// latéral sur mobile). Accessibles (role/aria-selected). items : [[cle, label], …]
+// Petite courbe de tendance (sans axes) : décorative, la valeur est déjà écrite.
+function Tendance({ serie, couleur }) {
+  const max = Math.max(...serie), min = Math.min(...serie);
+  const h = (v) => (max === min ? 14 : 26 - ((v - min) / (max - min)) * 24);
+  const pts = serie.map((v, i) => `${(i * 100) / (serie.length - 1)},${h(v)}`).join(" ");
+  return (
+    <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="mt-3 h-7 w-full" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={couleur} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+// --- Onglets soulignés : passent à la ligne pour rester tous visibles (pas
+// de scroll latéral sur mobile). Accessibles (role/aria-selected). items : [[cle, label], …]
+// Chaque onglet porte son propre filet : replié sur deux lignes, l'onglet
+// actif reste repérable.
 export function Onglets({ items, actif, onChange }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1" role="tablist">
+    <div className="flex flex-wrap gap-x-6 border-b border-navy-900/10" role="tablist">
       {items.map(([k, l]) => (
         <button key={k} type="button" role="tab" aria-selected={actif === k} onClick={() => onChange(k)}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${actif === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50 hover:text-navy-900/80"}`}>
+          className={`-mb-px border-b-2 py-2.5 text-sm font-medium transition ${actif === k ? "border-or-500 text-navy-900" : "border-transparent text-navy-900/60 hover:text-navy-900"}`}>
           {l}
         </button>
       ))}
@@ -83,12 +101,12 @@ export function Bouton({ children, variante = "primaire", className = "", ...pro
   const variantes = {
     primaire: "bg-navy-900 text-creme hover:bg-navy-800 disabled:opacity-50",
     or: "bg-or-500 text-navy-900 hover:bg-or-400 disabled:opacity-50",
-    fantome: "border border-navy-900/15 bg-white text-navy-900 hover:bg-creme disabled:opacity-50",
+    fantome: "border border-navy-900/15 bg-white text-navy-900 hover:border-navy-900/40 disabled:opacity-50",
     danger: "bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50",
   };
   return (
     <button
-      className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${variantes[variante]} ${className}`}
+      className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition ${variantes[variante]} ${className}`}
       {...props}
     >
       {children}
@@ -101,7 +119,7 @@ export function Champ({ label, className = "", ...props }) {
     <label className="block">
       {label && <span className="mb-1.5 block text-sm font-medium text-navy-900/70">{label}</span>}
       <input
-        className={`w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
+        className={`w-full rounded-lg border border-navy-900/15 bg-white px-4 py-2.5 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
         {...props}
       />
     </label>
@@ -119,7 +137,7 @@ export function ChampMotDePasse({ label, className = "", type, ...props }) {
       <div className="relative">
         <input
           type={voir ? "text" : "password"}
-          className={`w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 pr-11 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
+          className={`w-full rounded-lg border border-navy-900/15 bg-white px-4 py-2.5 pr-11 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
           {...props}
         />
         <button
@@ -165,11 +183,12 @@ export function SansAnnee() {
 export function Recherche({ valeur, onChange, placeholder = "Rechercher…", className = "" }) {
   return (
     <div className={`relative ${className}`}>
-      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy-900/30">🔍</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-900/40"
+        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
       <input
         type="search" value={valeur} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder} aria-label={placeholder}
-        className="w-full rounded-xl border border-navy-900/15 bg-white py-2.5 pl-9 pr-8 text-sm outline-none transition focus:border-or-500"
+        className="w-full rounded-lg border border-navy-900/15 bg-white py-2.5 pl-9 pr-8 text-sm outline-none transition focus:border-or-500"
       />
       {valeur && (
         <button type="button" onClick={() => onChange("")} aria-label="Effacer la recherche"
@@ -190,9 +209,11 @@ export function filtreTexte(liste, q, champs) {
 // Les attributs restants sont transmis au conteneur (id, aria-*, onClick…) :
 // sans cela, une ancre ou un libellé d'accessibilité posé sur une Carte était
 // silencieusement perdu.
+// Bord fin, sans ombre (refonte) : sur le fond gris des pages, le blanc suffit
+// à détacher la carte ; les ombres empilées alourdissaient les écrans chargés.
 export function Carte({ children, className = "", ...props }) {
   return (
-    <div className={`rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`} {...props}>
+    <div className={`rounded-2xl border border-navy-900/10 bg-white ${className}`} {...props}>
       {children}
     </div>
   );
@@ -211,7 +232,7 @@ export function Badge({ children, ton = "neutre", className = "" }) {
     info: "bg-info-50 text-info-600 ring-info-500/25",
   };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${tons[ton] || tons.neutre} ${className}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${tons[ton] || tons.neutre} ${className}`}>
       {children}
     </span>
   );
@@ -226,12 +247,12 @@ export function Badge({ children, ton = "neutre", className = "" }) {
 export function Table({ columns, rows, keyField = "id", onRowClick, className = "" }) {
   const al = (a) => (a === "right" ? "text-right" : a === "center" ? "text-center" : "text-left");
   return (
-    <div className={`overflow-x-auto rounded-2xl border border-navy-900/10 bg-white shadow-sm ${className}`}>
+    <div className={`overflow-x-auto rounded-2xl border border-navy-900/10 bg-white ${className}`}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-navy-900/10 bg-creme/60 text-xs uppercase tracking-wide text-navy-900/50">
+          <tr className="border-b border-navy-900/10 bg-navy-900/[0.03] text-xs uppercase tracking-wide text-navy-900/60">
             {columns.map((c) => (
-              <th key={c.key} scope="col" className={`px-4 py-3 font-medium ${al(c.align)} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.className || ""}`}>
+              <th key={c.key} scope="col" className={`px-4 py-3 font-semibold ${al(c.align)} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.className || ""}`}>
                 {c.label}
               </th>
             ))}
@@ -242,10 +263,10 @@ export function Table({ columns, rows, keyField = "id", onRowClick, className = 
             <tr
               key={row[keyField] ?? i}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`border-b border-navy-900/5 align-top last:border-0 ${onRowClick ? "cursor-pointer hover:bg-creme/50" : "hover:bg-creme/40"}`}
+              className={`border-b border-navy-900/5 align-top last:border-0 ${onRowClick ? "cursor-pointer hover:bg-navy-900/[0.03]" : "hover:bg-navy-900/[0.02]"}`}
             >
               {columns.map((c) => (
-                <td key={c.key} className={`px-4 py-3 ${al(c.align)} ${c.align === "right" ? "font-mono tabular-nums" : ""} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.tdClassName || ""}`}>
+                <td key={c.key} className={`px-4 py-3.5 ${al(c.align)} ${c.align === "right" ? "font-mono tabular-nums" : ""} ${c.hideMobile ? "hidden sm:table-cell" : ""} ${c.tdClassName || ""}`}>
                   {c.render ? c.render(row, i) : row[c.key]}
                 </td>
               ))}
@@ -310,7 +331,7 @@ export function Modale({ ouvert, onFermer, titre, children, large = false }) {
 
   if (!ouvert) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/40 p-2 sm:p-4" onClick={onFermer}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/40 p-2 backdrop-blur-[2px] sm:p-4" onClick={onFermer}>
       <div
         ref={ref}
         role="dialog"
