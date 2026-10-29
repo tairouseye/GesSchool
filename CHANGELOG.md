@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.283.0] — Connexion : photo ajustée au téléphone, carte plus claire ; affiche QR code
+- **LE BESOIN** (promoteur, 29/10/2026) : sur téléphone la photo du mois était trop grande, et la partie grise de la carte en masquait une partie (un peu sur ordinateur, beaucoup sur téléphone). Ensuite : un QR code de l'appli à afficher dans les écoles.
+- **Photo fixée à l'écran** : elle couvrait toute la page, plus haute que l'écran sur téléphone, d'où l'agrandissement. Téléphone tenu droit : la photo paysage entière (`object-contain`), sur une copie floutée qui remplit les bandes. Ordinateur et téléphone couché : inchangé.
+- **Carte plus transparente** : voile `navy-900/15` au lieu de `/35`, flou de 2 px au lieu de 12 ; une ombre légère sous le texte garde la carte lisible. Dégradé haut/bas allégé.
+- **Affiche QR code** : `public/affiche-qr.html` (A4, bouton Imprimer, nom de l'école par `?ecole=` ou à saisir) et `public/qr-gesschool.svg` (correction H, logo au centre) vers `https://gesschool.gesprosn.org`.
+
 ## [2.282.0] — Connexion : la carte en verre dépoli, sur téléphone comme sur ordinateur
 - **LE BESOIN** (promoteur, 28/10/2026, comme l'écran de connexion d'une appli bancaire ; visuel comparé « verre léger / verre dépoli » sur trois mois, variante dépolie retenue) : sur téléphone la photo du mois était masquée par la carte blanche ; la rendre transparente, puis faire de même sur ordinateur.
 - **Carte en verre dépoli** (`bg-navy-900/35`, flou derrière la carte seulement) ; champs E-mail et Mot de passe soulignés en blanc, sans fond, en 16 px (pas de zoom sur iPhone) ; bouton **Se connecter** en or ; lien, séparateur et pictogramme du visage en blanc. L'autoremplissage du navigateur ne repeint plus le champ en jaune (`.champ-verre`).

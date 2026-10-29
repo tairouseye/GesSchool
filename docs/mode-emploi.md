@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.282 · mise à jour du 28 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.283 · mise à jour du 29 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -856,7 +856,9 @@ Un parent gère **tous ses enfants depuis un seul compte**, même dans des étab
 ## 18. Notifications push
 Parents et personnel peuvent **activer les notifications** (alerte même app fermée) : note, absence, facture, document prêt, embarquement transport, message. Sur mobile, installer la PWA (« Ajouter à l'écran d'accueil ») — sur iPhone, l'installation est requise pour le push.
 
-**La page de connexion change chaque mois** : une photo de la vie scolaire (rentrée, compositions, Francophonie, 4 avril, examens, vacances…) et, sous la carte, un **encart** avec le conseil du mois. La carte de connexion est en **verre dépoli** : la photo se devine à travers, les champs sont soulignés en blanc et le bouton **Se connecter** est en or. Sans connexion internet, le fond bleu habituel s'affiche.
+**La page de connexion change chaque mois** : une photo de la vie scolaire (rentrée, compositions, Francophonie, 4 avril, examens, vacances…) et, sous la carte, un **encart** avec le conseil du mois. La carte de connexion est en **verre** : la photo reste visible à travers, les champs sont soulignés en blanc et le bouton **Se connecter** est en or. Sur un téléphone tenu droit, la photo s'affiche en entier, ajustée à l'écran. Sans connexion internet, le fond bleu habituel s'affiche.
+
+**Affiche QR code pour l'école.** La page `gesschool.gesprosn.org/affiche-qr.html?ecole=Nom de l'école` donne une affiche A4 prête à imprimer (bouton **Imprimer l'affiche**) : un QR code que parents et personnel scannent avec l'appareil photo du téléphone pour ouvrir la page de connexion. Sans `?ecole=`, cliquer sur la ligne sous le logo pour écrire le nom de l'établissement.
 
 **Mises à jour.** Quand une nouvelle version de GesSchool est publiée, un bandeau **« 🔄 Une nouvelle version de GesSchool est disponible »** apparaît en bas de l'écran. **Mettre à jour** l'installe en quelques secondes. **Plus tard** la laisse en attente : elle s'installera d'elle-même à la prochaine ouverture de l'appli. L'appli vérifie à l'ouverture, au retour sur l'onglet et toutes les 30 minutes.
 
