@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refonte de l'interface</title>
+<!-- Maquette du 29/10/2026 (branche refonte-interface) : trois écrans clés
+     repensés dans l'esprit d'Alma — de l'air, une hiérarchie nette, « ce qui
+     demande une action » d'abord — en gardant la charte bleu nuit et or.
+     Données fictives. Rien n'est codé tant que la maquette n'est pas validée. -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { navy: { 900: "#0b1f3a", 800: "#13294b", 700: "#1e3a64" }, or: { 400: "#d8b24a", 500: "#c9a227", 600: "#a8861a" }, creme: "#f7f3ea" },
+    fontFamily: { display: ['"Space Grotesk"', "Segoe UI", "sans-serif"], sans: ["Inter", "Segoe UI", "system-ui", "sans-serif"] },
+  } } };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body { background:#e9ebf0; }
+  .ecran { display:none; } .ecran.actif { display:flex; }
+  .ico { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+</style>
+</head>
+<body class="font-sans text-navy-900">
+
+<!-- Barre de la maquette (hors appli) -->
+<div class="sticky top-0 z-20 border-b border-black/10 bg-white/90 backdrop-blur">
+  <div class="mx-auto flex max-w-[1320px] flex-wrap items-center gap-3 px-4 py-3">
+    <div>
+      <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-or-600">GesSchool · Maquette de refonte</p>
+      <p class="text-sm text-slate-500">Données fictives · charte conservée · inspirée des principes d'Alma</p>
+    </div>
+    <div class="ml-auto flex gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold" id="choix">
+      <button data-e="tdb" class="rounded-lg px-4 py-2">1 · Tableau de bord</button>
+      <button data-e="liste" class="rounded-lg px-4 py-2">2 · Liste des élèves</button>
+      <button data-e="fiche" class="rounded-lg px-4 py-2">3 · Fiche élève</button>
+    </div>
+  </div>
+</div>
+
+<div class="mx-auto max-w-[1320px] p-4">
+<div class="overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+<div class="flex min-h-[860px]">
+
+  <!-- ===== Menu latéral : plus clair, groupé, icônes ===== -->
+  <aside class="flex w-60 shrink-0 flex-col bg-navy-900 text-creme">
+    <div class="flex items-center gap-3 px-5 py-5">
+      <div class="grid h-10 w-10 place-items-center rounded-xl bg-white font-display text-sm font-bold text-navy-900">TT</div>
+      <div class="min-w-0"><p class="truncate font-semibold leading-tight">Tut'Tank</p><p class="text-xs text-creme/50">Année 2026-2027</p></div>
+    </div>
+    <div class="mx-4 mb-4 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-creme/50">
+      <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg> Rechercher… <kbd class="ml-auto rounded bg-white/10 px-1.5 text-[10px]">Ctrl K</kbd>
+    </div>
+    <nav class="flex-1 space-y-5 px-3 text-sm" id="menu"></nav>
+    <div class="flex items-center gap-3 border-t border-white/10 px-5 py-4">
+      <div class="grid h-9 w-9 place-items-center rounded-full bg-or-500 text-xs font-bold text-navy-900">TS</div>
+      <div class="min-w-0 text-xs"><p class="font-semibold text-creme">Tahirou SEYE</p><p class="text-creme/50">Promoteur</p></div>
+    </div>
+  </aside>
+
+  <main class="min-w-0 flex-1 bg-[#f7f8fa]">
+
+  <!-- ================= 1. TABLEAU DE BORD ================= -->
+  <section class="ecran flex-col" id="tdb">
+    <header class="flex items-center gap-4 border-b border-slate-200 bg-white px-8 py-5">
+      <div><p class="text-sm text-slate-500">Jeudi 29 octobre</p><h1 class="font-display text-2xl font-bold">Bonjour Tahirou</h1></div>
+      <div class="ml-auto flex items-center gap-2">
+        <button class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium">Exporter</button>
+        <button class="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white">+ Encaisser un paiement</button>
+      </div>
+    </header>
+    <div class="space-y-6 p-8">
+      <!-- Ce qui demande une action -->
+      <div class="rounded-2xl border border-slate-200 bg-white">
+        <div class="flex items-center justify-between px-6 pt-5"><h2 class="font-semibold">À faire aujourd'hui <span class="ml-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">4</span></h2><a class="text-sm font-medium text-navy-700">Tout voir</a></div>
+        <ul class="divide-y divide-slate-100 px-2 pb-2 pt-3" id="afaire"></ul>
+      </div>
+
+      <!-- Indicateurs avec tendance -->
+      <div class="grid grid-cols-4 gap-4" id="kpis"></div>
+
+      <div class="grid grid-cols-3 gap-6">
+        <div class="col-span-2 rounded-2xl border border-slate-200 bg-white p-6">
+          <div class="flex items-center"><h2 class="font-semibold">Encaissements</h2>
+            <div class="ml-auto flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold"><span class="rounded-md px-2.5 py-1 text-slate-500">Semaine</span><span class="rounded-md bg-white px-2.5 py-1 shadow-sm">6 mois</span><span class="rounded-md px-2.5 py-1 text-slate-500">Année</span></div></div>
+          <div class="mt-6 flex h-52 items-end gap-4" id="graphe"></div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 class="font-semibold">Recouvrement par cycle</h2>
+          <div class="mt-5 space-y-4" id="cycles"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6">
+        <div class="col-span-2 rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 class="font-semibold">Activité récente</h2>
+          <ul class="mt-4 space-y-4" id="activite"></ul>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 class="font-semibold">Agenda</h2>
+          <ul class="mt-4 space-y-3" id="agenda"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2. LISTE DES ÉLÈVES ================= -->
+  <section class="ecran flex-col" id="liste">
+    <header class="flex items-center gap-4 border-b border-slate-200 bg-white px-8 py-5">
+      <div><h1 class="font-display text-2xl font-bold">Élèves</h1><p class="text-sm text-slate-500">412 inscrits · 18 classes</p></div>
+      <div class="ml-auto flex items-center gap-2">
+        <button class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium">Importer (Excel)</button>
+        <button class="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white">+ Nouvel élève</button>
+      </div>
+    </header>
+    <div class="p-8">
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <div class="flex w-72 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-400"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Nom, matricule ou parent…</div>
+        <span class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm">Classe : <b>Toutes</b> ▾</span>
+        <span class="rounded-full border border-navy-900 bg-navy-900 px-3 py-1.5 text-sm text-white">Paiement : En retard ✕</span>
+        <span class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm">Statut : <b>Inscrit</b> ▾</span>
+        <span class="ml-auto text-sm text-slate-500">37 résultats</span>
+      </div>
+      <div class="mb-3 flex items-center gap-3 rounded-xl bg-navy-900 px-4 py-2.5 text-sm text-white">
+        <b>3 élèves sélectionnés</b>
+        <button class="rounded-md bg-white/10 px-3 py-1">Envoyer une relance</button>
+        <button class="rounded-md bg-white/10 px-3 py-1">Imprimer les cartes</button>
+        <button class="rounded-md bg-white/10 px-3 py-1">Changer de classe</button>
+        <button class="ml-auto text-white/60">Annuler</button>
+      </div>
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-sm">
+          <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr><th class="w-10 px-4 py-3"><input type="checkbox"></th><th class="px-3 py-3">Élève</th><th class="px-3 py-3">Classe</th><th class="px-3 py-3">Responsable</th><th class="px-3 py-3">Paiement</th><th class="px-3 py-3">Assiduité</th><th class="px-3 py-3">Moyenne</th><th class="w-10"></th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="lignes"></tbody>
+        </table>
+        <div class="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-500"><span>1 – 8 sur 37</span><div class="flex gap-1"><span class="rounded-md border border-slate-200 px-2.5 py-1">‹</span><span class="rounded-md bg-navy-900 px-2.5 py-1 text-white">1</span><span class="rounded-md border border-slate-200 px-2.5 py-1">2</span><span class="rounded-md border border-slate-200 px-2.5 py-1">›</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 3. FICHE ÉLÈVE ================= -->
+  <section class="ecran flex-col" id="fiche">
+    <div class="border-b border-slate-200 bg-white px-8 pt-5">
+      <p class="text-sm text-slate-500"><a class="text-navy-700">Élèves</a> › CM1 A › Mame Adama SEYE</p>
+      <div class="mt-4 flex items-center gap-5">
+        <div class="grid h-20 w-20 place-items-center rounded-2xl bg-violet-500 font-display text-2xl font-bold text-white">MS</div>
+        <div>
+          <div class="flex items-center gap-2"><h1 class="font-display text-2xl font-bold">Mame Adama SEYE</h1><span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Inscrite</span></div>
+          <p class="mt-1 text-sm text-slate-500">CM1 A · Matricule TT-2023-0148 · 10 ans · née le 12/03/2016 à Dakar</p>
+        </div>
+        <div class="ml-auto flex gap-2">
+          <button class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium">Écrire aux parents</button>
+          <button class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium">Certificat</button>
+          <button class="rounded-lg bg-navy-900 px-4 py-2 text-sm font-semibold text-white">Encaisser</button>
+        </div>
+      </div>
+      <nav class="mt-5 flex gap-6 text-sm font-medium text-slate-500">
+        <span class="border-b-2 border-or-500 pb-3 text-navy-900">Aperçu</span><span class="pb-3">Scolarité</span><span class="pb-3">Paiements</span><span class="pb-3">Notes</span><span class="pb-3">Absences</span><span class="pb-3">Documents</span>
+      </nav>
+    </div>
+    <div class="grid grid-cols-3 gap-6 p-8">
+      <!-- Trois résumés -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Paiements 2026-2027</p>
+        <p class="mt-2 font-display text-2xl font-bold">280 000 <span class="text-sm font-medium text-slate-400">/ 350 000 FCFA</span></p>
+        <div class="mt-3 h-2 rounded-full bg-slate-100"><div class="h-2 w-[80%] rounded-full bg-emerald-500"></div></div>
+        <p class="mt-3 text-sm text-slate-600">Prochaine échéance : <b>35 000 FCFA</b> le 5 novembre</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Moyenne · 1er trimestre</p>
+        <p class="mt-2 font-display text-2xl font-bold">14,2 <span class="text-sm font-medium text-slate-400">/ 20</span> <span class="ml-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">▲ +1,1</span></p>
+        <svg viewBox="0 0 200 40" class="mt-3 h-10 w-full"><polyline points="0,30 40,26 80,28 120,18 160,14 200,10" fill="none" stroke="#c9a227" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <p class="mt-1 text-sm text-slate-600">Rang <b>6</b> sur 32 dans la classe</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-sm font-medium text-slate-500">Assiduité</p>
+        <p class="mt-2 font-display text-2xl font-bold">97 %</p>
+        <div class="mt-3 flex gap-1" id="presence"></div>
+        <p class="mt-3 text-sm text-slate-600">2 absences, dont <b>1 non justifiée</b></p>
+      </div>
+
+      <!-- Échéancier -->
+      <div class="col-span-2 rounded-2xl border border-slate-200 bg-white p-6">
+        <div class="flex items-center"><h2 class="font-semibold">Échéancier</h2><a class="ml-auto text-sm font-medium text-navy-700">Voir les reçus</a></div>
+        <ol class="mt-5 grid grid-cols-5 gap-2 text-center text-xs" id="echeancier"></ol>
+        <h2 class="mt-8 font-semibold">Dernières notes</h2>
+        <table class="mt-3 w-full text-sm"><tbody class="divide-y divide-slate-100" id="notes"></tbody></table>
+      </div>
+
+      <!-- Responsables -->
+      <div class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 class="font-semibold">Responsables</h2>
+          <div class="mt-4 space-y-4">
+            <div class="flex items-center gap-3"><div class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-sm font-bold">TS</div><div class="min-w-0 text-sm"><p class="font-semibold">Tahirou SEYE <span class="font-normal text-slate-400">· père</span></p><p class="text-slate-500">77 343 59 28 · appli activée ✓</p></div></div>
+            <div class="flex items-center gap-3"><div class="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-sm font-bold">AD</div><div class="min-w-0 text-sm"><p class="font-semibold">Aïssatou DIOP <span class="font-normal text-slate-400">· mère</span></p><p class="text-slate-500">76 512 08 44 · pas encore invitée</p></div></div>
+          </div>
+          <button class="mt-4 w-full rounded-lg border border-dashed border-slate-300 py-2 text-sm font-medium text-slate-500">+ Ajouter un responsable</button>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 text-sm">
+          <h2 class="font-semibold">Services</h2>
+          <ul class="mt-3 space-y-2 text-slate-600"><li class="flex justify-between"><span>Cantine</span><b class="text-navy-900">Inscrite</b></li><li class="flex justify-between"><span>Transport</span><b class="text-navy-900">Ligne 2 · Ouakam</b></li><li class="flex justify-between"><span>Fournitures</span><b class="text-emerald-700">Remises</b></li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<!-- Ce qui change -->
+<div class="mt-6 grid grid-cols-3 gap-4 text-sm" id="principes"></div>
+</div>
+
+<script>
+  const I = {
+    accueil:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    eleves:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3.1 2.6 3.5 5.2"/>',
+    notes:'<path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h6M8 11h6"/>',
+    appel:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="m9 15 2 2 4-4"/>',
+    edt:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    paie:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
+    relance:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    rh:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+    reglages:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  };
+  const ico = (n, c = "") => `<svg class="ico ${c}" viewBox="0 0 24 24">${I[n]}</svg>`;
+
+  // Menu groupé
+  const MENU = [["", [["accueil","Tableau de bord","tdb"]]],
+    ["Scolarité", [["eleves","Élèves","liste"],["notes","Notes & bulletins"],["appel","Appel & absences"],["edt","Emploi du temps"]]],
+    ["Finances", [["paie","Paiements"],["relance","Recouvrement",null,12]]],
+    ["Communication", [["msg","Messagerie",null,3]]],
+    ["Administration", [["rh","RH & paie"],["reglages","Paramètres"]]]];
+  function rendreMenu(actif) {
+    document.getElementById("menu").innerHTML = MENU.map(([g, items]) => `<div>${g ? `<p class="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-creme/35">${g}</p>` : ""}
+      ${items.map(([i, l, e, n]) => `<a data-e="${e || ""}" class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${e === actif || (actif === "fiche" && e === "liste") ? "bg-white/10 font-semibold text-white shadow-[inset_3px_0_0_#c9a227]" : "text-creme/70 hover:bg-white/5"}">${ico(i)}${l}${n ? `<span class="ml-auto rounded-full bg-or-500 px-1.5 text-[10px] font-bold text-navy-900">${n}</span>` : ""}</a>`).join("")}</div>`).join("");
+  }
+
+  // 1. Tableau de bord
+  document.getElementById("afaire").innerHTML = [
+    ["bg-amber-100 text-amber-700","paie","5 paiements Wave et Orange Money à valider","Déclarés par les parents depuis hier","Valider"],
+    ["bg-rose-100 text-rose-700","relance","12 familles en retard de plus de 30 jours","1,2 M FCFA · dernière relance il y a 9 jours","Relancer"],
+    ["bg-sky-100 text-sky-700","notes","Bulletins du CM2 B prêts à signer","Conseil de classe tenu le 27 octobre","Signer"],
+    ["bg-violet-100 text-violet-700","appel","3 classes sans appel ce matin","CE1 A, CE2 B, CM1 B","Rappeler"],
+  ].map(([c, i, t, s, b]) => `<li class="flex items-center gap-4 rounded-xl px-4 py-3 hover:bg-slate-50"><span class="grid h-9 w-9 place-items-center rounded-lg ${c}">${ico(i)}</span><div class="min-w-0"><p class="font-medium">${t}</p><p class="text-sm text-slate-500">${s}</p></div><button class="ml-auto rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold hover:border-navy-900">${b}</button></li>`).join("");
+
+  const spark = (pts, c) => `<svg viewBox="0 0 100 28" class="mt-3 h-7 w-full"><polyline points="${pts.map((v, i) => `${i * (100 / (pts.length - 1))},${28 - v}`).join(" ")}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/></svg>`;
+  document.getElementById("kpis").innerHTML = [
+    ["Élèves inscrits","412","+14 ce mois","text-emerald-700",[8,10,12,14,15,18,20],"#10b981"],
+    ["Taux de recouvrement","78 %","+4 pts sur septembre","text-emerald-700",[10,12,11,15,17,19,22],"#10b981"],
+    ["Encaissé en octobre","18,4 M","FCFA · 312 paiements","text-slate-500",[6,14,9,18,12,20,16],"#c9a227"],
+    ["Reste à encaisser","5,2 M","FCFA · 37 familles","text-rose-600",[22,20,19,16,15,13,12],"#e11d48"],
+  ].map(([l, v, s, c, p, sc]) => `<div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-sm font-medium text-slate-500">${l}</p><p class="mt-1 font-display text-3xl font-bold">${v}</p><p class="mt-1 text-xs font-medium ${c}">${s}</p>${spark(p, sc)}</div>`).join("");
+
+  const serie = [["mai",9.2],["juin",6.1],["juil",2.3],["août",4.8],["sept",21.6],["oct",18.4]];
+  document.getElementById("graphe").innerHTML = serie.map(([m, v], i) => `<div class="flex h-full flex-1 flex-col items-center gap-2"><span class="text-xs font-semibold ${i === 5 ? "text-navy-900" : "text-slate-400"}">${v} M</span><div class="flex w-full flex-1 items-end"><div class="w-full rounded-lg ${i === 5 ? "bg-or-500" : "bg-navy-900/80"}" style="height:${v / 21.6 * 100}%"></div></div><span class="text-xs text-slate-500">${m}</span></div>`).join("");
+
+  document.getElementById("cycles").innerHTML = [["Maternelle",86],["Élémentaire",74],["Moyen",69]].map(([c, p]) => `<div><div class="flex justify-between text-sm"><span>${c}</span><b>${p} %</b></div><div class="mt-1.5 h-2 rounded-full bg-slate-100"><div class="h-2 rounded-full ${p > 80 ? "bg-emerald-500" : p > 70 ? "bg-or-500" : "bg-rose-500"}" style="width:${p}%"></div></div></div>`).join("") +
+    `<div class="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">Le cycle moyen est en dessous de l'objectif de 75 %. <a class="font-semibold text-navy-700">Voir les familles →</a></div>`;
+
+  document.getElementById("activite").innerHTML = [
+    ["bg-emerald-100 text-emerald-700","paie","<b>Fatou NDIAYE</b> a payé 35 000 FCFA par Wave pour <b>Ibrahima NDIAYE</b> (CE2 A)","il y a 12 min"],
+    ["bg-sky-100 text-sky-700","notes","<b>M. Diallo</b> a saisi les notes de mathématiques du CM2 B","il y a 1 h"],
+    ["bg-violet-100 text-violet-700","eleves","Nouvelle inscription : <b>Awa FALL</b> en CI A","il y a 3 h"],
+    ["bg-amber-100 text-amber-700","msg","<b>Moussa SOW</b> a écrit à l'administration au sujet du transport","hier"],
+  ].map(([c, i, t, d]) => `<li class="flex gap-3"><span class="grid h-8 w-8 shrink-0 place-items-center rounded-full ${c}">${ico(i, "!w-4 !h-4")}</span><div class="text-sm"><p class="text-slate-700">${t}</p><p class="text-xs text-slate-400">${d}</p></div></li>`).join("");
+
+  document.getElementById("agenda").innerHTML = [["5","NOV","Échéance de novembre","248 familles · 8,7 M FCFA"],["11","NOV","Conseil de classe CM1","15 h · salle des maîtres"],["20","NOV","Droits de l'enfant","Activité dans toutes les classes"]].map(([j, m, t, s]) => `<li class="flex gap-3"><div class="w-12 shrink-0 rounded-lg bg-navy-900 py-1 text-center text-white"><p class="font-display text-lg font-bold leading-none">${j}</p><p class="text-[10px] text-or-400">${m}</p></div><div class="text-sm"><p class="font-medium">${t}</p><p class="text-slate-500">${s}</p></div></li>`).join("");
+
+  // 2. Liste des élèves
+  const couleurs = ["bg-violet-500","bg-sky-500","bg-emerald-500","bg-amber-500","bg-rose-500","bg-teal-500","bg-indigo-500","bg-orange-500"];
+  const paiement = (e) => e === "ok" ? `<span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">À jour</span>`
+    : e === "partiel" ? `<span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">Partiel · 15 000</span>`
+    : `<span class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">Retard · ${e} mois</span>`;
+  document.getElementById("lignes").innerHTML = [
+    ["Ibrahima NDIAYE","TT-2022-0091","CE2 A","Fatou NDIAYE","77 612 44 10","2",92,"11,8",true],
+    ["Awa DIOP","TT-2024-0233","CM1 B","Cheikh DIOP","78 120 55 02","1",98,"15,4",true],
+    ["Moussa FALL","TT-2021-0042","CM2 A","Ndèye FALL","76 333 18 90","partiel",95,"12,6",false],
+    ["Khady SOW","TT-2023-0177","CE1 A","Moussa SOW","77 908 27 61","3",84,"10,2",true],
+    ["Ousmane BA","TT-2025-0301","CI B","Mariama BA","70 455 12 39","1",100,"—",false],
+    ["Seynabou GUEYE","TT-2022-0118","CM1 A","Abdou GUEYE","77 201 66 73","partiel",97,"13,9",false],
+    ["Pape Modou SARR","TT-2020-0015","CM2 B","Aminata SARR","78 644 90 05","2",90,"9,7",false],
+    ["Coumba THIAM","TT-2024-0256","CP A","Alioune THIAM","76 772 31 48","1",99,"—",false],
+  ].map(([n, m, c, p, t, e, a, moy, sel], i) => `<tr class="${sel ? "bg-sky-50/60" : "hover:bg-slate-50"}"><td class="px-4 py-3"><input type="checkbox" ${sel ? "checked" : ""}></td>
+    <td class="px-3 py-3"><div class="flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-full text-xs font-bold text-white ${couleurs[i]}">${n.split(" ").map((x) => x[0]).slice(0, 2).join("")}</span><div><p class="font-semibold">${n}</p><p class="text-xs text-slate-400">${m}</p></div></div></td>
+    <td class="px-3 py-3"><span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold">${c}</span></td>
+    <td class="px-3 py-3"><p>${p}</p><p class="text-xs text-slate-400">${t}</p></td>
+    <td class="px-3 py-3">${paiement(e)}</td>
+    <td class="px-3 py-3"><div class="flex items-center gap-2"><div class="h-1.5 w-16 rounded-full bg-slate-100"><div class="h-1.5 rounded-full ${a >= 95 ? "bg-emerald-500" : a >= 90 ? "bg-or-500" : "bg-rose-500"}" style="width:${a}%"></div></div><span class="text-xs text-slate-500">${a} %</span></div></td>
+    <td class="px-3 py-3 font-semibold">${moy}</td>
+    <td class="px-3 py-3 text-slate-400">⋯</td></tr>`).join("");
+
+  // 3. Fiche élève
+  document.getElementById("presence").innerHTML = Array.from({ length: 30 }, (_, i) => `<span class="h-6 flex-1 rounded-sm ${i === 8 ? "bg-rose-400" : i === 19 ? "bg-amber-400" : "bg-emerald-400/70"}"></span>`).join("");
+  document.getElementById("echeancier").innerHTML = [["Inscription","70 000","ok"],["Octobre","35 000","ok"],["Novembre","35 000","bientot"],["Décembre","35 000",""],["Janvier","35 000",""]].map(([m, v, s]) => `<li class="rounded-xl border ${s === "ok" ? "border-emerald-200 bg-emerald-50" : s === "bientot" ? "border-or-500 bg-amber-50" : "border-slate-200"} p-3"><p class="font-semibold">${m}</p><p class="mt-1 text-slate-500">${v}</p><p class="mt-2 font-semibold ${s === "ok" ? "text-emerald-700" : s === "bientot" ? "text-or-600" : "text-slate-400"}">${s === "ok" ? "✓ Payé" : s === "bientot" ? "Dans 7 jours" : "À venir"}</p></li>`).join("");
+  document.getElementById("notes").innerHTML = [["Mathématiques","Composition","16 / 20","28 oct."],["Français","Dictée","13 / 20","24 oct."],["Sciences","Devoir","15,5 / 20","21 oct."]].map(([m, t, n, d]) => `<tr><td class="py-2.5 font-medium">${m}</td><td class="text-slate-500">${t}</td><td class="font-semibold">${n}</td><td class="text-right text-slate-400">${d}</td></tr>`).join("");
+
+  document.getElementById("principes").innerHTML = [
+    ["De l'air et une hiérarchie nette","Titres plus grands, marges plus généreuses, cartes à bord fin plutôt qu'ombrées. L'œil sait où regarder."],
+    ["L'action d'abord","Le tableau de bord commence par « À faire aujourd'hui », avec un bouton par ligne. Les chiffres viennent ensuite, avec leur tendance."],
+    ["Tout l'élève sur une page","La fiche réunit paiements, notes, assiduité, responsables et services. Les onglets mènent au détail."],
+    ["Des statuts en pastilles","Paiement, assiduité et classe se lisent en couleur dans la liste, sans ouvrir la fiche."],
+    ["Des actions groupées","Cocher plusieurs élèves fait apparaître une barre : relancer, imprimer les cartes, changer de classe."],
+    ["La charte conservée","Bleu nuit et or, menu à gauche, mêmes rubriques. Les utilisateurs retrouvent leurs repères."],
+  ].map(([t, d]) => `<div class="rounded-xl bg-white p-4 shadow-sm"><p class="font-semibold">${t}</p><p class="mt-1 text-slate-600">${d}</p></div>`).join("");
+
+  function montrer(e) {
+    document.querySelectorAll(".ecran").forEach((s) => s.classList.toggle("actif", s.id === e));
+    document.querySelectorAll("#choix button").forEach((b) => b.className = `rounded-lg px-4 py-2 ${b.dataset.e === e ? "bg-white shadow-sm" : "text-slate-500"}`);
+    rendreMenu(e);
+    try { localStorage.setItem("maquette-ecran", e); } catch {}
+  }
+  document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-e]"); if (b?.dataset.e) montrer(b.dataset.e); });
+  document.getElementById("lignes").addEventListener("click", () => montrer("fiche"));
+  let depart = new URLSearchParams(location.search).get("e");
+  try { depart = depart || localStorage.getItem("maquette-ecran"); } catch {}
+  montrer(depart || "tdb");
+</script>
+</body>
+</html>

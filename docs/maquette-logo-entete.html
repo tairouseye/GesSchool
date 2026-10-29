@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo de l'en-tête</title>
+<!-- Maquette du 29/10/2026 : le logo en haut à gauche des espaces (parent,
+     étudiant, super-admin) et des écrans d'attente. Aujourd'hui c'est
+     l'ancien Cachet (texte circulaire illisible à 36 px), alors que la
+     connexion montre la toque (piste B de maquette-logo.html). -->
+<style>
+  :root { --navy:#0b1f3a; --navy2:#13294b; --or:#c9a227; --creme:#f7f3ea; --bg:#eef0f4; --ink:#1b2433; --muted:#66708a; --line:#e3e7ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif; padding:28px 16px 60px; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-size:11px; font-weight:700; color:var(--or); }
+  h1 { margin:4px 0 6px; font-size:28px; }
+  .lead { color:var(--muted); max-width:70ch; margin:0 0 24px; font-size:14.5px; }
+  .piste { background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:18px; box-shadow:0 10px 28px rgba(16,28,54,.07); }
+  .titre { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .lettre { display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--navy); color:var(--or); font-weight:800; }
+  .titre h2 { margin:0; font-size:17px; }
+  .titre p { margin:0; color:var(--muted); font-size:13px; }
+  .entete { display:flex; align-items:center; gap:12px; background:var(--navy); color:var(--creme); border-radius:12px; padding:14px 22px; }
+  .entete b { font-size:19px; } .entete b span { color:var(--or); } .entete small { color:rgba(247,243,234,.6); font-size:14px; }
+  .entete .droite { margin-left:auto; display:flex; gap:14px; opacity:.6; font-size:14px; }
+  .ligne { display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap; margin-top:14px; }
+  .tel { width:320px; background:var(--navy); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; color:var(--creme); }
+  .tel .droite { margin-left:auto; opacity:.6; font-size:13px; }
+  .cap { font-size:11px; color:var(--muted); text-align:center; margin-top:5px; }
+  .icone { width:76px; height:76px; border-radius:18px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.18); }
+  .onglet { display:flex; align-items:center; gap:6px; background:#dfe3ea; border-radius:8px 8px 0 0; padding:6px 10px; font-size:12px; }
+  svg { display:block; }
+  .note { color:var(--muted); font-size:13px; margin-top:22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">GesSchool · Identité</div>
+  <h1>Logo en haut à gauche</h1>
+  <p class="lead">Chaque piste est montrée dans l'en-tête sur ordinateur et sur téléphone (36 px), en icône de l'appli installée et en favicon d'onglet (16 px). Dites-moi <b>A</b>, <b>B</b>, <b>C</b> ou <b>D</b>.</p>
+  <div id="pistes"></div>
+  <p class="note">Le cachet « GS » reste sur les documents officiels (reçus, bulletins, relevés) : c'est le tampon de l'école, avec son sigle. La piste choisie remplace le logo produit : en-têtes des espaces parent, étudiant et super-admin, écrans d'attente, icône de l'appli et favicon.</p>
+</div>
+<script>
+  const toque = (c) => `<path d="M50 26 L83 40 L50 54 L17 40 Z" fill="${c}"/><path d="M32 46 V60 c0 6.5 36 6.5 36 0 V46" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/><path d="M83 40 V60" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="83" cy="62.5" r="3.2" fill="${c}"/>`;
+  // Toque recentrée et un peu plus grosse, pour les petites tailles.
+  const toqueG = (c) => `<g transform="translate(50 50) scale(1.02) translate(-51.5 -46)">${toque(c)}</g>`;
+  const MARQUES = {
+    A: { nom: "Actuel : le cachet", why: "Le texte circulaire « GESSCHOOL • OFFICIEL » devient des points à 36 px ; seul « GS » se lit.",
+      svg: () => `<circle cx="50" cy="50" r="46" fill="none" stroke="#c9a227" stroke-width="2"/><circle cx="50" cy="50" r="38" fill="none" stroke="#c9a227" stroke-width="1" stroke-dasharray="2 3"/><text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="#c9a227" font-family="Segoe UI,sans-serif">GS</text>`,
+      icone: (s) => `<rect width="100" height="100" fill="#0b1f3a"/><g transform="translate(50 50) scale(.75) translate(-50 -50)">${s}</g>` },
+    B: { nom: "Toque sur disque or", why: "La toque de la connexion, en bleu nuit sur un disque or : la tache la plus visible, lisible même en favicon.",
+      svg: () => `<circle cx="50" cy="50" r="50" fill="#c9a227"/>${toqueG("#0b1f3a")}`,
+      icone: () => `<rect width="100" height="100" fill="#c9a227"/>${toqueG("#0b1f3a")}` },
+    C: { nom: "Toque dans un anneau or", why: "Proche du cachet actuel (un cercle or), mais sans texte : la toque or dans un anneau fin.",
+      svg: () => `<circle cx="50" cy="50" r="46" fill="#13294b" stroke="#c9a227" stroke-width="4"/>${toqueG("#c9a227")}`,
+      icone: () => `<rect width="100" height="100" fill="#0b1f3a"/><g transform="translate(50 50) scale(.8) translate(-50 -50)"><circle cx="50" cy="50" r="46" fill="#13294b" stroke="#c9a227" stroke-width="4"/>${toqueG("#c9a227")}</g>` },
+    D: { nom: "Carré arrondi or, comme une icône d'appli", why: "Même forme que l'icône installée sur le téléphone : l'en-tête et l'écran d'accueil se ressemblent.",
+      svg: () => `<rect x="2" y="2" width="96" height="96" rx="24" fill="#c9a227"/>${toqueG("#0b1f3a")}`,
+      icone: () => `<rect width="100" height="100" fill="#c9a227"/>${toqueG("#0b1f3a")}` },
+  };
+  const svg = (inner, t) => `<svg viewBox="0 0 100 100" width="${t}" height="${t}">${inner}</svg>`;
+  document.getElementById("pistes").innerHTML = Object.entries(MARQUES).map(([k, m]) => {
+    const s = m.svg();
+    return `<div class="piste">
+      <div class="titre"><span class="lettre">${k}</span><div><h2>${m.nom}</h2><p>${m.why}</p></div></div>
+      <div class="entete">${svg(s, 36)}<b>Ges<span>School</span></b><small>· Espace parent</small><div class="droite">💬 🔔 ? ⚙ Tahirou SEYE</div></div>
+      <div class="ligne">
+        <div><div class="tel">${svg(s, 36)}<div class="droite">💬 🔔 ⚙ ⎋</div></div><div class="cap">Téléphone (320 px)</div></div>
+        <div><div class="icone">${svg(m.icone(s), 76)}</div><div class="cap">Icône installée</div></div>
+        <div><div class="onglet">${svg(m.icone(s), 16)} GesSchool</div><div class="cap">Favicon 16 px</div></div>
+        <div><div style="background:#f7f3ea;padding:10px;border-radius:12px;border:1px solid #e0dccf">${svg(s, 48)}</div><div class="cap">Sur fond clair</div></div>
+      </div>
+    </div>`;
+  }).join("");
+</script>
+</body>
+</html>

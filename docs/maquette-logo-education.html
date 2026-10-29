@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logos GesSchool</title>
+<!-- Maquette du 29/10/2026 : six pistes de logo produit, plus
+     professionnelles et liées à l'éducation (suite de maquette-logo-entete.html). -->
+<style>
+  :root { --navy:#0b1f3a; --navy2:#13294b; --or:#c9a227; --creme:#f7f3ea; --bg:#eef0f4; --ink:#1b2433; --muted:#66708a; --line:#e3e7ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif; padding:28px 16px 60px; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-size:11px; font-weight:700; color:var(--or); }
+  h1 { margin:4px 0 6px; font-size:28px; }
+  .lead { color:var(--muted); max-width:72ch; margin:0 0 24px; font-size:14.5px; }
+  .grille { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+  @media (max-width:860px) { .grille { grid-template-columns:1fr; } }
+  .piste { background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 10px 28px rgba(16,28,54,.07); }
+  .titre { display:flex; gap:10px; margin-bottom:12px; }
+  .lettre { flex:none; display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--navy); color:var(--or); font-weight:800; }
+  .titre h2 { margin:0; font-size:16px; }
+  .titre p { margin:2px 0 0; color:var(--muted); font-size:12.5px; }
+  .vedette { display:flex; align-items:center; justify-content:center; gap:16px; background:linear-gradient(160deg,#0b1f3a,#13294b); border-radius:14px; padding:26px 16px; }
+  .vedette b { font-size:32px; letter-spacing:-.01em; color:var(--creme); } .vedette b span { color:var(--or); }
+  .entete { display:flex; align-items:center; gap:10px; background:var(--navy); color:var(--creme); border-radius:10px; padding:10px 14px; margin-top:12px; }
+  .entete b { font-size:17px; } .entete b span { color:var(--or); } .entete small { color:rgba(247,243,234,.6); font-size:13px; }
+  .ligne { display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap; margin-top:14px; }
+  .cap { font-size:11px; color:var(--muted); text-align:center; margin-top:5px; }
+  .icone { width:68px; height:68px; border-radius:16px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.18); }
+  .onglet { display:flex; align-items:center; gap:6px; background:#dfe3ea; border-radius:8px 8px 0 0; padding:6px 10px; font-size:12px; }
+  .clair { display:flex; align-items:center; gap:8px; background:var(--creme); padding:10px 12px; border-radius:12px; border:1px solid #e0dccf; }
+  .clair b { font-size:16px; color:var(--navy); } .clair b span { color:#a8861a; }
+  svg { display:block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">GesSchool · Identité</div>
+  <h1>Six pistes de logo liées à l'éducation</h1>
+  <p class="lead">Chaque logo est montré en grand avec le nom, dans l'en-tête de l'appli, en icône installée sur le téléphone, en favicon d'onglet (16 px) et sur fond clair (documents, site). Couleurs de la charte : bleu nuit et or. Dites-moi la lettre retenue, ou ce qu'il faut combiner.</p>
+  <div class="grille" id="pistes"></div>
+</div>
+<script>
+  // Livre ouvert : deux pages galbées, une fente au milieu (le dos).
+  const livre = (c, y = 0, l = 1) => `<g transform="translate(50 ${y}) scale(${l}) translate(-50 0)">
+    <path d="M48 52 C38 46.5 26 46.5 15 50 V82 C26 78.5 38 78.5 48 84 Z" fill="${c}"/>
+    <path d="M52 52 C62 46.5 74 46.5 85 50 V82 C74 78.5 62 78.5 52 84 Z" fill="${c}"/></g>`;
+  const etoile = (c, x, y, r) => `<path d="M${x} ${y - r} L${x + r * .28} ${y - r * .28} L${x + r} ${y} L${x + r * .28} ${y + r * .28} L${x} ${y + r} L${x - r * .28} ${y + r * .28} L${x - r} ${y} L${x - r * .28} ${y - r * .28} Z" fill="${c}"/>`;
+
+  const PISTES = {
+    E: { nom: "Le livre et l'étoile", why: "Le savoir et l'excellence : un livre ouvert surmonté d'une étoile. Sobre, institutionnel.",
+      mark: (c) => `${livre(c, -8)}${etoile(c, 50, 24, 13)}` },
+    F: { nom: "Le livre et le soleil levant", why: "L'éveil, un nouveau jour d'apprentissage. Le soleil rappelle aussi le Sénégal.",
+      mark: (c) => `${livre(c, 2)}
+        <path d="M37 48 A13 13 0 0 1 63 48 Z" fill="${c}"/>
+        <g stroke="${c}" stroke-width="4" stroke-linecap="round">
+          <path d="M50 29 V20"/><path d="M36.5 34.5 L31 29"/><path d="M63.5 34.5 L69 29"/><path d="M30.5 44 H22"/><path d="M69.5 44 H78"/></g>` },
+    G: { nom: "La pousse du savoir", why: "L'enfant qui grandit : une jeune pousse qui sort d'un livre ouvert. Chaleureux, parle aux parents.",
+      mark: (c) => `${livre(c, 2)}
+        <path d="M50 54 V30" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+        <path d="M50 44 C39 44 32 36 32 26 C43 26 50 33 50 44 Z" fill="${c}"/>
+        <path d="M50 36 C61 36 68 28 68 18 C57 18 50 25 50 36 Z" fill="${c}"/>` },
+    H: { nom: "L'écusson académique", why: "Le blason des grandes écoles, avec livre et étoile. Le plus « officiel », proche d'un sceau d'établissement.",
+      mark: (c, fond) => `<path d="M50 6 L86 17 V47 C86 70 70 85 50 94 C30 85 14 70 14 47 V17 Z" fill="${c}"/>
+        <g transform="translate(50 26) scale(.62) translate(-50 -17.5)">${livre(fond).replace(/<g transform="[^"]*">/, "<g>")}</g>
+        ${etoile(fond, 50, 30, 9)}` },
+    I: { nom: "Le G coiffé de la toque", why: "Un monogramme : le G de GesSchool porte la toque du diplômé. Reconnaissable, moderne.",
+      mark: (c) => `<path d="M71 45 A25 25 0 1 0 75 62 H54" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M50 8 L80 20 L50 32 L20 20 Z" fill="${c}"/>
+        <path d="M80 20 V33" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/><circle cx="80" cy="35" r="3.4" fill="${c}"/>` },
+    J: { nom: "La plume", why: "L'écriture, la lettre, le bulletin : une plume d'écolier tracée d'un geste. Élégant et intemporel.",
+      mark: (c, fond) => `<path d="M80 10 C52 16 32 40 28 72 L33 76 C58 62 76 42 80 10 Z" fill="${c}"/>
+        <path d="M74 18 C58 32 44 50 31 73" stroke="${fond}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <path d="M30 74 L20 90" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+        <path d="M18 92 H60" stroke="${c}" stroke-width="3" stroke-linecap="round" opacity=".55"/>` },
+  };
+
+  const OR = "#c9a227", NAVY = "#0b1f3a", CREME = "#f7f3ea";
+  const svg = (inner, t) => `<svg viewBox="0 0 100 100" width="${t}" height="${t}">${inner}</svg>`;
+  // Icône d'appli : carré bleu nuit, logo or réduit à 70 % (marge de sécurité Android).
+  const icone = (m) => `<rect width="100" height="100" fill="${NAVY}"/><g transform="translate(50 50) scale(.7) translate(-50 -50)">${m(OR, NAVY)}</g>`;
+
+  document.getElementById("pistes").innerHTML = Object.entries(PISTES).map(([k, p]) => `
+    <div class="piste">
+      <div class="titre"><span class="lettre">${k}</span><div><h2>${p.nom}</h2><p>${p.why}</p></div></div>
+      <div class="vedette">${svg(p.mark(OR, NAVY), 72)}<b>Ges<span>School</span></b></div>
+      <div class="entete">${svg(p.mark(OR, NAVY), 34)}<b>Ges<span>School</span></b><small>· Espace parent</small></div>
+      <div class="ligne">
+        <div><div class="icone">${svg(icone(p.mark), 68)}</div><div class="cap">Icône installée</div></div>
+        <div><div class="onglet">${svg(icone(p.mark), 16)} GesSchool</div><div class="cap">Favicon 16 px</div></div>
+        <div><div class="clair">${svg(p.mark(NAVY, CREME), 34)}<b>Ges<span>School</span></b></div><div class="cap">Sur fond clair</div></div>
+      </div>
+    </div>`).join("");
+</script>
+</body>
+</html>
