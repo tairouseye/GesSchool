@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe, Badge, Recherche } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
@@ -193,12 +193,12 @@ export default function Eleves() {
     <>
       <EnTete
         titre={`${L.P} & inscriptions`}
-        sousTitre={annee ? `Année ${annee.libelle} · ${eleves.length} ${L.p}` : "Aucune année courante"}
+        sousTitre={annee ? `Année ${annee.libelle} · ${total} ${L.p}` : "Aucune année courante"}
         action={
           peutEditer && (
             <div className="flex flex-wrap gap-2">
               <Bouton variante="fantome" onClick={() => setModaleImport(true)} disabled={!annee}>
-                ↑ Importer (Excel)
+                Importer (Excel)
               </Bouton>
               <Bouton onClick={() => setModale(true)} disabled={!annee}>
                 + Nouvel {L.s}
@@ -207,7 +207,7 @@ export default function Eleves() {
           )
         }
       />
-      <div className="space-y-4 p-8">
+      <div className="space-y-4 p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
         {/*  ⚠️ CE BANDEAU DIT CE QU'IL Y A A FAIRE, et du bon cote. Releve en
@@ -219,66 +219,68 @@ export default function Eleves() {
             <span className="text-sm text-navy-900/70">
               Paiements — <b className="text-navy-900">{phrasePaiements(resumePaiement)}</b>
             </span>
-            <span className="flex flex-wrap items-center gap-3 text-xs text-navy-900/50">
-              <span>🔴 {resumePaiement.en_retard} en retard</span>
-              <span>🟢 {resumePaiement.a_jour} à jour</span>
-              <span>⚪ {resumePaiement.non_facture} sans facture</span>
+            <span className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge ton="danger">{resumePaiement.en_retard} en retard</Badge>
+              <Badge ton="success">{resumePaiement.a_jour} à jour</Badge>
+              <Badge>{resumePaiement.non_facture} sans facture</Badge>
             </span>
           </Carte>
         )}
 
-        <Carte className="overflow-hidden">
-          <div className="flex flex-wrap items-center gap-3 border-b border-navy-900/10 p-4">
-            <input
-              value={saisie}
-              onChange={(e) => setSaisie(e.target.value)}
-              placeholder={`Rechercher un ${L.s}, un matricule…`}
-              className="min-w-56 flex-1 rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
-            />
-            <select
-              value={filtreClasse}
-              onChange={(e) => { setFiltreClasse(e.target.value); setPage(0); }}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
-            >
-              <option value="">Toutes les classes</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.libelle}</option>
-              ))}
-            </select>
-            <select
-              value={filtreStatut}
-              onChange={(e) => { setFiltreStatut(e.target.value); setPage(0); }}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
-            >
-              <option value="">Tous les statuts</option>
-              <option value="inscrit">Inscrit</option>
-              <option value="reinscrit">Réinscrit</option>
-              <option value="transfere">Transféré</option>
-              <option value="abandon">Abandon</option>
-              <option value="non_inscrit">Non inscrit</option>
-            </select>
+        {/* Filtres : la recherche, puis des listes en forme de pastilles ;
+            un filtre choisi passe en bleu nuit pour se repérer d'un coup d'œil. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Recherche valeur={saisie} onChange={setSaisie} placeholder={`Nom ou matricule d'un ${L.s}…`} className="min-w-56 flex-1 sm:max-w-sm" />
+          <select
+            value={filtreClasse} aria-label="Classe"
+            onChange={(e) => { setFiltreClasse(e.target.value); setPage(0); }}
+            className={`${PASTILLE_FILTRE} ${filtreClasse ? PASTILLE_ACTIVE : ""}`}
+          >
+            <option value="">Toutes les classes</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>{c.libelle}</option>
+            ))}
+          </select>
+          <select
+            value={filtreStatut} aria-label="Statut"
+            onChange={(e) => { setFiltreStatut(e.target.value); setPage(0); }}
+            className={`${PASTILLE_FILTRE} ${filtreStatut ? PASTILLE_ACTIVE : ""}`}
+          >
+            <option value="">Tous les statuts</option>
+            <option value="inscrit">Inscrit</option>
+            <option value="reinscrit">Réinscrit</option>
+            <option value="transfere">Transféré</option>
+            <option value="abandon">Abandon</option>
+            <option value="non_inscrit">Non inscrit</option>
+          </select>
+          <span className="ml-auto flex items-center gap-3">
+            {!chargement && <span className="text-sm text-navy-900/60">{total} résultat{total > 1 ? "s" : ""}</span>}
             <Bouton variante="fantome" onClick={ouvrirPresence} disabled={filtres.length === 0}>
               🖨️ Feuille de présence
             </Bouton>
+          </span>
+        </div>
+        {!filtreClasse && vueGlobale && !chargement && filtres.length > 0 && (
+          <p className="-mt-1 text-xs text-navy-900/60">Choisissez une classe pour voir où en sont les paiements des familles.</p>
+        )}
+
+        {/* Barre d'actions groupées : n'apparaît qu'avec une sélection. */}
+        {peutEditer && selection.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-navy-900 px-4 py-2.5 text-sm text-creme">
+            <b>{selection.size} {selection.size > 1 ? L.p : L.s} sélectionné{selection.size > 1 ? "s" : ""}</b>
+            <button onClick={supprimerSelection}
+              className="rounded-md bg-rose-600 px-3 py-1 font-medium text-white hover:bg-rose-500">
+              Supprimer la sélection
+            </button>
+            <button onClick={() => setSelection(new Set())} className="ml-auto text-creme/70 hover:text-creme">Annuler</button>
           </div>
+        )}
 
-          {peutEditer && selection.size > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-or-500/5 px-4 py-2.5 text-sm">
-              <span className="font-medium text-navy-900">{selection.size} {L.p} sélectionné(s)</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setSelection(new Set())} className="text-xs text-navy-900/50 hover:text-navy-900">Désélectionner</button>
-                <button onClick={supprimerSelection}
-                  className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700">
-                  🗑️ Supprimer la sélection
-                </button>
-              </div>
-            </div>
-          )}
-
+        <Carte className="overflow-hidden">
           {chargement ? (
             <div className="p-4"><SkeletonListe lignes={6} /></div>
           ) : filtres.length === 0 ? (
-            eleves.length === 0 ? (
+            eleves.length === 0 && !recherche && !filtreClasse && !filtreStatut ? (
               <EtatVide icone="🎓" titre={`Aucun ${L.s}`} className="m-4">
                 {peutEditer
                   ? `Créez le premier ${L.s} avec « + Nouvel ${L.s} », ou importez une liste depuis Excel.`
@@ -290,84 +292,88 @@ export default function Eleves() {
               <EtatVide icone="🔍" titre="Aucun résultat" className="m-4">Aucun {L.s} ne correspond à votre recherche.</EtatVide>
             )
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
+              <thead className="border-b border-navy-900/10 bg-navy-900/[0.03] text-xs uppercase tracking-wide text-navy-900/60">
                 <tr>
                   {peutEditer && (
-                    <th className="px-4 py-3">
+                    <th className="w-10 px-4 py-3">
                       <input type="checkbox" checked={tousCoches} onChange={toggleTous}
                         aria-label="Tout sélectionner"
                         className="h-4 w-4 rounded border-navy-900/30 accent-navy-900" />
                     </th>
                   )}
-                  <th className="px-6 py-3 font-medium">Matricule</th>
-                  <th className="px-6 py-3 font-medium">{L.S}</th>
-                  <th className="px-6 py-3 font-medium">Sexe</th>
-                  <th className="px-6 py-3 font-medium">Classe</th>
-                  <th className="px-6 py-3 font-medium">Statut</th>
-                  {aDesPaiements && <th className="px-6 py-3 font-medium">Paiement</th>}
-                  {peutEditer && <th className="px-6 py-3"></th>}
+                  <th className="px-4 py-3 font-semibold">{L.S}</th>
+                  <th className="px-4 py-3 font-semibold">Classe</th>
+                  <th className="hidden px-4 py-3 font-semibold sm:table-cell">Sexe</th>
+                  <th className="px-4 py-3 font-semibold">Statut</th>
+                  {aDesPaiements && <th className="px-4 py-3 font-semibold">Paiement</th>}
+                  {peutEditer && <th className="w-12 px-4 py-3"><span className="sr-only">Actions</span></th>}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-navy-900/5">
                 {filtres.map((e) => {
                   const insc = inscriptions[e.id];
                   return (
                     <tr
                       key={e.id}
                       onClick={() => navigate(`/eleves/${e.id}`)}
-                      className={`cursor-pointer border-t border-navy-900/5 hover:bg-creme/60 ${selection.has(e.id) ? "bg-or-500/5" : ""}`}
+                      className={`cursor-pointer ${selection.has(e.id) ? "bg-sky-50/70" : "hover:bg-navy-900/[0.03]"}`}
                     >
                       {peutEditer && (
-                        <td className="px-4 py-4" onClick={(ev) => ev.stopPropagation()}>
+                        <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
                           <input type="checkbox" checked={selection.has(e.id)} onChange={() => toggleSel(e.id)}
                             aria-label={`Sélectionner ${e.prenom} ${e.nom}`}
                             className="h-4 w-4 rounded border-navy-900/30 accent-navy-900" />
                         </td>
                       )}
-                      <td className="px-6 py-4 font-mono text-xs text-navy-900/70">{e.matricule || "—"}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Photo
                             bucket="eleves"
                             valeur={e.photo_url}
                             alt=""
-                            className="h-8 w-8 rounded-full object-cover"
+                            className="h-9 w-9 shrink-0 rounded-full object-cover"
                             fallback={
-                              <span className="grid h-8 w-8 place-items-center rounded-full bg-navy-900/10 text-xs font-semibold text-navy-900/60">
+                              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${couleurAvatar(e.id)}`}>
                                 {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
                               </span>
                             }
                           />
-                          {/* Le nom prend la couleur de l'état de paiement (mig. 210) —
-                              rouge, vert, bleu — en plus de la pastille : la
-                              couleur n'est jamais la seule information. */}
-                          <span className={`font-medium ${(paiements[e.id] && etatPaiement(paiements[e.id].statut).texte) || "text-navy-900"}`}>
-                            {e.nom} {e.prenom}
-                          </span>
+                          <div className="min-w-0">
+                            {/* Le nom prend la couleur de l'état de paiement (mig. 210) —
+                                rouge, vert, bleu — en plus de la pastille : la
+                                couleur n'est jamais la seule information. */}
+                            <p className={`truncate font-semibold ${(paiements[e.id] && etatPaiement(paiements[e.id].statut).texte) || "text-navy-900"}`}>
+                              {e.nom} {e.prenom}
+                            </p>
+                            <p className="font-mono text-xs text-navy-900/60">{e.matricule || "sans matricule"}</p>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-navy-900/60">{e.sexe || "—"}</td>
-                      <td className="px-6 py-4">{insc?.classes?.libelle || "—"}</td>
-                      <td className="px-6 py-4">
-                        {insc ? (
-                          <span className="rounded-full border border-navy-900/15 bg-navy-900/5 px-2.5 py-0.5 text-xs">
-                            {insc.statut}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-navy-900/40">non inscrit</span>
-                        )}
+                      <td className="px-4 py-3">
+                        {insc?.classes?.libelle
+                          ? <span className="whitespace-nowrap rounded-md bg-navy-900/5 px-2 py-1 text-xs font-semibold text-navy-900">{insc.classes.libelle}</span>
+                          : <span className="text-navy-900/60">—</span>}
+                      </td>
+                      <td className="hidden px-4 py-3 text-navy-900/70 sm:table-cell">{e.sexe || "—"}</td>
+                      <td className="px-4 py-3">
+                        {insc
+                          ? <Badge ton={TON_STATUT[insc.statut] || "neutre"}>{LIBELLE_STATUT[insc.statut] || insc.statut}</Badge>
+                          : <Badge>Non inscrit</Badge>}
                       </td>
                       {aDesPaiements && (
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <PastillePaiement etat={paiements[e.id]} />
                         </td>
                       )}
                       {peutEditer && (
-                        <td className="px-6 py-4 text-right" onClick={(ev) => ev.stopPropagation()}>
-                          <button onClick={() => supprimerUn(e)} title={`Supprimer l'${L.s}`}
-                            className="rounded-lg px-2 py-1 text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-700">
-                            🗑️
+                        <td className="px-4 py-3 text-right" onClick={(ev) => ev.stopPropagation()}>
+                          <button onClick={() => supprimerUn(e)} title={`Supprimer l'${L.s}`} aria-label={`Supprimer ${e.prenom} ${e.nom}`}
+                            className="grid h-8 w-8 place-items-center rounded-lg text-navy-900/40 transition hover:bg-rose-50 hover:text-rose-700">
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+                            </svg>
                           </button>
                         </td>
                       )}
@@ -376,21 +382,22 @@ export default function Eleves() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
 
           {/* Pagination SERVEUR. Le total vient du `count: exact` de la
               requête, pas de la longueur de la page. */}
           {total > 25 && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-navy-900/10 px-4 py-3 text-sm">
-              <span className="text-navy-900/50">
+              <span className="text-navy-900/60">
                 {page * 25 + 1}–{Math.min((page + 1) * 25, total)} sur {total} {L.p}
               </span>
-              <div className="flex items-center gap-3">
-                <Bouton variante="fantome" onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}>← Précédent</Bouton>
-                <span className="text-navy-900/60">Page {page + 1} / {nbPages(total, 25)}</span>
-                <Bouton variante="fantome" onClick={() => setPage((p) => Math.min(nbPages(total, 25) - 1, p + 1))}
-                  disabled={page >= nbPages(total, 25) - 1}>Suivant →</Bouton>
+              <div className="flex items-center gap-2">
+                <Bouton variante="fantome" className="!px-3 !py-1.5" onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0} aria-label="Page précédente">‹</Bouton>
+                <span className="text-navy-900/70">Page {page + 1} / {nbPages(total, 25)}</span>
+                <Bouton variante="fantome" className="!px-3 !py-1.5" onClick={() => setPage((p) => Math.min(nbPages(total, 25) - 1, p + 1))}
+                  disabled={page >= nbPages(total, 25) - 1} aria-label="Page suivante">›</Bouton>
               </div>
             </div>
           )}
@@ -756,6 +763,17 @@ function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, o
 // ⚠️ ELLE NE DIT JAMAIS UN MONTANT. La RPC ne rend que l'état : le
 // responsable pédagogique apprend qu'une famille est en retard, pas de
 // combien. La table `factures` lui reste fermée (mig. 133), et c'est voulu.
+// Filtres en forme de pastilles (refonte) ; bleu nuit quand un choix est fait.
+const PASTILLE_FILTRE = "rounded-full border border-navy-900/15 bg-white px-3.5 py-2 text-sm font-medium text-navy-900 outline-none transition focus:border-or-500";
+const PASTILLE_ACTIVE = "!border-navy-900 !bg-navy-900 !text-creme";
+// Initiales colorées quand l'élève n'a pas de photo : la liste se parcourt
+// mieux qu'avec des pastilles grises toutes semblables.
+const COULEURS_AVATAR = ["bg-violet-500", "bg-sky-600", "bg-emerald-600", "bg-amber-600", "bg-rose-500", "bg-teal-600", "bg-indigo-500", "bg-orange-600"];
+// Toujours la même couleur pour un même élève, quelle que soit la page.
+const couleurAvatar = (id = "") => COULEURS_AVATAR[[...String(id)].reduce((s, ch) => s + ch.charCodeAt(0), 0) % COULEURS_AVATAR.length];
+const LIBELLE_STATUT = { inscrit: "Inscrit", reinscrit: "Réinscrit", transfere: "Transféré", abandon: "Abandon" };
+const TON_STATUT = { inscrit: "success", reinscrit: "success", transfere: "info", abandon: "neutre" };
+
 function PastillePaiement({ etat: valeur }) {
   if (!valeur) return <span className="text-xs text-navy-900/30">—</span>;
   const e = etatPaiement(valeur.statut);
@@ -767,7 +785,7 @@ function PastillePaiement({ etat: valeur }) {
   };
   return (
     <span title={e.explication}
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${tons[e.ton]}`}>
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${tons[e.ton]}`}>
       {e.court}
       {valeur.echues > 1 && <span className="opacity-60">({valeur.echues})</span>}
     </span>
