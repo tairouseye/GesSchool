@@ -519,7 +519,7 @@ function Notes({ notes, lienBulletins }) {
             <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Notes — ${periode}`}>
               <table className="w-full min-w-[18rem] text-left text-sm">
                 <caption className="sr-only">Notes de la période {periode}, et moyenne provisoire par matière sur 20</caption>
-                <thead className="bg-creme text-navy-900/60">
+                <thead className="bg-navy-900/[0.03] text-navy-900/60">
                   <tr>
                     <th scope="col" className="px-4 py-2 font-medium sm:px-6">Matière</th>
                     <th scope="col" className="px-4 py-2 font-medium sm:px-6">Notes</th>

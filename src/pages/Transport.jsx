@@ -216,7 +216,7 @@ function Abonnes({ ecoleId, abonnes, circuits, classe, devise, wrap, confirmer }
       ) : (
         <Carte className="overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-creme text-navy-900/50"><tr><th className="px-5 py-3 font-medium">Élève</th><th className="px-5 py-3 font-medium">Classe</th><th className="px-5 py-3 font-medium">Circuit</th><th className="px-5 py-3 font-medium">Arrêt</th><th className="px-5 py-3 font-medium">Trajet</th><th className="px-5 py-3 font-medium">Tarif</th><th className="px-5 py-3"></th></tr></thead>
+            <thead className="bg-navy-900/[0.03] text-navy-900/50"><tr><th className="px-5 py-3 font-medium">Élève</th><th className="px-5 py-3 font-medium">Classe</th><th className="px-5 py-3 font-medium">Circuit</th><th className="px-5 py-3 font-medium">Arrêt</th><th className="px-5 py-3 font-medium">Trajet</th><th className="px-5 py-3 font-medium">Tarif</th><th className="px-5 py-3"></th></tr></thead>
             <tbody>
               {abonnes.map((a) => (
                 <tr key={a.id} className="border-t border-navy-900/5">
@@ -323,12 +323,12 @@ function Embarquement({ ecoleId, circuits, abonnes, classe, toast }) {
     <Carte className="overflow-hidden">
       <div className="flex flex-wrap items-end gap-3 border-b border-navy-900/10 p-4">
         <label className="block"><span className="mb-1.5 block text-xs text-navy-900/50">Circuit</span>
-          <select value={circuitId} onChange={(e) => setCircuitId(e.target.value)} className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+          <select value={circuitId} onChange={(e) => setCircuitId(e.target.value)} className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
             {circuits.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
           </select>
         </label>
         <label className="block"><span className="mb-1.5 block text-xs text-navy-900/50">Sens</span>
-          <select value={sens} onChange={(e) => setSens(e.target.value)} className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+          <select value={sens} onChange={(e) => setSens(e.target.value)} className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
             <option value="aller">Matin (aller)</option><option value="retour">Soir (retour)</option>
           </select>
         </label>
@@ -338,7 +338,7 @@ function Embarquement({ ecoleId, circuits, abonnes, classe, toast }) {
       </div>
       {liste.length === 0 ? <p className="p-6 text-sm text-navy-900/40">Aucun abonné sur ce circuit.</p> : (
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50"><tr><th className="px-5 py-2 font-medium">Élève</th><th className="px-5 py-2 font-medium">Classe</th><th className="px-5 py-2 font-medium">Arrêt</th><th className="px-5 py-2 text-center font-medium">Embarqué</th><th className="px-5 py-2 text-center font-medium">Débarqué</th></tr></thead>
+          <thead className="bg-navy-900/[0.03] text-navy-900/50"><tr><th className="px-5 py-2 font-medium">Élève</th><th className="px-5 py-2 font-medium">Classe</th><th className="px-5 py-2 font-medium">Arrêt</th><th className="px-5 py-2 text-center font-medium">Embarqué</th><th className="px-5 py-2 text-center font-medium">Débarqué</th></tr></thead>
           <tbody>
             {liste.map((a) => (
               <tr key={a.id} className="border-t border-navy-900/5">

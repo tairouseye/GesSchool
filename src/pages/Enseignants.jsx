@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte, Table, Badge } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte, Table, Badge, Onglets } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -65,14 +65,7 @@ export default function Enseignants() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["enseignants", "Enseignants"], ["affectations", "Affectations"]].map(([k, l]) => (
-            <button key={k} onClick={() => setOnglet(k)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <Onglets items={[["enseignants", "Enseignants"], ["affectations", "Affectations"]]} actif={onglet} onChange={setOnglet} />
 
         {onglet === "enseignants" && enseignants.length > 8 && (
           <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un enseignant…" className="max-w-sm" />
@@ -295,7 +288,7 @@ function Sel({ label, value, onChange, options }) {
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-navy-900/50">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+        className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
         <option value="">— Choisir —</option>
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>

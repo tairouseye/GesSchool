@@ -78,7 +78,7 @@ export default function JournalAudit() {
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Donnée</span>
             <select value={entite} onChange={(e) => { setEntite(e.target.value); setPage(0); }}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">Toutes</option>
               {api.ENTITES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -86,7 +86,7 @@ export default function JournalAudit() {
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Acte</span>
             <select value={operation} onChange={(e) => { setOperation(e.target.value); setPage(0); }}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">Tous</option>
               {Object.entries(api.OPERATIONS).map(([v, o]) => <option key={v} value={v}>{o.label}</option>)}
             </select>

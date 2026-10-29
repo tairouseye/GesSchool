@@ -198,7 +198,7 @@ function FormFourniture({ niveaux, categories, onAjout }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Niveau</span>
           <select value={f.niveau_id} onChange={(e) => maj("niveau_id", e.target.value)}
-            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">Tous niveaux</option>
             {niveaux.map((n) => <option key={n.id} value={n.id}>{n.libelle}</option>)}
           </select>

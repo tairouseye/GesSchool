@@ -587,7 +587,7 @@ function Suggestions({ ecoleId }) {
                   <div className="flex flex-wrap items-center gap-2">
                     <input value={reponses[s.id] || ""} onChange={(e) => setReponses((r) => ({ ...r, [s.id]: e.target.value }))}
                       placeholder="Réponse au demandeur (facultative)"
-                      className="min-w-48 flex-1 rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+                      className="min-w-48 flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
                     <Bouton variante="fantome" onClick={() => repondre(s, "acceptee")}>Accepter</Bouton>
                     <Bouton variante="fantome" onClick={() => repondre(s, "refusee")}>Refuser</Bouton>
                   </div>

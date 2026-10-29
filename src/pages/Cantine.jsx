@@ -100,7 +100,7 @@ export default function Cantine() {
             ) : (
               <Carte className="overflow-hidden">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-creme text-navy-900/50">
+                  <thead className="bg-navy-900/[0.03] text-navy-900/50">
                     <tr><th className="px-5 py-3 font-medium">Élève</th><th className="px-5 py-3 font-medium">Classe</th><th className="px-5 py-3 font-medium">Formule</th><th className="px-5 py-3 font-medium">Régime</th><th className="px-5 py-3 font-medium">Tarif / Solde</th><th className="px-5 py-3"></th></tr>
                   </thead>
                   <tbody>
@@ -188,7 +188,7 @@ function Pointage({ ecoleId, abonnes, classe, devise, toast }) {
         <p className="text-sm text-navy-900/60">Repas servis : <b>{[...pris].filter((id) => abonnes.some((a) => a.eleve_id === id)).length} / {abonnes.length}</b></p>
       </div>
       <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50"><tr><th className="px-5 py-2 font-medium">Élève</th><th className="px-5 py-2 font-medium">Classe</th><th className="px-5 py-2 font-medium">Formule</th><th className="px-5 py-2 text-center font-medium">A mangé</th></tr></thead>
+        <thead className="bg-navy-900/[0.03] text-navy-900/50"><tr><th className="px-5 py-2 font-medium">Élève</th><th className="px-5 py-2 font-medium">Classe</th><th className="px-5 py-2 font-medium">Formule</th><th className="px-5 py-2 text-center font-medium">A mangé</th></tr></thead>
         <tbody>
           {abonnes.map((a) => (
             <tr key={a.id} className="border-t border-navy-900/5">

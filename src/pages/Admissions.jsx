@@ -138,7 +138,7 @@ export default function Admissions() {
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Campagne</span>
                   <select value={campagneId} onChange={(e) => setCampagneId(e.target.value)}
-                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                    className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                     {campagnes.map((c) => (
                       <option key={c.id} value={c.id}>{c.libelle}{c.ouverte ? "" : " (fermée)"}</option>
                     ))}

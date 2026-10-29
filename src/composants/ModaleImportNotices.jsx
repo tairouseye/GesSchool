@@ -137,7 +137,7 @@ export default function ModaleImportNotices({ ecoleId, onFermer, onFini }) {
             {analyse.valides.length > 0 && (
               <div className="overflow-x-auto rounded-xl border border-navy-900/10">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-creme/70 text-navy-900/60">
+                  <thead className="bg-navy-900/[0.03] text-navy-900/60">
                     <tr>
                       <th className="px-3 py-2">Titre</th>
                       <th className="px-3 py-2">Auteur(s)</th>

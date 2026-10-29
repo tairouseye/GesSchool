@@ -147,7 +147,7 @@ export default function AppelSup() {
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Date</span>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-                  className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+                  className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
               </label>
               <span className="pb-2 text-xs text-navy-900/45">{JOURS[jourDe(date)]}</span>
             </Carte>
@@ -247,7 +247,7 @@ function Sel({ label, value, onChange, options }) {
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-navy-900/50">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+        className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
         {options.length === 0 && <option value="">—</option>}
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>

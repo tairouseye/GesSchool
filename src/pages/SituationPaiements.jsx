@@ -127,7 +127,7 @@ export default function SituationPaiements() {
           <Carte className="overflow-hidden">
             <div className="no-print flex flex-wrap items-center gap-2 border-b border-navy-900/10 p-4">
               <select value={classeId} onChange={(e) => setClasseId(e.target.value)}
-                className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+                className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
                 <option value="">Toutes mes classes</option>
                 {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
               </select>
@@ -139,9 +139,9 @@ export default function SituationPaiements() {
           <div className="flex flex-wrap items-center gap-2 border-b border-navy-900/10 p-4">
             <input value={saisie} onChange={(e) => setSaisie(e.target.value)} autoFocus
               placeholder="Nom, prénom ou matricule…"
-              className="w-full max-w-sm rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500" />
+              className="w-full max-w-sm rounded-lg border border-navy-900/15 bg-white px-4 py-2 text-sm outline-none focus:border-or-500" />
             <select value={classeId} onChange={(e) => setClasseId(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
               <option value="">Toutes mes classes</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
             </select>
@@ -164,7 +164,7 @@ export default function SituationPaiements() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
+                <thead className="bg-navy-900/[0.03] text-navy-900/50">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Élève</th>
                     <th className="px-4 py-2.5 font-medium">Classe</th>

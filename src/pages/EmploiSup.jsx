@@ -100,14 +100,14 @@ export default function EmploiSup() {
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Filière</span>
             <select value={filiereId} onChange={(e) => setFiliereId(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {filieres.map((f) => <option key={f.id} value={f.id}>{f.nom}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Semestre</span>
             <select value={semestreId} onChange={(e) => setSemestreId(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {semestres.length === 0 && <option value="">—</option>}
               {semestres.map((s) => <option key={s.id} value={s.id}>{s.libelle}</option>)}
             </select>

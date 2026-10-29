@@ -644,7 +644,7 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Fonction</span>
             <select value={f.fonction} onChange={(e) => maj("fonction", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {api.FONCTIONS.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </label>
@@ -658,7 +658,7 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
               <select value={f.type} onChange={(e) => maj("type", e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 {api.TYPES_CONTRAT.map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
             </label>
@@ -683,7 +683,7 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
             <label className="block sm:col-span-3">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Régime de rémunération</span>
               <select value={f.regime_id} onChange={(e) => maj("regime_id", e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 <option value="">— Aucun (éléments individuels seulement) —</option>
                 {regimes.filter((r) => r.actif !== false).map((r) => <option key={r.id} value={r.id}>{r.libelle}</option>)}
               </select>
@@ -697,7 +697,7 @@ function ModalePersonnel({ edition, regimes = [], onFermer, onEnregistrer }) {
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Sexe</span>
-              <select value={f.sexe} onChange={(e) => maj("sexe", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              <select value={f.sexe} onChange={(e) => maj("sexe", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 <option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option>
               </select>
             </label>
@@ -1330,7 +1330,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
             <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Élément</span>
               <select value={nouv.elementId} onChange={(e) => setNouv((n) => ({ ...n, elementId: e.target.value }))}
-                className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 <option value="">— Libre —</option>
                 <optgroup label="Gains">
                   {actifs.filter((e) => e.sens === "gain").map((e) => <option key={e.id} value={e.id}>{e.libelle}</option>)}
@@ -1346,7 +1346,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Sens</span>
                   <select value={nouv.sens} onChange={(e) => setNouv((n) => ({ ...n, sens: e.target.value }))}
-                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                    className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                     <option value="gain">Gain</option>
                     <option value="retenue">Retenue</option>
                   </select>
@@ -1832,7 +1832,7 @@ function ModalePreparerPaie({ ouvert, onFermer, ecoleId, onAllerConges, periode,
         ) : (
           <Carte className="overflow-hidden">
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
+              <thead className="bg-navy-900/[0.03] text-navy-900/50">
                 <tr>
                   <th className="px-4 py-2 font-medium">Employé</th>
                   <th className="px-4 py-2 font-medium">Fonction</th>
@@ -1916,7 +1916,7 @@ function ModaleAvancesPret({ personnel, onFermer, ecoleId, devise, periode }) {
           {liste.length === 0 ? <p className="text-sm text-navy-900/40">Aucune avance ni prêt.</p> : (
             <div className="scroll-x overflow-x-auto rounded-xl border border-navy-900/10">
               <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50"><tr>
+                <thead className="bg-navy-900/[0.03] text-navy-900/50"><tr>
                   <th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Motif</th>
                   <th className="px-3 py-2 text-right font-medium">Montant</th><th className="px-3 py-2 text-right font-medium">Échéance</th>
                   <th className="px-3 py-2 text-right font-medium">Solde</th><th className="px-3 py-2 font-medium">Statut</th><th className="px-3 py-2"></th>
@@ -1954,7 +1954,7 @@ function ModaleAvancesPret({ personnel, onFermer, ecoleId, devise, periode }) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-navy-900/50">Type</span>
-              <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 <option value="avance">Avance sur salaire</option><option value="pret">Prêt</option>
               </select>
             </label>
@@ -2046,7 +2046,7 @@ function ModaleDossierEmploye({ personnel, onFermer, ecoleId, devise, onEditer, 
           {contrats.length === 0 ? <p className="text-sm text-navy-900/40">Aucun contrat enregistré.</p> : (
             <div className="overflow-x-auto rounded-xl border border-navy-900/10">
               <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50"><tr>
+                <thead className="bg-navy-900/[0.03] text-navy-900/50"><tr>
                   <th className="px-3 py-2 font-medium">Type</th><th className="px-3 py-2 font-medium">Début</th>
                   <th className="px-3 py-2 font-medium">Fin</th><th className="px-3 py-2 text-right font-medium">Salaire base</th>
                   <th className="px-3 py-2 font-medium">Motif fin</th>
@@ -2187,14 +2187,14 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Employé</span>
-            <select value={f.personnel_id} onChange={(e) => maj("personnel_id", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <select value={f.personnel_id} onChange={(e) => maj("personnel_id", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">— Choisir —</option>
               {personnels.map((x) => <option key={x.id} value={x.id}>{x.nom} {x.prenom}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
-            <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <select value={f.type} onChange={(e) => maj("type", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {api.TYPES_CONGE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </label>
@@ -2239,14 +2239,14 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Employé</span>
-            <select value={fa.personnel_id} onChange={(e) => majA("personnel_id", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <select value={fa.personnel_id} onChange={(e) => majA("personnel_id", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">— Choisir —</option>
               {personnels.map((x) => <option key={x.id} value={x.id}>{x.nom} {x.prenom}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
-            <select value={fa.type} onChange={(e) => majA("type", e.target.value)} className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            <select value={fa.type} onChange={(e) => majA("type", e.target.value)} className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {api.TYPES_ABSENCE_RH.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </label>
@@ -2498,7 +2498,7 @@ function ModaleRegimes({ ouvert, onFermer, ecoleId, elements, personnels = [], d
   const [nouvNom, setNouvNom] = useState("");
   const [ajout, setAjout] = useState({ elementId: "", montant: "" });
   const [bulkCat, setBulkCat] = useState("");
-  const selChampCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+  const selChampCls = "w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
 
   const categories = [...new Set(personnels.map((p) => p.categorie).filter(Boolean))].sort();
   const elGain = (elements || []).filter((e) => e.actif !== false);
@@ -2634,7 +2634,7 @@ function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels
   const [liste, setListe] = useState([]);
   const [expand, setExpand] = useState(null); // affectation dont on gère les exclusions
   const [f, setF] = useState({ elementId: "", portee: "tous", valeur: "", montant: "" });
-  const selCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+  const selCls = "w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
   const PORTEE = { tous: "Tous les employés", categorie: "Catégorie", fonction: "Fonction" };
 
   const elActifs = (elements || []).filter((e) => e.actif !== false);

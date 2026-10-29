@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table, SkeletonListe, Onglets } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/comptabilite.js";
 import { MODES } from "@/lib/paiements.js";
@@ -141,14 +141,7 @@ export default function Comptabilite() {
 
         {/* Onglets */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex flex-wrap gap-1 rounded-xl bg-navy-900/5 p-1">
-            {[["synthese", "Synthèse"], ["tresorerie", "Trésorerie"], ["recettes", "Recettes"], ["depenses", "Dépenses"], ["plan", "Plan comptable"], ["journal", "Journal"]].map(([k, l]) => (
-              <button key={k} onClick={() => setOnglet(k)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
-                {l}
-              </button>
-            ))}
-          </div>
+          <Onglets items={[["synthese", "Synthèse"], ["tresorerie", "Trésorerie"], ["recettes", "Recettes"], ["depenses", "Dépenses"], ["plan", "Plan comptable"], ["journal", "Journal"]]} actif={onglet} onChange={setOnglet} />
           {onglet !== "tresorerie" && onglet !== "plan" && (
             <div className="flex items-end gap-2">
               <Champ label="Du" type="date" value={debut} onChange={(e) => setDebut(e.target.value)} />
@@ -530,7 +523,7 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, cat
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Catégorie</span>
             <select value={f.categorie} onChange={(e) => maj("categorie", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
               {cats.map((c) => <option key={c.id || c.libelle} value={c.libelle}>{c.libelle}</option>)}
             </select>
@@ -538,7 +531,7 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, cat
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Compte</span>
             <select value={f.compte_id} onChange={(e) => maj("compte_id", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
               {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
             </select>
@@ -546,7 +539,7 @@ function ModaleMouvement({ ouvert, type, onFermer, ecoleId, comptes, devise, cat
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Mode</span>
             <select value={f.mode} onChange={(e) => maj("mode", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
               {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -657,7 +650,7 @@ const CLASSES_LIB = {
   7: "Classe 7 — Produits",
   8: "Classe 8 — Autres",
 };
-const selCls = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+const selCls = "w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
 
 function PlanComptable({ plan }) {
   const [ouverts, setOuverts] = useState(() => new Set());

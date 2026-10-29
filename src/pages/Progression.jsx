@@ -141,7 +141,7 @@ function FormEtape({ matieres, periodes, onAjout }) {
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Matière</span>
             <select value={f.matiere_id} onChange={(e) => maj("matiere_id", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
               {matieres.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
             </select>
@@ -149,7 +149,7 @@ function FormEtape({ matieres, periodes, onAjout }) {
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Période</span>
             <select value={f.periode_id} onChange={(e) => maj("periode_id", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">—</option>
               {periodes.map((p) => <option key={p.id} value={p.id}>{p.libelle}</option>)}
             </select>

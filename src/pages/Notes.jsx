@@ -324,7 +324,7 @@ function GrilleNotes({ ecoleId, classeId, anneeId, evaluation, onErreur }) {
         <EtatVide icone="✎" titre="Aucun élève inscrit">Inscrivez des élèves dans cette classe pour saisir les notes.</EtatVide>
       ) : (
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
+          <thead className="bg-navy-900/[0.03] text-navy-900/50">
             <tr>
               <th className="px-5 py-2 font-medium">Élève</th>
               <th className="px-5 py-2 text-center font-medium">Absent</th>

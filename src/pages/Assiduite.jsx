@@ -106,7 +106,7 @@ export default function Assiduite() {
         ) : (
           <Carte className="overflow-hidden">
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
+              <thead className="bg-navy-900/[0.03] text-navy-900/50">
                 <tr>
                   <th className="px-6 py-3 font-medium">Élève</th>
                   <th className="px-6 py-3 text-right font-medium">Absences</th>
@@ -177,7 +177,7 @@ function ModaleDetail({ ligne, onFermer }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-xs text-navy-900/50">
+              <thead className="bg-navy-900/[0.03] text-xs text-navy-900/50">
                 <tr>
                   <th className="px-3 py-2 font-medium">Date</th>
                   <th className="px-3 py-2 font-medium">Type</th>

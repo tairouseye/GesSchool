@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe, Onglets } from "@/composants/ui.jsx";
 import * as api from "@/lib/viescolaire.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
@@ -44,14 +44,7 @@ export default function VieScolaire() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <div className="inline-flex gap-1 rounded-xl bg-navy-900/5 p-1">
-          {[["appel", "Présences & absences"], ["incidents", "Incidents"]].map(([k, l]) => (
-            <button key={k} onClick={() => setOnglet(k)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${onglet === k ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/50"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <Onglets items={[["appel", "Présences & absences"], ["incidents", "Incidents"]]} actif={onglet} onChange={setOnglet} />
 
         {onglet === "appel"
           ? <Appel ecoleId={ecoleId} annee={annee} classes={classes} onErreur={setErreur} />
@@ -135,7 +128,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
             <EtatVide icone="📋" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe.</EtatVide>
           ) : (
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
+              <thead className="bg-navy-900/[0.03] text-navy-900/50">
                 <tr><th className="px-5 py-2 font-medium">Élève</th><th className="px-5 py-2 font-medium">Statut</th><th className="px-5 py-2 font-medium">Motif</th></tr>
               </thead>
               <tbody>
@@ -179,7 +172,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
           <p className="p-6 text-sm text-navy-900/40">Aucune absence enregistrée.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="bg-creme text-navy-900/50">
+            <thead className="bg-navy-900/[0.03] text-navy-900/50">
               <tr><th className="px-6 py-2 font-medium">Date</th><th className="px-6 py-2 font-medium">Élève</th><th className="px-6 py-2 font-medium">Classe</th><th className="px-6 py-2 font-medium">Type</th><th className="px-6 py-2 font-medium">Justif. parent</th><th className="px-6 py-2 font-medium">Statut</th></tr>
             </thead>
             <tbody>
@@ -237,7 +230,7 @@ function Incidents({ ecoleId, onErreur }) {
           <p className="p-6 text-sm text-navy-900/40">Aucun incident enregistré.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="bg-creme text-navy-900/50">
+            <thead className="bg-navy-900/[0.03] text-navy-900/50">
               <tr><th className="px-6 py-2 font-medium">Date</th><th className="px-6 py-2 font-medium">Élève</th><th className="px-6 py-2 font-medium">Type</th><th className="px-6 py-2 font-medium">Description</th><th></th></tr>
             </thead>
             <tbody>

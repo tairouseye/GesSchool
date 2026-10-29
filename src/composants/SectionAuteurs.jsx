@@ -96,7 +96,7 @@ export default function SectionAuteurs({ r, ecoleId, onChange }) {
         <div className="flex flex-wrap gap-2">
           <input value={saisie} onChange={(e) => setSaisie(e.target.value)}
             placeholder="Nom, Prénom"
-            className="min-w-48 flex-1 rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+            className="min-w-48 flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
           <select value={role} onChange={(e) => setRole(e.target.value)}
             className="rounded-xl border border-navy-900/15 bg-white px-2 py-2 text-sm outline-none focus:border-or-500">
             {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}

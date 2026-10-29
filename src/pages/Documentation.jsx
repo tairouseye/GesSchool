@@ -428,9 +428,9 @@ export default function Documentation() {
 
           <div className="mb-4 flex flex-wrap gap-2">
             <input value={qF} onChange={(e) => setQF(e.target.value)} placeholder="🔍 Rechercher un fichier…"
-              className="min-w-48 flex-1 rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="min-w-48 flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
             <select value={catF} onChange={(e) => setCatF(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
               <option value="">Toutes catégories</option>
               {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -489,26 +489,26 @@ export default function Documentation() {
           {/* Filtres avancés */}
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <select value={fam} onChange={(e) => setFam(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
               <option value="">Toutes familles</option>
               {Object.entries(FAMILLE_LABEL).map(([id, lib]) => <option key={id} value={id}>{lib}</option>)}
             </select>
             <select value={typeF} onChange={(e) => setTypeF(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
               <option value="">Tous types</option>
               {typesPresents.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <select value={statutF} onChange={(e) => setStatutF(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
               <option value="">Tous statuts</option>
               {Object.entries(STATUT).map(([id, s]) => <option key={id} value={id}>{s.label}</option>)}
             </select>
             <input type="date" value={dateDe} onChange={(e) => setDateDe(e.target.value)} title="Du"
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
             <input type="date" value={dateA} onChange={(e) => setDateA(e.target.value)} title="Au"
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher…"
-              className="rounded-xl border border-navy-900/15 bg-creme px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
           </div>
 
           {chargement ? (
@@ -672,7 +672,7 @@ function ModaleVersement({ fichier, onFermer, onVerser, cycles, niveaux, classes
         <label className="block">
           <span className="mb-1.5 block text-xs text-navy-900/50">Nature du texte</span>
           <select value={categorie} onChange={(e) => setCategorie(e.target.value)}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             {CATEGORIES_TEXTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </label>
@@ -681,7 +681,7 @@ function ModaleVersement({ fichier, onFermer, onVerser, cycles, niveaux, classes
           <label className="block">
             <span className="mb-1.5 block text-xs text-navy-900/50">Qui peut le consulter</span>
             <select value={cible} onChange={(e) => { setCible(e.target.value); setEntite(""); }}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               {AUDIENCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </label>
@@ -691,7 +691,7 @@ function ModaleVersement({ fichier, onFermer, onVerser, cycles, niveaux, classes
                 {cible === "cycle" ? "Cycle" : cible === "niveau" ? "Niveau" : "Classe"}
               </span>
               <select value={entite} onChange={(e) => setEntite(e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 <option value="">— à choisir —</option>
                 {liste.map((x) => <option key={x.id} value={x.id}>{x.libelle}</option>)}
               </select>

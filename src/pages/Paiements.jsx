@@ -156,7 +156,7 @@ export default function Paiements() {
                 value={saisie}
                 onChange={(e) => setSaisie(e.target.value)}
                 placeholder="Rechercher (élève, n° facture)…"
-                className="w-full max-w-md rounded-xl border border-navy-900/15 bg-creme px-4 py-2 text-sm outline-none focus:border-or-500"
+                className="w-full max-w-md rounded-lg border border-navy-900/15 bg-white px-4 py-2 text-sm outline-none focus:border-or-500"
               />
             </div>
             {chargement ? (
@@ -167,7 +167,7 @@ export default function Paiements() {
               </p>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
+                <thead className="bg-navy-900/[0.03] text-navy-900/50">
                   <tr>
                     <th className="px-6 py-3 font-medium">N°</th>
                     <th className="px-6 py-3 font-medium">Élève</th>
@@ -299,7 +299,7 @@ function PanneauEnLigne({ ecoleId, devise, onErreur }) {
   return (
     <Carte className="overflow-hidden">
       <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50">
+        <thead className="bg-navy-900/[0.03] text-navy-900/50">
           <tr>
             <th className="px-5 py-3 font-medium">Date</th>
             <th className="px-5 py-3 font-medium">Élève</th>
@@ -431,7 +431,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">S'applique à</span>
           <select value={f.cible} onChange={(e) => maj("cible", e.target.value)}
-            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">Toute l'école</option>
             <optgroup label="Par cycle (scolarité)">
               {cycles.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.libelle}</option>)}
@@ -444,7 +444,7 @@ function PanneauFrais({ ecoleId, annee, frais, niveaux, cycles, devise, onChange
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Pour</span>
           <select value={f.public} onChange={(e) => maj("public", e.target.value)}
-            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="tous">Tous les élèves</option>
             <option value="nouveaux">Nouveaux (inscription)</option>
             <option value="anciens">Anciens (réinscription)</option>
@@ -489,7 +489,7 @@ function FinFacturation({ annee, onChange, onErreur }) {
           catch (er) { onErreur(er.message); }
           finally { setEnCours(false); }
         }}
-        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+        className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
         <option value="">fin de l'année ({libelleMoisCourt(fin)})</option>
         {mois.map((m) => <option key={m} value={m}>{libelleMoisCourt(m)}</option>)}
       </select>
@@ -548,7 +548,7 @@ function PanneauFratrie({ ecoleId, cycles, devise, onErreur }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Réduction</span>
           <select value={r.type} onChange={(e) => setR((s) => ({ ...s, type: e.target.value }))}
-            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="pourcentage">en %</option>
             <option value="montant">en {devise}</option>
           </select>
@@ -558,7 +558,7 @@ function PanneauFratrie({ ecoleId, cycles, devise, onErreur }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Cycle</span>
           <select value={r.cycle_id} onChange={(e) => setR((s) => ({ ...s, cycle_id: e.target.value }))}
-            className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">Tous</option>
             {cycles.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
           </select>
@@ -659,7 +659,7 @@ function ModaleAvanceCaisse({ ecoleId, annee, devise, onFermer, onEncaisse }) {
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Mode</span>
                 <select value={pay.mode} onChange={(e) => setPay((p) => ({ ...p, mode: e.target.value }))}
-                  className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                  className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                   {api.MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </label>
@@ -668,7 +668,7 @@ function ModaleAvanceCaisse({ ecoleId, annee, devise, onFermer, onEncaisse }) {
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Encaissé dans</span>
                   <select value={pay.compte_id} onChange={(e) => setPay((p) => ({ ...p, compte_id: e.target.value }))}
-                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                    className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                     <option value="">— Aucun compte —</option>
                     {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
                   </select>
@@ -704,7 +704,7 @@ function PanneauDeclarations({ declarations, devise, onValider, onRejeter }) {
   return (
     <Carte className="overflow-hidden">
       <table className="w-full text-left text-sm">
-        <thead className="bg-creme text-navy-900/50">
+        <thead className="bg-navy-900/[0.03] text-navy-900/50">
           <tr>
             <th className="px-5 py-3 font-medium">Élève</th>
             <th className="px-5 py-3 font-medium">Facture</th>
@@ -1166,7 +1166,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                   <label className="block">
                     <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Mode</span>
                     <select value={pay.mode} onChange={(e) => setPay((p) => ({ ...p, mode: e.target.value }))}
-                      className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                      className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                       {api.MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                   </label>
@@ -1176,7 +1176,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                     <label className="block">
                       <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Encaissé dans</span>
                       <select value={pay.compte_id} onChange={(e) => setPay((p) => ({ ...p, compte_id: e.target.value }))}
-                        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                        className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                         <option value="">— Aucun compte —</option>
                         {comptes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
                       </select>

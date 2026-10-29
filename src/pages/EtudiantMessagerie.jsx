@@ -51,7 +51,7 @@ export default function EtudiantMessagerie() {
 
       <Alerte ton="erreur">{erreur}</Alerte>
 
-      <div className="flex h-[58vh] flex-col overflow-hidden rounded-2xl border border-navy-900/10 bg-white shadow-sm">
+      <div className="flex h-[58vh] flex-col overflow-hidden rounded-2xl border border-navy-900/10 bg-white">
         <div className="flex-1 space-y-2 overflow-y-auto p-4">
           {messages === null ? (
             <p className="text-center text-sm text-navy-900/40">Chargement…</p>

@@ -286,7 +286,7 @@ function Sel({ label, value, onChange, options }) {
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+        className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>

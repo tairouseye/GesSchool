@@ -89,7 +89,7 @@ function Cascade({ label, items, valeur, onChoisir, onAjouter, onModifier, onSup
       <label className="block min-w-[180px] flex-1">
         <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">{label}</span>
         <select value={valeur || ""} onChange={(e) => onChoisir(e.target.value || null)}
-          className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+          className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
           <option value="">{items.length ? "— Choisir —" : vide}</option>
           {items.map((x) => <option key={x.id} value={x.id}>{rendu(x)}</option>)}
         </select>

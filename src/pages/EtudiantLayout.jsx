@@ -41,7 +41,7 @@ export default function EtudiantLayout() {
   ) : null);
 
   return (
-    <div className="min-h-dscreen bg-creme">
+    <div className="min-h-dscreen bg-fond">
       {/* Mêmes règles que l'en-tête parent : il doit tenir dans 320 px. */}
       <header className="flex items-center justify-between gap-3 border-b border-navy-900/10 bg-navy-900 px-4 py-4 text-creme sm:px-6">
         <Link to="/etudiant" aria-label="GesSchool — accueil de l'espace étudiant" className="flex min-w-0 items-center gap-3">

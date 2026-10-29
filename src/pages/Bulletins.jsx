@@ -244,7 +244,7 @@ export default function Bulletins() {
               <EtatVide icone="🎓" titre="Aucun élève inscrit">Aucun élève inscrit dans cette classe pour cette période.</EtatVide>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
+                <thead className="bg-navy-900/[0.03] text-navy-900/50">
                   <tr>
                     <th className="px-6 py-3 font-medium">Rang</th>
                     <th className="px-6 py-3 font-medium">Élève</th>

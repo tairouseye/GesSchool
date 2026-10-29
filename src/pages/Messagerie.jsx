@@ -207,7 +207,7 @@ export default function Messagerie() {
                   else { setRecherche(e.target.value); setChoixParents(null); }
                 }}
                 placeholder={etudiants ? "🔍 Rechercher un étudiant…" : "🔍 Rechercher un élève…"}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500"
               />
             </div>
 

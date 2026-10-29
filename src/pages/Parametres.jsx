@@ -622,7 +622,7 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Type</span>
           <select value={f.type} onChange={(e) => setF((s) => ({ ...s, type: e.target.value }))}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             {TYPES_CHAMP.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </label>
@@ -769,7 +769,7 @@ function Signataires({ ecoleId, onErreur }) {
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Compte (pour valider les documents)</span>
           <select value={f.profil_id} onChange={(e) => setF((s) => ({ ...s, profil_id: e.target.value }))}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+            className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
             <option value="">— Aucun —</option>
             {membres.map((m) => <option key={m.id} value={m.id}>{m.prenom} {m.nom}{m.email ? ` (${m.email})` : ""}</option>)}
           </select>
@@ -836,7 +836,7 @@ function PaiementEnLigne({ onErreur }) {
     finally { setEnvoi(false); }
   }
 
-  const champ = "w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
+  const champ = "w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500";
   const estPD = f.prestataire === "paydunya";
 
   return (

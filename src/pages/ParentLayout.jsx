@@ -53,7 +53,7 @@ export default function ParentLayout() {
   };
   const fermerTour = () => { setTour(false); localStorage.setItem("tour_parent_v1", "done"); };
   return (
-    <div className="min-h-dscreen bg-creme">
+    <div className="min-h-dscreen bg-fond">
       {/*  ⚠️ L'EN-TÊTE DOIT TENIR DANS 320 PX. Il mesurait 421 px : à 390 px
            « Déconnexion » était coupé de 31 px, à 320 px de 101 px (audit
            ergonomie, oct. 2026). Les actions ne rétrécissent jamais ; c'est la

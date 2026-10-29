@@ -70,7 +70,7 @@ export default function Classement() {
             <Carte className="no-print overflow-hidden">
               <div className="border-b border-navy-900/10 px-6 py-3 text-sm text-navy-900/60">{classe?.libelle} · {periode?.libelle} · {classes_.length} élève(s)</div>
               <table className="w-full text-left text-sm">
-                <thead className="bg-creme text-navy-900/50">
+                <thead className="bg-navy-900/[0.03] text-navy-900/50">
                   <tr><th className="px-6 py-3 font-medium">Rang</th><th className="px-6 py-3 font-medium">Élève</th><th className="px-6 py-3 text-right font-medium">Moyenne</th><th className="px-6 py-3 font-medium">Distinction</th></tr>
                 </thead>
                 <tbody>

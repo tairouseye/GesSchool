@@ -912,7 +912,7 @@ function PanneauResponsables({ cycles, responsables, membres, peutModifier, onDe
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   <select value={choix[c.id] || ""}
                     onChange={(e) => setChoix((s) => ({ ...s, [c.id]: e.target.value }))}
-                    className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
+                    className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500">
                     <option value="">— Désigner —</option>
                     {libres.map((m) => <option key={m.id} value={m.id}>{nom(m)}</option>)}
                   </select>

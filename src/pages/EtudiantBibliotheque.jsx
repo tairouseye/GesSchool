@@ -292,11 +292,11 @@ function MesSuggestions({ dossier, toast }) {
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500" />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <input value={f.auteur} onChange={maj("auteur")} placeholder="Auteur"
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
             <input value={f.editeur} onChange={maj("editeur")} placeholder="Éditeur"
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
             <input value={f.isbn} onChange={maj("isbn")} placeholder="ISBN"
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
           </div>
           <textarea value={f.motif} onChange={maj("motif")} rows={2} placeholder="Pourquoi cet ouvrage vous serait utile"
             className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2 text-sm outline-none focus:border-or-500" />

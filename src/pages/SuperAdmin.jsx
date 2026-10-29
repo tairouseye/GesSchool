@@ -101,7 +101,7 @@ export default function SuperAdmin() {
 
         <Carte className="overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-creme text-navy-900/50">
+            <thead className="bg-navy-900/[0.03] text-navy-900/50">
               <tr>
                 <th className="px-5 py-3 font-medium">École</th>
                 <th className="px-5 py-3 font-medium">Élèves</th>
@@ -225,7 +225,7 @@ function Encarts() {
 
       <Carte className="overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
+          <thead className="bg-navy-900/[0.03] text-navy-900/50">
             <tr>
               <th className="px-5 py-3 font-medium">Partenaire</th>
               <th className="px-5 py-3 font-medium">Message</th>
@@ -475,7 +475,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
           💡 Prix plancher par école selon ton échelle (palier ≤ 400 élèves)
         </div>
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
+          <thead className="bg-navy-900/[0.03] text-navy-900/50">
             <tr>
               <th className="px-4 py-2.5 font-medium">Écoles</th>
               <th className="px-4 py-2.5 text-right font-medium">Élèves</th>
@@ -513,7 +513,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
           1️⃣ Prix plancher par palier (coût + marge)
         </div>
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
+          <thead className="bg-navy-900/[0.03] text-navy-900/50">
             <tr>
               <th className="px-4 py-2.5 font-medium">Palier</th>
               <th className="px-4 py-2.5 font-medium">Max élèves</th>
@@ -590,7 +590,7 @@ function Tarification({ nbEcolesReel, onErreur }) {
           3️⃣ Catalogue commercial — prix fixes par formule (≤ 800 élèves)
         </div>
         <table className="w-full text-left text-sm">
-          <thead className="bg-creme text-navy-900/50">
+          <thead className="bg-navy-900/[0.03] text-navy-900/50">
             <tr>
               <th className="px-4 py-2.5 font-medium">Offre</th>
               <th className="px-4 py-2.5 font-medium">Modules</th>
@@ -750,14 +750,14 @@ function ModaleEcole({ ecole, plans, onFermer, onAbonnement, onModules, onDemons
             <label className="block">
               <span className="mb-1.5 block text-xs text-navy-900/50">Plan</span>
               <select value={planId} onChange={(e) => setPlanId(e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 {plans.map((p) => <option key={p.id} value={p.id}>{p.libelle}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs text-navy-900/50">Statut</span>
               <select value={statut} onChange={(e) => setStatut(e.target.value)}
-                className="w-full rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+                className="w-full rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
                 {api.STATUTS_ABO.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </label>

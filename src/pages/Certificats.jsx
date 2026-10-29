@@ -213,7 +213,7 @@ export default function Certificats() {
         ) : (
           <Carte className="no-print overflow-hidden">
             <table className="w-full text-left text-sm">
-              <thead className="bg-creme text-navy-900/50">
+              <thead className="bg-navy-900/[0.03] text-navy-900/50">
                 <tr><th className="px-5 py-3 font-medium">Élève</th><th className="px-5 py-3 font-medium">Document</th><th className="px-5 py-3 font-medium">Signataire</th><th className="px-5 py-3 font-medium">Statut</th><th className="px-5 py-3"></th></tr>
               </thead>
               <tbody>

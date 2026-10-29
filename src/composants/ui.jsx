@@ -70,14 +70,14 @@ export function IconeBouton({ children, className = "", ...props }) {
 // ton : rouge | or | navy. Rend un <Link> si `to`, sinon un <button onClick>.
 export function TuileAlerte({ to, onClick, label, valeur, sousTexte, actif = false, ton = "navy", chargement = false }) {
   const cadre = {
-    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10",
-    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10",
-    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10",
+    rouge: actif ? "border-rose-300 bg-rose-50" : "border-navy-900/10 bg-white",
+    or: actif ? "border-or-500/40 bg-or-500/5" : "border-navy-900/10 bg-white",
+    navy: actif ? "border-navy-800/30 bg-navy-900/5" : "border-navy-900/10 bg-white",
   };
   const chiffre = actif
     ? (ton === "rouge" ? "text-rose-700" : ton === "or" ? "text-or-600" : "text-navy-900")
     : "text-navy-900/30";
-  const cls = `block rounded-2xl border p-5 text-left shadow-sm transition hover:shadow-md ${cadre[ton]}`;
+  const cls = `block rounded-2xl border p-5 text-left transition hover:border-navy-900/30 ${cadre[ton]}`;
   const inner = (
     <>
       <p className="text-sm font-medium text-navy-900/60">

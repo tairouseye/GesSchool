@@ -262,7 +262,7 @@ export default function InscriptionsSup() {
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Filière</span>
             <select value={fFiliere} onChange={(e) => setFFiliere(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">Toutes</option>
               {filieres.map((f) => <option key={f.id} value={f.id}>{f.nom}</option>)}
             </select>
@@ -270,7 +270,7 @@ export default function InscriptionsSup() {
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-navy-900/45">Niveau</span>
             <select value={fNiveau} onChange={(e) => setFNiveau(e.target.value)}
-              className="rounded-xl border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
+              className="rounded-lg border border-navy-900/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-or-500">
               <option value="">Tous</option>
               {NIVEAUX.map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
