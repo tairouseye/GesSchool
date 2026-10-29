@@ -87,14 +87,14 @@ export default function Connexion() {
 
       <div className="relative grid min-h-dscreen place-items-center px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center text-creme">
+        {/* Le produit seul en tête : logo, nom, devise, d'un bloc serré.
+            La signature GesPro et la version descendent en bas de page. */}
+        <div className="mb-7 flex flex-col items-center text-creme">
           <Logo size={80} fond className="rounded-full shadow-lg" />
-          <h1 className="mt-3 font-display text-2xl font-bold">
+          <h1 className="mt-4 font-display text-3xl font-bold leading-none">
             Ges<span className="text-or-500">School</span>
           </h1>
-          <p className="text-sm text-creme/60">L'école connectée, la gestion simplifiée</p>
-          <p className="mt-1.5 text-xs font-medium text-creme/45">{GESPRO.signature}</p>
-          <p className="mt-2 font-mono text-[11px] text-creme/40">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
+          <p className="mt-2 text-sm text-creme/80">L'école connectée, la gestion simplifiée</p>
         </div>
 
         {/* Carte en verre, sur téléphone comme sur ordinateur : la photo du
@@ -181,6 +181,12 @@ export default function Connexion() {
         )}
 
         <GesProSignature ton="sombre" avecContacts avecSlogan={false} avecVersion={false} className="mt-6" />
+        <div className="mt-4 text-center">
+          {/* « une solution… » sert aussi en milieu de phrase ailleurs : la
+              majuscule est posée ici, où la mention ouvre la ligne. */}
+          <p className="text-xs font-medium text-creme/60">{GESPRO.signature.charAt(0).toUpperCase() + GESPRO.signature.slice(1)}</p>
+          <p className="mt-1 font-mono text-[11px] text-creme/60">v{__APP_VERSION__} · {__BUILD_DATE__}</p>
+        </div>
       </div>
       </div>
     </div>

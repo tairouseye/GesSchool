@@ -5,6 +5,10 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.284.1] — Connexion : en-tête allégé
+- **LE BESOIN** (promoteur, 29/10/2026) : en tête de la page de connexion, ne garder que le logo, GesSchool et « L'école connectée, la gestion simplifiée », mieux espacés ; descendre la signature GesPro, avec une majuscule à « Une ».
+- Logo, nom (plus grand) et devise (plus lisible) en un bloc serré ; « Une solution GesPro Digitals » et la version passent en bas de page, sous les contacts GesPro.
+
 ## [2.284.0] — Refonte de l'interface (inspirée d'Alma) et logo plume
 - **LE BESOIN** (promoteur, 29/10/2026) : une interface plus professionnelle, dans l'esprit d'Alma (comparé à PowerSchool, Fedena, Classter, OpenEduCat, Gradelink), sans perdre l'existant ; un logo lié à l'éducation. Maquettes validées : `docs/maquette-refonte-interface.html`, `docs/maquette-logo-education.html` (piste J, la plume). Travail mené sur la branche `refonte-interface`, essayé par le promoteur sur ses vraies données ; v2.283.0 étiquetée comme point de retour.
 - **Logo plume** : remplace la toque (connexion, écran d'ouverture) et le cachet (en-têtes parent, étudiant, super-admin, écrans d'attente) ; nouvelles icônes de l'appli et favicon ; QR code et affiche. Le cachet reste sur les documents officiels.
