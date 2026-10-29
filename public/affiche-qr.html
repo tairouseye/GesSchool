@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Affiche GesSchool</title>
+<!-- Affiche A4 à imprimer et à afficher dans les écoles : un QR code qui
+     ouvre la page de connexion. Le nom de l'école se passe dans l'adresse :
+     /affiche-qr.html?ecole=Tut'Tank (sinon, cliquer sur la ligne pour l'écrire). -->
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e8e4da; font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; color: #0b1f3a; }
+  .barre { display: flex; justify-content: center; gap: 12px; padding: 16px; }
+  .barre button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 10px 18px; background: #0b1f3a; color: #f7f3ea; cursor: pointer; }
+  .page { width: 210mm; height: 297mm; margin: 0 auto 24px; background: #f7f3ea; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 6px 30px rgb(0 0 0 / .15); }
+  header { background: #0b1f3a; color: #f7f3ea; text-align: center; padding: 10mm 12mm 7mm; }
+  header svg { width: 20mm; height: 20mm; }
+  h1 { margin: 4mm 0 0; font-size: 34pt; letter-spacing: .5px; }
+  h1 span { color: #c9a227; }
+  .devise { margin: 1mm 0 0; font-size: 13pt; opacity: .75; }
+  .ecole { margin: 4mm auto 0; max-width: 170mm; font-size: 18pt; font-weight: 700; color: #c9a227; outline: none; min-height: 1.3em; }
+  .ecole:empty::before { content: "Nom de l'établissement (cliquer pour écrire)"; opacity: .45; font-weight: 400; }
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6mm 15mm; }
+  .appel { margin: 0 0 6mm; font-size: 24pt; font-weight: 800; text-align: center; }
+  .qr { width: 95mm; height: 95mm; padding: 5mm; background: #fff; border: 2.5mm solid #c9a227; border-radius: 8mm; }
+  .qr img { width: 100%; height: 100%; display: block; }
+  .url { margin: 5mm 0 0; font-size: 16pt; font-weight: 700; letter-spacing: .3px; }
+  .etapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; width: 100%; margin-top: 8mm; }
+  .etape { background: #fff; border-radius: 5mm; padding: 5mm; text-align: center; font-size: 11.5pt; line-height: 1.35; }
+  .etape b { display: grid; place-items: center; width: 10mm; height: 10mm; margin: 0 auto 2.5mm; border-radius: 50%; background: #0b1f3a; color: #c9a227; font-size: 14pt; }
+  footer { background: #0b1f3a; color: #f7f3ea; text-align: center; padding: 6mm; font-size: 10.5pt; }
+  footer strong { color: #c9a227; }
+  @media print {
+    body { background: none; }
+    .barre { display: none; }
+    .page { margin: 0; box-shadow: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media screen and (max-width: 220mm) {
+    .page { zoom: calc(100vw / 220mm); }
+  }
+</style>
+</head>
+<body>
+<div class="barre"><button onclick="window.print()">Imprimer l'affiche</button></div>
+<div class="page">
+  <header>
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="50" fill="#f7f3ea" fill-opacity=".08"/>
+      <g fill="#c9a227"><path d="M50 26 L83 40 L50 54 L17 40 Z"/><circle cx="83" cy="62.5" r="3.2"/></g>
+      <g fill="none" stroke="#c9a227" stroke-linecap="round"><path d="M32 46 V60 c0 6.5 36 6.5 36 0 V46" stroke-width="3.4"/><path d="M83 40 V60" stroke-width="2.2"/></g>
+    </svg>
+    <h1>Ges<span>School</span></h1>
+    <p class="devise">L'école connectée, la gestion simplifiée</p>
+    <div class="ecole" id="ecole" contenteditable="true" spellcheck="false"></div>
+  </header>
+  <main>
+    <p class="appel">Scannez pour accéder à l'application</p>
+    <div class="qr"><img src="qr-gesschool.svg" alt="QR code vers gesschool.gesprosn.org"></div>
+    <p class="url">gesschool.gesprosn.org</p>
+    <div class="etapes">
+      <div class="etape"><b>1</b>Ouvrez l'appareil photo du téléphone et visez le code.</div>
+      <div class="etape"><b>2</b>Connectez-vous avec l'e-mail communiqué par l'école.</div>
+      <div class="etape"><b>3</b>Ajoutez GesSchool à l'écran d'accueil pour la retrouver en un geste.</div>
+    </div>
+  </main>
+  <footer>Notes, emploi du temps, cahier de textes et paiements — <strong>une solution GesPro Digitals</strong> · +221 77 343 59 28</footer>
+</div>
+<script>
+  // Nom de l'école passé dans l'adresse (?ecole=…).
+  const ecole = new URLSearchParams(location.search).get("ecole");
+  if (ecole) document.getElementById("ecole").textContent = ecole;
+</script>
+</body>
+</html>
