@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.284.0] — Refonte de l'interface (inspirée d'Alma) et logo plume
+- **LE BESOIN** (promoteur, 29/10/2026) : une interface plus professionnelle, dans l'esprit d'Alma (comparé à PowerSchool, Fedena, Classter, OpenEduCat, Gradelink), sans perdre l'existant ; un logo lié à l'éducation. Maquettes validées : `docs/maquette-refonte-interface.html`, `docs/maquette-logo-education.html` (piste J, la plume). Travail mené sur la branche `refonte-interface`, essayé par le promoteur sur ses vraies données ; v2.283.0 étiquetée comme point de retour.
+- **Logo plume** : remplace la toque (connexion, écran d'ouverture) et le cachet (en-têtes parent, étudiant, super-admin, écrans d'attente) ; nouvelles icônes de l'appli et favicon ; QR code et affiche. Le cachet reste sur les documents officiels.
+- **Briques communes** (`ui.jsx`, presque tous les écrans) : fond gris très clair (`bg-fond`), en-tête de page blanc, cartes et tableaux à bord fin sans ombre, onglets soulignés d'or, pastilles plus lisibles, coins adoucis, loupe dessinée ; `Kpi` accepte une `serie` (courbe de tendance) ; page active du menu marquée d'un filet or.
+- **Tableau de bord Gestion** : « À faire aujourd'hui » d'abord, une ligne et un bouton par action (paiements mobiles, impayés, échéances 7 j, documents à signer, demandes), seulement si le rôle a accès à l'écran ; montants à la française.
+- **Liste des élèves** : filtres en pastilles, initiales colorées, matricule sous le nom, statut en pastille, barre d'actions groupées. Corrigés : le sous-titre donne le total (et non la page) ; une recherche vide dit « Aucun résultat ».
+- **Fiche élève** : bandeau d'identité et onglets Aperçu / État civil & scolarité / Paiements ; l'aperçu résume les paiements, l'inscription, les responsables (qui a activé l'appli) et la fratrie.
+- **Finitions** : onglets de Comptabilité, Enseignants et Vie scolaire ; en-têtes de tableaux, listes, champs et survols harmonisés sur tous les écrans ; espaces parent et étudiant sur le même fond.
+- Aucune règle d'accès ni requête modifiée. Mode d'emploi mis à jour (§3.4, §3.5, §10.4 ter, §15, §18).
+
 ## [2.283.0] — Connexion : photo ajustée au téléphone, carte plus claire ; affiche QR code
 - **LE BESOIN** (promoteur, 29/10/2026) : sur téléphone la photo du mois était trop grande, et la partie grise de la carte en masquait une partie (un peu sur ordinateur, beaucoup sur téléphone). Ensuite : un QR code de l'appli à afficher dans les écoles.
 - **Photo fixée à l'écran** : elle couvrait toute la page, plus haute que l'écran sur téléphone, d'où l'agrandissement. Téléphone tenu droit : la photo paysage entière (`object-contain`), sur une copie floutée qui remplit les bandes. Ordinateur et téléphone couché : inchangé.
