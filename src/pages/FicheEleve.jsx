@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, Onglets, Badge, Skeleton, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/eleves.js";
 import { genererCodeTuteur } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { getAnneeCourante, getClasses, getChampsEleve, getSousNiveaux, sousNiveauxDeClasse } from "@/lib/academique.js";
 import { peutEditerEleves, peutGererParents, peutVoir, peutGererTarifs, peutVoirEcheancier } from "@/lib/permissions.js";
 import { eleveEcheancier, fratrieEleve, definirTarifEleve, definirNouveauEleve } from "@/lib/paiements.js";
-import { etat as etatPaiement } from "@/lib/paiementStatut.js";
+import { etat as etatPaiement, resumeEcheancier } from "@/lib/paiementStatut.js";
 import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -47,6 +47,7 @@ export default function FicheEleve() {
   const [echeancier, setEcheancier] = useState(undefined);
   const [fratrie, setFratrie] = useState([]);
   const [modaleTarif, setModaleTarif] = useState(false);
+  const [onglet, setOnglet] = useState("apercu");
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -97,42 +98,49 @@ export default function FicheEleve() {
     }
   };
 
-  if (chargement) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8 text-navy-900/50">Chargement…</div></>);
-  if (!eleve) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8 text-navy-900/50">{L.S} introuvable.</div></>);
+  if (chargement) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8"><SkeletonListe lignes={3} /></div></>);
+  if (!eleve) return (<><EnTete titre={`Fiche ${L.s}`} /><div className="p-8 text-navy-900/60">{L.S} introuvable.</div></>);
+
+  const inscCourante = inscriptions.find((i) => i.annee_id === annee?.id) || null;
+  const age = ageDe(eleve.date_naissance);
+  const voitPaiements = voitEcheancier && echeancier !== null;
+  const onglets = [["apercu", "Aperçu"], ["scolarite", "État civil & scolarité"], ...(voitPaiements ? [["paiements", "Paiements"]] : [])];
+
+  const supprimer = async () => {
+    if (await confirmer({ message: `Supprimer définitivement cet ${L.s} ?`, confirmer: "Supprimer" })) {
+      wrap(async () => {
+        await api.supprimerEleve(eleve.id);
+        navigate("/eleves");
+      }, `${L.S} supprimé.`);
+    }
+  };
 
   return (
     <>
-      <EnTete
-        titre={`${eleve.prenom} ${eleve.nom}`}
-        sousTitre={eleve.matricule}
-        action={
-          <div className="flex gap-2">
-            <Bouton variante="fantome" onClick={() => setCarteOuverte(true)}>🪪 Carte scolaire</Bouton>
-            <Bouton variante="fantome" onClick={() => navigate("/eleves")}>← Liste</Bouton>
-          </div>
-        }
-      />
-      <div className="grid grid-cols-1 gap-6 p-8 lg:grid-cols-3">
-        <Alerte ton="erreur">{erreur}</Alerte>
-
-        {/* Infos */}
-        <Carte className="p-6 lg:col-span-1">
-          {/* Photo */}
-          <div className="mb-5 flex flex-col items-center">
+      {/* Bandeau d'identité (refonte) : qui est l'élève, d'un coup d'œil,
+          puis les onglets. Remplace l'en-tête générique de page. */}
+      <div className="border-b border-navy-900/10 bg-white px-4 pt-5 sm:px-8">
+        <nav className="text-sm text-navy-900/60" aria-label="Fil d'Ariane">
+          <button onClick={() => navigate("/eleves")} className="font-medium text-navy-700 hover:text-or-600">{L.P}</button>
+          {inscCourante?.classes?.libelle && <> › {inscCourante.classes.libelle}</>}
+          {" › "}<span className="text-navy-900">{eleve.prenom} {eleve.nom}</span>
+        </nav>
+        <div className="mt-4 flex flex-wrap items-center gap-4 sm:gap-5">
+          <div className="flex flex-col items-center">
             <Photo
               bucket="eleves"
               valeur={eleve.photo_url}
               alt=""
-              className="h-24 w-24 rounded-full object-cover ring-2 ring-or-500/40"
+              className="h-20 w-20 rounded-2xl object-cover"
               fallback={
-                <span className="grid h-24 w-24 place-items-center rounded-full bg-navy-900/10 font-display text-2xl font-bold text-navy-900/50">
+                <span className="grid h-20 w-20 place-items-center rounded-2xl bg-violet-500 font-display text-2xl font-bold text-white">
                   {(eleve.prenom?.[0] || "").toUpperCase()}{(eleve.nom?.[0] || "").toUpperCase()}
                 </span>
               }
             />
             {peutEditer && (
-              <label className="mt-3 cursor-pointer text-xs text-navy-700 hover:text-or-500">
-                {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer la photo" : "Ajouter une photo"}
+              <label className="mt-1.5 cursor-pointer text-xs text-navy-700 hover:text-or-600">
+                {photoEnCours ? "Envoi…" : eleve.photo_url ? "Changer" : "Ajouter une photo"}
                 <input
                   type="file" accept="image/*" className="hidden" disabled={photoEnCours}
                   onChange={async (ev) => {
@@ -149,206 +157,271 @@ export default function FicheEleve() {
               </label>
             )}
           </div>
-
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold text-navy-900">État civil</h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-2xl font-bold text-navy-900">{eleve.prenom} {eleve.nom}</h1>
+              {inscCourante
+                ? <Badge ton={inscCourante.statut === "abandon" ? "neutre" : inscCourante.statut === "transfere" ? "info" : "success"}>{LIBELLE_STATUT[inscCourante.statut] || inscCourante.statut}</Badge>
+                : <Badge>Non inscrit</Badge>}
+            </div>
+            <p className="mt-1 text-sm text-navy-900/60">
+              {[inscCourante?.classes?.libelle, eleve.matricule && `Matricule ${eleve.matricule}`, age != null && `${age} ans`,
+                eleve.date_naissance && `${eleve.sexe === "F" ? "née" : "né"} le ${dateFr(eleve.date_naissance)}${eleve.lieu_naissance ? ` à ${eleve.lieu_naissance}` : ""}`]
+                .filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Bouton variante="fantome" onClick={() => setCarteOuverte(true)}>🪪 Carte scolaire</Bouton>
             {peutEditer && (
-              <button onClick={() => setModaleEdit(true)} className="text-xs text-navy-700 hover:text-or-500">
-                Modifier
-              </button>
+              <Bouton onClick={() => setModaleInscr(true)} disabled={!annee || classes.length === 0}>
+                {inscCourante ? "Changer de classe" : "Inscrire"}
+              </Bouton>
             )}
           </div>
-          <dl className="space-y-2 text-sm">
-            <Info label="Matricule" valeur={eleve.matricule} mono />
-            <Info label="Sexe" valeur={eleve.sexe === "M" ? "Masculin" : eleve.sexe === "F" ? "Féminin" : "—"} />
-            <Info label="Naissance" valeur={eleve.date_naissance || "—"} />
-            <Info label="Lieu" valeur={eleve.lieu_naissance || "—"} />
-            <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
-            <Info label="Adresse" valeur={eleve.adresse || "—"} />
-            {champsPerso.map((c) => (
-              <Info key={c.cle} label={c.libelle} valeur={eleve.champs_perso?.[c.cle] || "—"} />
-            ))}
-          </dl>
-          {peutEditer && (
-            <Bouton
-              variante="fantome"
-              className="mt-5 w-full text-rose-700"
-              onClick={async () => {
-                if (await confirmer({ message: `Supprimer définitivement cet ${L.s} ?`, confirmer: "Supprimer" })) {
-                  wrap(async () => {
-                    await api.supprimerEleve(eleve.id);
-                    navigate("/eleves");
-                  }, `${L.S} supprimé.`);
-                }
-              }}
-            >
-              Supprimer l'{L.s}
-            </Bouton>
-          )}
-        </Carte>
+        </div>
+        <div className="mt-5"><Onglets items={onglets} actif={onglet} onChange={setOnglet} /></div>
+      </div>
 
-        <div className="space-y-6 lg:col-span-2">
-          {/* Tuteurs */}
-          <Carte className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-display text-lg font-semibold text-navy-900">Responsables</h3>
-              {peutEditer && <Bouton variante="fantome" onClick={() => setModaleTuteur(true)}>+ Ajouter</Bouton>}
-            </div>
-            {tuteurs.length === 0 ? (
-              <p className="text-sm text-navy-900/40">Aucun responsable enregistré.</p>
-            ) : (
-              <ul className="space-y-2">
-                {tuteurs.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3">
-                    <div>
-                      <p className="font-medium text-navy-900">
-                        {t.tuteurs.prenom} {t.tuteurs.nom}
-                        {t.lien_parente && <span className="ml-2 text-xs text-navy-900/50">({t.lien_parente})</span>}
-                      </p>
-                      <p className="text-xs text-navy-900/50">
-                        {t.tuteurs.telephone || "—"}
-                        {t.responsable_paiement && <span className="ml-2 text-or-600">• paiement</span>}
-                        {t.responsable_legal && <span className="ml-2 text-navy-900/40">• légal</span>}
-                      </p>
-                    </div>
-                    {(peutEditer || gereParents || (t.tuteurs.profil_id && peutMessage)) && (
-                    <div className="flex flex-col items-end gap-1">
-                      {t.tuteurs.profil_id && peutMessage && (
-                        <button
-                          onClick={() => navigate(`/messagerie?parent=${t.tuteurs.profil_id}&nom=${encodeURIComponent(`${t.tuteurs.prenom} ${t.tuteurs.nom}`)}&eleve=${encodeURIComponent(`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim())}`)}
-                          className="text-xs font-medium text-navy-700 hover:text-or-500"
-                        >
-                          ✉️ Message
-                        </button>
-                      )}
-                      {codes[t.tuteurs.id] ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
-                            {codes[t.tuteurs.id]}
-                          </span>
-                          {t.tuteurs.telephone && (
-                            <a
-                              href={lienWhatsApp(
-                                t.tuteurs.telephone,
-                                `Bonjour, voici votre accès à l'espace parent GesSchool pour suivre ${`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim()} (notes, absences, paiements).\n\n1) Ouvrez ${window.location.origin}\n2) Créez votre compte\n3) Entrez le code : ${codes[t.tuteurs.id]}`,
-                              )}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
-                            >
-                              💬 Envoyer par WhatsApp
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={async () => {
-                            setErreur("");
-                            try {
-                              const code = await genererCodeTuteur(t.tuteurs.id);
-                              setCodes((s) => ({ ...s, [t.tuteurs.id]: code }));
-                            } catch (e) { setErreur(e.message); }
-                          }}
-                          className="text-xs text-navy-700 hover:text-or-500"
-                        >
-                          Code parent
-                        </button>
-                      )}
-                      {peutEditer && (
-                        <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-700 hover:underline">
-                          retirer
-                        </button>
-                      )}
-                    </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+      <div className="p-4 sm:p-8">
+        <Alerte ton="erreur">{erreur}</Alerte>
+
+        {onglet === "apercu" && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Résumé des paiements de l'année */}
+            {voitPaiements && (
+              <Carte className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-navy-900/60">Paiements {annee?.libelle}</p>
+                  {echeancier && <BadgeStatut statut={echeancier.statut} />}
+                </div>
+                {echeancier === undefined ? <Skeleton className="mt-3 h-16" /> : <ResumePaiement donnees={echeancier} devise={ecole?.devise || "XOF"} />}
+                <button onClick={() => setOnglet("paiements")} className="mt-3 text-sm font-medium text-navy-700 hover:text-or-600">Voir l'échéancier →</button>
+              </Carte>
             )}
-          </Carte>
 
-          {/* Inscriptions */}
-          <Carte className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-display text-lg font-semibold text-navy-900">Inscriptions</h3>
+            {/* Inscription de l'année */}
+            <Carte className="p-5">
+              <p className="text-sm font-medium text-navy-900/60">Inscription {annee?.libelle}</p>
+              {inscCourante ? (
+                <>
+                  <p className="mt-2 font-display text-2xl font-bold text-navy-900">
+                    {inscCourante.classes?.libelle || "—"}
+                    {inscCourante.sous_niveaux?.libelle && (
+                      <span className="ml-2 rounded-full bg-sky-500/10 px-2 py-0.5 align-middle text-xs font-medium text-sky-700">{inscCourante.sous_niveaux.libelle}</span>
+                    )}
+                  </p>
+                  <p className="mt-2 text-sm text-navy-900/60">{inscriptions.length > 1 ? `${inscriptions.length} années dans l'établissement` : "Première année dans l'établissement"}</p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-navy-900/60">Pas encore inscrit pour l'année en cours.</p>
+              )}
+            </Carte>
+
+            {/* Repères */}
+            <Carte className="p-5">
+              <p className="text-sm font-medium text-navy-900/60">Repères</p>
+              <dl className="mt-3 space-y-2 text-sm">
+                <Info label="Sexe" valeur={eleve.sexe === "M" ? "Masculin" : eleve.sexe === "F" ? "Féminin" : "—"} />
+                <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
+                <Info label="Responsables" valeur={String(tuteurs.length)} />
+                {fratrie.length > 0 && <Info label="Fratrie" valeur={`${fratrie.length + 1} enfants`} />}
+              </dl>
+            </Carte>
+
+            {/* Responsables */}
+            <Carte className="p-6 lg:col-span-2">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-semibold text-navy-900">Responsables</h3>
+              </div>
+              {tuteurs.length === 0 ? (
+                <p className="text-sm text-navy-900/60">Aucun responsable enregistré.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {tuteurs.map((t) => (
+                    <li key={t.id} className="flex items-center gap-3 rounded-xl border border-navy-900/10 px-4 py-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy-900/5 text-sm font-bold text-navy-900">
+                        {(t.tuteurs.prenom?.[0] || "").toUpperCase()}{(t.tuteurs.nom?.[0] || "").toUpperCase()}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-navy-900">
+                          {t.tuteurs.prenom} {t.tuteurs.nom}
+                          {t.lien_parente && <span className="ml-1.5 text-sm font-normal text-navy-900/60">· {t.lien_parente}</span>}
+                        </p>
+                        <p className="text-sm text-navy-900/60">
+                          {t.tuteurs.telephone || "—"}
+                          {t.tuteurs.profil_id ? <span className="ml-2 text-emerald-700">· appli activée ✓</span> : <span className="ml-2">· pas encore dans l'appli</span>}
+                          {t.responsable_paiement && <span className="ml-2 text-or-600">· paiement</span>}
+                          {t.responsable_legal && <span className="ml-2">· légal</span>}
+                        </p>
+                      </div>
+                      {(peutEditer || gereParents || (t.tuteurs.profil_id && peutMessage)) && (
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {t.tuteurs.profil_id && peutMessage && (
+                          <button
+                            onClick={() => navigate(`/messagerie?parent=${t.tuteurs.profil_id}&nom=${encodeURIComponent(`${t.tuteurs.prenom} ${t.tuteurs.nom}`)}&eleve=${encodeURIComponent(`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim())}`)}
+                            className="text-xs font-medium text-navy-700 hover:text-or-600"
+                          >
+                            ✉️ Message
+                          </button>
+                        )}
+                        {codes[t.tuteurs.id] ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">
+                              {codes[t.tuteurs.id]}
+                            </span>
+                            {t.tuteurs.telephone && (
+                              <a
+                                href={lienWhatsApp(
+                                  t.tuteurs.telephone,
+                                  `Bonjour, voici votre accès à l'espace parent GesSchool pour suivre ${`${eleve?.prenom || ""} ${eleve?.nom || ""}`.trim()} (notes, absences, paiements).\n\n1) Ouvrez ${window.location.origin}\n2) Créez votre compte\n3) Entrez le code : ${codes[t.tuteurs.id]}`,
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                              >
+                                💬 Envoyer par WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              setErreur("");
+                              try {
+                                const code = await genererCodeTuteur(t.tuteurs.id);
+                                setCodes((s) => ({ ...s, [t.tuteurs.id]: code }));
+                              } catch (e) { setErreur(e.message); }
+                            }}
+                            className="text-xs text-navy-700 hover:text-or-600"
+                          >
+                            Code parent
+                          </button>
+                        )}
+                        {peutEditer && (
+                          <button onClick={() => wrap(() => api.retirerLienTuteur(t.id))} className="text-xs text-rose-700 hover:underline">
+                            retirer
+                          </button>
+                        )}
+                      </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {peutEditer && (
-                <Bouton onClick={() => setModaleInscr(true)} disabled={!annee || classes.length === 0}>
-                  {inscriptions.some((i) => i.annee_id === annee?.id) ? "Changer de classe" : "Inscrire"}
+                <button onClick={() => setModaleTuteur(true)}
+                  className="mt-4 w-full rounded-lg border border-dashed border-navy-900/25 py-2 text-sm font-medium text-navy-900/70 hover:border-navy-900/50 hover:text-navy-900">
+                  + Ajouter un responsable
+                </button>
+              )}
+            </Carte>
+
+            {/* Fratrie : les élèves qui ont un responsable en commun */}
+            {fratrie.length > 0 && (
+              <Carte className="p-6">
+                <h3 className="mb-3 font-semibold text-navy-900">
+                  Fratrie <span className="text-sm font-normal text-navy-900/60">· {fratrie.length + 1} enfants inscrits</span>
+                </h3>
+                <ul className="space-y-2">
+                  {fratrie.map((f) => (
+                    <li key={f.eleve_id}>
+                      <button onClick={() => { setOnglet("apercu"); navigate(`/eleves/${f.eleve_id}`); }}
+                        className="flex w-full items-center justify-between gap-2 rounded-xl border border-navy-900/10 px-4 py-2.5 text-left text-sm hover:border-or-500">
+                        <span className={`font-medium ${(f.statut && etatPaiement(f.statut).texte) || "text-navy-900"}`}>
+                          {f.prenom} {f.nom}
+                          <span className="ml-2 text-xs font-normal text-navy-900/60">{f.classe || "—"}</span>
+                        </span>
+                        {f.statut && <BadgeStatut statut={f.statut} />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Carte>
+            )}
+          </div>
+        )}
+
+        {onglet === "scolarite" && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <Carte className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-semibold text-navy-900">État civil</h3>
+                {peutEditer && (
+                  <button onClick={() => setModaleEdit(true)} className="text-sm font-medium text-navy-700 hover:text-or-600">
+                    Modifier
+                  </button>
+                )}
+              </div>
+              <dl className="space-y-2 text-sm">
+                <Info label="Matricule" valeur={eleve.matricule} mono />
+                <Info label="Sexe" valeur={eleve.sexe === "M" ? "Masculin" : eleve.sexe === "F" ? "Féminin" : "—"} />
+                <Info label="Naissance" valeur={eleve.date_naissance ? dateFr(eleve.date_naissance) : "—"} />
+                <Info label="Lieu" valeur={eleve.lieu_naissance || "—"} />
+                <Info label="Nationalité" valeur={eleve.nationalite || "—"} />
+                <Info label="Adresse" valeur={eleve.adresse || "—"} />
+                {champsPerso.map((c) => (
+                  <Info key={c.cle} label={c.libelle} valeur={eleve.champs_perso?.[c.cle] || "—"} />
+                ))}
+              </dl>
+              {peutEditer && (
+                <Bouton variante="fantome" className="mt-5 w-full text-rose-700" onClick={supprimer}>
+                  Supprimer l'{L.s}
                 </Bouton>
               )}
-            </div>
-            {inscriptions.length === 0 ? (
-              <p className="text-sm text-navy-900/40">Aucune inscription.</p>
-            ) : (
-              <ul className="space-y-2">
-                {inscriptions.map((i) => (
-                  <li key={i.id} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-3 text-sm">
-                    <span className="font-medium text-navy-900">
-                      {i.classes?.libelle || "—"}
-                      {/* Le niveau réel, quand la classe en regroupe plusieurs :
-                          « TPS/PS A · TPS ». Saisi sans être lu, il ne servirait à rien. */}
-                      {i.sous_niveaux?.libelle && (
-                        <span className="ml-1.5 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
-                          {i.sous_niveaux.libelle}
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-navy-900/50">{i.annees_scolaires?.libelle}</span>
-                    <span className="rounded-full border border-navy-900/15 bg-navy-900/5 px-2.5 py-0.5 text-xs">{i.statut}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Carte>
+            </Carte>
 
-          {/* Paiements de l'année : mois payés, dus, à venir (mig. 210) */}
-          {voitEcheancier && echeancier !== null && (
-            <Carte className="p-6">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-display text-lg font-semibold text-navy-900">
-                  Paiements {annee?.libelle ? `· ${annee.libelle}` : ""}
-                </h3>
-                <div className="flex items-center gap-2">
-                  {echeancier && <BadgeStatut statut={echeancier.statut} />}
-                  {gereTarif && echeancier && (
-                    <button onClick={() => setModaleTarif(true)} className="text-xs text-navy-700 hover:text-or-500">Tarif</button>
-                  )}
-                </div>
-              </div>
-              {echeancier === undefined ? (
-                <p className="text-sm text-navy-900/50">Chargement…</p>
+            <Carte className="p-6 lg:col-span-2">
+              <h3 className="mb-4 font-semibold text-navy-900">Inscriptions</h3>
+              {inscriptions.length === 0 ? (
+                <p className="text-sm text-navy-900/60">Aucune inscription.</p>
               ) : (
-                <>
-                  <NoteTarif tarif={echeancier.tarif} />
-                  <Echeancier donnees={echeancier} />
-                </>
+                <ul className="divide-y divide-navy-900/5">
+                  {inscriptions.map((i) => (
+                    <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                      <span className="font-medium text-navy-900">
+                        {i.classes?.libelle || "—"}
+                        {/* Le niveau réel, quand la classe en regroupe plusieurs :
+                            « TPS/PS A · TPS ». Saisi sans être lu, il ne servirait à rien. */}
+                        {i.sous_niveaux?.libelle && (
+                          <span className="ml-1.5 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                            {i.sous_niveaux.libelle}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-navy-900/60">{i.annees_scolaires?.libelle}</span>
+                      <Badge ton={i.statut === "abandon" ? "neutre" : i.statut === "transfere" ? "info" : "success"}>{LIBELLE_STATUT[i.statut] || i.statut}</Badge>
+                    </li>
+                  ))}
+                </ul>
               )}
             </Carte>
-          )}
+          </div>
+        )}
 
-          {/* Fratrie : les élèves qui ont un responsable en commun */}
-          {fratrie.length > 0 && (
-            <Carte className="p-6">
-              <h3 className="mb-3 font-display text-lg font-semibold text-navy-900">
-                Fratrie <span className="text-sm font-normal text-navy-900/50">· {fratrie.length + 1} enfants inscrits</span>
+        {/* Paiements de l'année : mois payés, dus, à venir (mig. 210) */}
+        {onglet === "paiements" && voitPaiements && (
+          <Carte className="p-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-semibold text-navy-900">
+                Paiements {annee?.libelle ? `· ${annee.libelle}` : ""}
               </h3>
-              <ul className="space-y-2">
-                {fratrie.map((f) => (
-                  <li key={f.eleve_id}>
-                    <button onClick={() => navigate(`/eleves/${f.eleve_id}`)}
-                      className="flex w-full items-center justify-between rounded-xl border border-navy-900/10 px-4 py-2.5 text-left text-sm hover:border-or-500">
-                      <span className={`font-medium ${(f.statut && etatPaiement(f.statut).texte) || "text-navy-900"}`}>
-                        {f.prenom} {f.nom}
-                        <span className="ml-2 text-xs font-normal text-navy-900/50">{f.classe || "—"}</span>
-                      </span>
-                      {f.statut && <BadgeStatut statut={f.statut} />}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </Carte>
-          )}
-        </div>
+              <div className="flex items-center gap-2">
+                {echeancier && <BadgeStatut statut={echeancier.statut} />}
+                {gereTarif && echeancier && (
+                  <button onClick={() => setModaleTarif(true)} className="text-sm font-medium text-navy-700 hover:text-or-600">Tarif</button>
+                )}
+              </div>
+            </div>
+            {echeancier === undefined ? (
+              <p className="text-sm text-navy-900/60">Chargement…</p>
+            ) : (
+              <>
+                <NoteTarif tarif={echeancier.tarif} />
+                <Echeancier donnees={echeancier} />
+              </>
+            )}
+          </Carte>
+        )}
       </div>
 
       <ModaleTarif
@@ -435,6 +508,53 @@ export default function FicheEleve() {
           <Bouton onClick={() => window.print()}>Imprimer / PDF</Bouton>
         </div>
       </Modale>
+    </>
+  );
+}
+
+const LIBELLE_STATUT = { inscrit: "Inscrit", reinscrit: "Réinscrit", transfere: "Transféré", abandon: "Abandon" };
+
+// « 2016-03-12 » → « 12 mars 2016 », découpé sans passer par un fuseau horaire.
+const MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+function dateFr(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || "");
+  return m ? `${Number(m[3])} ${MOIS_FR[Number(m[2]) - 1]} ${m[1]}` : d || "";
+}
+
+function ageDe(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || "");
+  if (!m) return null;
+  const auj = new Date();
+  let a = auj.getFullYear() - Number(m[1]);
+  if (auj.getMonth() + 1 < Number(m[2]) || (auj.getMonth() + 1 === Number(m[2]) && auj.getDate() < Number(m[3]))) a -= 1;
+  return a >= 0 && a < 120 ? a : null;
+}
+
+// Résumé de l'échéancier pour l'aperçu : payé sur l'année, barre, prochaine
+// échéance. Le détail reste dans l'onglet Paiements.
+function ResumePaiement({ donnees, devise }) {
+  const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
+  if (donnees?.statut === "exonere") return <p className="mt-3 text-sm text-navy-900/70">Élève exonéré : rien n'est dû cette année.</p>;
+  const lignes = donnees?.lignes || [];
+  if (lignes.length === 0) return <p className="mt-3 text-sm text-navy-900/60">Aucun frais défini pour cette classe.</p>;
+  const r = resumeEcheancier(lignes);
+  const part = r.totalAnnee > 0 ? Math.min(100, (r.totalPaye / r.totalAnnee) * 100) : 0;
+  const prochaine = lignes.find((l) => l.etat !== "paye" && l.etat !== "en_retard");
+  return (
+    <>
+      <p className="mt-2 font-display text-2xl font-bold text-navy-900">
+        {fmt(r.totalPaye)} <span className="text-sm font-medium text-navy-900/60">/ {fmt(r.totalAnnee)} {devise}</span>
+      </p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-navy-900/10">
+        <div className={`h-full rounded-full ${r.totalDu > 0 ? "bg-rose-500" : "bg-emerald-500"}`} style={{ width: `${part}%` }} />
+      </div>
+      <p className="mt-3 text-sm text-navy-900/70">
+        {r.totalDu > 0
+          ? <>Dû aujourd'hui : <b className="text-rose-700">{fmt(r.totalDu)} {devise}</b></>
+          : prochaine
+            ? <>Prochaine échéance : <b className="text-navy-900">{fmt(prochaine.montant)} {devise}</b>{prochaine.echeance ? ` le ${dateFr(prochaine.echeance)}` : ""}</>
+            : "Année entièrement réglée."}
+      </p>
     </>
   );
 }
