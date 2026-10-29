@@ -73,11 +73,17 @@ export default function Connexion() {
       {/* Le fond du mois : la photo apparaît en fondu une fois chargée ; en
           attendant (ou hors ligne), le navy de la charte. Le voile navy
           garde le logo et les textes crème lisibles sur n'importe quelle
-          photo. */}
-      <img ref={photoRef} src={fond.image} alt="" aria-hidden="true" onLoad={() => setFondPret(true)}
-        style={{ objectPosition: fond.position }}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${fondPret ? "opacity-100" : "opacity-0"}`} />
-      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-navy-900/70 via-navy-900/15 to-navy-900/85" />
+          photo. Le fond est fixé à l'écran (pas à la page, plus haute que
+          l'écran sur téléphone, qui agrandissait la photo) ; écran en
+          hauteur : la photo paysage entière, sur une copie floutée qui
+          remplit les bandes. */}
+      <div aria-hidden="true" className={`fixed inset-0 transition-opacity duration-700 ${fondPret ? "opacity-100" : "opacity-0"}`}>
+        <img src={fond.image} alt="" className="absolute inset-0 hidden h-full w-full scale-110 object-cover blur-xl portrait:block" />
+        <img ref={photoRef} src={fond.image} alt="" onLoad={() => setFondPret(true)}
+          style={{ objectPosition: fond.position }}
+          className="absolute inset-0 h-full w-full object-cover portrait:object-contain portrait:!object-center" />
+      </div>
+      <div aria-hidden="true" className="fixed inset-0 bg-gradient-to-b from-navy-900/60 via-transparent to-navy-900/75" />
 
       <div className="relative grid min-h-dscreen place-items-center px-4 py-10">
       <div className="w-full max-w-md">
@@ -92,8 +98,9 @@ export default function Connexion() {
         </div>
 
         {/* Carte en verre, sur téléphone comme sur ordinateur : la photo du
-            mois passe à travers (comme les applis bancaires). */}
-        <div className="rounded-2xl border border-white/25 bg-navy-900/35 p-6 shadow-xl backdrop-blur-md sm:p-7">
+            mois passe à travers (comme les applis bancaires). Voile et flou
+            légers : la photo reste visible derrière les champs. */}
+        <div className="rounded-2xl border border-white/30 bg-navy-900/15 p-5 shadow-xl backdrop-blur-[2px] [text-shadow:0_1px_3px_rgb(0_0_0/0.45)] sm:p-7">
           <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-white/15 p-1">
             {["connexion", "inscription"].map((m) => (
               <button
