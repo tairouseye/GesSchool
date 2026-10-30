@@ -8,7 +8,7 @@ Suivez la scolarité de votre enfant et payez depuis votre téléphone.
 
 1. Demandez à l'école votre **code de liaison** (8 caractères, par exemple `3F9A2B7C`).
 2. Ouvrez GesSchool dans votre navigateur → onglet **Inscription** → votre e-mail et un mot de passe → **Créer le compte**.
-3. À l'accueil, choisissez **👪 Je suis un parent** → saisissez le code → **Accéder à l'espace parent**.
+3. À l'accueil, choisissez **👪 Je suis un parent** → saisissez le code → **Rejoindre l'établissement**.
 
 > **Un seul compte, même pour plusieurs enfants** — y compris dans **des écoles différentes**. Si vous avez déjà un compte, **connectez-vous** puis ajoutez le nouveau code par **« + Ajouter un enfant »**. Ne créez pas un second compte.
 
