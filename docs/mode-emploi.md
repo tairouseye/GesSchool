@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.288 · mise à jour du 31 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.289 · mise à jour du 31 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -801,9 +801,10 @@ Une comptabilité **SYSCOHADA**, en six onglets.
 
 ## 15. Tableaux de bord & mise en route
 
-Chaque accueil de secteur affiche, en haut, une zone **« À traiter »** (tuiles cliquables, code couleur) puis des indicateurs :
-- **Gestion** : en haut, **« À faire aujourd'hui »**, une ligne par action avec son bouton — paiements mobiles à **Valider**, élèves en impayé à **Relancer**, échéances des 7 jours, documents à **Signer**, demandes de document à **Traiter**. Une ligne n'apparaît que si votre rôle a accès à l'écran qui la traite ; s'il n'y a rien, « Rien à traiter pour l'instant ✓ ». Puis les indicateurs (élèves inscrits, taux de recouvrement, encaissé ce mois avec sa courbe, reste à encaisser), les encaissements des 6 derniers mois (le mois en cours en or), le recouvrement de l'année, les principaux impayés et la répartition par mode. Le bouton **+ Encaisser un paiement** est en haut à droite.
-- **Pédagogie** : absences non justifiées, absences de la semaine · effectif & **moyenne par niveau** (colorée), filles/garçons, redoublants.
+Les accueils **Gestion**, **Pédagogie** et **Pilotage** se lisent dans le même ordre : un bonjour daté, **quatre chiffres clés** — chacun dit s'il monte ▲ ou baisse ▼, et **par rapport à quoi** (vert = bonne nouvelle, rouge = à surveiller) —, puis des **blocs** côte à côte. Le bloc **« À traiter »** donne une ligne et un bouton par action ; une ligne n'apparaît que si votre rôle a accès à l'écran qui la traite.
+- **Gestion** : élèves inscrits (comparés à l'an passé), encaissé ce mois (comparé au même mois l'an passé), taux de recouvrement, impayés en retard. Puis **les encaissements de l'année scolaire, mois par mois**, avec en pointillé or **l'année précédente** ; l'**agenda** des échéances de paiement et des fins de période ; **À traiter** (paiements mobiles à **Valider**, impayés à **Relancer**, échéances des 7 jours, demandes, documents à **Signer**) ; le **recouvrement par classe** (les classes qui paient le moins en premier) ; les **modes de paiement** du mois ; l'**activité récente** (encaissements, inscriptions) et des **raccourcis**. Le bouton **+ Encaisser un paiement** reste en haut à droite.
+- **Pédagogie** : taux de présence de la semaine (**estimé** à partir des absences, la base ne notant pas les présences), absents du jour, moyenne générale, avancement de la **saisie des notes** de la période. Puis les **absences des 8 dernières semaines**, l'**agenda pédagogique** (évaluations programmées, débuts et fins de période), **À traiter** (justificatifs à examiner, absences à relancer, bulletins à relire ou à publier), les **moyennes par niveau**, et — pour la direction seulement — la **saisie des notes par enseignant** (qui a commencé à évaluer, matière par classe). Le bouton **✓ Faire l'appel** est en haut à droite.
+  > ⚠️ **« Dates des périodes hors de l'année »** dans À traiter : vos trimestres portent des dates d'une autre année scolaire (par exemple après l'ouverture d'une année sans les décaler). Tant qu'ils ne sont pas corrigés (Paramètres › Structure), aucune période n'est « en cours » et l'agenda reste vide.
 - **RH** : salaires à payer, fiches à générer, contrats à échéance · masse salariale, répartition par fonction.
 
 **Checklist de mise en route** (accueil **Pilotage**, promoteur) : passe en revue Structure, Matières, Enseignants, Affectations, Grille tarifaire, Élèves — chaque étape en **✓** ou **⚠️** avec un lien **« Configurer »**. Idéale à la création de l'école **et** à chaque rentrée après le passage d'année.
@@ -834,10 +835,12 @@ Ce qui **persiste** d'une année à l'autre (à ne pas refaire) : niveaux, cycle
 Fiche élève → Responsables → **Code parent** → communiquer le code au parent.
 
 ### 17.2 Côté parent
-Inscription → **Je suis un parent** → saisir le **code**. Pour chaque enfant, des tuiles dans cet ordre : Paiements, Fournitures, Emploi du temps, Cahier de textes, Notes (ou Suivi des acquis au préscolaire), Bulletins, Absences, Documents, Annonces, puis Cantine et Transport si l'enfant y est abonné.
+Inscription → **Je suis un parent** → saisir le **code**.
+- **Accueil** : les enfants en **pastilles** (un toucher change d'enfant, **+** en ajoute un, même dans une autre école). Sous la pastille choisie, l'essentiel : le **cours en ce moment** (ou le prochain), quatre blocs — **À régler** (avec **Payer**), **Dernière note**, **Absences** (dont à justifier), **Devoirs** à venir —, les **dernières notes** et ce qui arrive (**À venir** : échéances, devoirs).
+- **Page de l'enfant** : la carte **Scolarité** (part réglée, retard éventuel, **Payer**, factures et reçus), puis les rubriques en liste, chacune disant déjà ce qu'elle contient (« 2 devoirs pour lundi », « 1 à justifier », « Tout est réglé ✓ »), dans cet ordre : Paiements, Fournitures, Emploi du temps, Cahier de textes, Notes (ou Suivi des acquis au préscolaire), Bulletins, Absences, Documents, Annonces, puis Cantine et Transport si l'enfant y est abonné.
 - **Fournitures**, **Emploi du temps**, **Cahier de textes**, **Notes**, **Bulletins** (avec appréciations & décision), et si abonné **🍽️ Cantine** / **🚌 Transport**.
 - **Suivi des acquis** (préscolaire) : apparaît dès que l’école a observé quelque chose (§20).
-- La **photo de l’enfant** s’affiche sur sa carte et dans l’en-tête de sa fiche, dès que l’école l’a prise (§23).
+- La **photo de l’enfant** s’affiche sur sa pastille et dans l’en-tête de sa fiche, dès que l’école l’a prise (§23).
 > ⚠️ **Un bulletin n’apparaît que lorsque l’école l’a publié** (§7.2). S’il manque, il est encore en relecture — ce n’est pas une panne.
 - **Paiements** : en tête, le **total payé**, dans la couleur de l'état de l'enfant — 🔴 **en retard**, 🟢 **à jour**, 🔵 **en avance** (un mois à venir déjà payé) —, le montant **à régler maintenant**, et la liste de **chaque mois** : payé, en retard (un mois est dû le 5), ou à venir. Puis chaque facture avec son échéance, son montant, le déjà-payé, le solde et son état (*à payer*, *partiellement réglée*, *réglée*, *annulée*). Régler par **mobile money** (numéro de l'école + référence affichés) → **Déclarer un paiement** en **joignant une preuve** (capture/photo) → l'école valide (§10.4). Un paiement validé devient un **reçu**, accessible par **✅ Reçu** sur la facture (le plus récent s'ouvre, les autres sont à un clic) ; la liste des déclarations ne garde que celles **en attente** ou **rejetées**, avec le motif. Une facture **annulée** ne compte plus et ne se paie plus — la base refuse aussi une déclaration sur une facture annulée, et la caisse ne peut plus en valider une déposée avant l'annulation.
 - **Absences** : **Justifier** une absence → l'école valide.
@@ -1045,7 +1048,7 @@ En haut, en permanence : **💬 Messagerie** et **🔔 Alertes**, chacune avec s
 
 ### 25.1 Vue d'ensemble (menu **Vue d'ensemble**, promoteur)
 
-La synthèse de **toutes vos écoles** : effectifs, recouvrement, trésorerie, masse salariale.
+La synthèse de **toutes vos écoles** : effectifs, recouvrement, trésorerie, masse salariale, résultat. Dessous, pour l'école ouverte, **les encaissements et les dépenses des 12 derniers mois**, le bloc **« À décider »** (paie en brouillon, documents à signer, demandes) et la mise en route ; enfin le **comparatif des établissements**, une ligne par école, pour comparer d'un coup d'œil.
 
 Deux précisions qui évitent les mauvaises lectures :
 

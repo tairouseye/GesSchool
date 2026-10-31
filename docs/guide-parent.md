@@ -22,9 +22,15 @@ Suivez la scolarité de votre enfant et payez depuis votre téléphone.
 
 ## 2. Suivre votre enfant
 
-Touchez le nom de votre enfant : des tuiles colorées s'ouvrent.
+**L'accueil montre l'essentiel d'un enfant.** Vos enfants sont en pastilles en haut : touchez un prénom pour changer d'enfant, **+** pour en ajouter un. Dessous :
 
-| Tuile | Ce que vous y trouvez |
+- le **cours en ce moment** (ou le prochain) ;
+- **À régler**, avec le bouton **Payer** ; la **dernière note** ; les **absences** (et combien sont à justifier) ; les **devoirs** à venir ;
+- les **dernières notes** et ce qui arrive bientôt (échéances, devoirs).
+
+Touchez **Toutes les rubriques** : la carte **Scolarité** montre ce qui est payé et ce qui reste, puis chaque rubrique dit déjà ce qu'elle contient — par exemple « 2 devoirs pour lundi » ou « 1 à justifier ».
+
+| Rubrique | Ce que vous y trouvez |
 |---|---|
 | **Paiements** | vos factures, et comment les régler |
 | **Fournitures** | la liste, imprimable |

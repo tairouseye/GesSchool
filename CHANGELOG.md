@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.289.0] — Tableaux de bord « Classter », école et parents
+- **LE BESOIN** (promoteur, 31/10/2026) : des tableaux de bord de qualité professionnelle dans chaque espace, sur le modèle de Classter. Maquette validée (`docs/maquette-tableaux-classter.html`), lot 1 de l'audit du 31/10.
+- **Même ordre de lecture partout** : bonjour daté, quatre chiffres clés **avec leur évolution** (▲/▼, par rapport à quoi ; vert = bonne nouvelle), puis des blocs. Briques communes dans `src/composants/TableauBord.jsx`.
+- **Gestion** : élèves inscrits comparés à l'an passé, encaissé du mois comparé au même mois l'an passé, recouvrement, impayés en retard ; encaissements de l'année scolaire mois par mois face à l'année précédente (agrégés en base, 24 mois) ; agenda des échéances et des fins de période ; à traiter ; recouvrement par classe ; modes de paiement ; activité récente ; raccourcis.
+- **Pédagogie** : présence de la semaine (estimée à partir des absences), absents du jour, moyenne générale, avancement de la saisie des notes ; absences sur 8 semaines ; agenda des évaluations et des périodes ; à traiter (justificatifs, absences, bulletins à relire et à publier) ; moyennes par niveau ; **saisie des notes par enseignant** (direction seulement). Des **périodes datées hors de l'année** sont signalées au lieu d'afficher une fausse « période en cours ».
+- **Pilotage** : encaissements et dépenses sur 12 mois, « À décider », mise en route, et **comparatif des établissements** en tableau.
+- **Parent (téléphone)** : enfants en pastilles ; cours en ce moment ; À régler, dernière note, absences, devoirs ; dernières notes ; à venir. Page de l'enfant : carte **Scolarité** et rubriques qui disent leur contenu. L'aperçu ne lit **jamais** les bulletins, dont la lecture les marque « consultés » (test `test/apercuEnfant.test.mjs`).
+- **Démo direction** : arrivée sur l'accueil Gestion (v2.288.0) ; textes de contraste relevés (nuances 700) ; visite guidée parent, mode d'emploi (§15, §17.2, §25.1) et guide parent mis à jour.
+
 ## [2.288.0] — Sécurité : démo sans données réelles, bibliothèque Excel à jour
 - **LE BESOIN** (audit du 31/10/2026, lot 0) : corriger avant toute nouveauté ce que l'audit a classé critique.
 - **Démo direction sans données personnelles réelles** (mig. 218) : la page « Membres » montrait le nom et l'e-mail de la promotrice de l'école de démonstration et une invitation en attente. En démo, `membres_ecole` ne rend plus que le compte démo et `invitations_ecole` rien ; des policies restrictives ferment aussi la lecture directe de `profils` et `invitations`. Les vraies écoles ne sont pas concernées. Deux fiches tuteurs de l'école de démo renommées, une adresse réelle remplacée (`supabase/tests/demo_renommer_parents.sql`).
