@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.285 · mise à jour du 31 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.286 · mise à jour du 31 octobre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -869,6 +869,8 @@ Parents et personnel peuvent **activer les notifications** (alerte même app fer
 **Mises à jour.** Quand une nouvelle version de GesSchool est publiée, un bandeau **« 🔄 Une nouvelle version de GesSchool est disponible »** apparaît en bas de l'écran. **Mettre à jour** l'installe en quelques secondes. **Plus tard** la laisse en attente : elle s'installera d'elle-même à la prochaine ouverture de l'appli. L'appli vérifie à l'ouverture, au retour sur l'onglet et toutes les 30 minutes.
 
 **Se connecter avec l'empreinte ou le visage** (pictogramme du cadre de visée, sous « Se connecter »). Sur un téléphone qui le permet, GesSchool propose une fois, après une connexion par mot de passe, **« Connectez-vous plus vite la prochaine fois »** → **Activer**. On peut aussi l'activer plus tard : personnel → panneau du compte (ou barre latérale) → **👆 Connexion par empreinte** ; parent → **Mon compte**. Ensuite, sur la page de connexion, le pictogramme **Empreinte ou visage** suffit, sans taper son e-mail. C'est le **téléphone** qui reconnaît l'empreinte ou le visage : GesSchool ne les voit ni ne les garde jamais. Le mot de passe reste toujours valable. Un téléphone perdu ou changé se **retire** depuis la même liste d'appareils.
+
+**Démo, sans compte** (pictogramme ▶ **Démo**, à côté d'« Empreinte ou visage »). Pour montrer GesSchool à une école ou à des parents avant toute inscription : toucher **Démo**, puis **Comme parent** (pensé pour le téléphone) ou **Comme direction** (pensé pour l'ordinateur). On entre aussitôt dans une **école fictive**, sans e-mail ni mot de passe. Tout se regarde : notes, bulletins, paiements, emploi du temps, messagerie… mais **rien ne s'enregistre** : chaque tentative répond « Mode démonstration : rien n'est enregistré ». Un bandeau le rappelle en haut de chaque page, avec le bouton **Créer mon école**, qui ouvre l'inscription. Les élèves, familles et numéros de l'école de démonstration sont inventés.
 
 ---
 

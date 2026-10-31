@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.286.0] — Démo sans compte
+- **LE BESOIN** (promoteur, 31/10/2026) : faire découvrir l'appli sans avoir de compte. Option retenue : une école fictive en lecture seule, côté parent (téléphone) et côté direction (ordinateur).
+- **Écran de connexion** : bouton **Démo** à côté d'« Empreinte ou visage » ; il déplie « Comme parent » / « Comme direction ». Un toucher ouvre l'école de démonstration, sans e-mail ni mot de passe.
+- **Fonction Edge `demo`** (déployée sous le nom `dynamic-endpoint`) : ouvre une session sur l'un des deux comptes partagés par un lien de connexion à usage unique, fabriqué et consommé côté serveur. Aucun mot de passe de démo n'existe, donc aucun à voler ni à changer.
+- **Lecture seule garantie en base** (mig. 216) : les comptes démo portent `app_metadata.demo` ; un trigger posé sur toutes les tables refuse toute écriture, y compris par les RPC SECURITY DEFINER ; des policies restrictives bloquent le Storage. Une épreuve (`test/demo.test.mjs`) refuse une future migration qui créerait une table sans ce verrou.
+- **Mig. 217** : en démo, seuls passent les marquages de lecture (alertes et messages lus, bulletin consulté), sans quoi l'ouverture des bulletins et de la messagerie échouait.
+- **Bandeau « Mode démonstration »** avec **Créer mon école** (ouvre l'onglet Inscription). En démo : pas d'invitation aux notifications ni à l'empreinte ; la déconnexion ne ferme que la session du visiteur.
+- **École de démonstration** (TutTank_Demo) rendue sûre et remplie : homonymes de personnes réelles renommés, numéros remplacés par des 70 000 00 xx (`supabase/tests/demo_anonymiser.sql`) ; bulletins publiés, absences, cahier de textes, transport, demandes, messages et alertes pour le parent démo (`demo_remplir_parent.sql`).
+- Mode d'emploi (§18) mis à jour.
+
 ## [2.285.0] — Espace parent : navigation pensée pour le téléphone
 - **LE BESOIN** (promoteur, 31/10/2026) : des menus qui apparaissent, disparaissent et se replient pour ne pas gêner la lecture ; le parent est d'abord sur téléphone, l'établissement sur ordinateur. Maquette interactive validée, puis essai sur téléphone par le promoteur.
 - **Onglets en bas** (sous 1024 px) : Accueil, Mon enfant (le dernier consulté), Messages, Alertes, Plus (Mon compte, règlement et textes, visite guidée, déconnexion), pastilles de non-lus comprises. L'en-tête ne garde que le sceau, la marque et le choix de l'enfant. Sur ordinateur, l'en-tête reste inchangé.
