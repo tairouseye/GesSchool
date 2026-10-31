@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.288.0] — Sécurité : démo sans données réelles, bibliothèque Excel à jour
+- **LE BESOIN** (audit du 31/10/2026, lot 0) : corriger avant toute nouveauté ce que l'audit a classé critique.
+- **Démo direction sans données personnelles réelles** (mig. 218) : la page « Membres » montrait le nom et l'e-mail de la promotrice de l'école de démonstration et une invitation en attente. En démo, `membres_ecole` ne rend plus que le compte démo et `invitations_ecole` rien ; des policies restrictives ferment aussi la lecture directe de `profils` et `invitations`. Les vraies écoles ne sont pas concernées. Deux fiches tuteurs de l'école de démo renommées, une adresse réelle remplacée (`supabase/tests/demo_renommer_parents.sql`).
+- **La démo direction arrive sur l'accueil Gestion**, et non plus sur « Membres » : `premiereRoute` cherche une page de travail dans tous les espaces avant de se rabattre sur un utilitaire (cas d'un promoteur qui ne possède pas l'école).
+- **Bibliothèque Excel (SheetJS) 0.20.3**, depuis la distribution officielle : la version 0.18.5 portait deux failles connues et lit les fichiers importés par les écoles.
+- Migration 066 : plus d'exemple de secret dans le commentaire (dépôt public).
+
 ## [2.287.0] — Démo parent : « Créer mon compte »
 - **LE BESOIN** (promoteur, 31/10/2026) : dans la démo côté parent, le bandeau proposait « Créer mon école », ce qui n'a pas de sens pour une famille.
 - Côté parent, le bandeau propose **Créer mon compte**, et le refus d'enregistrer invite à créer son compte pour suivre son enfant. Côté direction, rien ne change. Mode d'emploi (§18) mis à jour.
