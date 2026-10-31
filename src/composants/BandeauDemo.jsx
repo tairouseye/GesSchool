@@ -7,9 +7,14 @@ export default function BandeauDemo() {
   const { modeDemo, deconnexion } = useAuth();
   const navigate = useNavigate();
   if (!modeDemo) return null;
+  //  Un parent ne crée pas d'école : il crée son compte, puis saisit le
+  //  code que son école lui donne.
+  const parent = modeDemo === "parent";
 
-  // On quitte la démo vers l'onglet Inscription. La navigation d'abord : la
-  // garde des routes renverrait sinon vers la connexion, sans l'onglet.
+  // On quitte la démo vers l'onglet Inscription : elle est la même pour un
+  // parent et une école, le choix du profil vient juste après. La navigation
+  // d'abord : la garde des routes renverrait sinon vers la connexion, sans
+  // l'onglet.
   const creer = () => { navigate("/connexion?mode=inscription", { replace: true }); deconnexion(); };
 
   return (
@@ -19,7 +24,7 @@ export default function BandeauDemo() {
       </p>
       <button type="button" onClick={creer}
         className="shrink-0 rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800">
-        Créer mon école
+        {parent ? "Créer mon compte" : "Créer mon école"}
       </button>
     </div>
   );

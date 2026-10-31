@@ -59,15 +59,22 @@ const REGLES = [
 //  propre message français, mais celui des FICHIERS est un refus RLS du
 //  Storage, que la règle « Droits » traduirait en « pas les droits » — faux
 //  pour un visiteur qui essaie la démo. L'AuthContext tient ce drapeau à jour.
-const MESSAGE_DEMO = "Mode démonstration : rien n'est enregistré. Créez votre école pour essayer pour de vrai.";
-let modeDemo = false;
-export const signalerModeDemo = (actif) => { modeDemo = !!actif; };
+//  Le message de la base (« Créez votre école… ») est aussi réécrit selon
+//  l'espace : un parent ne crée pas d'école, il crée son compte.
+const MESSAGE_DEMO = {
+  parent: "Mode démonstration : rien n'est enregistré. Créez votre compte pour suivre votre enfant pour de vrai.",
+  direction: "Mode démonstration : rien n'est enregistré. Créez votre école pour essayer pour de vrai.",
+};
+let modeDemo = null;
+export const signalerModeDemo = (espace) => { modeDemo = espace || null; };
 
 export function messageErreur(e) {
   const brut =
     typeof e === "string" ? e : (e?.message || e?.error_description || e?.error || "");
   if (!brut) return "Une erreur est survenue. Réessayez.";
-  if (modeDemo && /row-level security|permission denied/i.test(brut)) return MESSAGE_DEMO;
+  if (modeDemo && /row-level security|permission denied|^Mode démonstration/i.test(brut)) {
+    return MESSAGE_DEMO[modeDemo] || MESSAGE_DEMO.direction;
+  }
   for (const [re, txt] of REGLES) if (re.test(brut)) return txt;
   return brut; // repli : message d'origine (cas rares non couverts)
 }
