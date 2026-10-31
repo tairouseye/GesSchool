@@ -5,6 +5,10 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.287.0] — Démo parent : « Créer mon compte »
+- **LE BESOIN** (promoteur, 31/10/2026) : dans la démo côté parent, le bandeau proposait « Créer mon école », ce qui n'a pas de sens pour une famille.
+- Côté parent, le bandeau propose **Créer mon compte**, et le refus d'enregistrer invite à créer son compte pour suivre son enfant. Côté direction, rien ne change. Mode d'emploi (§18) mis à jour.
+
 ## [2.286.0] — Démo sans compte
 - **LE BESOIN** (promoteur, 31/10/2026) : faire découvrir l'appli sans avoir de compte. Option retenue : une école fictive en lecture seule, côté parent (téléphone) et côté direction (ordinateur).
 - **Écran de connexion** : bouton **Démo** à côté d'« Empreinte ou visage » ; il déplie « Comme parent » / « Comme direction ». Un toucher ouvre l'école de démonstration, sans e-mail ni mot de passe.
