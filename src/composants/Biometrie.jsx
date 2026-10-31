@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alerte, Bouton } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
+import { useAuth } from "@/contextes/AuthContext.jsx";
 import {
   activerBiometrie, appareilsBiometrie, retirerAppareil, biometrieSupportee,
   capteurDisponible, invitationVue, noterInvitation, messageBiometrie,
@@ -96,6 +97,9 @@ export function InviteBiometrie() {
   const toast = useToast();
   const [visible, setVisible] = useState(false);
   const [occupe, setOccupe] = useState(false);
+  // Démo : une empreinte sur un compte partagé ouvrirait la démo à la
+  // place du vrai compte, au prochain passage (mig. 216).
+  const { modeDemo } = useAuth();
 
   useEffect(() => {
     let vivant = true;
@@ -104,7 +108,7 @@ export function InviteBiometrie() {
     return () => { vivant = false; };
   }, []);
 
-  if (!visible) return null;
+  if (!visible || modeDemo) return null;
 
   const nonMerci = () => { noterInvitation("non"); setVisible(false); };
   const activer = async () => {

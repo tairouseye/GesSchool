@@ -13,6 +13,7 @@ import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
+import BandeauDemo from "@/composants/BandeauDemo.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import { GestionBiometrie, InviteBiometrie } from "@/composants/Biometrie.jsx";
@@ -488,6 +489,7 @@ export default function Layout() {
 
         <main className="relative flex-1 overflow-auto">
           {/* Bannière d'invitation : mobile uniquement (desktop = interrupteur sidebar). */}
+          <div className="px-4 pt-4 empty:hidden sm:px-8"><BandeauDemo /></div>
           <div className="px-4 pt-4 empty:hidden sm:px-8 lg:hidden"><InvitePush /></div>
           <div className="px-4 pt-4 empty:hidden sm:px-8"><InviteBiometrie /></div>
           <Suspense fallback={<ChargementPage />}>

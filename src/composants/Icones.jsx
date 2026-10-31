@@ -63,6 +63,7 @@ const P = {
 
   // Connexion par le visage : le cadre de visée aux quatre coins, comme
   // sur les téléphones (et les applis bancaires) — le geste est reconnu.
+  demo: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z"/>',
   biometrie: '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M9 9v1.5M15 9v1.5"/><path d="M12.5 9v3.5h-1"/><path d="M9 15.5c1.8 1.4 4.2 1.4 6 0"/>',
 };
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { etatPush, activerPush, infoAppareil } from "@/lib/push.js";
+import { useAuth } from "@/contextes/AuthContext.jsx";
 
 // Invitation discrète à activer les notifications push. Ne s'affiche que si :
 //  - l'utilisateur ne les a pas déjà activées,
@@ -20,13 +21,15 @@ export default function InvitePush() {
   const [cache, setCache] = useState(snoozeActif());
   const [occupe, setOccupe] = useState(false);
   const { iOS, installee, supporte } = infoAppareil();
+  // Démo : compte partagé, rien à enregistrer (mig. 216).
+  const { modeDemo } = useAuth();
 
   useEffect(() => {
     if (cache) return;
     etatPush().then(setEtat).catch(() => setEtat("non_supporte"));
   }, [cache]);
 
-  if (cache) return null;
+  if (cache || modeDemo) return null;
 
   const plusTard = () => { try { localStorage.setItem(CLE_SNOOZE, String(Date.now())); } catch { /* ignore */ } setCache(true); };
 

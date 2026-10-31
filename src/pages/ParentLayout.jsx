@@ -4,6 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import Logo from "@/composants/Logo.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
+import BandeauDemo from "@/composants/BandeauDemo.jsx";
 import { compterNonLues, mesMessagesNonLus, mesEnfants } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
@@ -205,6 +206,7 @@ export default function ParentLayout() {
       </header>
       <main className="mx-auto max-w-4xl space-y-4 p-6">
         {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
+        <BandeauDemo />
         <div className="empty:hidden lg:hidden"><InvitePush /></div>
         <div className="empty:hidden"><InviteBiometrie /></div>
         <Suspense fallback={<ChargementPage />}>

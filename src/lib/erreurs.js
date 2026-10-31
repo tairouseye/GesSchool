@@ -55,10 +55,19 @@ const REGLES = [
   [/failed to fetch|networkerror|network ?error|network request|fetch failed|timeout/i, "Problème de connexion. Vérifiez votre réseau et réessayez."],
 ];
 
+//  Démonstration sans compte (mig. 216) : le refus des tables arrive avec son
+//  propre message français, mais celui des FICHIERS est un refus RLS du
+//  Storage, que la règle « Droits » traduirait en « pas les droits » — faux
+//  pour un visiteur qui essaie la démo. L'AuthContext tient ce drapeau à jour.
+const MESSAGE_DEMO = "Mode démonstration : rien n'est enregistré. Créez votre école pour essayer pour de vrai.";
+let modeDemo = false;
+export const signalerModeDemo = (actif) => { modeDemo = !!actif; };
+
 export function messageErreur(e) {
   const brut =
     typeof e === "string" ? e : (e?.message || e?.error_description || e?.error || "");
   if (!brut) return "Une erreur est survenue. Réessayez.";
+  if (modeDemo && /row-level security|permission denied/i.test(brut)) return MESSAGE_DEMO;
   for (const [re, txt] of REGLES) if (re.test(brut)) return txt;
   return brut; // repli : message d'origine (cas rares non couverts)
 }

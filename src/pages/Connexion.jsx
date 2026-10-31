@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Bouton, Alerte } from "@/composants/ui.jsx";
 import { ECOLES_REFERENCES } from "@/lib/references.js";
@@ -11,17 +11,21 @@ import { fondDuMois } from "@/lib/fondsConnexion.js";
 import { getEncartsConnexion } from "@/lib/encarts.js";
 import { messageErreur } from "@/lib/erreurs.js";
 import { biometrieSupportee, connecterBiometrie, messageBiometrie } from "@/lib/biometrie.js";
+import { entrerEnDemo } from "@/lib/demo.js";
 
 // Page Connexion / Inscription (onglets).
 export default function Connexion() {
   const { connexion, inscription } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState("connexion"); // 'connexion' | 'inscription'
+  // « Créer mon école », depuis la démo, ouvre directement l'inscription.
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState(params.get("mode") === "inscription" ? "inscription" : "connexion"); // 'connexion' | 'inscription'
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
   const [erreur, setErreur] = useState("");
   const [info, setInfo] = useState("");
   const [enCours, setEnCours] = useState(false);
+  const [demoOuverte, setDemoOuverte] = useState(false);
   const [fond] = useState(() => fondDuMois());
   const [fondPret, setFondPret] = useState(false);
   //  Photo déjà en cache : elle peut être chargée avant que React n'écoute
@@ -39,6 +43,20 @@ export default function Connexion() {
     } catch (err) {
       const m = messageBiometrie(err);
       if (m !== "Opération annulée.") setErreur(m);
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  // Démonstration sans compte (mig. 216) : une école fictive, en lecture
+  // seule. La garde de « / » envoie ensuite chacun dans son espace.
+  async function decouvrir(espace) {
+    setErreur(""); setInfo(""); setEnCours(true);
+    try {
+      await entrerEnDemo(espace);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setErreur(messageErreur(err));
     } finally {
       setEnCours(false);
     }
@@ -145,19 +163,51 @@ export default function Connexion() {
             </div>
           )}
 
-          {mode === "connexion" && biometrieSupportee() && (
+          {mode === "connexion" && (
             <>
               <div className="my-4 flex items-center gap-3 text-xs text-creme/75">
                 <span className="h-px flex-1 bg-white/30" />ou<span className="h-px flex-1 bg-white/30" />
               </div>
-              {/* Le cadre de visée seul, centré, comme dans les applis
-                  bancaires : un geste que l'on reconnaît sans le lire. */}
-              <button type="button" onClick={connexionBio} disabled={enCours}
-                aria-label="Se connecter avec l'empreinte ou le visage"
-                className="mx-auto flex w-fit flex-col items-center gap-1.5 rounded-2xl px-4 py-2 text-white hover:bg-white/10 disabled:opacity-60">
-                <Icone name="biometrie" className="h-12 w-12" />
-                <span className="text-xs font-medium text-creme/85">Empreinte ou visage</span>
-              </button>
+              {/* Deux gestes côte à côte, sans texte à lire : le cadre de
+                  visée (comme les applis bancaires) et la démo. Le détail de
+                  la démo ne se déplie qu'au toucher, pour garder la carte
+                  courte. */}
+              <div className="flex items-start justify-center gap-2">
+                {biometrieSupportee() && (
+                  <button type="button" onClick={connexionBio} disabled={enCours}
+                    aria-label="Se connecter avec l'empreinte ou le visage"
+                    className="flex w-32 flex-col items-center gap-1.5 rounded-2xl px-3 py-2 text-white hover:bg-white/10 disabled:opacity-60">
+                    <Icone name="biometrie" className="h-12 w-12" />
+                    <span className="text-xs font-medium text-creme/85">Empreinte ou visage</span>
+                  </button>
+                )}
+                <button type="button" onClick={() => setDemoOuverte((o) => !o)} disabled={enCours}
+                  aria-expanded={demoOuverte} aria-controls="choix-demo"
+                  className={`flex w-32 flex-col items-center gap-1.5 rounded-2xl px-3 py-2 text-white hover:bg-white/10 disabled:opacity-60 ${demoOuverte ? "bg-white/10" : ""}`}>
+                  <Icone name="demo" className="h-12 w-12" />
+                  <span className="text-xs font-medium text-creme/85">Démo</span>
+                </button>
+              </div>
+
+              {/* Sans compte : une école fictive, pour voir avant de s'inscrire. */}
+              {demoOuverte && (
+                <div id="choix-demo" className="mt-3 rounded-xl bg-white/10 p-3 text-center ring-1 ring-white/20">
+                  <p className="text-sm font-semibold text-creme">Découvrir GesSchool sans compte</p>
+                  <p className="mt-0.5 text-xs text-creme/80">Une école fictive : regardez tout, rien n'est enregistré.</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => decouvrir("parent")} disabled={enCours}
+                      className="rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-creme ring-1 ring-white/30 hover:bg-white/25 disabled:opacity-60">
+                      Comme parent
+                      <span className="block text-[11px] font-normal text-creme/75">sur téléphone</span>
+                    </button>
+                    <button type="button" onClick={() => decouvrir("direction")} disabled={enCours}
+                      className="rounded-xl bg-white/15 px-3 py-2.5 text-sm font-semibold text-creme ring-1 ring-white/30 hover:bg-white/25 disabled:opacity-60">
+                      Comme direction
+                      <span className="block text-[11px] font-normal text-creme/75">sur ordinateur</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

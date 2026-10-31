@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { supabase } from "@/lib/supabase.js";
 import { appliquerAccent } from "@/lib/theme.js";
 import { typeDominant } from "@/lib/paliers.js";
+import { espaceDemo } from "@/lib/demo.js";
+import { signalerModeDemo } from "@/lib/erreurs.js";
 
 // GesSchool — contexte d'authentification.
 // Expose : session, profil applicatif, rôles, école courante + actions.
@@ -107,7 +109,12 @@ export function AuthProvider({ children }) {
   const inscription = (email, motDePasse) =>
     supabase.auth.signUp({ email, password: motDePasse });
 
-  const deconnexion = () => supabase.auth.signOut();
+  //  ⚠️ La démo est un compte PARTAGÉ : signOut() ferme par défaut TOUTES les
+  //  sessions du compte, donc celles des autres visiteurs. En démo, on ne
+  //  ferme que la sienne.
+  const modeDemo = espaceDemo(session);
+  useEffect(() => { signalerModeDemo(modeDemo); }, [modeDemo]);
+  const deconnexion = () => supabase.auth.signOut(modeDemo ? { scope: "local" } : undefined);
 
   // Réinitialisation par CODE à 6 chiffres (évite le conflit lien ↔ HashRouter).
   // ⚙️ Le template e-mail Supabase « Reset Password » doit contenir {{ .Token }}.
@@ -149,6 +156,8 @@ export function AuthProvider({ children }) {
     estParent: roles.includes("parent"),
     estEtudiant: roles.includes("etudiant"),
     estSuperAdmin: roles.includes("super_admin"),
+    // 'parent' | 'direction' | null — démonstration sans compte (mig. 216).
+    modeDemo,
     chargement,
     aRole: (r) => roles.includes(r),
     connexion,
