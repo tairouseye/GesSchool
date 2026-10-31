@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableaux de bord GesSchool</title>
+<!-- Maquette du 31/10/2026 (branche tableaux-de-bord) : tableaux de bord dans
+     l'esprit de Classter — des « widgets » denses côte à côte, chiffres avec
+     leur évolution, agenda, graphiques comparés à l'an passé, fil d'activité —
+     en gardant la charte bleu nuit et or. Données fictives (école de démo).
+     Rien n'est codé tant que la maquette n'est pas validée. -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { navy: { 900: "#0b1f3a", 800: "#13294b", 700: "#1e3a64" }, or: { 400: "#d8b24a", 500: "#c9a227", 600: "#a8861a" }, creme: "#f7f3ea", fond: "#f3f5f8" },
+    fontFamily: { display: ['"Space Grotesk"', "Segoe UI", "sans-serif"], sans: ["Inter", "Segoe UI", "system-ui", "sans-serif"] },
+  } } };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body { background:#e4e7ed; }
+  .ecran { display:none; } .ecran.actif { display:block; }
+  .ico { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .w { background:#fff; border:1px solid rgba(11,31,58,.08); border-radius:14px; }
+  .wt { font-size:13px; font-weight:600; color:#0b1f3a; }
+  .lien { font-size:12px; font-weight:500; color:#1e3a64; }
+  .lien:hover { color:#a8861a; }
+  .note { position:relative; }
+  .bulle { position:absolute; z-index:5; max-width:230px; background:#c9a227; color:#0b1f3a; font-size:11px; font-weight:600; line-height:1.35; padding:6px 9px; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  #annot:not(:checked) ~ * .bulle { display:none; }
+</style>
+</head>
+<body class="font-sans text-navy-900">
+<input type="checkbox" id="annot" class="hidden" checked>
+
+<!-- Barre de la maquette (hors appli) -->
+<div class="sticky top-0 z-30 border-b border-black/10 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 py-3">
+    <div>
+      <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-or-600">GesSchool · Maquette des tableaux de bord</p>
+      <p class="text-sm text-slate-500">Esprit Classter · charte bleu nuit et or conservée · données fictives</p>
+    </div>
+    <label for="annot" class="ml-2 flex cursor-pointer items-center gap-2 rounded-lg border border-or-500/50 bg-or-500/10 px-3 py-1.5 text-xs font-semibold text-or-600">✎ Afficher / masquer les explications</label>
+    <div class="ml-auto flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 text-sm font-semibold" id="choix">
+      <button data-e="gestion" class="rounded-lg px-3 py-2">1 · Gestion</button>
+      <button data-e="peda" class="rounded-lg px-3 py-2">2 · Pédagogie</button>
+      <button data-e="pilotage" class="rounded-lg px-3 py-2">3 · Pilotage</button>
+      <button data-e="parent" class="rounded-lg px-3 py-2">4 · Parents (téléphone)</button>
+    </div>
+  </div>
+</div>
+
+<div class="mx-auto max-w-[1400px] p-4">
+
+<!-- =====================================================================
+     Gabarit ordinateur : menu latéral + barre haute (repris pour 1, 2, 3)
+     ===================================================================== -->
+<template id="cadre">
+  <div class="overflow-hidden rounded-2xl bg-fond shadow-2xl ring-1 ring-black/5">
+    <div class="flex min-h-[900px]">
+      <aside class="flex w-56 shrink-0 flex-col bg-navy-900 text-creme">
+        <div class="flex items-center gap-3 px-5 py-5">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-white font-display text-xs font-bold text-navy-900">TT</div>
+          <div class="min-w-0"><p class="truncate text-sm font-semibold leading-tight">TutTank_Demo</p><p class="text-[11px] text-creme/50">Année 2026-2027</p></div>
+        </div>
+        <div class="mx-3 grid grid-cols-2 gap-1 text-[11px] font-semibold" data-espaces></div>
+        <nav class="mt-4 flex-1 space-y-0.5 px-3 text-[13px]" data-menu></nav>
+        <div class="flex items-center gap-3 border-t border-white/10 px-5 py-4">
+          <div class="grid h-8 w-8 place-items-center rounded-full bg-or-500 text-[11px] font-bold text-navy-900">TS</div>
+          <div class="min-w-0 text-xs"><p class="font-semibold text-creme">Tahirou SEYE</p><p class="text-creme/50">Promoteur</p></div>
+        </div>
+      </aside>
+      <main class="min-w-0 flex-1">
+        <!-- Barre haute : recherche, période, notifications -->
+        <div class="flex items-center gap-3 border-b border-navy-900/10 bg-white px-6 py-3">
+          <div class="flex w-80 items-center gap-2 rounded-lg bg-fond px-3 py-2 text-sm text-slate-400">
+            <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg> Rechercher un élève, une facture…
+          </div>
+          <div class="ml-auto flex items-center gap-2 text-sm">
+            <span class="rounded-lg border border-navy-900/15 px-3 py-1.5 font-medium">2026-2027 ▾</span>
+            <span class="relative grid h-9 w-9 place-items-center rounded-lg border border-navy-900/15">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              <span class="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">4</span>
+            </span>
+          </div>
+        </div>
+        <div class="p-6" data-contenu></div>
+      </main>
+    </div>
+  </div>
+</template>
+
+<!-- ============================ 1 · GESTION ============================ -->
+<section class="ecran" id="gestion" data-espace="Gestion">
+  <div data-page>
+    <!-- En-tête de page : titre, filtres, actions -->
+    <div class="flex flex-wrap items-end gap-3">
+      <div>
+        <p class="text-xs text-slate-500">Gestion › Accueil</p>
+        <h1 class="font-display text-2xl font-bold">Bonjour Tahirou</h1>
+        <p class="text-sm text-slate-500">Samedi 31 octobre · voici l'essentiel de TutTank_Demo</p>
+      </div>
+      <div class="note ml-auto flex flex-wrap gap-2 text-sm">
+        <span class="rounded-lg border border-navy-900/15 bg-white px-3 py-2 font-medium">Période : Octobre ▾</span>
+        <span class="rounded-lg border border-navy-900/15 bg-white px-3 py-2 font-medium">Toutes les classes ▾</span>
+        <span class="rounded-lg bg-navy-900 px-4 py-2 font-semibold text-creme">+ Encaisser</span>
+        <span class="bulle -bottom-9 right-0">Filtres communs : tous les blocs suivent la période et la classe choisies</span>
+      </div>
+    </div>
+
+    <!-- Rangée 1 : chiffres clés avec évolution -->
+    <div class="note mt-5 grid grid-cols-4 gap-4">
+      <div class="w p-4">
+        <div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Élèves inscrits</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-sky-100 text-sky-700">👤</span></div>
+        <p class="mt-2 font-display text-3xl font-bold">50</p>
+        <p class="mt-1 text-xs"><span class="font-semibold text-emerald-600">▲ 3</span> <span class="text-slate-500">ce mois · 30 F / 20 G</span></p>
+      </div>
+      <div class="w p-4">
+        <div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Encaissé en octobre</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-amber-700">₣</span></div>
+        <p class="mt-2 font-display text-3xl font-bold">1,24 M <span class="text-sm font-normal text-slate-400">XOF</span></p>
+        <p class="mt-1 text-xs"><span class="font-semibold text-emerald-600">▲ 12 %</span> <span class="text-slate-500">par rapport à oct. 2025</span></p>
+      </div>
+      <div class="w p-4">
+        <div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Taux de recouvrement</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-emerald-100 text-emerald-700">%</span></div>
+        <p class="mt-2 font-display text-3xl font-bold text-emerald-700">77 %</p>
+        <div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-full w-[77%] rounded-full bg-emerald-500"></div></div>
+        <p class="mt-1 text-xs text-slate-500">Objectif fin d'année : 90 %</p>
+      </div>
+      <div class="w p-4">
+        <div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Impayés en retard</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-rose-100 text-rose-700">!</span></div>
+        <p class="mt-2 font-display text-3xl font-bold text-rose-700">3,1 M <span class="text-sm font-normal text-slate-400">XOF</span></p>
+        <p class="mt-1 text-xs"><span class="font-semibold text-rose-600">19 élèves</span> <span class="text-slate-500">· ▼ 4 % sur 30 jours</span></p>
+      </div>
+      <span class="bulle -top-3 left-1/3">Chaque chiffre dit s'il monte ou descend, et par rapport à quoi</span>
+    </div>
+
+    <!-- Rangée 2 : graphique annuel + agenda -->
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w note col-span-2 p-5">
+        <div class="flex items-center"><p class="wt">Encaissements par mois</p>
+          <div class="ml-auto flex items-center gap-4 text-xs text-slate-500">
+            <span class="flex items-center gap-1.5"><i class="inline-block h-2.5 w-2.5 rounded-sm bg-navy-900"></i>2026-2027</span>
+            <span class="flex items-center gap-1.5"><i class="inline-block h-0.5 w-4 bg-or-500"></i>2025-2026</span>
+          </div></div>
+        <svg viewBox="0 0 640 220" class="mt-3 w-full">
+          <g stroke="#e5e8ee" stroke-width="1"><line x1="40" x2="630" y1="20" y2="20"/><line x1="40" x2="630" y1="75" y2="75"/><line x1="40" x2="630" y1="130" y2="130"/><line x1="40" x2="630" y1="185" y2="185"/></g>
+          <g fill="#94a3b8" font-size="10"><text x="0" y="24">3 M</text><text x="0" y="79">2 M</text><text x="0" y="134">1 M</text><text x="8" y="189">0</text></g>
+          <g fill="#0b1f3a">
+            <rect x="58" y="42" width="34" height="143" rx="4"/><rect x="117" y="117" width="34" height="68" rx="4"/>
+          </g>
+          <g fill="#e2e8f0"><rect x="176" y="185" width="34" height="0"/></g>
+          <polyline fill="none" stroke="#c9a227" stroke-width="2.5" points="75,60 134,128 193,138 252,140 311,135 370,142 429,150 488,146 547,160 606,175"/>
+          <g fill="#c9a227"><circle cx="75" cy="60" r="3"/><circle cx="134" cy="128" r="3"/><circle cx="193" cy="138" r="3"/><circle cx="252" cy="140" r="3"/><circle cx="311" cy="135" r="3"/><circle cx="370" cy="142" r="3"/><circle cx="429" cy="150" r="3"/><circle cx="488" cy="146" r="3"/><circle cx="547" cy="160" r="3"/><circle cx="606" cy="175" r="3"/></g>
+          <g fill="#64748b" font-size="11" text-anchor="middle"><text x="75" y="205">Sep</text><text x="134" y="205">Oct</text><text x="193" y="205">Nov</text><text x="252" y="205">Déc</text><text x="311" y="205">Jan</text><text x="370" y="205">Fév</text><text x="429" y="205">Mar</text><text x="488" y="205">Avr</text><text x="547" y="205">Mai</text><text x="606" y="205">Juin</text></g>
+          <g fill="#0b1f3a" font-size="10" font-weight="600" text-anchor="middle"><text x="75" y="37">2,6 M</text><text x="134" y="112">1,24 M</text></g>
+        </svg>
+        <span class="bulle right-4 top-12">Toute l'année scolaire, comparée à l'année précédente (courbe or)</span>
+      </div>
+      <div class="w note p-5">
+        <div class="flex items-center"><p class="wt">Agenda</p><a class="lien ml-auto" href="#">Tout voir →</a></div>
+        <ul class="mt-3 space-y-3">
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-rose-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-rose-600">nov</p><p class="font-display text-lg font-bold leading-none text-rose-700">05</p></div><div><p class="text-sm font-medium">Échéance mensualité de novembre</p><p class="text-xs text-slate-500">50 familles · 1,6 M XOF attendus</p></div></li>
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-sky-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-sky-600">nov</p><p class="font-display text-lg font-bold leading-none text-sky-700">12</p></div><div><p class="text-sm font-medium">Réunion parents d'élèves</p><p class="text-xs text-slate-500">17 h · salle polyvalente</p></div></li>
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-violet-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-violet-600">nov</p><p class="font-display text-lg font-bold leading-none text-violet-700">20</p></div><div><p class="text-sm font-medium">Paie d'octobre à valider</p><p class="text-xs text-slate-500">11 bulletins de salaire</p></div></li>
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-amber-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-amber-600">déc</p><p class="font-display text-lg font-bold leading-none text-amber-700">05</p></div><div><p class="text-sm font-medium">Échéance mensualité de décembre</p><p class="text-xs text-slate-500">Rappel automatique J-3</p></div></li>
+        </ul>
+        <span class="bulle -bottom-4 left-4">Nouveau : échéances, réunions, paie, examens au même endroit</span>
+      </div>
+    </div>
+
+    <!-- Rangée 3 : à traiter · recouvrement par classe · modes -->
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w p-5">
+        <div class="flex items-center gap-2"><p class="wt">À traiter</p><span class="rounded-full bg-rose-100 px-2 text-xs font-bold text-rose-700">4</span></div>
+        <ul class="mt-3 divide-y divide-slate-100 text-sm">
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span><span class="flex-1">3 paiements mobiles à valider</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Valider</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-rose-500"></span><span class="flex-1">19 élèves en impayé</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Relancer</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-violet-500"></span><span class="flex-1">2 demandes de documents</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Traiter</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span><span class="flex-1">1 document à signer</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Signer</span></li>
+        </ul>
+      </div>
+      <div class="w note p-5">
+        <div class="flex items-center"><p class="wt">Recouvrement par classe</p><a class="lien ml-auto" href="#">Détail →</a></div>
+        <table class="mt-3 w-full text-xs">
+          <thead class="text-slate-400"><tr><th class="pb-2 text-left font-medium">Classe</th><th class="pb-2 text-right font-medium">Reste</th><th class="w-24 pb-2 pl-3 text-left font-medium">Taux</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="py-2 font-medium">CM1</td><td class="text-right font-mono">640 k</td><td class="pl-3"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-slate-100"><div class="h-full w-[58%] rounded-full bg-rose-500"></div></div>58%</div></td></tr>
+            <tr><td class="py-2 font-medium">CE1</td><td class="text-right font-mono">590 k</td><td class="pl-3"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-slate-100"><div class="h-full w-[64%] rounded-full bg-amber-500"></div></div>64%</div></td></tr>
+            <tr><td class="py-2 font-medium">CP</td><td class="text-right font-mono">410 k</td><td class="pl-3"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-slate-100"><div class="h-full w-[75%] rounded-full bg-amber-500"></div></div>75%</div></td></tr>
+            <tr><td class="py-2 font-medium">MS</td><td class="text-right font-mono">280 k</td><td class="pl-3"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-slate-100"><div class="h-full w-[82%] rounded-full bg-emerald-500"></div></div>82%</div></td></tr>
+            <tr><td class="py-2 font-medium">CI</td><td class="text-right font-mono">120 k</td><td class="pl-3"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded-full bg-slate-100"><div class="h-full w-[93%] rounded-full bg-emerald-500"></div></div>93%</div></td></tr>
+          </tbody>
+        </table>
+        <span class="bulle -bottom-4 right-4">Les classes qui paient le moins, en premier</span>
+      </div>
+      <div class="w p-5">
+        <p class="wt">Modes de paiement (octobre)</p>
+        <div class="mt-3 flex items-center gap-5">
+          <svg viewBox="0 0 42 42" class="h-32 w-32 -rotate-90">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#eef1f5" stroke-width="6"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#0b1f3a" stroke-width="6" stroke-dasharray="55 45"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#1d9bf0" stroke-width="6" stroke-dasharray="30 70" stroke-dashoffset="-55"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f97316" stroke-width="6" stroke-dasharray="15 85" stroke-dashoffset="-85"/>
+          </svg>
+          <ul class="space-y-2 text-xs">
+            <li class="flex items-center gap-2"><i class="h-2.5 w-2.5 rounded-sm bg-navy-900"></i>Espèces <b class="ml-2">55 %</b></li>
+            <li class="flex items-center gap-2"><i class="h-2.5 w-2.5 rounded-sm bg-[#1d9bf0]"></i>Wave <b class="ml-2">30 %</b></li>
+            <li class="flex items-center gap-2"><i class="h-2.5 w-2.5 rounded-sm bg-orange-500"></i>Orange Money <b class="ml-2">15 %</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rangée 4 : activité récente + raccourcis -->
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w note col-span-2 p-5">
+        <div class="flex items-center"><p class="wt">Activité récente</p><a class="lien ml-auto" href="#">Journal →</a></div>
+        <ul class="mt-3 space-y-3 text-sm">
+          <li class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">AD</span><span class="flex-1"><b>Paiement de 35 000 XOF</b> · Aminata Diagne (CM1) · Wave</span><span class="text-xs text-slate-400">il y a 2 h</span></li>
+          <li class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">MB</span><span class="flex-1"><b>Nouvelle inscription</b> · Moussa Ba en CP</span><span class="text-xs text-slate-400">hier</span></li>
+          <li class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">🔔</span><span class="flex-1"><b>Relance envoyée</b> à 12 familles (mensualité d'octobre)</span><span class="text-xs text-slate-400">hier</span></li>
+          <li class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-violet-100 text-xs font-bold text-violet-700">📄</span><span class="flex-1"><b>Certificat de scolarité</b> demandé par la famille Ndao</span><span class="text-xs text-slate-400">28 oct.</span></li>
+        </ul>
+        <span class="bulle right-4 top-12">Ce qui s'est passé, qui l'a fait, quand</span>
+      </div>
+      <div class="w p-5">
+        <p class="wt">Raccourcis</p>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
+          <span class="rounded-xl bg-fond p-3">👤<br>Inscrire un élève</span>
+          <span class="rounded-xl bg-fond p-3">₣<br>Encaisser</span>
+          <span class="rounded-xl bg-fond p-3">💳<br>Situation des paiements</span>
+          <span class="rounded-xl bg-fond p-3">📣<br>Écrire aux familles</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 2 · PÉDAGOGIE =========================== -->
+<section class="ecran" id="peda" data-espace="Pédagogie">
+  <div data-page>
+    <div class="flex flex-wrap items-end gap-3">
+      <div>
+        <p class="text-xs text-slate-500">Pédagogie › Accueil</p>
+        <h1 class="font-display text-2xl font-bold">Bonjour Tahirou</h1>
+        <p class="text-sm text-slate-500">Samedi 31 octobre · 1er trimestre, semaine 8</p>
+      </div>
+      <div class="ml-auto flex gap-2 text-sm">
+        <span class="rounded-lg border border-navy-900/15 bg-white px-3 py-2 font-medium">Trimestre 1 ▾</span>
+        <span class="rounded-lg border border-navy-900/15 bg-white px-3 py-2 font-medium">Toutes les classes ▾</span>
+        <span class="rounded-lg bg-navy-900 px-4 py-2 font-semibold text-creme">✓ Faire l'appel</span>
+      </div>
+    </div>
+
+    <div class="mt-5 grid grid-cols-4 gap-4">
+      <div class="w p-4"><div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Taux de présence</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-emerald-100 text-emerald-700">✓</span></div>
+        <p class="mt-2 font-display text-3xl font-bold">96,4 %</p><p class="mt-1 text-xs"><span class="font-semibold text-rose-600">▼ 0,8 pt</span> <span class="text-slate-500">sur la semaine</span></p></div>
+      <div class="w p-4"><div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Absents aujourd'hui</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-rose-100 text-rose-700">🚸</span></div>
+        <p class="mt-2 font-display text-3xl font-bold text-rose-700">3</p><p class="mt-1 text-xs text-slate-500">dont 1 retard · 2 appels non faits</p></div>
+      <div class="w p-4"><div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Moyenne générale</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-sky-100 text-sky-700">✎</span></div>
+        <p class="mt-2 font-display text-3xl font-bold text-emerald-700">12,8 <span class="text-sm font-normal text-slate-400">/20</span></p><p class="mt-1 text-xs"><span class="font-semibold text-emerald-600">▲ 0,3</span> <span class="text-slate-500">par rapport au T1 2025</span></p></div>
+      <div class="w p-4"><div class="flex items-center justify-between"><span class="text-xs font-medium text-slate-500">Notes saisies (T1)</span><span class="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-amber-700">▤</span></div>
+        <p class="mt-2 font-display text-3xl font-bold">108 <span class="text-sm font-normal text-slate-400">/ 140</span></p><div class="mt-2 h-1.5 rounded-full bg-slate-100"><div class="h-full w-[77%] rounded-full bg-or-500"></div></div></div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w note col-span-2 p-5">
+        <div class="flex items-center"><p class="wt">Assiduité — 8 dernières semaines</p>
+          <div class="ml-auto flex items-center gap-4 text-xs text-slate-500"><span class="flex items-center gap-1.5"><i class="inline-block h-0.5 w-4 bg-navy-900"></i>Présence %</span><span class="flex items-center gap-1.5"><i class="inline-block h-2.5 w-2.5 rounded-sm bg-rose-300"></i>Absences</span></div></div>
+        <svg viewBox="0 0 640 200" class="mt-3 w-full">
+          <g stroke="#e5e8ee"><line x1="40" x2="630" y1="20" y2="20"/><line x1="40" x2="630" y1="85" y2="85"/><line x1="40" x2="630" y1="150" y2="150"/></g>
+          <g fill="#94a3b8" font-size="10"><text x="4" y="24">100%</text><text x="8" y="89">95%</text><text x="8" y="154">90%</text></g>
+          <g fill="#fda4af"><rect x="62" y="138" width="26" height="12" rx="3"/><rect x="134" y="132" width="26" height="18" rx="3"/><rect x="206" y="140" width="26" height="10" rx="3"/><rect x="278" y="126" width="26" height="24" rx="3"/><rect x="350" y="136" width="26" height="14" rx="3"/><rect x="422" y="141" width="26" height="9" rx="3"/><rect x="494" y="134" width="26" height="16" rx="3"/><rect x="566" y="122" width="26" height="28" rx="3"/></g>
+          <polyline fill="none" stroke="#0b1f3a" stroke-width="2.5" points="75,48 147,60 219,44 291,72 363,52 435,40 507,56 579,66"/>
+          <g fill="#0b1f3a"><circle cx="75" cy="48" r="3"/><circle cx="147" cy="60" r="3"/><circle cx="219" cy="44" r="3"/><circle cx="291" cy="72" r="3"/><circle cx="363" cy="52" r="3"/><circle cx="435" cy="40" r="3"/><circle cx="507" cy="56" r="3"/><circle cx="579" cy="66" r="4" fill="#c9a227"/></g>
+          <g fill="#64748b" font-size="11" text-anchor="middle"><text x="75" y="175">S1</text><text x="147" y="175">S2</text><text x="219" y="175">S3</text><text x="291" y="175">S4</text><text x="363" y="175">S5</text><text x="435" y="175">S6</text><text x="507" y="175">S7</text><text x="579" y="175">S8</text></g>
+        </svg>
+        <span class="bulle right-4 top-12">On voit d'un coup d'œil si l'assiduité se dégrade</span>
+      </div>
+      <div class="w p-5">
+        <div class="flex items-center"><p class="wt">Agenda pédagogique</p><a class="lien ml-auto" href="#">Tout voir →</a></div>
+        <ul class="mt-3 space-y-3">
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-sky-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-sky-600">nov</p><p class="font-display text-lg font-bold leading-none text-sky-700">16</p></div><div><p class="text-sm font-medium">Compositions du 1er trimestre</p><p class="text-xs text-slate-500">du 16 au 20 novembre · toutes classes</p></div></li>
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-violet-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-violet-600">nov</p><p class="font-display text-lg font-bold leading-none text-violet-700">27</p></div><div><p class="text-sm font-medium">Conseils de classe</p><p class="text-xs text-slate-500">CI à CM1 · PV à signer</p></div></li>
+          <li class="flex gap-3"><div class="w-11 shrink-0 rounded-lg bg-amber-50 py-1 text-center"><p class="text-[10px] font-semibold uppercase text-amber-600">déc</p><p class="font-display text-lg font-bold leading-none text-amber-700">04</p></div><div><p class="text-sm font-medium">Publication des bulletins T1</p><p class="text-xs text-slate-500">visibles des parents dans l'appli</p></div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w p-5">
+        <div class="flex items-center gap-2"><p class="wt">À traiter</p><span class="rounded-full bg-rose-100 px-2 text-xs font-bold text-rose-700">4</span></div>
+        <ul class="mt-3 divide-y divide-slate-100 text-sm">
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span><span class="flex-1">2 justificatifs d'absence</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Examiner</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-rose-500"></span><span class="flex-1">5 absences non justifiées</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Relancer</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span><span class="flex-1">5 bulletins en relecture</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Relire</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-violet-500"></span><span class="flex-1">5 bulletins à publier</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Publier</span></li>
+        </ul>
+      </div>
+      <div class="w note p-5">
+        <div class="flex items-center"><p class="wt">Moyennes par classe</p><span class="ml-auto text-xs text-slate-400">/20 · T1</span></div>
+        <ul class="mt-3 space-y-2.5 text-xs">
+          <li class="flex items-center gap-3"><span class="w-10 font-medium">CI</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full w-[72%] rounded-full bg-emerald-500"></div></div><b class="w-8 text-right text-emerald-700">14,5</b></li>
+          <li class="flex items-center gap-3"><span class="w-10 font-medium">CM1</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full w-[68%] rounded-full bg-emerald-500"></div></div><b class="w-8 text-right text-emerald-700">13,7</b></li>
+          <li class="flex items-center gap-3"><span class="w-10 font-medium">CP</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full w-[60%] rounded-full bg-emerald-500"></div></div><b class="w-8 text-right text-emerald-700">12,1</b></li>
+          <li class="flex items-center gap-3"><span class="w-10 font-medium">CE1</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full w-[60%] rounded-full bg-emerald-500"></div></div><b class="w-8 text-right text-emerald-700">12,0</b></li>
+          <li class="flex items-center gap-3"><span class="w-10 font-medium">CE2</span><div class="h-2 flex-1 rounded-full bg-slate-100"><div class="h-full w-[58%] rounded-full bg-amber-500"></div></div><b class="w-8 text-right text-amber-600">11,7</b></li>
+        </ul>
+        <span class="bulle -bottom-4 right-4">Préscolaire (TPS à GS) : suivi des acquis, pas de moyenne</span>
+      </div>
+      <div class="w note p-5">
+        <div class="flex items-center"><p class="wt">Saisie des notes T1</p><a class="lien ml-auto" href="#">Notes →</a></div>
+        <ul class="mt-3 space-y-2.5 text-xs">
+          <li><div class="flex justify-between"><span class="font-medium">CM1 · Mme Diop</span><span class="text-emerald-700">32 / 32 ✓</span></div><div class="mt-1 h-1.5 rounded-full bg-slate-100"><div class="h-full w-full rounded-full bg-emerald-500"></div></div></li>
+          <li><div class="flex justify-between"><span class="font-medium">CE2 · M. Faye</span><span>24 / 28</span></div><div class="mt-1 h-1.5 rounded-full bg-slate-100"><div class="h-full w-[86%] rounded-full bg-or-500"></div></div></li>
+          <li><div class="flex justify-between"><span class="font-medium">CE1 · Mme Sarr</span><span>18 / 28</span></div><div class="mt-1 h-1.5 rounded-full bg-slate-100"><div class="h-full w-[64%] rounded-full bg-or-500"></div></div></li>
+          <li><div class="flex justify-between"><span class="font-medium">CP · M. Ndiaye</span><span class="text-rose-600">8 / 26</span></div><div class="mt-1 h-1.5 rounded-full bg-slate-100"><div class="h-full w-[31%] rounded-full bg-rose-500"></div></div></li>
+        </ul>
+        <span class="bulle -bottom-4 left-4">Nouveau : qui a fini sa saisie avant le conseil de classe</span>
+      </div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w col-span-2 p-5">
+        <div class="flex items-center"><p class="wt">Absences récentes</p><a class="lien ml-auto" href="#">Assiduité →</a></div>
+        <table class="mt-3 w-full text-sm">
+          <thead class="text-xs text-slate-400"><tr><th class="pb-2 text-left font-medium">Élève</th><th class="pb-2 text-left font-medium">Classe</th><th class="pb-2 text-left font-medium">Date</th><th class="pb-2 text-left font-medium">Type</th><th class="pb-2 text-right font-medium">Statut</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="py-2 font-medium">Seynabou Badji</td><td>CE1</td><td class="text-slate-500">30 oct.</td><td>Absence</td><td class="text-right"><span class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">Non justifié</span></td></tr>
+            <tr><td class="py-2 font-medium">Nafissatou Thiam</td><td>MS</td><td class="text-slate-500">30 oct.</td><td>Absence</td><td class="text-right"><span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">En attente</span></td></tr>
+            <tr><td class="py-2 font-medium">Daouda Diallo</td><td>CE1</td><td class="text-slate-500">29 oct.</td><td>Retard</td><td class="text-right"><span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Justifié</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="w p-5">
+        <p class="wt">Raccourcis</p>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
+          <span class="rounded-xl bg-fond p-3">✅<br>Faire l'appel</span><span class="rounded-xl bg-fond p-3">✎<br>Saisir des notes</span>
+          <span class="rounded-xl bg-fond p-3">📓<br>Cahier de textes</span><span class="rounded-xl bg-fond p-3">🗓️<br>Emploi du temps</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3 · PILOTAGE ============================ -->
+<section class="ecran" id="pilotage" data-espace="Pilotage">
+  <div data-page>
+    <div class="flex flex-wrap items-end gap-3">
+      <div>
+        <p class="text-xs text-slate-500">Pilotage › Vue d'ensemble</p>
+        <h1 class="font-display text-2xl font-bold">Bonjour Tahirou</h1>
+        <p class="text-sm text-slate-500">Vos 2 établissements · chiffres de l'année 2026-2027</p>
+      </div>
+      <div class="ml-auto flex gap-2 text-sm">
+        <span class="inline-flex rounded-lg border border-navy-900/15 bg-white p-0.5 font-medium"><span class="rounded-md bg-navy-900 px-3 py-1.5 text-creme">TutTank_Demo</span><span class="px-3 py-1.5 text-slate-500">Toutes mes écoles</span></span>
+      </div>
+    </div>
+
+    <div class="mt-5 grid grid-cols-4 gap-4">
+      <div class="w p-4"><span class="text-xs font-medium text-slate-500">Effectif</span><p class="mt-2 font-display text-3xl font-bold">50</p><p class="mt-1 text-xs"><span class="font-semibold text-emerald-600">▲ 8 %</span> <span class="text-slate-500">par rapport à 2025-2026</span></p></div>
+      <div class="w p-4"><span class="text-xs font-medium text-slate-500">Trésorerie</span><p class="mt-2 font-display text-3xl font-bold">4,8 M <span class="text-sm font-normal text-slate-400">XOF</span></p><p class="mt-1 text-xs text-slate-500">Caisse 1,1 M · banque 3,7 M</p></div>
+      <div class="w p-4"><span class="text-xs font-medium text-slate-500">Masse salariale (oct.)</span><p class="mt-2 font-display text-3xl font-bold text-rose-700">2,2 M <span class="text-sm font-normal text-slate-400">XOF</span></p><p class="mt-1 text-xs text-slate-500">11 bulletins · 2 en brouillon</p></div>
+      <div class="w p-4"><span class="text-xs font-medium text-slate-500">Résultat (année civile)</span><p class="mt-2 font-display text-3xl font-bold text-emerald-700">+ 3,4 M <span class="text-sm font-normal text-slate-400">XOF</span></p><p class="mt-1 text-xs"><span class="font-semibold text-emerald-600">▲ 15 %</span> <span class="text-slate-500">vs 2025</span></p></div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-3 gap-4">
+      <div class="w note col-span-2 p-5">
+        <div class="flex items-center"><p class="wt">Recettes et dépenses — 12 mois</p>
+          <div class="ml-auto flex items-center gap-4 text-xs text-slate-500"><span class="flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-sm bg-navy-900"></i>Recettes</span><span class="flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-sm bg-rose-300"></i>Dépenses</span><span class="flex items-center gap-1.5"><i class="h-0.5 w-4 bg-or-500"></i>Résultat cumulé</span></div></div>
+        <svg viewBox="0 0 640 210" class="mt-3 w-full">
+          <g stroke="#e5e8ee"><line x1="30" x2="630" y1="20" y2="20"/><line x1="30" x2="630" y1="90" y2="90"/><line x1="30" x2="630" y1="160" y2="160"/></g>
+          <g id="barres"></g>
+          <polyline fill="none" stroke="#c9a227" stroke-width="2.5" points="55,150 105,140 155,128 205,122 255,118 305,105 355,96 405,92 455,86 505,70 555,52 605,40"/>
+          <g fill="#64748b" font-size="10" text-anchor="middle" id="moisP"></g>
+        </svg>
+        <span class="bulle right-4 top-12">Pour le promoteur : l'argent qui entre, qui sort, ce qui reste</span>
+      </div>
+      <div class="w p-5">
+        <div class="flex items-center gap-2"><p class="wt">À décider</p><span class="rounded-full bg-rose-100 px-2 text-xs font-bold text-rose-700">3</span></div>
+        <ul class="mt-3 divide-y divide-slate-100 text-sm">
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span><span class="flex-1">2 bulletins de paie en brouillon</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Valider</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-sky-500"></span><span class="flex-1">1 document à signer</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Signer</span></li>
+          <li class="flex items-center gap-3 py-2.5"><span class="h-2 w-2 rounded-full bg-violet-500"></span><span class="flex-1">Abonnement : renouvellement le 15 déc.</span><span class="rounded-md border px-2 py-0.5 text-xs font-semibold">Voir</span></li>
+        </ul>
+        <div class="mt-4 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800"><b>Mise en route terminée</b> — TutTank_Demo est entièrement paramétrée.</div>
+      </div>
+    </div>
+
+    <div class="w note mt-4 p-5">
+      <div class="flex items-center"><p class="wt">Comparatif des établissements</p></div>
+      <table class="mt-3 w-full text-sm">
+        <thead class="text-xs text-slate-400"><tr><th class="pb-2 text-left font-medium">Établissement</th><th class="pb-2 text-right font-medium">Effectif</th><th class="pb-2 text-right font-medium">Recouvrement</th><th class="pb-2 text-right font-medium">Trésorerie</th><th class="pb-2 text-right font-medium">Masse salariale</th><th class="pb-2 text-right font-medium">Résultat</th><th></th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="bg-or-500/5"><td class="py-2.5 font-medium">TutTank_Demo <span class="ml-1 rounded-full bg-or-500/20 px-2 text-[11px] text-or-600">ouverte</span></td><td class="text-right">50</td><td class="text-right text-emerald-700">77 %</td><td class="text-right font-mono">4,8 M</td><td class="text-right font-mono">2,2 M</td><td class="text-right font-mono text-emerald-700">+ 3,4 M</td><td class="pl-3 text-right"><span class="lien">Ouvrir →</span></td></tr>
+          <tr><td class="py-2.5 font-medium">Groupe scolaire La Grâce</td><td class="text-right">24</td><td class="text-right text-amber-600">62 %</td><td class="text-right font-mono">1,3 M</td><td class="text-right font-mono">0,9 M</td><td class="text-right font-mono text-emerald-700">+ 0,6 M</td><td class="pl-3 text-right"><span class="lien">Gérer →</span></td></tr>
+        </tbody>
+      </table>
+      <span class="bulle -top-3 right-6">Le tableau remplace les cartes par école : on compare ligne à ligne</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== 4 · PARENTS (TÉLÉPHONE) ======================== -->
+<section class="ecran" id="parent">
+  <div class="flex flex-wrap items-start justify-center gap-10 py-6">
+
+    <!-- Téléphone 1 : accueil famille -->
+    <div>
+      <p class="mb-3 text-center text-sm font-semibold text-slate-600">Accueil du parent</p>
+      <div class="note h-[844px] w-[390px] overflow-hidden rounded-[44px] border-[10px] border-navy-900 bg-fond shadow-2xl">
+        <div class="flex items-center gap-3 bg-navy-900 px-5 pb-4 pt-6 text-creme">
+          <span class="font-display text-lg font-bold">Ges<span class="text-or-500">School</span></span>
+          <span class="ml-auto grid h-8 w-8 place-items-center rounded-full bg-or-500 text-xs font-bold text-navy-900">FN</span>
+        </div>
+        <div class="space-y-3 p-4">
+          <div><p class="text-xs text-slate-500">Samedi 31 octobre</p><p class="font-display text-xl font-bold">Bonjour Fatou</p></div>
+          <!-- Sélecteur d'enfant en pastilles -->
+          <div class="flex gap-2 text-sm">
+            <span class="flex items-center gap-2 rounded-full bg-navy-900 py-1 pl-1 pr-3 font-semibold text-creme"><i class="grid h-6 w-6 place-items-center rounded-full bg-rose-500 text-[10px] not-italic">NN</i>Nafissatou</span>
+            <span class="flex items-center gap-2 rounded-full border border-navy-900/15 bg-white py-1 pl-1 pr-3 font-medium"><i class="grid h-6 w-6 place-items-center rounded-full bg-violet-500 text-[10px] not-italic text-white">AD</i>Aminata</span>
+            <span class="grid h-8 w-8 place-items-center rounded-full border border-dashed border-navy-900/30 text-lg">+</span>
+          </div>
+          <!-- Aujourd'hui -->
+          <div class="rounded-2xl bg-gradient-to-br from-navy-900 to-navy-700 p-4 text-creme">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-or-400">Aujourd'hui · CE1</p>
+            <p class="mt-1 font-semibold">10:00 – 11:00 · Mathématiques</p>
+            <p class="text-xs text-creme/60">Ensuite : 11:00 Lecture · 12:00 Récréation</p>
+          </div>
+          <!-- Widgets 2 × 2 -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="w p-3"><p class="text-[11px] font-medium text-slate-500">À régler</p><p class="mt-1 font-display text-lg font-bold text-rose-700">295 000</p><p class="text-[11px] text-slate-500">XOF · en retard</p><span class="mt-2 inline-block rounded-lg bg-navy-900 px-3 py-1 text-xs font-semibold text-creme">Payer</span></div>
+            <div class="w p-3"><p class="text-[11px] font-medium text-slate-500">Moyenne T1</p><p class="mt-1 font-display text-lg font-bold text-emerald-700">12,0<span class="text-xs font-normal text-slate-400">/20</span></p><p class="text-[11px]"><span class="font-semibold text-emerald-600">▲ 0,6</span> <span class="text-slate-500">vs octobre</span></p><p class="mt-1 text-[11px] text-slate-500">Rang 4 / 5</p></div>
+            <div class="w p-3"><p class="text-[11px] font-medium text-slate-500">Absences</p><p class="mt-1 font-display text-lg font-bold">1</p><p class="text-[11px] text-amber-600">à justifier</p></div>
+            <div class="w p-3"><p class="text-[11px] font-medium text-slate-500">Devoirs</p><p class="mt-1 font-display text-lg font-bold">2</p><p class="text-[11px] text-slate-500">pour lundi</p></div>
+          </div>
+          <!-- Dernières notes -->
+          <div class="w p-4">
+            <div class="flex items-center"><p class="wt">Dernières notes</p><span class="lien ml-auto">Tout voir</span></div>
+            <ul class="mt-2 divide-y divide-slate-100 text-sm">
+              <li class="flex items-center py-2"><span class="flex-1">Calcul · devoir 2</span><b class="text-emerald-700">15/20</b></li>
+              <li class="flex items-center py-2"><span class="flex-1">Lecture · évaluation</span><b class="text-amber-600">11/20</b></li>
+            </ul>
+          </div>
+          <!-- Agenda -->
+          <div class="w p-4">
+            <p class="wt">À venir</p>
+            <ul class="mt-2 space-y-2 text-sm">
+              <li class="flex gap-3"><span class="w-10 shrink-0 rounded-md bg-rose-50 text-center text-xs font-bold text-rose-700">5 nov</span>Échéance de novembre</li>
+              <li class="flex gap-3"><span class="w-10 shrink-0 rounded-md bg-sky-50 text-center text-xs font-bold text-sky-700">12 nov</span>Réunion parents · 17 h</li>
+            </ul>
+          </div>
+        </div>
+        <span class="bulle left-4 top-[250px]">Un seul écran par enfant : on change d'enfant en touchant son prénom</span>
+      </div>
+    </div>
+
+    <!-- Téléphone 2 : rubriques de l'enfant -->
+    <div>
+      <p class="mb-3 text-center text-sm font-semibold text-slate-600">Plus bas : toutes les rubriques</p>
+      <div class="note h-[844px] w-[390px] overflow-hidden rounded-[44px] border-[10px] border-navy-900 bg-fond shadow-2xl">
+        <div class="flex items-center gap-3 bg-navy-900 px-5 pb-4 pt-6 text-creme">
+          <span class="font-display text-lg font-bold">Ges<span class="text-or-500">School</span></span>
+          <span class="ml-auto rounded-full bg-white/10 px-3 py-1 text-xs">Nafissatou ▾</span>
+        </div>
+        <div class="space-y-3 p-4">
+          <!-- Solde détaillé -->
+          <div class="w p-4">
+            <div class="flex items-baseline justify-between"><p class="wt">Scolarité 2026-2027</p><b class="font-display">0 %</b></div>
+            <div class="mt-2 h-2 rounded-full bg-slate-100"><div class="h-full w-[2%] rounded-full bg-rose-500"></div></div>
+            <p class="mt-2 text-xs text-slate-500">0 XOF payés sur 295 000 XOF · en retard depuis le 31 août</p>
+            <div class="mt-3 flex gap-2"><span class="flex-1 rounded-lg bg-navy-900 py-2 text-center text-xs font-semibold text-creme">Payer par Wave / OM</span><span class="rounded-lg border px-3 py-2 text-xs font-semibold">Reçus</span></div>
+          </div>
+          <!-- Rubriques en liste dense à icônes -->
+          <div class="w divide-y divide-slate-100">
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">✎</span><span class="flex-1"><b class="text-sm">Notes</b><br><span class="text-xs text-slate-500">2 nouvelles cette semaine</span></span><span class="rounded-full bg-or-500 px-2 text-xs font-bold">2</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">🎓</span><span class="flex-1"><b class="text-sm">Bulletins</b><br><span class="text-xs text-slate-500">T1 publié le 4 décembre</span></span><span class="text-slate-300">›</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">📓</span><span class="flex-1"><b class="text-sm">Cahier de textes</b><br><span class="text-xs text-slate-500">2 devoirs pour lundi</span></span><span class="text-slate-300">›</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">🗓️</span><span class="flex-1"><b class="text-sm">Emploi du temps</b><br><span class="text-xs text-slate-500">Lundi : 8 h – 13 h</span></span><span class="text-slate-300">›</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">✓</span><span class="flex-1"><b class="text-sm">Absences</b><br><span class="text-xs text-amber-600">1 à justifier</span></span><span class="rounded-full bg-or-500 px-2 text-xs font-bold">1</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">🎒</span><span class="flex-1"><b class="text-sm">Fournitures</b><br><span class="text-xs text-slate-500">4 articles à acheter</span></span><span class="text-slate-300">›</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">📄</span><span class="flex-1"><b class="text-sm">Documents</b><br><span class="text-xs text-slate-500">Certificat en préparation</span></span><span class="text-slate-300">›</span></div>
+            <div class="flex items-center gap-3 px-4 py-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-or-500">📣</span><span class="flex-1"><b class="text-sm">Annonces</b><br><span class="text-xs text-slate-500">Réunion parents le 12 nov.</span></span><span class="text-slate-300">›</span></div>
+          </div>
+        </div>
+        <span class="bulle right-4 top-[300px]">Chaque rubrique dit déjà ce qu'elle contient — plus besoin de l'ouvrir pour savoir</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+  // Menus latéraux par espace (lecture seule, pour situer l'écran).
+  const MENUS = {
+    "Gestion": ["Établissement", "▦ Accueil", "👥 Membres", "⚙️ Paramètres", "Scolarité", "👤 Élèves & inscriptions", "🔑 Codes parents", "🧾 Documents", "📥 Demandes", "Finances", "₣ Paiements", "🔔 Recouvrement", "💳 Situation des paiements", "💰 Comptabilité", "Communication", "📣 Annonces", "💬 Messagerie"],
+    "Pédagogie": ["", "▦ Accueil", "Au quotidien", "✅ Feuille de présence", "📓 Cahier de textes", "🗂️ Progression", "🗓️ Emploi du temps", "Évaluation", "✎ Notes", "🎓 Bulletins", "🏆 Classement", "Vie scolaire", "📋 Vie scolaire", "📊 Assiduité"],
+    "Pilotage": ["", "🎯 Vue d'ensemble", "🗓️ Passage d'année", "🎫 Mon abonnement", "🗂️ Organigramme", "📁 Documentation", "🗒️ Journal des actes", "👥 Membres"],
+  };
+  const cadre = document.getElementById("cadre");
+  for (const s of document.querySelectorAll("section[data-espace]")) {
+    const page = s.querySelector("[data-page]");
+    const c = cadre.content.cloneNode(true);
+    const esp = s.dataset.espace;
+    c.querySelector("[data-espaces]").innerHTML = ["Pilotage", "Gestion", "Pédagogie", "RH & Paie"].map((e) =>
+      `<span class="rounded-md px-2 py-1.5 ${e === esp ? "bg-or-500 text-navy-900" : "bg-white/5 text-creme/70"}">${e}</span>`).join("");
+    let premier = true;
+    c.querySelector("[data-menu]").innerHTML = MENUS[esp].map((m) => {
+      if (!/^\S+ /.test(m) || m === "") return m ? `<p class="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wide text-creme/40">${m}</p>` : "";
+      const actif = premier; premier = false;
+      return `<p class="rounded-lg px-3 py-1.5 ${actif ? "bg-white/10 font-semibold text-creme" : "text-creme/70"}">${m}</p>`;
+    }).join("");
+    c.querySelector("[data-contenu]").appendChild(page);
+    s.appendChild(c);
+  }
+  // Barres du graphique Pilotage.
+  const rec = [1.9, 1.2, 1.1, 1.0, 1.2, 1.0, 1.1, 0.9, 1.0, 1.6, 2.4, 1.3], dep = [1.0, 0.9, 0.9, 0.8, 1.1, 0.8, 0.9, 0.8, 0.8, 0.9, 1.1, 1.0];
+  const mois = ["Nov", "Déc", "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct"];
+  document.getElementById("barres").innerHTML = rec.map((r, i) => {
+    const x = 42 + i * 50, h1 = r * 55, h2 = dep[i] * 55;
+    return `<rect x="${x}" y="${160 - h1}" width="12" height="${h1}" rx="2" fill="#0b1f3a"/><rect x="${x + 14}" y="${160 - h2}" width="12" height="${h2}" rx="2" fill="#fda4af"/>`;
+  }).join("");
+  document.getElementById("moisP").innerHTML = mois.map((m, i) => `<text x="${55 + i * 50}" y="180">${m}</text>`).join("");
+  // Onglets de la maquette.
+  const boutons = document.querySelectorAll("#choix button");
+  const montrer = (id) => {
+    document.querySelectorAll(".ecran").forEach((e) => e.classList.toggle("actif", e.id === id));
+    boutons.forEach((b) => b.className = `rounded-lg px-3 py-2 ${b.dataset.e === id ? "bg-navy-900 text-creme" : "text-slate-600 hover:text-navy-900"}`);
+    location.hash = id;
+  };
+  boutons.forEach((b) => b.addEventListener("click", () => montrer(b.dataset.e)));
+  montrer(location.hash.slice(1) || "gestion");
+</script>
+</body>
+</html>

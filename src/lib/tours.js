@@ -10,7 +10,7 @@ export const TOUR_STAFF = [
 
 export const TOUR_PARENT = [
   { titre: "Bienvenue dans l'espace parent 👋", texte: "Suivez la scolarité de votre enfant en quelques clics." },
-  { selector: '[data-tour="enfants"]', titre: "Vos enfants", texte: "Cliquez sur un enfant pour voir ses notes, bulletins, emploi du temps, paiements…" },
+  { selector: '[data-tour="enfants"]', titre: "Vos enfants", texte: "Touchez un prénom : l'essentiel de cet enfant s'affiche dessous (à régler, notes, absences, devoirs). « + » ajoute un enfant." },
   { selector: '[data-tour="messagerie"]', titre: "Messagerie", texte: "Échangez directement avec l'établissement." },
   { selector: '[data-tour="alertes"]', titre: "Alertes", texte: "Nouvelles notes, absences, factures… Activez les notifications pour être prévenu sur votre téléphone." },
   { selector: '[data-tour="aide-parent"]', titre: "Rejouer ce guide", texte: "Relancez-le quand vous voulez : bouton « ? » sur ordinateur, menu « Plus » sur téléphone. Bonne navigation !" },

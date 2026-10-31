@@ -3,16 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
-import Cachet from "@/composants/Cachet.jsx";
 import * as api from "@/lib/pilotage.js";
 import { getAnneeCourante, etatMiseEnRoute } from "@/lib/academique.js";
 import { Link } from "react-router-dom";
+import { Salutation, Bloc, ListeCompacte, GraphiqueAnnuel } from "@/composants/TableauBord.jsx";
+import { fluxPilotage } from "@/lib/dashboard.js";
+import { compterASigner } from "@/lib/documents.js";
+import { compterDemandesEnAttente } from "@/lib/demandes.js";
+import { peutVoir } from "@/lib/permissions.js";
+import { moduleActif } from "@/lib/modules.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
+const fmtCourt = (n) => {
+  const v = Math.round(Number(n) || 0);
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(".", ",").replace(/,0$/, "")} M`;
+  if (v >= 1_000) return `${Math.round(v / 1_000)} k`;
+  return String(v);
+};
 const taux = (paye, total) => (Number(total) > 0 ? Math.round((Number(paye) / Number(total)) * 100) : 0);
 
 export default function Pilotage() {
-  const { ecoleId, ecole, rafraichirProfil } = useAuth();
+  const { ecoleId, ecole, profil, roles, modulesActifs, rafraichirProfil } = useAuth();
   const devise = ecole?.devise || "XOF";
   const navigate = useNavigate();
   const [lignes, setLignes] = useState([]);
@@ -33,6 +44,18 @@ export default function Pilotage() {
   }, []);
 
   useEffect(() => { recharger(); }, [recharger]);
+
+  //  Encaissements et dépenses de l'école ouverte, sur 12 mois.
+  const [flux, setFlux] = useState(null);
+  useEffect(() => { fluxPilotage(ecoleId).then(setFlux).catch(() => setFlux([])); }, [ecoleId]);
+
+  const [aSigner, setASigner] = useState(0);
+  const [demandes, setDemandes] = useState(0);
+  useEffect(() => {
+    compterASigner().then(setASigner).catch(() => {});
+    compterDemandesEnAttente(ecoleId).then(setDemandes).catch(() => {});
+  }, [ecoleId]);
+  const ouvert = (cle) => peutVoir(roles, cle) && moduleActif(modulesActifs, cle);
 
   async function gerer(id) {
     setErreur("");
@@ -86,6 +109,23 @@ export default function Pilotage() {
     ? `+ ${monnaies.filter(([, v]) => v.masseBrouillon > 0).map(([d, v]) => `${fmt(v.masseBrouillon)} ${d}`).join(" · ")} en brouillon (${brouillons} bulletin${brouillons > 1 ? "s" : ""} à valider)`
     : portee;
 
+  //  Le promoteur décide ; on lui montre ce qui attend SA décision, pour
+  //  l'école ouverte. Les impayés et les encaissements restent dans Gestion.
+  const ligneActive = lignes.find((l) => l.ecole_id === ecoleId);
+  const brouillonsActifs = Number(ligneActive?.bulletins_brouillon || 0);
+  const aFaire = [
+    ouvert("rh") && brouillonsActifs > 0 && {
+      to: "/rh", ton: "or", bouton: "Valider",
+      titre: `${brouillonsActifs} bulletin${brouillonsActifs > 1 ? "s" : ""} de paie en brouillon`,
+      detail: `${fmt(ligneActive.masse_brouillon)} ${ligneActive.devise || devise} à valider avant le paiement des salaires` },
+    ouvert("signatures") && aSigner > 0 && {
+      to: "/a-signer", ton: "bleu", bouton: "Signer",
+      titre: `${aSigner} document${aSigner > 1 ? "s" : ""} à signer` },
+    ouvert("demandes") && demandes > 0 && {
+      to: "/demandes", ton: "violet", bouton: "Voir",
+      titre: `${demandes} demande${demandes > 1 ? "s" : ""} de document` },
+  ].filter(Boolean);
+
   return (
     <>
       <EnTete
@@ -93,10 +133,10 @@ export default function Pilotage() {
         sousTitre={sousTitre}
         action={<Bouton variante="fantome" onClick={() => navigate("/onboarding")}>+ Ajouter une école</Bouton>}
       />
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        <MiseEnRoute ecoleId={ecoleId} ecole={ecole} />
+        <Salutation prenom={profil?.prenom} />
 
         {chargement ? (
           <SkeletonListe lignes={3} />
@@ -133,55 +173,72 @@ export default function Pilotage() {
               <KpiMonnaie label="Résultat (année civile)" monnaies={monnaies} champ="resultat" selonSigne note={portee} />
             </div>
 
-            {/* Comparatif par école */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-              {lignes.map((l) => {
-                const actif = l.ecole_id === ecoleId;
-                const resultat = api.resultatAnnee(l);
-                const dev = l.devise || devise;   // la devise de CETTE école
-                return (
-                  <Carte key={l.ecole_id} className={`p-5 ${actif ? "ring-2 ring-or-500" : ""}`}>
-                    <div className="flex items-center gap-3">
-                      <Cachet size={40} sigle={l.sigle || "GS"} className="text-navy-900/60" />
-                      <div className="min-w-0">
-                        <p className="truncate font-display text-lg font-bold text-navy-900">{l.ecole}</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {actif && <span className="text-xs text-or-600">École active</span>}
-                          {/* La démo reste gérable : on la signale, on ne la cache pas. */}
-                          {l.demonstration && (
-                            <span className="rounded-full bg-navy-900/10 px-2 py-0.5 text-[11px] font-medium text-navy-900/60">
-                              Démonstration · hors totaux
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <dl className="mt-4 space-y-1.5 text-sm">
-                      <Ligne l="Effectif" v={fmt(l.effectif)} />
-                      <Ligne l="Recouvrement" v={`${taux(l.total_paye, l.total_facture)}%`} />
-                      <Ligne l="Trésorerie" v={`${fmt(l.tresorerie)} ${dev}`} />
-                      <Ligne l="Masse salariale engagée" v={`${fmt(l.masse_salariale)} ${dev}`} />
-                      {/* « + », et non « dont » : un brouillon s'ajoute à l'engagé,
-                          il n'en fait pas partie — c'est tout le sujet. */}
-                      {Number(l.bulletins_brouillon) > 0 && (
-                        <Ligne l={`+ brouillons à valider (${l.bulletins_brouillon})`}
-                               v={`${fmt(l.masse_brouillon)} ${dev}`} />
-                      )}
-                      <Ligne l="Résultat (année civile)" v={`${fmt(resultat)} ${dev}`} ton={resultat >= 0 ? "vert" : "rouge"} />
-                    </dl>
-
-                    <div className="mt-4">
-                      {actif ? (
-                        <Bouton className="w-full" onClick={() => navigate("/")}>Ouvrir l'administration</Bouton>
-                      ) : (
-                        <Bouton variante="fantome" className="w-full" onClick={() => gerer(l.ecole_id)}>Gérer cette école</Bouton>
-                      )}
-                    </div>
-                  </Carte>
-                );
-              })}
+            {/* L'école ouverte : l'argent qui entre, qui sort · ce qui attend une décision */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <Bloc titre={`Encaissements et dépenses — 12 mois${ecole?.nom ? ` · ${ecole.nom}` : ""}`} className="lg:col-span-2">
+                {flux && <GraphiqueAnnuel points={flux} format={fmtCourt} legende={["Encaissements", "Dépenses"]} />}
+              </Bloc>
+              <div className="space-y-4">
+                <Bloc titre="À décider" compteur={aFaire.length}>
+                  <ListeCompacte items={aFaire} vide="Rien n'attend votre décision ✓" />
+                </Bloc>
+                <MiseEnRoute ecoleId={ecoleId} ecole={ecole} />
+              </div>
             </div>
+
+            {/* Comparatif des établissements, ligne à ligne */}
+            <Bloc titre="Comparatif des établissements">
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[640px] text-sm">
+                  <thead className="text-xs text-navy-900/50">
+                    <tr>
+                      <th className="py-2 text-left font-medium">Établissement</th>
+                      <th className="text-right font-medium">Effectif</th>
+                      <th className="text-right font-medium">Recouvrement</th>
+                      <th className="text-right font-medium">Trésorerie</th>
+                      <th className="text-right font-medium">Masse salariale</th>
+                      <th className="text-right font-medium">Résultat</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy-900/5">
+                    {lignes.map((l) => {
+                      const actif = l.ecole_id === ecoleId;
+                      const resultat = api.resultatAnnee(l);
+                      const dev = l.devise || devise;   // la devise de CETTE école
+                      const t = taux(l.total_paye, l.total_facture);
+                      return (
+                        <tr key={l.ecole_id} className={actif ? "bg-or-500/5" : ""}>
+                          <td className="py-2.5 pr-3">
+                            <span className="font-medium text-navy-900">{l.ecole}</span>
+                            {actif && <span className="ml-2 rounded-full bg-or-500/20 px-2 text-[11px] text-or-600">ouverte</span>}
+                            {/* La démo reste gérable : on la signale, on ne la cache pas. */}
+                            {l.demonstration && <span className="ml-2 rounded-full bg-navy-900/10 px-2 text-[11px] text-navy-900/60">démo · hors totaux</span>}
+                          </td>
+                          <td className="text-right">{fmt(l.effectif)}</td>
+                          <td className={`text-right ${t >= 80 ? "text-emerald-700" : t >= 60 ? "text-or-600" : "text-rose-700"}`}>{t} %</td>
+                          <td className="text-right font-mono">{fmtCourt(l.tresorerie)} {dev}</td>
+                          <td className="text-right font-mono" title={Number(l.bulletins_brouillon) > 0 ? `+ ${fmt(l.masse_brouillon)} ${dev} en brouillon (${l.bulletins_brouillon})` : undefined}>
+                            {fmtCourt(l.masse_salariale)} {dev}{Number(l.bulletins_brouillon) > 0 && <span className="text-or-600"> *</span>}
+                          </td>
+                          <td className={`text-right font-mono ${resultat >= 0 ? "text-emerald-700" : "text-rose-700"}`}>{resultat >= 0 ? "+ " : ""}{fmtCourt(resultat)} {dev}</td>
+                          <td className="pl-3 text-right">
+                            {actif ? (
+                              <button type="button" onClick={() => navigate("/")} className="text-xs font-medium text-navy-700 hover:text-or-600">Ouvrir →</button>
+                            ) : (
+                              <button type="button" onClick={() => gerer(l.ecole_id)} className="text-xs font-medium text-navy-700 hover:text-or-600">Gérer →</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {lignes.some((l) => Number(l.bulletins_brouillon) > 0) && (
+                <p className="mt-2 text-xs text-navy-900/50">* Bulletins de paie en brouillon, non comptés dans la masse engagée.</p>
+              )}
+            </Bloc>
           </>
         )}
       </div>
@@ -280,15 +337,5 @@ function KpiMonnaie({ label, monnaies, champ, ton, selonSigne, note }) {
       )}
       {note && <p className="mt-1 text-xs text-navy-900/40">{note}</p>}
     </Carte>
-  );
-}
-
-function Ligne({ l, v, ton }) {
-  const tons = { vert: "text-emerald-700", rouge: "text-rose-700" };
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-navy-900/50">{l}</dt>
-      <dd className={`font-mono ${tons[ton] || "text-navy-900"}`}>{v}</dd>
-    </div>
   );
 }

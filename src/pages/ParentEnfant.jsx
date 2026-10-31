@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import BarreRubriques from "@/composants/BarreRubriques.jsx";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
@@ -33,6 +33,8 @@ import Photo from "@/composants/Photo.jsx";
 import { enfantAcquis } from "@/lib/acquis.js";
 import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 import { messageErreur } from "@/lib/erreurs.js";
+import { useApercuEnfant } from "@/composants/ApercuEnfant.jsx";
+import { aRegler, resumeRubriques, pourQuand } from "@/lib/apercuEnfant.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -46,7 +48,6 @@ export default function ParentEnfant() {
   //  fiche de l'enfant au lieu de revenir à la rubrique précédente, et aucune
   //  alerte ne pouvait mener directement à « Paiements ».
   const { id, rubrique } = useParams();
-  const navigate = useNavigate();
   const lienRubrique = (cle) => (cle ? `/parent/enfant/${id}/${cle}` : `/parent/enfant/${id}`);
   const [enfant, setEnfant] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -330,25 +331,10 @@ export default function ParentEnfant() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {tuiles.map((t) => (
-              <button
-                key={t.cle}
-                onClick={() => navigate(lienRubrique(t.cle))}
-                className="group relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]"
-              >
-                <Icone name={t.cle} className="h-7 w-7 text-or-500" />
-                <span className="text-sm font-semibold text-creme">{t.label}</span>
-                {badges[t.cle] > 0 && (
-                  <span className={`absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold shadow ${
-                    t.cle === "paiements" ? "bg-rose-500 text-white" : "bg-or-500 text-navy-900"
-                  }`}>
-                    {badges[t.cle]}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <Scolarite factures={factures} lien={lienRubrique("paiements")} />
+
+          <ListeRubriques eleveId={id} tuiles={tuiles} badges={badges} lienRubrique={lienRubrique}
+            factures={factures} alertes={alertes} demandesEnCours={demandesEnCours} />
         </>
       ) : (
         <>
@@ -390,6 +376,75 @@ export default function ParentEnfant() {
         </>
       )}
     </div>
+  );
+}
+
+// La scolarité de l'année en une carte (maquette « Classter », téléphone 2) :
+// part réglée, reste, retard, et les deux gestes qui suivent.
+function Scolarite({ factures, lien }) {
+  const a = aRegler(factures);
+  if (a.facture <= 0) return null;
+  return (
+    <div className="rounded-2xl border border-navy-900/10 bg-white p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-semibold text-navy-900">Scolarité</p>
+        <b className="font-display text-lg text-navy-900">{a.part} %</b>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-navy-900/10">
+        <div className={`h-full rounded-full ${a.part >= 100 ? "bg-emerald-500" : a.enRetard ? "bg-rose-500" : "bg-or-500"}`}
+          style={{ width: `${Math.max(a.part, a.part > 0 ? 2 : 0)}%` }} />
+      </div>
+      <p className="mt-2 text-xs text-navy-900/60">
+        {fmt(a.paye)} XOF payés sur {fmt(a.facture)} XOF
+        {a.reste > 0 && (a.enRetard ? ` · en retard depuis le ${fmtDate(a.echeance)}` : a.echeance ? ` · prochaine échéance ${pourQuand(a.echeance).replace("pour ", "")}` : "")}
+      </p>
+      <div className="mt-3 flex gap-2">
+        {a.reste > 0 && (
+          <Link to={lien} className="flex min-h-10 flex-1 items-center justify-center rounded-lg bg-navy-900 text-xs font-semibold text-creme">
+            Payer {fmt(a.reste)} XOF
+          </Link>
+        )}
+        <Link to={lien} className={`flex min-h-10 items-center justify-center rounded-lg border border-navy-900/15 px-4 text-xs font-semibold text-navy-900 ${a.reste > 0 ? "" : "flex-1"}`}>
+          Factures et reçus
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Les rubriques en liste dense : chacune dit déjà ce qu'elle contient
+// (« 2 devoirs pour lundi », « 1 à justifier »), sans qu'on ait à l'ouvrir.
+// Les lignes se complètent quand l'aperçu arrive ; avant, seul le nom s'affiche.
+function ListeRubriques({ eleveId, tuiles, badges, lienRubrique, factures, alertes, demandesEnCours }) {
+  const apercu = useApercuEnfant(eleveId, { factures, alertes });
+  const resume = apercu ? resumeRubriques({ ...apercu, factures, alertes, demandesEnCours }) : {};
+  const TONS = { rouge: "text-rose-700", or: "text-or-600", vert: "text-emerald-700" };
+  return (
+    <ul className="divide-y divide-navy-900/5 overflow-hidden rounded-2xl border border-navy-900/10 bg-white">
+      {tuiles.map((t) => {
+        const r = resume[t.cle];
+        const n = badges[t.cle] || 0;
+        return (
+          <li key={t.cle}>
+            <Link to={lienRubrique(t.cle)} className="flex min-h-[60px] items-center gap-3 px-4 py-3 transition hover:bg-navy-900/[0.03] active:bg-navy-900/[0.06]">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-navy-900">
+                <Icone name={t.cle} className="h-5 w-5 text-or-500" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-navy-900">{t.label}</span>
+                {r?.texte && <span className={`block truncate text-xs ${TONS[r.ton] || "text-navy-900/60"}`}>{r.texte}</span>}
+              </span>
+              {n > 0 ? (
+                <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold ${
+                  t.cle === "paiements" ? "bg-rose-500 text-white" : "bg-or-500 text-navy-900"}`}>{n}</span>
+              ) : (
+                <span className="text-navy-900/30" aria-hidden="true">›</span>
+              )}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -1558,7 +1613,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
     <Modale ouvert onFermer={onFermer} titre="Payer d'avance">
       <div className="space-y-4">
         <div>
-          <p className="mb-2 text-sm text-navy-900/60">1. Choisis les mois à payer :</p>
+          <p className="mb-2 text-sm text-navy-900/60">1. Choisissez les mois à payer :</p>
           <div className="space-y-1.5">
             {groupes.map((g) => {
               const coche = choisis.includes(g.mois);
@@ -1584,7 +1639,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
         </div>
 
         <div className="rounded-xl bg-creme p-4 text-sm">
-          <p className="text-navy-900/60">2. Paie <b className="text-navy-900">{fmt(total)} XOF</b> depuis ton application mobile money :</p>
+          <p className="text-navy-900/60">2. Payez <b className="text-navy-900">{fmt(total)} XOF</b> depuis votre application mobile money :</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {MODES_MOBILE.map(([k, label]) => infos?.[k] && (
               <button key={k} type="button" onClick={() => setMode(k)}
@@ -1599,7 +1654,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
           )}
         </div>
 
-        <p className="text-sm text-navy-900/60">3. Déclare ton paiement, l&apos;école le validera :</p>
+        <p className="text-sm text-navy-900/60">3. Déclarez votre paiement, l&apos;école le validera :</p>
         <Champ label="Réf. transaction" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ID Wave/OM…" />
         <label className="block">
           {/*  Même exigence que pour une facture (mig. 198) : sans preuve,
@@ -1750,7 +1805,7 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
     <Modale ouvert={!!facture} onFermer={onFermer} titre={`Payer la facture ${facture.numero}`}>
       <div className="space-y-4">
         <div className="rounded-xl bg-creme p-4 text-sm">
-          <p className="text-navy-900/60">1. Paie depuis ton application mobile money sur le numéro de l'école :</p>
+          <p className="text-navy-900/60">1. Payez depuis votre application mobile money sur le numéro de l'école :</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {MODES_MOBILE.map(([k, label]) => infos?.[k] && (
               <button key={k} onClick={() => setMode(k)}
@@ -1765,7 +1820,7 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
           <p className="mt-1 text-xs text-navy-900/50">Référence à indiquer : <span className="font-mono">{facture.numero}</span></p>
         </div>
 
-        <p className="text-sm text-navy-900/60">2. Déclare ton paiement, l'école le validera :</p>
+        <p className="text-sm text-navy-900/60">2. Déclarez votre paiement, l'école le validera :</p>
         <div className="grid grid-cols-2 gap-3">
           <Champ label="Montant payé" value={montant} onChange={(e) => setMontant(e.target.value.replace(/[^0-9]/g, ""))} />
           <Champ label="Réf. transaction" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ID Wave/OM…" />
@@ -1783,7 +1838,7 @@ function ModalePayer({ facture, infos, onFermer, onDeclare }) {
             className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-navy-900/5 file:px-3 file:py-2 file:text-sm" />
           <span className="mt-1 block text-xs text-navy-900/50">
             La capture d&apos;écran ou le SMS de confirmation. Sans elle, l&apos;école
-            n&apos;a aucun moyen de vérifier ton paiement.
+            n&apos;a aucun moyen de vérifier votre paiement.
           </span>
           {fichier && <span className="mt-1 block text-xs text-emerald-700">📎 {fichier.name}</span>}
         </label>

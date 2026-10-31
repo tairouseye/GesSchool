@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useOutletContext } from "react-router-dom";
 import { mesEnfants, lierParent } from "@/lib/parent.js";
+import { useAuth } from "@/contextes/AuthContext.jsx";
+import { Salutation } from "@/composants/TableauBord.jsx";
+import ApercuEnfant from "@/composants/ApercuEnfant.jsx";
 import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
-import { Icone } from "@/composants/Icones.jsx";
 import Photo from "@/composants/Photo.jsx";
 
 // Couleur d'avatar stable par enfant (dérivée de son id) — accord avec les tuiles.
@@ -13,18 +14,23 @@ const avatarColor = (id) => {
   for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return AVATAR_COULEURS[h % AVATAR_COULEURS.length];
 };
+//  Même clé que l'onglet « Mon enfant » (ParentLayout) : choisir un enfant
+//  ici le rouvre là, et inversement.
+const CLE_DERNIER_ENFANT = "parent_dernier_enfant";
+const lire = () => { try { return localStorage.getItem(CLE_DERNIER_ENFANT); } catch { return null; } };
+const ecrire = (v) => { try { localStorage.setItem(CLE_DERNIER_ENFANT, v); } catch { /* stockage bloqué */ } };
 
 export default function ParentAccueil() {
   const toast = useToast();
-  // ⚠️ Les pastilles de non-lus n'étaient QUE sur les icônes de l'en-tête,
-  // minuscules sur téléphone — là où se trouve l'essentiel du public parent.
-  // Le chemin visible ne signalait rien, le chemin qui signale était presque
-  // invisible. Les tuiles les portent maintenant aussi.
-  const { nonLues = 0, msgNonLus = 0 } = useOutletContext() || {};
+  const { profil } = useAuth();
+  //  Les tuiles Messages / Alertes / Règlement ont quitté cet accueil : les
+  //  onglets du bas (v2.285) les portent, pastilles comprises, et la place
+  //  revient à l'aperçu de l'enfant (refonte « Classter », 31/10/2026).
   const [enfants, setEnfants] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
+  const [choisi, setChoisi] = useState(lire);
 
   //  ⚠️ « Aucun enfant rattaché » N'EST AFFICHÉ QU'APRÈS UNE RÉPONSE RÉUSSIE.
   //  Un échec réseau l'affichait sous le message d'erreur : un parent pouvait
@@ -46,15 +52,13 @@ export default function ParentAccueil() {
 
   useEffect(() => { charger(); }, [charger]);
 
+  //  L'enfant affiché : celui choisi (ou le dernier consulté), sinon le premier.
+  const enfant = enfants.find((e) => e.eleve_id === choisi) || enfants[0] || null;
+  const choisir = (id) => { setChoisi(id); ecrire(id); };
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-navy-900">Mes enfants</h1>
-          <p className="text-sm text-navy-900/50">Suivez la scolarité de vos enfants.</p>
-        </div>
-        <Bouton onClick={() => setModale(true)}>+ Ajouter un enfant</Bouton>
-      </div>
+    <div className="space-y-4">
+      <Salutation prenom={profil?.prenom}>{enfants.length > 1 ? "Touchez un prénom pour changer d'enfant." : "Suivez la scolarité de votre enfant."}</Salutation>
       <Alerte ton="erreur">{erreur}</Alerte>
 
       {chargement ? (
@@ -70,86 +74,45 @@ export default function ParentAccueil() {
           Saisissez le <strong>code</strong> remis par l'établissement pour suivre la scolarité de votre enfant.
         </EtatVide>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-tour="enfants">
-          {enfants.map((e) => (
-            <Link
-              key={e.eleve_id}
-              to={`/parent/enfant/${e.eleve_id}`}
-              className="group rounded-3xl border border-navy-900/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-or-500"
-            >
-              <div className="flex items-center gap-3">
-                {/*  La photo de SON enfant — et d'aucun autre : la policy de la
-                    migration 169 repose sur `_parent_possede`, pas sur
-                    l'appartenance a l'ecole. Sans photo, les initiales
-                    colorees restent : l'espace parent ne doit pas attendre
-                    que l'ecole ait photographie 96 enfants. */}
-                <Photo
-                  bucket="eleves" valeur={e.photo} alt=""
-                  className="h-12 w-12 shrink-0 rounded-2xl object-cover"
-                  fallback={
-                    <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-display text-lg font-bold text-white ${avatarColor(e.eleve_id)}`}>
-                      {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
-                    </span>
-                  }
-                />
-                <div className="min-w-0">
-                  <p className="font-display text-lg font-bold text-navy-900">{e.prenom} {e.nom}</p>
-                  <p className="truncate text-sm text-navy-900/50">{e.classe || "—"} · {e.ecole || ""}</p>
-                </div>
-                {e.logo && (
-                  <img
-                    src={e.logo}
-                    alt={e.ecole || "École"}
-                    title={e.ecole || ""}
-                    className="ml-auto h-10 w-10 shrink-0 rounded-lg bg-white object-contain ring-1 ring-navy-900/10"
-                  />
-                )}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium text-or-600">Ouvrir l'espace →</p>
-                {/* Fenêtre de 7 jours, faute d'état « lu » sur les annonces :
-                    un total resterait affiché pour toujours dès la première
-                    publication — du bruit, pas un signal. */}
-                {Number(e.annonces_nouvelles) > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-or-500/15 px-2.5 py-1 text-xs font-semibold text-or-600">
-                    📣 {e.annonces_nouvelles} annonce{Number(e.annonces_nouvelles) > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          {/* Les enfants en pastilles : un toucher change l'aperçu. Le « + »
+              rattache un autre enfant, même dans une autre école. */}
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" data-tour="enfants" role="tablist" aria-label="Vos enfants">
+            {enfants.map((e) => {
+              const actif = e.eleve_id === enfant?.eleve_id;
+              return (
+                <button key={e.eleve_id} type="button" role="tab" aria-selected={actif} onClick={() => choisir(e.eleve_id)}
+                  className={`flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition ${
+                    actif ? "bg-navy-900 font-semibold text-creme" : "border border-navy-900/15 bg-white font-medium text-navy-900"}`}>
+                  {/*  La photo de SON enfant — et d'aucun autre : la policy de la
+                      migration 169 repose sur `_parent_possede`. Sans photo,
+                      les initiales colorées restent. */}
+                  <Photo bucket="eleves" valeur={e.photo} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover"
+                    fallback={
+                      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold text-white ${avatarColor(e.eleve_id)}`}>
+                        {(e.prenom?.[0] || "").toUpperCase()}{(e.nom?.[0] || "").toUpperCase()}
+                      </span>
+                    } />
+                  {e.prenom}
+                  {/* Fenêtre de 7 jours, faute d'état « lu » sur les annonces. */}
+                  {Number(e.annonces_nouvelles) > 0 && <span className="h-2 w-2 rounded-full bg-or-500" aria-label="nouvelle annonce" />}
+                </button>
+              );
+            })}
+            <button type="button" onClick={() => setModale(true)} aria-label="Ajouter un enfant"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-dashed border-navy-900/30 text-lg text-navy-900">+</button>
+          </div>
+
+          {enfant && (
+            <div>
+              <p className="mb-2 truncate text-xs text-navy-900/60">
+                {enfant.prenom} {enfant.nom}{enfant.classe ? ` · ${enfant.classe}` : ""}{enfant.ecole ? ` · ${enfant.ecole}` : ""}
+              </p>
+              <ApercuEnfant key={enfant.eleve_id} enfant={enfant} devise={enfant.devise || "XOF"} />
+            </div>
+          )}
+        </>
       )}
-
-      {/* Raccourcis en tuiles : les icônes de l'en-tête sont minuscules sur
-          téléphone, où se trouve l'essentiel du public parent.
-          « Mon compte » n'y figure pas : c'est un réglage, qu'on ouvre une
-          fois — la roue dentée de l'en-tête suffit, et une tuile de la même
-          taille que « Messages » lui donnerait une importance qu'il n'a pas. */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { to: "/parent/messages", cle: "messagerie", label: "Messages", n: msgNonLus },
-          { to: "/parent/notifications", cle: "annonces", label: "Alertes", n: nonLues },
-          { to: "/parent/textes", cle: "_documentation", label: "Règlement" },
-        ].map((t) => (
-          <Link key={t.to} to={t.to}
-            className="relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition hover:bg-navy-700 hover:ring-or-500/30 active:scale-[.98]">
-            <Icone name={t.cle} className="h-7 w-7 text-or-500" />
-            <span className="text-sm font-semibold text-creme">{t.label}</span>
-            {Number(t.n) > 0 && (
-              <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
-                {Number(t.n) > 9 ? "9+" : t.n}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
-
-      {/* La liste des annonces a quitté cet accueil : elle appartient à
-          l'enfant concerné, et l'ouverture de l'application ne doit pas
-          commencer par un mur de texte (migration 157). Le repère est sur la
-          carte de chaque enfant — sans lui, les annonces deviendraient
-          invisibles, faute de notification à leur publication. */}
 
       <ModaleAjout
         ouvert={modale}
