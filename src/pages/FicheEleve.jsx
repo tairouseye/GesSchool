@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, Onglets, Badge, Skeleton, SkeletonListe } from "@/composants/ui.jsx";
@@ -47,7 +47,12 @@ export default function FicheEleve() {
   const [echeancier, setEcheancier] = useState(undefined);
   const [fratrie, setFratrie] = useState([]);
   const [modaleTarif, setModaleTarif] = useState(false);
-  const [onglet, setOnglet] = useState("apercu");
+  //  `?onglet=paiements` : la recherche globale ouvre une facture sur
+  //  l'onglet Paiements de l'élève.
+  const [params] = useSearchParams();
+  const [onglet, setOnglet] = useState(() => (["scolarite", "paiements"].includes(params.get("onglet")) ? params.get("onglet") : "apercu"));
+  //  Sans droit sur l'échéancier, l'onglet Paiements n'existe pas : on revient à l'aperçu.
+  useEffect(() => { if (echeancier === null && onglet === "paiements") setOnglet("apercu"); }, [echeancier, onglet]);
 
   const recharger = useCallback(async () => {
     setErreur("");

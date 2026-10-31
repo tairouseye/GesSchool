@@ -14,6 +14,7 @@ import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
 import BandeauDemo from "@/composants/BandeauDemo.jsx";
+import RechercheGlobale from "@/composants/RechercheGlobale.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import { GestionBiometrie, InviteBiometrie } from "@/composants/Biometrie.jsx";
@@ -131,6 +132,7 @@ export default function Layout() {
   const [pushEtat, setPushEtat] = useState(null); // 'actif' | 'inactif' | 'refuse' | 'non_supporte'
   const [pushMsg, setPushMsg] = useState("");
   const [tour, setTour] = useState(false);
+  const [recherche, setRecherche] = useState(false); // fenêtre de recherche globale (Ctrl+K)
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
   const sigle = ecole?.sigle || "GS";
@@ -192,6 +194,26 @@ export default function Layout() {
   const items = menusDe(espaceCourant)
     // « À signer » ne s'affiche que s'il reste des documents en attente.
     .filter((it) => it.cle !== "signatures" || aSigner > 0);
+
+  //  Recherche globale : Ctrl+K (⌘K sur Mac) depuis n'importe quel écran,
+  //  ou « / » quand on n'est pas déjà en train d'écrire dans un champ.
+  useEffect(() => {
+    const touche = (e) => {
+      const dansUnChamp = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName) || e.target?.isContentEditable;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setRecherche(true); }
+      else if (e.key === "/" && !dansUnChamp) { e.preventDefault(); setRecherche(true); }
+    };
+    window.addEventListener("keydown", touche);
+    return () => window.removeEventListener("keydown", touche);
+  }, []);
+
+  //  Les écrans proposés par la recherche : ceux du menu, tous espaces
+  //  confondus, une seule fois chacun.
+  const pagesRecherche = (() => {
+    const vus = new Set();
+    return accessibles.flatMap((e) => menusDe(e).map((it) => ({ to: it.to, label: libItem(it), espace: e.label, icone: it.icone })))
+      .filter((p) => (vus.has(p.to) ? false : vus.add(p.to)));
+  })();
 
   const changerEspace = (e) => {
     setEspaceId(e.id);
@@ -298,6 +320,16 @@ export default function Layout() {
             <p className="truncate font-display text-base font-bold leading-none">{ecole?.nom || "GesSchool"}</p>
             <p className="text-xs text-creme/60">{sigle}</p>
           </div>
+        </div>
+
+        {/* Recherche globale */}
+        <div className="px-3 pb-3">
+          <button type="button" onClick={() => setRecherche(true)}
+            className="flex w-full items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-creme/60 transition hover:bg-white/10 hover:text-creme">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            Rechercher…
+            <kbd className="ml-auto rounded bg-white/10 px-1.5 text-[10px] text-creme/60">Ctrl K</kbd>
+          </button>
         </div>
 
         {/* Sélecteur d'espace (si accès à plusieurs) */}
@@ -424,8 +456,12 @@ export default function Layout() {
         <div className="flex items-center gap-2.5 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
           <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={26} />
           <span className="truncate font-display font-bold">{ecole?.nom || "GesSchool"}</span>
+          <button onClick={() => setRecherche(true)} aria-label="Rechercher"
+            className="ml-auto grid h-9 w-9 place-items-center rounded-xl bg-navy-800 text-creme/80">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          </button>
           <button onClick={() => setCompte(true)} aria-label="Mon compte"
-            className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-navy-800 text-xs font-bold text-or-500">{initiales}</button>
+            className="grid h-9 w-9 place-items-center rounded-full bg-navy-800 text-xs font-bold text-or-500">{initiales}</button>
           <button onClick={() => setTuiles((t) => !t)} aria-label="Menu des modules"
             className={`grid h-9 w-9 place-items-center rounded-xl text-lg ${tuiles ? "bg-or-500 text-navy-900" : "bg-navy-800 text-creme/80"}`}>▦</button>
         </div>
@@ -596,6 +632,7 @@ export default function Layout() {
           accessibles.length > 1 ? "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]"
         }`} />
       <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
+      <RechercheGlobale ouvert={recherche} onFermer={() => setRecherche(false)} pages={pagesRecherche} />
     </div>
   );
 }
