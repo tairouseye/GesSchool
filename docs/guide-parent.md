@@ -38,7 +38,12 @@ Touchez le nom de votre enfant : des tuiles colorées s'ouvrent.
 | **Annonces** | les messages de l'école |
 | **Cantine** · **Transport** | seulement si votre enfant y est abonné |
 
-En haut : 💬 **Messagerie** pour écrire à l'école, et 🔔 **Alertes**.
+**Sur téléphone**, une barre d'onglets en bas de l'écran, à portée du pouce : **Accueil**, **Mon enfant**, **Messages** (pour écrire à l'école), **Alertes**, et **Plus** (Mon compte, règlement de l'école, visite guidée, déconnexion). **Sur ordinateur**, ces boutons sont en haut : 💬 **Messagerie**, 🔔 **Alertes**, **?** et ⚙️.
+
+- **Quand vous faites défiler une page vers le bas**, le haut et les onglets s'effacent pour laisser la place. **Remontez un peu** : ils reviennent aussitôt.
+- **Dans une rubrique**, une rangée en haut permet de passer à une autre. Touchez **Tout**, au début de la rangée, pour les voir toutes d'un coup.
+- **Vous avez plusieurs enfants ?** Touchez le **prénom** en haut de l'écran pour passer à un autre : vous restez sur la même rubrique (les notes de l'un, puis celles de l'autre).
+- Pour fermer un panneau qui monte du bas, **faites-le glisser vers le bas** ou touchez la page derrière.
 
 > **Le bulletin n'apparaît que lorsque l'école l'a publié.** S'il manque, c'est qu'il est encore en relecture — ce n'est pas une panne. Les notes, elles, apparaissent dès leur saisie.
 

@@ -75,7 +75,7 @@ export default function EtudiantLayout() {
         <BarreRubriques
           actif={rubriqueEtudiantActive(pathname)}
           items={[
-            { cle: "_accueil", label: "Accueil", to: "/etudiant" },
+            { cle: "_accueil", label: "Accueil", to: "/etudiant", icone: "_gestion" },
             ...rubriquesEtudiant(modulesActifs).map((r) => ({
               ...r, pastille: r.cle === "messagerie" ? msgNonLus : 0,
             })),

@@ -13,5 +13,5 @@ export const TOUR_PARENT = [
   { selector: '[data-tour="enfants"]', titre: "Vos enfants", texte: "Cliquez sur un enfant pour voir ses notes, bulletins, emploi du temps, paiements…" },
   { selector: '[data-tour="messagerie"]', titre: "Messagerie", texte: "Échangez directement avec l'établissement." },
   { selector: '[data-tour="alertes"]', titre: "Alertes", texte: "Nouvelles notes, absences, factures… Activez les notifications pour être prévenu sur votre téléphone." },
-  { selector: '[data-tour="aide-parent"]', titre: "Rejouer ce guide", texte: "Cliquez sur « ? » quand vous voulez. Bonne navigation !" },
+  { selector: '[data-tour="aide-parent"]', titre: "Rejouer ce guide", texte: "Relancez-le quand vous voulez : bouton « ? » sur ordinateur, menu « Plus » sur téléphone. Bonne navigation !" },
 ];

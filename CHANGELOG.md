@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.285.0] — Espace parent : navigation pensée pour le téléphone
+- **LE BESOIN** (promoteur, 31/10/2026) : des menus qui apparaissent, disparaissent et se replient pour ne pas gêner la lecture ; le parent est d'abord sur téléphone, l'établissement sur ordinateur. Maquette interactive validée, puis essai sur téléphone par le promoteur.
+- **Onglets en bas** (sous 1024 px) : Accueil, Mon enfant (le dernier consulté), Messages, Alertes, Plus (Mon compte, règlement et textes, visite guidée, déconnexion), pastilles de non-lus comprises. L'en-tête ne garde que le sceau, la marque et le choix de l'enfant. Sur ordinateur, l'en-tête reste inchangé.
+- **Barres qui s'effacent au défilement** (`useMasqueAuDefilement`, `src/lib/defilement.js`) : en descendant, l'en-tête et les onglets laissent la place ; ils reviennent au moindre geste vers le haut, et restent affichés en haut et en bas de page et pendant la visite guidée.
+- **Changer d'enfant depuis n'importe quelle rubrique** (à partir de deux enfants), en restant sur la même rubrique.
+- **Barre de rubriques** (parent et étudiant) : bouton **Tout** qui ouvre toutes les rubriques en grille, avec icônes et pastilles, et un point doré si l'une d'elles, hors de l'écran, a du nouveau. La barre se colle sous l'en-tête (`--haut-entete`) et remonte quand il s'efface.
+- **`PanneauBas`** : panneau qui monte du bas, rendu dans `<body>`, fermé par glissement, fond, Échap ou ✕ ; focus gardé dans le panneau puis rendu au bouton d'origine.
+- Visite guidée : les étapes Messagerie, Alertes et « Rejouer ce guide » visent les onglets sur téléphone. Mode d'emploi (§17.2) et guide parent mis à jour. Aucune règle d'accès ni requête modifiée.
+
 ## [2.284.1] — Connexion : en-tête allégé
 - **LE BESOIN** (promoteur, 29/10/2026) : en tête de la page de connexion, ne garder que le logo, GesSchool et « L'école connectée, la gestion simplifiée », mieux espacés ; descendre la signature GesPro, avec une majuscule à « Une ».
 - Logo, nom (plus grand) et devise (plus lisible) en un bloc serré ; « Une solution GesPro Digitals » et la version passent en bas de page, sous les contacts GesPro.
