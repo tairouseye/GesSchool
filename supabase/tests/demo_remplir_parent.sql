@@ -136,7 +136,7 @@ begin
        and not exists (select 1 from cahier_textes ct where ct.classe_id = ins.classe_id)
   loop
     insert into cahier_textes (ecole_id, classe_id, matiere_id, date_seance, contenu, devoirs, date_pour)
-    select v_ecole, e.classe_id, x.matiere_id, current_date - x.recul, x.contenu, x.devoirs,
+    select v_ecole, e.classe_id, mt.matiere_id, current_date - x.recul, x.contenu, x.devoirs,
            case when x.devoirs is null then null else current_date - x.recul + 2 end
       from (
         select row_number() over (order by ed.matiere_id) as k, ed.matiere_id
