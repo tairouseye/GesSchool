@@ -65,9 +65,9 @@ notify pgrst, 'reload schema';
 
 -- =====================================================================
 --  DURCISSEMENT (optionnel, recommandé) — dans l'éditeur SQL :
---    select vault.create_secret('GS_push_9f3aK7Qx2M8vLpZ1', 'push_hook_secret');
+--    select vault.create_secret('<votre-secret>', 'push_hook_secret');
 --  puis définir le MÊME secret côté fonction :
---    (Dashboard → Edge Functions → push → Secrets) PUSH_HOOK_SECRET = GS_push_9f3aK7Qx2M8vLpZ1
+--    (Dashboard → Edge Functions → push → Secrets) PUSH_HOOK_SECRET = <votre-secret>  (le même, choisi par vous ; jamais écrit dans le dépôt)
 --  Sans ce durcissement, le push fonctionne quand même (fonction sans secret).
 -- =====================================================================
 
