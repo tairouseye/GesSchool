@@ -104,6 +104,17 @@ test("🔴 changer d'espace mène là où la connexion mènerait", () => {
   }
 });
 
+test("🔴 un promoteur qui ne possède pas l'école atterrit sur un accueil, pas sur Membres", () => {
+  //  Compte de démo direction (31/10/2026) : admin_ecole, mais aucune ligne
+  //  dans `proprietaires`. Pilotage lui est accessible sans aucune page de
+  //  travail : la première passe doit chercher dans les espaces suivants.
+  for (const { nom, ecole } of ETABLISSEMENTS) {
+    const to = premiereRoute(["admin_ecole", "direction"], false, null, ecole);
+    assert.equal(to, "/gestion", `${nom} : atterrit sur ${to}`);
+  }
+  assert.equal(premiereRoute(["admin_ecole"], true, null, ETABLISSEMENTS[0].ecole), "/pilotage");
+});
+
 test("🔴 on ne propose pas un rôle que l'établissement ne peut pas utiliser", () => {
   const ecole = ETABLISSEMENTS[0].ecole;        // élémentaire : pas de bibliothèque
   const universite = ETABLISSEMENTS[1].ecole;

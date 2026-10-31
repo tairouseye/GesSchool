@@ -297,11 +297,18 @@ export function libelleItem(item, ecole) {
 // catalogue. Une page d'atterrissage doit être du TRAVAIL, pas un utilitaire
 // — d'où deux passes, et un ordre de menu désormais libre de changer sans
 // déplacer personne.
+//  ⚠️ LES DEUX PASSES PORTENT SUR TOUS LES ESPACES, pas espace par espace.
+//  Un rôle complet qui ne possède pas l'école (admin_ecole sans ligne dans
+//  `proprietaires`, dont le compte de démo direction) a accès à Pilotage,
+//  mais aucune de ses pages : il atterrissait sur « Membres », l'utilitaire
+//  de Pilotage, au lieu de l'accueil Gestion (31/10/2026).
 export function premiereRoute(roles, estPromoteur, modulesActifs, ecoleOuType) {
   const espaces = espacesAccessibles(roles, estPromoteur);
-  for (const e of espaces) {
-    const to = routeDAtterrissage(e, roles, estPromoteur, modulesActifs, ecoleOuType);
-    if (to) return to;
+  for (const transverses of [false, true]) {
+    for (const e of espaces) {
+      const to = routeDAtterrissage(e, roles, estPromoteur, modulesActifs, ecoleOuType, transverses);
+      if (to) return to;
+    }
   }
   return null;
 }
@@ -323,10 +330,11 @@ export function premiereRoute(roles, estPromoteur, modulesActifs, ecoleOuType) {
  * (accueil d'espace, Membres, À signer, Paramètres) seulement s'il n'y a rien
  * d'autre. L'ordre du menu reste ainsi libre de changer sans déplacer personne.
  */
-export function routeDAtterrissage(espace, roles, estPromoteur, modulesActifs, ecoleOuType) {
+//  `jusquA` : false = pages de travail seulement ; true (défaut) = les deux passes.
+export function routeDAtterrissage(espace, roles, estPromoteur, modulesActifs, ecoleOuType, jusquA = true) {
   if (!espace) return null;
   const ouvrable = (x) => routeOuvrable(x, roles, estPromoteur, modulesActifs) && itemPourType(x, ecoleOuType);
-  for (const transverses of [false, true]) {
+  for (const transverses of jusquA ? [false, true] : [false]) {
     const it = (espace.items || []).find((x) => !!x.transverse === transverses && ouvrable(x));
     if (it) return it.to;
   }

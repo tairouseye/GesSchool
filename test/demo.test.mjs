@@ -33,6 +33,16 @@ test("la 217 laisse passer les seuls marquages de lecture", () => {
   assert.doesNotMatch(sql, /'insert or delete'/);
 });
 
+test("la 218 cache les comptes réels aux visiteurs de la démo", () => {
+  const sql = fs.readFileSync(path.join(DOSSIER, "218_demo_donnees_personnelles.sql"), "utf8");
+  //  Les deux RPC, qui ignorent la RLS, portent leur propre filtre…
+  assert.match(sql, /function public\.membres_ecole\(\)[\s\S]*not est_compte_demo\(\) or p\.id = auth\.uid\(\)/);
+  assert.match(sql, /function public\.invitations_ecole\(\)[\s\S]*and not est_compte_demo\(\)/);
+  //  … et la lecture directe des tables est fermée par des policies restrictives.
+  assert.match(sql, /on public\.profils\s+as restrictive for select to authenticated\s+using \(not public\.est_compte_demo\(\) or id = auth\.uid\(\)\)/);
+  assert.match(sql, /on public\.invitations\s+as restrictive for select to authenticated\s+using \(not public\.est_compte_demo\(\)\)/);
+});
+
 test("la 216 protège les tables, les fichiers et laisse lire les notifications", () => {
   const sql = fs.readFileSync(path.join(DOSSIER, "216_demo_sans_compte.sql"), "utf8");
   assert.match(sql, /select public\.demo_proteger_tables\(\);/);
