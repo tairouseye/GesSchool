@@ -33,7 +33,7 @@ test("un numéro, une écriture", async () => {
 
 test("la même règle de numéro dans la base et la fonction Edge", () => {
   assert.match(SQL, /when d ~ '\^00221\\d\{9\}\$' then substr\(d, 6\)/);
-  assert.match(SQL, /when d ~ '\^221\\d\{9\}\$'   then substr\(d, 4\)/);
+  assert.match(SQL, /when d ~ '\^221\\d\{9\}\$' {3}then substr\(d, 4\)/);
   assert.match(EDGE, /\/\^00221\\d\{9\}\$\/\.test\(d\) \? d\.slice\(5\) : \/\^221\\d\{9\}\$\/\.test\(d\) \? d\.slice\(3\)/);
   assert.match(EDGE, /`221\$\{tel\}@tel\.gesprosn\.org`/);
 });
