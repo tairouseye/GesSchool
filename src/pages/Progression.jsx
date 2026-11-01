@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, SkeletonListe } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getPeriodes } from "@/lib/bulletins.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
@@ -23,6 +23,9 @@ export default function Progression() {
   const [classeId, setClasseId] = useState("");
   const [etapes, setEtapes] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -39,6 +42,7 @@ export default function Progression() {
         setClasses(cls);
         if (cls.length) setClasseId(cls[0].id);
       } catch (e) { setErreur(e.message); }
+      finally { setChargement(false); }
     })();
   }, [ecoleId, profil?.id, utilisateur?.email]);
 
@@ -70,9 +74,9 @@ export default function Progression() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        {classes.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : classes.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/60">
-            Aucune classe à afficher. {enseignant ? "Aucune classe attribuée." : "Ton compte n'est pas relié à une fiche enseignant."}
+            Aucune classe à afficher. {enseignant ? "Aucune classe attribuée." : "Votre compte n'est pas relié à une fiche enseignant."}
           </Carte>
         ) : (
           <>

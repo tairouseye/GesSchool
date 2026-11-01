@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, EtatVide, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, EtatVide, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { getNiveaux, getFournitures, creerFourniture, modifierFourniture, supprimerFourniture,
          getClasses, getAnneeCourante } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -14,6 +14,9 @@ export default function Fournitures() {
   const [classes, setClasses] = useState([]);
   const [items, setItems] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   // Le parent raisonne en CLASSE, l'école range par NIVEAU. On filtre donc
   // par classe et on résout vers son niveau — sans colonne supplémentaire.
   const [classeId, setClasseId] = useState("");
@@ -29,6 +32,7 @@ export default function Fournitures() {
       setItems(four);
       setClasses(cls);
     } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
@@ -83,7 +87,7 @@ export default function Fournitures() {
           </Bouton>
         </div>
 
-        {items.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : items.length === 0 ? (
           <EtatVide icone="🎒" titre="Aucune fourniture">Ajoutez la première fourniture avec le formulaire ci-dessus.</EtatVide>
         ) : (
           groupes.map((g) => (

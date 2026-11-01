@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import { codeDoc } from "@/lib/verification.js";
@@ -58,6 +58,9 @@ export default function Certificats() {
   const [apercu, setApercu] = useState(null);
   const [extra, setExtra] = useState({ resultat: null, paiement: null }); // résultats + paiement de l'élève sélectionné
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
 
   const recharger = useCallback(async () => {
@@ -74,6 +77,7 @@ export default function Certificats() {
       const [sig, docs] = await Promise.all([getSignataires(ecoleId), api.getDocuments(ecoleId)]);
       setSignataires(sig); setDocuments(docs);
     } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [ecoleId]);
   useEffect(() => { recharger(); }, [recharger]);
 
@@ -208,7 +212,7 @@ export default function Certificats() {
         </Carte>
 
         {/* Liste des documents */}
-        {documents.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : documents.length === 0 ? (
           <EtatVide icone="🧾" titre="Aucun document">Créez un premier document et envoyez‑le au signataire pour validation.</EtatVide>
         ) : (
           <Carte className="no-print overflow-hidden">

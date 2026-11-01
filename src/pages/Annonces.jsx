@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/annonces.js";
 import { televerserFichier, getFichiers as getFichiersEcole, supprimerFichier, lienFichier, poids, TAILLE_MAX } from "@/lib/fichiers.js";
@@ -27,6 +27,9 @@ export default function Annonces() {
   const [niveaux, setNiveaux] = useState([]);
   const [cycles, setCycles] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
   const [pieces, setPieces] = useState({});
 
@@ -57,7 +60,7 @@ export default function Annonces() {
       setClasses(cls);
     } catch (e) {
       setErreur(e.message);
-    }
+    } finally { setChargement(false); }
   }, [ecoleId]);
 
   useEffect(() => {
@@ -86,9 +89,9 @@ export default function Annonces() {
       <div className="space-y-4 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        {annonces.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : annonces.length === 0 ? (
           <Carte className="p-8 text-sm text-navy-900/50">
-            Aucune annonce. Publie ta première communication avec « + Nouvelle annonce ».
+            Aucune annonce. Publiez votre première communication avec « + Nouvelle annonce ».
           </Carte>
         ) : (
           annonces.map((a) => (

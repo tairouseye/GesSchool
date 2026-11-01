@@ -624,7 +624,7 @@ function ModaleCategories({ ouvert, onFermer, ecoleId, cats, onChange }) {
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Catégories financières" large>
       <div className="space-y-6">
         <p className="text-xs text-navy-900/50">
-          Définis les catégories de recettes et de dépenses de ton école. « Masquer » retire une catégorie des choix sans toucher aux opérations déjà enregistrées.
+          Définissez les catégories de recettes et de dépenses de votre école. « Masquer » retire une catégorie des choix sans toucher aux opérations déjà enregistrées.
         </p>
         {renderSection("recette", "Recettes")}
         {renderSection("depense", "Dépenses")}
@@ -701,7 +701,7 @@ function PlanComptable({ plan }) {
   return (
     <Carte>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-sm text-navy-900/50">Plan comptable (SYSCOHADA). Clique une classe/rubrique pour déplier ; en gras = rubriques (non imputables).</p>
+        <p className="text-sm text-navy-900/50">Plan comptable (SYSCOHADA). Cliquez une classe ou une rubrique pour la déplier ; en gras = rubriques (non imputables).</p>
         <button onClick={toggleTout} className="shrink-0 rounded-lg border border-navy-900/15 px-2.5 py-1 text-xs font-medium text-navy-900/70 hover:bg-navy-900/5">
           {toutOuvert ? "Tout replier" : "Tout déplier"}
         </button>

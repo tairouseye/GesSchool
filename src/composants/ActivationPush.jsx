@@ -54,9 +54,9 @@ export default function ActivationPush({ onErreur = () => {} }) {
       <div>
         <p className="text-sm font-medium text-navy-900">Notifications sur le téléphone</p>
         <p className="text-xs text-navy-900/50">
-          {etat === "actif" ? "Activées — tu seras alerté même app fermée."
+          {etat === "actif" ? "Activées — vous serez alerté même application fermée."
             : etat === "refuse" ? "Bloquées dans les réglages du navigateur."
-            : "Reçois les alertes directement sur ton appareil."}
+            : "Recevez les alertes directement sur votre appareil."}
         </p>
       </div>
       {etat !== "refuse" && (

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, EtatVide } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/demandes.js";
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
@@ -12,11 +12,15 @@ export default function Demandes() {
   const [demandes, setDemandes] = useState([]);
   const [filtre, setFiltre] = useState("a_traiter");
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
 
   const recharger = useCallback(async () => {
     setErreur("");
     try { setDemandes(await api.getDemandes(ecoleId)); }
     catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
@@ -41,7 +45,7 @@ export default function Demandes() {
           ))}
         </div>
 
-        {liste.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : liste.length === 0 ? (
           <EtatVide icone="📥" titre="Aucune demande">
             {filtre === "a_traiter" ? "Aucune demande à traiter pour le moment." : "Aucune demande de document enregistrée."}
           </EtatVide>

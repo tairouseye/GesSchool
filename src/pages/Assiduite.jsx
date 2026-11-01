@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Champ, Carte, Alerte, EtatVide, Bouton, Modale } from "@/composants/ui.jsx";
+import { Champ, Carte, Alerte, EtatVide, Bouton, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
 import { getAbsencesPeriode, STATUTS_JUSTIF } from "@/lib/viescolaire.js";
@@ -22,6 +22,9 @@ export default function Assiduite() {
   const [fin, setFin] = useState(new Date().toISOString().slice(0, 10));
   const [lignes, setLignes] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -35,6 +38,7 @@ export default function Assiduite() {
         setClasses(cls);
         if (cls.length) setClasseId(cls[0].id);
       } catch (e) { setErreur(e.message); }
+      finally { setChargement(false); }
     })();
   }, [ecoleId]); // eslint-disable-line
 
@@ -101,7 +105,7 @@ export default function Assiduite() {
           </Bouton>
         </div>
 
-        {classes.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : classes.length === 0 ? (
           <EtatVide icone="📊" titre="Aucune classe à afficher">Aucune classe ne vous est rattachée pour le moment.</EtatVide>
         ) : (
           <Carte className="overflow-hidden">

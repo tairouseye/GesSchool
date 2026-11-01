@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contextes/AuthContext.jsx";
-import RouteProtegee, { RouteParent, RouteEtudiant, Garde, GardePromoteur, GardeSuper, EcranSansAcces } from "@/composants/RouteProtegee.jsx";
+import RouteProtegee, { RouteParent, RouteEtudiant, Garde, GardeModule, GardePromoteur, GardeSuper, EcranSansAcces } from "@/composants/RouteProtegee.jsx";
 import { Feedback } from "@/composants/Feedback.jsx";
 import ErrorBoundary from "@/composants/ErrorBoundary.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
@@ -221,17 +221,17 @@ export default function App() {
             }
           >
             <Route index element={<EtudiantAccueil />} />
-            <Route path="bibliotheque" element={<EtudiantBibliotheque />} />
-            <Route path="notes" element={<EtudiantNotes />} />
-            <Route path="emploi" element={<EtudiantEmploi />} />
-            <Route path="messagerie" element={<EtudiantMessagerie />} />
+            <Route path="bibliotheque" element={<GardeModule cle="bibliotheque"><EtudiantBibliotheque /></GardeModule>} />
+            <Route path="notes" element={<GardeModule cle="notes"><EtudiantNotes /></GardeModule>} />
+            <Route path="emploi" element={<GardeModule cle="emploi_sup"><EtudiantEmploi /></GardeModule>} />
+            <Route path="messagerie" element={<GardeModule cle="messagerie"><EtudiantMessagerie /></GardeModule>} />
             <Route path="textes" element={<TextesReference />} />
-            <Route path="scolarite" element={<EtudiantScolarite />} />
-            <Route path="documents" element={<EtudiantDocuments />} />
-            <Route path="actualites" element={<EtudiantActualites />} />
+            <Route path="scolarite" element={<GardeModule cle="paiements"><EtudiantScolarite /></GardeModule>} />
+            <Route path="documents" element={<GardeModule cle="certificats"><EtudiantDocuments /></GardeModule>} />
+            <Route path="actualites" element={<GardeModule cle="annonces"><EtudiantActualites /></GardeModule>} />
             <Route path="carte" element={<EtudiantCarte />} />
             <Route path="notifications" element={<EtudiantNotifications />} />
-            <Route path="depots" element={<EtudiantDepots />} />
+            <Route path="depots" element={<GardeModule cle="biblio_depots"><EtudiantDepots /></GardeModule>} />
           </Route>
 
           {/* Espace protégé (profil + école requis) avec shell */}

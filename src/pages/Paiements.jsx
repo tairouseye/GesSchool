@@ -1203,7 +1203,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                 </div>
                 {comptes.length === 0 && (
                   <p className="mt-2 text-xs text-navy-900/40">
-                    💡 Crée un compte de trésorerie dans <b>Comptabilité</b> pour que la scolarité encaissée alimente ta caisse.
+                    💡 Créez un compte de trésorerie dans <b>Comptabilité</b> pour que la scolarité encaissée alimente votre caisse.
                   </p>
                 )}
               </form>

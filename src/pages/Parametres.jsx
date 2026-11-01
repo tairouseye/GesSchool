@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
 import { appliquerAccent, accentPeuVisible, COULEUR_DEFAUT } from "@/lib/theme.js";
 import { PAYS, deviseDuPays } from "@/lib/pays.js";
@@ -208,6 +208,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
   const confirmer = useConfirm();
   const toast = useToast();
   const [regles, setRegles] = useState([]);
+  const [charge, setCharge] = useState(false); // premier chargement fini (lot 5)
   const [edit, setEdit] = useState(null); // règle en cours d'édition / création
   const [erreur, setErreur] = useState("");
 
@@ -215,6 +216,7 @@ function RelancesConfig({ ecoleId, estGestion }) {
     setErreur("");
     try { setRegles(await relancesApi.getRegles(ecoleId)); }
     catch (e) { setErreur(e.message); }
+    finally { setCharge(true); }
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
@@ -246,9 +248,10 @@ function RelancesConfig({ ecoleId, estGestion }) {
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <div className="mt-3 space-y-2">
-        {regles.length === 0 && (
+        {!charge && <SkeletonListe lignes={3} />}
+        {charge && regles.length === 0 && (
           <p className="rounded-xl border border-dashed border-navy-900/15 px-4 py-6 text-center text-sm text-navy-900/40">
-            Aucun palier. Ajoute un premier rappel pour activer les relances.
+            Aucun palier. Ajoutez un premier rappel pour activer les relances.
           </p>
         )}
         {regles.map((r) => (
@@ -577,9 +580,14 @@ const slugChamp = (s) => ((s || "").toLowerCase().normalize("NFD").replace(/[̀-
 
 function ChampsEleveConfig({ ecoleId, onErreur }) {
   const [liste, setListe] = useState([]);
+  //  ⚠️ `charge` protège aussi l'ENREGISTREMENT : la liste s'écrit en entier,
+  //  et ajouter un champ avant la fin du chargement aurait effacé les autres.
+  const [charge, setCharge] = useState(false);
   const [f, setF] = useState({ libelle: "", type: "texte", options: "" });
   const [info, setInfo] = useState("");
-  useEffect(() => { getChampsEleve(ecoleId).then(setListe).catch((e) => onErreur?.(e.message)); }, [ecoleId]); // eslint-disable-line
+  useEffect(() => {
+    getChampsEleve(ecoleId).then((l) => { setListe(l); setCharge(true); }).catch((e) => onErreur?.(e.message));
+  }, [ecoleId]); // eslint-disable-line
   // La liste s'enregistre à chaque ajout ; seul un champ commencé et pas
   // encore ajouté serait perdu en changeant de rubrique.
   useSignalModif(Boolean(f.libelle.trim()));
@@ -590,7 +598,7 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
     catch (e) { onErreur?.(e.message); }
   }
   function ajouter() {
-    if (!f.libelle.trim()) return;
+    if (!charge || !f.libelle.trim()) return;
     const champ = { cle: `${slugChamp(f.libelle)}_${Math.random().toString(36).slice(2, 6)}`, libelle: f.libelle.trim(), type: f.type };
     if (f.type === "liste") champ.options = f.options.split(",").map((o) => o.trim()).filter(Boolean);
     sauver([...liste, champ]);
@@ -605,7 +613,8 @@ function ChampsEleveConfig({ ecoleId, onErreur }) {
       {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
-        {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun champ personnalisé.</p>}
+        {!charge && <SkeletonListe lignes={2} />}
+        {charge && liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun champ personnalisé.</p>}
         {liste.map((c, i) => (
           <div key={i} className="flex items-center justify-between rounded-xl border border-navy-900/10 px-4 py-2">
             <span className="text-sm">
@@ -699,6 +708,7 @@ function NotationConfig({ ecoleId, onErreur }) {
 
 function Signataires({ ecoleId, onErreur }) {
   const [liste, setListe] = useState([]);
+  const [charge, setCharge] = useState(false); // protège aussi l'enregistrement (voir ChampsEleveConfig)
   const [membres, setMembres] = useState([]);
   const [f, setF] = useState({ fonction: "", nom: "", signature_url: null, profil_id: "" });
   const [up, setUp] = useState(false);
@@ -707,6 +717,7 @@ function Signataires({ ecoleId, onErreur }) {
   const recharger = useCallback(async () => {
     try {
       setListe(await getSignataires(ecoleId));
+      setCharge(true);
       try { setMembres(await getMembres()); } catch { /* pas manager : liste vide */ }
     } catch (e) { onErreur?.(e.message); }
   }, [ecoleId]); // eslint-disable-line
@@ -728,7 +739,7 @@ function Signataires({ ecoleId, onErreur }) {
     finally { setUp(false); }
   }
   function ajouter() {
-    if (!f.fonction.trim()) return;
+    if (!charge || !f.fonction.trim()) return;
     sauver([...liste, {
       fonction: f.fonction.trim(), nom: f.nom.trim(), signature_url: f.signature_url,
       profil_id: f.profil_id || null, profil_nom: f.profil_id ? nomMembre(f.profil_id) : null,
@@ -744,7 +755,8 @@ function Signataires({ ecoleId, onErreur }) {
       {info && <p className="mb-2 text-sm text-emerald-700">{info}</p>}
 
       <div className="space-y-2">
-        {liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun signataire.</p>}
+        {!charge && <SkeletonListe lignes={2} />}
+        {charge && liste.length === 0 && <p className="text-sm text-navy-900/40">Aucun signataire.</p>}
         {liste.map((s, i) => (
           <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-navy-900/10 px-4 py-2">
             <div className="flex items-center gap-3">
@@ -847,8 +859,8 @@ function PaiementEnLigne({ onErreur }) {
           : <span className="rounded-full bg-navy-900/5 px-2.5 py-0.5 text-xs text-navy-900/50">Inactif</span>}
       </div>
       <p className="mb-4 text-xs text-navy-900/45">
-        Permets aux parents de régler la scolarité par Wave / Orange Money / carte. L'argent va
-        <b> directement sur ton compte marchand</b> ; la facture se solde automatiquement. Commence en
+        Permettez aux parents de régler la scolarité par Wave / Orange Money / carte. L'argent va
+        <b> directement sur votre compte marchand</b> ; la facture se solde automatiquement. Commencez en
         <b> mode test</b> (bac à sable) avant d'activer la production.
       </p>
 

@@ -530,7 +530,7 @@ export default function Layout() {
                   </button>
                 ) : iOS && !installee ? (
                   <p className="px-1 text-xs text-navy-900/60">
-                    📲 Pour recevoir les notifications sur iPhone : <b>Partager → Sur l'écran d'accueil</b>, puis rouvre l'app depuis l'icône.
+                    📲 Pour recevoir les notifications sur iPhone : <b>Partager → Sur l'écran d'accueil</b>, puis rouvrez l'application depuis l'icône.
                   </p>
                 ) : (
                   <p className="px-1 text-xs text-navy-900/45">Notifications non disponibles sur cet appareil.</p>

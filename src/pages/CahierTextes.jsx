@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, EtatVide, Modale } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, EtatVide, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
@@ -24,6 +24,9 @@ export default function CahierTextes() {
   const [classeId, setClasseId] = useState("");
   const [entrees, setEntrees] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   //  Programmation officielle du NIVEAU de la classe (mig. 165). Vide tant
   //  que la direction n'a rien importé : le formulaire reste saisissable à
   //  la main, exactement comme avant.
@@ -45,6 +48,7 @@ export default function CahierTextes() {
         setClasses(cls);
         if (cls.length) setClasseId(cls[0].id);
       } catch (e) { setErreur(e.message); }
+      finally { setChargement(false); }
     })();
   }, [ecoleId, profil?.id, utilisateur?.email]);
 
@@ -87,9 +91,9 @@ export default function CahierTextes() {
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
 
-        {classes.length === 0 ? (
+        {chargement ? <SkeletonListe lignes={5} /> : classes.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/60">
-            Aucune classe à afficher. {enseignant ? "Aucune classe ne t'est attribuée cette année." : "Ton compte n'est pas relié à une fiche enseignant."}
+            Aucune classe à afficher. {enseignant ? "Aucune classe ne vous est attribuée cette année." : "Votre compte n'est pas relié à une fiche enseignant."}
           </Carte>
         ) : (
           <>

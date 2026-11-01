@@ -543,7 +543,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
   }
 
   async function importer() {
-    if (!mapping.prenom || !mapping.nom) { setErreur("Associe au moins les colonnes Prénom et Nom."); return; }
+    if (!mapping.prenom || !mapping.nom) { setErreur("Associez au moins les colonnes Prénom et Nom."); return; }
     setEnCours(true); setErreur("");
     try {
       const data = lignes.map((r) => {
@@ -582,7 +582,7 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
 
             {entetes.length > 0 && (
               <>
-                <p className="text-sm text-navy-900/60">{lignes.length} ligne(s) détectée(s). Vérifie l'association des colonnes :</p>
+                <p className="text-sm text-navy-900/60">{lignes.length} ligne(s) détectée(s). Vérifiez l'association des colonnes :</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {CHAMPS_IMPORT.map(([cle, label]) => (
                     <label key={cle} className="flex items-center justify-between gap-2 text-sm">

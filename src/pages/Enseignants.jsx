@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte, Table, Badge, Onglets } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte, Table, Badge, Onglets, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
@@ -17,6 +17,9 @@ export default function Enseignants() {
   const [classes, setClasses] = useState([]);
   const [matieres, setMatieres] = useState([]);
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(null); // null | 'new' | enseignant
   const [codes, setCodes] = useState({}); // enseignant_id -> code d'accès
   const [q, setQ] = useState("");
@@ -45,7 +48,7 @@ export default function Enseignants() {
       setMatieres(mat);
     } catch (e) {
       setErreur(e.message);
-    }
+    } finally { setChargement(false); }
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
@@ -71,7 +74,7 @@ export default function Enseignants() {
           <Recherche valeur={q} onChange={setQ} placeholder="Rechercher un enseignant…" className="max-w-sm" />
         )}
 
-        {onglet === "enseignants" ? (
+        {chargement ? <SkeletonListe lignes={5} /> : onglet === "enseignants" ? (
           enseignants.length === 0 ? (
             <EtatVide icone="🧑‍🏫" titre="Aucun enseignant"
               action={<Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>}>

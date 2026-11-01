@@ -380,7 +380,7 @@ function PanneauPersonnel({ personnels, contrats, devise, nbEnsNonImportes = 0, 
     return (
       <div className="space-y-3">
         {banniere}
-        <Carte className="p-8 text-sm text-navy-900/50">Aucun personnel. Ajoute ton équipe avec « + Personnel »{nbEnsNonImportes > 0 ? " ou importe tes enseignants ci-dessus" : ""}.</Carte>
+        <Carte className="p-8 text-sm text-navy-900/50">Aucun personnel. Ajoutez votre équipe avec « + Personnel »{nbEnsNonImportes > 0 ? " ou importez vos enseignants ci-dessus" : ""}.</Carte>
       </div>
     );
   }
@@ -528,13 +528,13 @@ function PanneauPaie({ periode, setPeriode, salaires, personnels, contrats, devi
       {comptes.length === 0 && (
         <p className="text-xs text-navy-900/40">
           💡 « Payer » crée automatiquement une dépense en comptabilité (catégorie Salaires) ; « annuler » la retire.
-          Crée un compte de trésorerie dans <b>Comptabilité</b> pour rattacher les salaires à une caisse ou une banque.
+          Créez un compte de trésorerie dans <b>Comptabilité</b> pour rattacher les salaires à une caisse ou une banque.
         </p>
       )}
 
       {toutes.length === 0 ? (
         <Carte className="p-8 text-sm text-navy-900/50">
-          Aucun personnel avec un contrat actif pour {libellePeriode(periode)}. Ajoute du personnel (avec un salaire de base) dans l'onglet « Personnel ».
+          Aucun personnel avec un contrat actif pour {libellePeriode(periode)}. Ajoutez du personnel (avec un salaire de base) dans l'onglet « Personnel ».
         </Carte>
       ) : (
         <Carte className="divide-y divide-navy-900/5 overflow-hidden p-0">
@@ -1137,7 +1137,7 @@ function ModaleElementsPaie({ ouvert, onFermer, ecoleId, elements, onChange }) {
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Éléments de paie" large>
       <div className="space-y-6">
         <p className="text-xs text-navy-900/50">
-          Définis les gains (primes, indemnités, heures sup.…) et retenues utilisables dans la paie.
+          Définissez les gains (primes, indemnités, heures sup.…) et retenues utilisables dans la paie.
           Un élément <b>récurrent</b> sera repris chaque mois pour l'employé ; un élément <b>ponctuel</b> s'ajoute au besoin.
           La <b>périodicité</b> limite les mois de déclenchement (trimestriel = 3/6/9/12 · semestriel = 6/12 · annuel/13ᵉ mois = décembre) — l'élément ne figure alors que sur ces mois, une seule fois par période.
           « Masquer » retire un élément des choix sans toucher aux bulletins déjà émis.
@@ -1224,7 +1224,7 @@ function ModaleDetailPaie({ salaire, onFermer, ecoleId, elements, devise, modeCo
     const el = actifs.find((e) => e.id === nouv.elementId);
     const libelle = el ? el.libelle : nouv.libelle.trim();
     const sens = el ? el.sens : nouv.sens;
-    if (!libelle) { toast.erreur("Choisis un élément ou saisis un libellé."); return; }
+    if (!libelle) { toast.erreur("Choisissez un élément ou saisissez un libellé."); return; }
     // Une prime/indemnité ajoutée est NON soumise par défaut (ajoutée après les
     // déductions, hors assiette). Exception : un élément explicitement « soumis ».
     const nature = sens === "gain" && !(el && el.soumis === true) ? "non_soumis" : null;
@@ -1653,7 +1653,7 @@ function ModaleRegimePaie({ ouvert, onFermer, ecoleId, regime, devise, onChange 
             <p className="text-sm font-semibold text-navy-900">Diagnostic technique</p>
             <Bouton variante="fantome" onClick={async () => { try { setDiag(await api.diagnosticSante()); } catch (e) { toast.erreur(e.message || "Erreur."); } }}>Vérifier l'installation</Bouton>
           </div>
-          <p className="text-xs text-navy-900/45">Vérifie que tous les objets de la paie existent en base (utile après une restauration du projet).</p>
+          <p className="text-xs text-navy-900/45">Vérifiez que tous les objets de la paie existent en base (utile après une restauration du projet).</p>
           {diag && (() => {
             const groupes = [["tables", "Tables"], ["colonnes", "Colonnes"], ["fonctions", "Fonctions"], ["triggers", "Triggers"]];
             const manque = groupes.flatMap(([g]) => Object.entries(diag[g] || {}).filter(([, ok]) => !ok).map(([k]) => k));
@@ -1764,8 +1764,8 @@ function ModalePreparerPaie({ ouvert, onFermer, ecoleId, onAllerConges, periode,
       <div className="space-y-4">
         <p className="text-sm text-navy-900/60">
           {modeComplet
-            ? <>Vérifie les <b>heures travaillées</b> de chaque employé et ajuste en cas d'<b>absence</b>, puis valide pour générer les bulletins (Brut = heures × taux horaire).</>
-            : <>Confirme la liste du personnel à inclure dans la paie, puis valide pour générer les fiches.</>}
+            ? <>Vérifiez les <b>heures travaillées</b> de chaque employé et ajustez en cas d'<b>absence</b>, puis validez pour générer les bulletins (Brut = heures × taux horaire).</>
+            : <>Confirmez la liste du personnel à inclure dans la paie, puis validez pour générer les fiches.</>}
         </p>
         {baremeManquant && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-800">
@@ -2277,7 +2277,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
             ))}
           </ul>
         )}
-        <p className="mt-3 text-xs text-navy-900/40">Informatif : aucune retenue automatique. Ajuste les heures à la préparation de la paie si besoin.</p>
+        <p className="mt-3 text-xs text-navy-900/40">Informatif : aucune retenue automatique. Ajustez les heures à la préparation de la paie si besoin.</p>
       </Carte>
     </div>
   );
@@ -2646,7 +2646,7 @@ function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels
 
   const ajouter = async () => {
     if (!f.elementId) return;
-    if (f.portee !== "tous" && !f.valeur) { toast.erreur("Choisis une valeur pour la portée."); return; }
+    if (f.portee !== "tous" && !f.valeur) { toast.erreur("Choisissez une valeur pour la portée."); return; }
     try {
       await api.definirElementGlobal(ecoleId, { elementId: f.elementId, portee: f.portee, valeur: f.portee === "tous" ? "" : f.valeur, montant: f.montant || 0 });
       setF({ elementId: "", portee: "tous", valeur: "", montant: "" }); await charger();
@@ -2666,7 +2666,7 @@ function ModaleElementsGlobaux({ ouvert, onFermer, ecoleId, elements, personnels
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} titre="Éléments globaux" large>
       <div className="space-y-5">
-        <p className="text-sm text-navy-900/55">Applique un élément (prime, indemnité) à <b>tous</b> les employés, à une <b>catégorie</b> ou une <b>fonction</b>, avec un montant par défaut. Tu peux <b>exclure</b> des employés précis. Priorité : global &lt; régime &lt; affectation individuelle.</p>
+        <p className="text-sm text-navy-900/55">Appliquez un élément (prime, indemnité) à <b>tous</b> les employés, à une <b>catégorie</b> ou une <b>fonction</b>, avec un montant par défaut. Vous pouvez <b>exclure</b> des employés précis. Priorité : global &lt; régime &lt; affectation individuelle.</p>
 
         {/* Ajout */}
         <div className="rounded-xl border border-navy-900/10 p-4">

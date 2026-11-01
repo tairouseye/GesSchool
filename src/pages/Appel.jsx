@@ -109,9 +109,9 @@ export default function Appel() {
         <EnTete titre="Feuille de présence" />
         <div className="p-8">
           <Carte className="p-6 text-sm text-navy-900/60">
-            Ton compte n'est pas encore relié à une fiche enseignant.
-            Demande à l'administration de renseigner ton <b>e-mail</b> ({utilisateur?.email}) sur ta fiche
-            dans <b>RH → Enseignants</b>, et de te désigner sur une classe.
+            Votre compte n'est pas encore relié à une fiche enseignant.
+            Demandez à l'administration de renseigner votre <b>e-mail</b> ({utilisateur?.email}) sur votre fiche
+            dans <b>RH → Enseignants</b>, et de vous désigner sur une classe.
           </Carte>
         </div>
       </>

@@ -747,7 +747,7 @@ function PanneauCoefficients({ matieres, niveaux, series, coefficients, onDefini
   return (
     <Volet titre="Grille de coefficients" resume="Par série ou par niveau">
       <p className="mb-4 text-xs text-navy-900/40">
-        Saisis une fois les coefficients d'une série (ou d'un niveau) : ils s'appliquent
+        Saisissez une fois les coefficients d'une série (ou d'un niveau) : ils s'appliquent
         automatiquement à toutes les classes concernées. Laisse vide (ou 0) pour ne pas compter une matière.
       </p>
 
@@ -776,7 +776,7 @@ function PanneauCoefficients({ matieres, niveaux, series, coefficients, onDefini
 
       {portee && (
         <div className="mt-5 space-y-2">
-          {matieres.length === 0 && <p className="text-sm text-navy-900/40">Ajoute d'abord des matières.</p>}
+          {matieres.length === 0 && <p className="text-sm text-navy-900/40">Ajoutez d'abord des matières.</p>}
           {matieres.map((m) => (
             <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-navy-900/10 px-3 py-2">
               <span className="text-sm text-navy-900">

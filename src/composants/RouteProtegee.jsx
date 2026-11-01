@@ -94,6 +94,16 @@ function Renvoi({ vers, message }) {
   return <Navigate to={vers} replace />;
 }
 
+//  Espace ÉTUDIANT : une rubrique dont l'établissement n'a pas le module
+//  (adresse tapée, favori, ancien lien) renvoie à l'accueil de l'espace en
+//  disant pourquoi, au lieu d'ouvrir un écran vide (lot 5, P2-8). Les tuiles
+//  suivent déjà la même règle (`rubriquesEtudiant`).
+export function GardeModule({ cle, vers = "/etudiant", children }) {
+  const { modulesActifs } = useAuth();
+  if (!moduleActif(modulesActifs, cle)) return <Renvoi vers={vers} message={motifRefus(cle, true)} />;
+  return children;
+}
+
 // Aucun accès : ni page autorisée, ni module actif. Cas typique d'un membre
 // invité dont le rôle n'a pas encore été attribué.
 export function EcranSansAcces() {

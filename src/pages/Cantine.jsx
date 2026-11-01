@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets } from "@/composants/ui.jsx";
+import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Onglets, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getInscriptionsParEleve } from "@/lib/eleves.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
@@ -28,6 +28,9 @@ export default function Cantine() {
   const [abonnes, setAbonnes] = useState([]);
   const [inscriptions, setInscriptions] = useState({});
   const [erreur, setErreur] = useState("");
+  //  Témoin du PREMIER chargement (lot 5, P2-9) : sans lui, l'écran restait
+  //  vide et muet sur un réseau lent, et l'on croyait qu'il n'y avait rien.
+  const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(null);
   const [recharge, setRecharge] = useState(null);
 
@@ -45,6 +48,7 @@ export default function Cantine() {
       ]);
       setAbonnes(abo); setInscriptions(insc);
     } catch (e) { setErreur(e.message); }
+    finally { setChargement(false); }
   }, [ecoleId]);
   useEffect(() => { recharger(); }, [recharger]);
 
@@ -92,7 +96,7 @@ export default function Cantine() {
               </div>
               <Bouton onClick={() => setModale({})}>+ Nouvel abonné</Bouton>
             </div>
-            {abonnes.length === 0 ? (
+            {chargement ? <SkeletonListe lignes={5} /> : abonnes.length === 0 ? (
               <EtatVide icone="🍽️" titre="Aucun abonné"
                 action={<Bouton onClick={() => setModale({})}>+ Nouvel abonné</Bouton>}>
                 Inscrivez un élève à la cantine (formule mensuelle ou prépayée).
