@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.293 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.294 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -865,10 +865,16 @@ Ce qui **persiste** d'une année à l'autre (à ne pas refaire) : niveaux, cycle
 ## 17. Espace parent
 
 ### 17.1 Donner l'accès
-Fiche élève → Responsables → **Code parent** → communiquer le code au parent.
+Fiche élève → Responsables → **Code parent** (ou **Codes parents** pour tous d'un coup) → communiquer le code au parent.
+
+**Connexion par le numéro de téléphone.** Le parent n'a pas besoin d'e-mail : sur la page de connexion, **Mon numéro** → **« J'ai un code parent »** → son numéro (celui de sa fiche), le code, un mot de passe. Tous les enfants enregistrés sous ce numéro, au nom de cette même personne, apparaissent. Ensuite : numéro + mot de passe, ou empreinte.
+- Le **numéro seul ne donne accès à rien** : il faut le code la première fois, puis le mot de passe. Le code **ne sert qu'une fois**.
+- **Mot de passe oublié** : générez un **nouveau code** pour ce parent ; il refait « J'ai un code parent ».
+- **Numéros à vérifier** (encadré orange dans **Codes parents**) : un même numéro enregistré pour des personnes **différentes** est **bloqué** — sinon une famille verrait les enfants d'une autre. Corrigez le numéro ou le nom sur la fiche (Responsables). Un nom écrit « NOM Prénom » sur une fiche et « Prénom Nom » sur l'autre compte pour la même personne.
+- Un parent qui a déjà un compte **par e-mail** le garde.
 
 ### 17.2 Côté parent
-Inscription → **Je suis un parent** → saisir le **code**.
+**Mon numéro** → « J'ai un code parent » (ou Inscription → **Je suis un parent** → le **code**, avec un e-mail).
 - **Accueil** : les enfants en **pastilles** (un toucher change d'enfant, **+** en ajoute un, même dans une autre école). Sous la pastille choisie, l'essentiel : le **cours en ce moment** (ou le prochain), quatre blocs — **À régler** (avec **Payer**), **Dernière note**, **Absences** (dont à justifier), **Devoirs** à venir —, les **dernières notes** et ce qui arrive (**À venir** : échéances, devoirs).
 - **Page de l'enfant** : la carte **Scolarité** (part réglée, retard éventuel, **Payer**, factures et reçus), puis les rubriques en liste, chacune disant déjà ce qu'elle contient (« 2 devoirs pour lundi », « 1 à justifier », « Tout est réglé ✓ »), dans cet ordre : Paiements, Fournitures, Emploi du temps, Cahier de textes, Notes (ou Suivi des acquis au préscolaire), Bulletins, Absences, Documents, Annonces, puis Cantine et Transport si l'enfant y est abonné.
 - **Fournitures**, **Emploi du temps**, **Cahier de textes**, **Notes**, **Bulletins** (avec appréciations & décision), et si abonné **🍽️ Cantine** / **🚌 Transport**.

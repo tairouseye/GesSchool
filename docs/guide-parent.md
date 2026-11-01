@@ -4,11 +4,20 @@ Suivez la scolarité de votre enfant et payez depuis votre téléphone.
 
 ---
 
-## 1. Créer votre compte
+## 1. Créer votre compte — avec votre numéro de téléphone
 
-1. Demandez à l'école votre **code de liaison** (8 caractères, par exemple `3F9A2B7C`).
-2. Ouvrez GesSchool dans votre navigateur → onglet **Inscription** → votre e-mail et un mot de passe → **Créer le compte**.
-3. À l'accueil, choisissez **👪 Je suis un parent** → saisissez le code → **Rejoindre l'établissement**.
+Pas besoin d'e-mail : votre **numéro de téléphone**, celui que vous avez donné à l'école, suffit.
+
+1. Demandez à l'école votre **code parent** (8 caractères, par exemple `3F9A2B7C`), sur papier ou par WhatsApp.
+2. Scannez le **QR code** de l'école, ou ouvrez GesSchool dans votre navigateur.
+3. Touchez **Mon numéro**, puis **« J'ai un code parent »**.
+4. Votre numéro, le code, et un **mot de passe** de votre choix (8 caractères ou plus) → **Ouvrir mon espace**.
+
+Tous vos enfants inscrits sous ce numéro apparaissent d'un coup. **Ensuite**, vous vous connectez avec votre **numéro et votre mot de passe** — ou votre empreinte.
+
+- **Mot de passe oublié ?** Demandez un **nouveau code** à l'école, puis refaites l'étape 3 : vous choisissez un nouveau mot de passe. Un code ne sert qu'une fois.
+- **« Ce numéro est à vérifier »** : l'école a enregistré votre numéro pour plusieurs familles. Contactez le secrétariat, qui corrigera la fiche.
+- **Vous préférez l'e-mail ?** Onglet **Inscription** → votre e-mail et un mot de passe → **👪 Je suis un parent** → le code. Si vous avez déjà un compte par e-mail, continuez avec lui.
 
 > **Un seul compte, même pour plusieurs enfants** — y compris dans **des écoles différentes**. Si vous avez déjà un compte, **connectez-vous** puis ajoutez le nouveau code par **« + Ajouter un enfant »**. Ne créez pas un second compte.
 

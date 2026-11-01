@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.294.0] — Les parents se connectent avec leur numéro de téléphone
+- **LE BESOIN** (promoteur, 01/11/2026) : le parent scanne le QR code de l'école et se connecte avec le numéro que l'école a déjà, sans e-mail. Maquette validée (`docs/maquette-connexion-telephone.html`).
+- **Connexion** : onglet **Mon numéro** (proposé d'office sur téléphone). La première fois et après un oubli : numéro + **code parent** + mot de passe choisi ; ensuite numéro + mot de passe, ou empreinte. Aucun SMS, aucun coût.
+- **Sécurité** : le numéro identifie, il n'authentifie pas — il faut toujours le code (une fois) puis le mot de passe. Le code est **effacé** après usage. Code inconnu et code d'un autre numéro reçoivent le même message. Les fonctions d'activation (mig. 221) ne sont exécutables que par la fonction Edge `parent-telephone` (clé de service), qui crée le compte (adresse technique `221…@tel.gesprosn.org`, aucun courriel envoyé) ou change son mot de passe.
+- **Un numéro = un parent = tous ses enfants** : les fiches portant ce numéro au nom de la même personne (accents, casse et ordre prénom/nom ignorés) sont toutes reliées. Un numéro porté par des personnes **différentes** est bloqué ; l'école les voit dans **Codes parents → Numéros à vérifier**.
+- Les comptes déjà ouverts par e-mail ne changent pas. « Mon compte » affiche le numéro. Messages du code parent (Codes parents, assistant d'inscription) et affiche QR mis à jour.
+- Vérifié : essai SQL `supabase/tests/essai_221.sql` (11 contrôles), puis parcours réel dans le navigateur avec un parent de test (activation, reconnexion, mauvais mot de passe, code réutilisé refusé). Diagnostic des numéros : `supabase/tests/diagnostic_telephones_parents.sql` (Tut'Tank : 145 numéros, aucun conflit).
+- Tests : `test/connexionTelephone.test.mjs`. Guide parent §1, mode d'emploi §17.1.
+
 ## [2.293.0] — Assistant d'inscription, finitions et filet de qualité
 - **LE BESOIN** (audit du 31/10/2026, lot 5) : plus d'écran vide trompeur, un ton uniforme, un filet de sécurité automatique, et inscrire un élève sans passer par quatre écrans.
 - **Assistant d'inscription** (« + Nouvel élève ») : Élève → Famille → Frais et premier paiement → Code parent imprimable. Un homonyme (prénom + nom, accents ignorés, date de naissance si connue) est montré **avant** toute création ; un parent déjà connu par son téléphone (fratrie) est **rattaché**, pas recréé, et son code déjà remis n'est pas remplacé. Rien n'est enregistré avant la fin de l'étape Famille ; si une étape suivante échoue, « Réessayer » reprend sans recréer l'élève. Les frais passent par le même calcul que « Générer en lot » (tarif propre, exonération, inscription/réinscription).
