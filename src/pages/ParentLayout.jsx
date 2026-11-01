@@ -5,6 +5,7 @@ import Logo from "@/composants/Logo.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
 import BandeauDemo from "@/composants/BandeauDemo.jsx";
+import BandeauHorsLigne from "@/composants/BandeauHorsLigne.jsx";
 import { compterNonLues, mesMessagesNonLus, mesEnfants } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
@@ -140,6 +141,8 @@ export default function ParentLayout() {
 
   return (
     <div className="min-h-dscreen bg-fond max-lg:pb-[calc(4.25rem+env(safe-area-inset-bottom))]">
+      {/* Hors ligne : les dernières données gardées sur le téléphone (lot 4). */}
+      <BandeauHorsLigne copies />
       {/*  ⚠️ L'EN-TÊTE DOIT TENIR DANS 320 PX. Il mesurait 421 px : à 390 px
            « Déconnexion » était coupé de 31 px, à 320 px de 101 px (audit
            ergonomie, oct. 2026). Les actions ne rétrécissent jamais ; c'est la

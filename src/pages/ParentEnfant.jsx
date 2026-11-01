@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import BarreRubriques from "@/composants/BarreRubriques.jsx";
 import {
@@ -41,6 +41,11 @@ const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const fmtDate = (d) =>
   (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "");
+//  La devise de l'école de l'enfant (mig. 220, lot 4) : un « XOF » écrit en
+//  dur donnait une monnaie fausse aux écoles en CDF ou en GNF. XOF reste le
+//  repli tant que la migration n'est pas appliquée.
+const DeviseCtx = createContext("XOF");
+const useDevise = () => useContext(DeviseCtx);
 
 export default function ParentEnfant() {
   //  ⚠️ LA RUBRIQUE OUVERTE VIT DANS L'ADRESSE (/parent/enfant/:id/:rubrique),
@@ -260,6 +265,7 @@ export default function ParentEnfant() {
   const sectionActive = TUILES.find((t) => t.cle === onglet);
 
   return (
+    <DeviseCtx.Provider value={enfant?.devise || "XOF"}>
     <div className="space-y-5">
       {onglet === null || inconnu ? (
         <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
@@ -376,12 +382,14 @@ export default function ParentEnfant() {
         </>
       )}
     </div>
+    </DeviseCtx.Provider>
   );
 }
 
 // La scolarité de l'année en une carte (maquette « Classter », téléphone 2) :
 // part réglée, reste, retard, et les deux gestes qui suivent.
 function Scolarite({ factures, lien }) {
+  const devise = useDevise();
   const a = aRegler(factures);
   if (a.facture <= 0) return null;
   return (
@@ -395,13 +403,13 @@ function Scolarite({ factures, lien }) {
           style={{ width: `${Math.max(a.part, a.part > 0 ? 2 : 0)}%` }} />
       </div>
       <p className="mt-2 text-xs text-navy-900/60">
-        {fmt(a.paye)} XOF payés sur {fmt(a.facture)} XOF
+        {fmt(a.paye)} {devise} payés sur {fmt(a.facture)} {devise}
         {a.reste > 0 && (a.enRetard ? ` · en retard depuis le ${fmtDate(a.echeance)}` : a.echeance ? ` · prochaine échéance ${pourQuand(a.echeance).replace("pour ", "")}` : "")}
       </p>
       <div className="mt-3 flex gap-2">
         {a.reste > 0 && (
           <Link to={lien} className="flex min-h-10 flex-1 items-center justify-center rounded-lg bg-navy-900 text-xs font-semibold text-creme">
-            Payer {fmt(a.reste)} XOF
+            Payer {fmt(a.reste)} {devise}
           </Link>
         )}
         <Link to={lien} className={`flex min-h-10 items-center justify-center rounded-lg border border-navy-900/15 px-4 text-xs font-semibold text-navy-900 ${a.reste > 0 ? "" : "flex-1"}`}>
@@ -1242,6 +1250,7 @@ function Fournitures({ items, enfant }) {
 }
 
 function Paiements({ factures, infos, declarations, eleveId, onChange }) {
+  const devise = useDevise();
   //  Erreur du paiement en ligne : affichée DANS la rubrique, pas en haut de
   //  page, hors de l'écran d'un téléphone.
   const [erreur, setErreur] = useState("");
@@ -1318,7 +1327,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
             <div>
               <p className="text-sm text-navy-900/60">Total payé</p>
               <p className={`mt-1 font-display text-2xl font-bold ${etatEnfant.texte || "text-navy-900"}`}>
-                {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">XOF</span>
+                {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">{devise}</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1332,7 +1341,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
           </div>
           {resEch.totalDu > 0 && (
             <p className="mt-2 text-sm font-medium text-rose-700">
-              À régler maintenant : {fmt(resEch.totalDu)} XOF
+              À régler maintenant : {fmt(resEch.totalDu)} {devise}
               ({resEch.dus.length} échéance{resEch.dus.length > 1 ? "s" : ""})
             </p>
           )}
@@ -1348,16 +1357,16 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <p className="text-sm text-navy-900/60">Total facturé</p>
-              <p className="mt-1 font-display text-xl font-bold text-navy-900">{fmt(synthese.facture)} <span className="text-xs font-normal">XOF</span></p>
+              <p className="mt-1 font-display text-xl font-bold text-navy-900">{fmt(synthese.facture)} <span className="text-xs font-normal">{devise}</span></p>
             </div>
             <div>
               <p className="text-sm text-navy-900/60">Total payé</p>
-              <p className="mt-1 font-display text-xl font-bold text-emerald-700">{fmt(synthese.paye)} <span className="text-xs font-normal">XOF</span></p>
+              <p className="mt-1 font-display text-xl font-bold text-emerald-700">{fmt(synthese.paye)} <span className="text-xs font-normal">{devise}</span></p>
             </div>
             <div>
               <p className="text-sm text-navy-900/60">Reste à payer</p>
               <p className={`mt-1 font-display text-2xl font-bold ${synthese.reste > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                {fmt(synthese.reste)} <span className="text-xs font-normal">XOF</span>
+                {fmt(synthese.reste)} <span className="text-xs font-normal">{devise}</span>
               </p>
             </div>
           </div>
@@ -1411,7 +1420,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
 
                 {declareSur[f.id] > 0 && (
                   <p className="mt-2 text-xs text-or-700">
-                    ⏳ Paiement de {fmt(declareSur[f.id])} XOF déclaré, en attente de validation par l&apos;école.
+                    ⏳ Paiement de {fmt(declareSur[f.id])} {devise} déclaré, en attente de validation par l&apos;école.
                   </p>
                 )}
 
@@ -1471,7 +1480,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
               <li key={d.id}>
                 <div className="flex items-center justify-between">
                   <span className="text-navy-900/70">
-                    {d.avance ? `Avance ${d.avance}${d.numero ? ` (${d.numero})` : ""}` : d.numero} · {fmt(d.montant)} XOF
+                    {d.avance ? `Avance ${d.avance}${d.numero ? ` (${d.numero})` : ""}` : d.numero} · {fmt(d.montant)} {devise}
                     {/*  Les deux parents lisent la même liste : on dit qui a déclaré. */}
                     {d.declarant && d.declarant !== "Vous" && <span className="text-navy-900/45"> · par {d.declarant}</span>}
                   </span>
@@ -1597,6 +1606,7 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange 
 }
 
 function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
+  const devise = useDevise();
   const [choisis, setChoisis] = useState(() => choixParDefaut(groupes));
   //  Premier mode configuré par l'école : un clic de moins dans le cas courant.
   const [mode, setMode] = useState(() => (MODES_MOBILE.find(([k]) => infos?.[k]) || ["wave"])[0]);
@@ -1639,7 +1649,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
         </div>
 
         <div className="rounded-xl bg-creme p-4 text-sm">
-          <p className="text-navy-900/60">2. Payez <b className="text-navy-900">{fmt(total)} XOF</b> depuis votre application mobile money :</p>
+          <p className="text-navy-900/60">2. Payez <b className="text-navy-900">{fmt(total)} {devise}</b> depuis votre application mobile money :</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {MODES_MOBILE.map(([k, label]) => infos?.[k] && (
               <button key={k} type="button" onClick={() => setMode(k)}
@@ -1678,7 +1688,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
               finally { setEnvoi(false); }
             }}
           >
-            {envoi ? "Envoi…" : `Déclarer ${fmt(total)} XOF`}
+            {envoi ? "Envoi…" : `Déclarer ${fmt(total)} ${devise}`}
           </Bouton>
         </div>
       </div>

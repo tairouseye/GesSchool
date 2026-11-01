@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { avecRepli } from "@/lib/horsLigne.js";
 
 // GesSchool — couche « annonces & communication ».
 // Staff : accès tenant classique (ecole_id). Parent : via RPC SECURITY DEFINER.
@@ -75,9 +76,11 @@ export async function supprimerAnnonce(id) {
 // La vue globale mélange les écoles quand un parent a des enfants dans
 // plusieurs — ici, c'est cadré sur l'enfant ouvert (migration 145).
 export async function annoncesEnfant(eleveId) {
-  const { data, error } = await supabase.rpc("annonces_enfant", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`annoncesEnfant:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("annonces_enfant", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // --- Relais WhatsApp (lot 2 de la visite) ----------------------------------

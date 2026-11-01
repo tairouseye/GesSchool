@@ -14,6 +14,7 @@ import { Icone } from "@/composants/Icones.jsx";
 import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.js";
 import InvitePush from "@/composants/InvitePush.jsx";
 import BandeauDemo from "@/composants/BandeauDemo.jsx";
+import BandeauHorsLigne from "@/composants/BandeauHorsLigne.jsx";
 import RechercheGlobale from "@/composants/RechercheGlobale.jsx";
 import CentreNotifications from "@/composants/CentreNotifications.jsx";
 import FenetreEncaisser from "@/composants/FenetreEncaisser.jsx";
@@ -568,6 +569,7 @@ export default function Layout() {
         </Modale>
 
         <main className="relative flex-1 overflow-auto">
+          <BandeauHorsLigne />
           {/* Bannière d'invitation : mobile uniquement (desktop = interrupteur sidebar). */}
           <div className="px-4 pt-4 empty:hidden sm:px-8"><BandeauDemo /></div>
           <div className="px-4 pt-4 empty:hidden sm:px-8 lg:hidden"><InvitePush /></div>

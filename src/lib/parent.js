@@ -1,11 +1,14 @@
 import { supabase } from "@/lib/supabase.js";
+import { avecRepli } from "@/lib/horsLigne.js";
 
 // GesSchool — accès « espace parent » via RPC sécurisées (SECURITY DEFINER).
 
 export async function mesEnfants() {
-  const { data, error } = await supabase.rpc("mes_enfants");
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`mesEnfants`, async () => {
+    const { data, error } = await supabase.rpc("mes_enfants");
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // Alertes « nouveau » non lues d'un enfant, comptées par catégorie
@@ -73,15 +76,19 @@ export async function enfantTransport(eleveId) {
 }
 
 export async function enfantNotes(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_notes", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantNotes:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_notes", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function enfantFactures(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_factures", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantFactures:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_factures", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // Facture complète pour l'impression : lignes, encaissements, identité et
@@ -94,9 +101,11 @@ export async function enfantFactureDetail(factureId) {
 }
 
 export async function enfantAbsences(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_absences", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantAbsences:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_absences", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function justifierAbsenceParent(absenceId, texte) {
@@ -119,49 +128,63 @@ export async function demanderDocument(eleveId, type, message) {
 }
 
 export async function mesDemandes() {
-  const { data, error } = await supabase.rpc("mes_demandes");
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`mesDemandes`, async () => {
+    const { data, error } = await supabase.rpc("mes_demandes");
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function enfantBulletins(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_bulletins", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantBulletins:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_bulletins", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function enfantBulletinLignes(bulletinId) {
-  const { data, error } = await supabase.rpc("enfant_bulletin_lignes", { p_bulletin: bulletinId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantBulletinLignes:${bulletinId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_bulletin_lignes", { p_bulletin: bulletinId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function enfantEmploi(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_emploi", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantEmploi:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_emploi", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // Le programme officiel du mois (IEF) pour le niveau RÉEL de l'enfant
 // (mig. 214) : { niveau, mois, mois_disponibles, domaines: [{ domaine, lignes }] }.
 // `mois` absent = le mois en cours s'il est publié, sinon le dernier publié.
 export async function enfantProgramme(eleveId, mois = null) {
-  const { data, error } = await supabase.rpc("enfant_programme", { p_eleve: eleveId, p_mois: mois });
-  if (error) throw error;
-  return data ?? { niveau: null, mois: null, mois_disponibles: [], domaines: [] };
+  return avecRepli(`enfantProgramme:${eleveId}:${mois}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_programme", { p_eleve: eleveId, p_mois: mois });
+    if (error) throw error;
+    return data ?? { niveau: null, mois: null, mois_disponibles: [], domaines: [] };
+  });
 }
 
 export async function enfantFournitures(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_fournitures", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantFournitures:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_fournitures", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // --- Paiement mobile déclaratif ---
 export async function ecolePaiementInfos(eleveId) {
-  const { data, error } = await supabase.rpc("ecole_paiement_infos", { p_eleve: eleveId });
-  if (error) throw error;
-  return data || {};
+  return avecRepli(`ecolePaiementInfos:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("ecole_paiement_infos", { p_eleve: eleveId });
+    if (error) throw error;
+    return data || {};
+  });
 }
 
 // Téléverse une preuve de paiement (image) dans le bucket privé 'preuves'.
@@ -188,12 +211,14 @@ export async function declarerPaiement(factureId, montant, mode, reference, preu
 // `null` tant que la migration 210 n'est pas appliquée : l'écran garde alors
 // la seule synthèse des factures.
 export async function enfantEcheancier(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_echeancier", { p_eleve: eleveId });
-  if (error) {
-    if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) return null;
-    throw error;
-  }
-  return data;
+  return avecRepli(`enfantEcheancier:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_echeancier", { p_eleve: eleveId });
+    if (error) {
+      if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) return null;
+      throw error;
+    }
+    return data;
+  });
 }
 
 // --- Paiement anticipé (mig. 202) ---
@@ -214,20 +239,24 @@ export async function declarerAvance(eleveId, mois, mode, reference, preuve) {
 }
 
 export async function enfantDeclarations(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_declarations", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantDeclarations:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_declarations", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // --- Notifications / alertes du parent (RLS « self ») ---
 export async function mesNotifications() {
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`mesNotifications`, async () => {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function compterNonLues() {
@@ -251,9 +280,11 @@ export async function marquerToutesLues() {
 
 // --- Messagerie parent ↔ école ---
 export async function mesConversations() {
-  const { data, error } = await supabase.rpc("mes_conversations");
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`mesConversations`, async () => {
+    const { data, error } = await supabase.rpc("mes_conversations");
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function mesMessagesNonLus() {

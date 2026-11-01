@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { avecRepli } from "@/lib/horsLigne.js";
 
 // GesSchool — le suivi des acquis du préscolaire (mig. 172).
 //
@@ -98,9 +99,11 @@ export async function observer(ecoleId, { eleveId, itemId, periodeId, valeur, ob
 
 /** Côté famille : le suivi de SON enfant (RPC, consentement mig. 114). */
 export async function enfantAcquis(eleveId, periodeId) {
-  const { data, error } = await supabase.rpc("enfant_acquis", {
-    p_eleve: eleveId, p_periode: periodeId || null,
+  return avecRepli(`enfantAcquis:${eleveId}:${periodeId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_acquis", {
+      p_eleve: eleveId, p_periode: periodeId || null,
+    });
+    if (error) throw error;
+    return data ?? [];
   });
-  if (error) throw error;
-  return data ?? [];
 }

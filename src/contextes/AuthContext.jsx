@@ -4,6 +4,7 @@ import { appliquerAccent } from "@/lib/theme.js";
 import { typeDominant } from "@/lib/paliers.js";
 import { espaceDemo } from "@/lib/demo.js";
 import { signalerModeDemo } from "@/lib/erreurs.js";
+import { cache as cacheHL, estErreurReseau, definirUtilisateurHorsLigne, viderCacheHorsLigne } from "@/lib/horsLigne.js";
 
 // GesSchool — contexte d'authentification.
 // Expose : session, profil applicatif, rôles, école courante + actions.
@@ -32,6 +33,7 @@ export function AuthProvider({ children }) {
   // Charge le profil + les rôles de l'utilisateur connecté.
   const chargerProfil = useCallback(async (userId) => {
     const n = ++demande.current;
+    definirUtilisateurHorsLigne(userId);
     if (!userId) {
       setProfil(null);
       setRoles([]);
@@ -50,7 +52,7 @@ export function AuthProvider({ children }) {
         supabase.from("proprietaires").select("ecole_id, ecoles(nom, sigle)").eq("profil_id", userId),
       ]);
     } catch (e) {
-      if (n === demande.current) setErreurProfil(e.message || "Connexion au serveur impossible.");
+      if (n === demande.current && !reprendreHorsLigne(e)) setErreurProfil(e.message || "Connexion au serveur impossible.");
       return;
     }
     if (n !== demande.current) return;   // une demande plus récente a pris la main
@@ -58,7 +60,7 @@ export function AuthProvider({ children }) {
     // ⚠️ Une ERREUR n'est pas une absence de profil. On ne touche à rien :
     // l'état précédent reste valable, et l'interface propose de réessayer.
     if (rp.error) {
-      setErreurProfil(rp.error.message || "Profil illisible.");
+      if (!reprendreHorsLigne(rp.error)) setErreurProfil(rp.error.message || "Profil illisible.");
       return;
     }
 
@@ -70,13 +72,34 @@ export function AuthProvider({ children }) {
     );
 
     // École de rattachement (dépend de profil.ecole_id) → 2ᵉ vague.
+    let ec = null;
     if (rp.data?.ecole_id) {
       const { data: e } = await supabase.from("ecoles").select("*").eq("id", rp.data.ecole_id).maybeSingle();
-      if (n === demande.current) setEcole(e ?? null);
+      ec = e ?? null;
+      if (n === demande.current) setEcole(ec);
     } else {
       setEcole(null);
     }
+    //  Copie pour le hors-ligne : PARENTS seulement (lot 4). Un parent qui
+    //  rouvre l'appli sans réseau retrouve son espace et ses dernières
+    //  données ; le personnel, lui, garde l'écran « Réessayer ».
+    const rolesLus = (rr.data ?? []).map((x) => x.role);
+    if (rolesLus.includes("parent")) cacheHL.ecrire("auth", { profil: rp.data ?? null, roles: rolesLus, ecole: ec });
   }, []);
+
+  //  Réseau coupé au démarrage : on reprend le dernier profil connu d'un
+  //  parent au lieu de l'écran d'erreur. Rend vrai si la reprise a eu lieu.
+  function reprendreHorsLigne(err) {
+    if (!estErreurReseau(err)) return false;
+    const copie = cacheHL.lire("auth")?.data;
+    if (!copie?.profil || !copie.roles?.includes("parent")) return false;
+    setErreurProfil(null);
+    setProfil(copie.profil);
+    setRoles(copie.roles);
+    setEcolesPossedees([]);
+    setEcole(copie.ecole ?? null);
+    return true;
+  }
 
   useEffect(() => {
     // Session initiale
@@ -89,7 +112,10 @@ export function AuthProvider({ children }) {
     });
 
     // Écoute des changements (login / logout / refresh)
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (evenement, s) => {
+      //  Déconnexion (y compris expirée ou depuis un autre onglet) : plus
+      //  aucune donnée de l'enfant ne reste sur le téléphone.
+      if (evenement === "SIGNED_OUT") viderCacheHorsLigne();
       setSession(s);
       await chargerProfil(s?.user?.id);
     });
@@ -114,7 +140,9 @@ export function AuthProvider({ children }) {
   //  ferme que la sienne.
   const modeDemo = espaceDemo(session);
   useEffect(() => { signalerModeDemo(modeDemo); }, [modeDemo]);
-  const deconnexion = () => supabase.auth.signOut(modeDemo ? { scope: "local" } : undefined);
+  //  Le cache hors ligne est vidé AVANT : si la déconnexion échoue faute de
+  //  réseau, les données de l'enfant ne restent pas pour autant.
+  const deconnexion = () => { viderCacheHorsLigne(); return supabase.auth.signOut(modeDemo ? { scope: "local" } : undefined); };
 
   // Réinitialisation par CODE à 6 chiffres (évite le conflit lien ↔ HashRouter).
   // ⚙️ Le template e-mail Supabase « Reset Password » doit contenir {{ .Token }}.

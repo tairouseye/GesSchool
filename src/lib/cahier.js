@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { avecRepli } from "@/lib/horsLigne.js";
 
 // GesSchool — cahier de textes (séances + devoirs par classe/matière).
 
@@ -46,7 +47,9 @@ export async function supprimerEntree(id) {
 }
 
 export async function enfantCahier(eleveId) {
-  const { data, error } = await supabase.rpc("enfant_cahier", { p_eleve: eleveId });
-  if (error) throw error;
-  return data ?? [];
+  return avecRepli(`enfantCahier:${eleveId}`, async () => {
+    const { data, error } = await supabase.rpc("enfant_cahier", { p_eleve: eleveId });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
