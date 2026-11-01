@@ -107,7 +107,7 @@ begin
   get diagnostics v_n = row_count;
 
   insert into profil_roles (profil_id, ecole_id, role)
-  select distinct p_uid, ecole_id, 'parent' from tuteurs where public.tel_normalise(telephone) = v_tel
+  select distinct p_uid, ecole_id, 'parent'::role_systeme from tuteurs where public.tel_normalise(telephone) = v_tel
   on conflict (profil_id, ecole_id, role) do nothing;
 
   update tuteurs set code_acces = null where id = v_t.id;
