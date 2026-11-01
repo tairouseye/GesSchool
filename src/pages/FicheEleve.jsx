@@ -14,6 +14,7 @@ import Echeancier, { BadgeStatut } from "@/composants/Echeancier.jsx";
 import { lexiqueEleve, motEleve } from "@/lib/lexique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
+import { ouvrirEncaisser, EVENEMENT_ENCAISSE } from "@/lib/encaisser.js";
 
 export default function FicheEleve() {
   const { id } = useParams();
@@ -44,6 +45,8 @@ export default function FicheEleve() {
   // indisponible (droit absent ou migration non appliquée) : le bloc se tait.
   const voitEcheancier = peutVoirEcheancier(roles);
   const gereTarif = peutGererTarifs(roles);
+  //  Même règle que la fenêtre elle-même (Layout) : qui ouvre Paiements encaisse.
+  const encaisse = peutVoir(roles, "paiements");
   const [echeancier, setEcheancier] = useState(undefined);
   const [fratrie, setFratrie] = useState([]);
   const [modaleTarif, setModaleTarif] = useState(false);
@@ -51,6 +54,12 @@ export default function FicheEleve() {
   //  l'onglet Paiements de l'élève.
   const [params] = useSearchParams();
   const [onglet, setOnglet] = useState(() => (["scolarite", "paiements"].includes(params.get("onglet")) ? params.get("onglet") : "apercu"));
+  //  Un encaissement fait depuis la fenêtre met l'échéancier à jour sur place.
+  useEffect(() => {
+    const maj = (e) => { if (e.detail?.eleveId === id && voitEcheancier) eleveEcheancier(id).then(setEcheancier).catch(() => {}); };
+    window.addEventListener(EVENEMENT_ENCAISSE, maj);
+    return () => window.removeEventListener(EVENEMENT_ENCAISSE, maj);
+  }, [id, voitEcheancier]);
   //  Sans droit sur l'échéancier, l'onglet Paiements n'existe pas : on revient à l'aperçu.
   useEffect(() => { if (echeancier === null && onglet === "paiements") setOnglet("apercu"); }, [echeancier, onglet]);
 
@@ -200,7 +209,12 @@ export default function FicheEleve() {
                   {echeancier && <BadgeStatut statut={echeancier.statut} />}
                 </div>
                 {echeancier === undefined ? <Skeleton className="mt-3 h-16" /> : <ResumePaiement donnees={echeancier} devise={ecole?.devise || "XOF"} />}
-                <button onClick={() => setOnglet("paiements")} className="mt-3 text-sm font-medium text-navy-700 hover:text-or-600">Voir l'échéancier →</button>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <button onClick={() => setOnglet("paiements")} className="text-sm font-medium text-navy-700 hover:text-or-600">Voir l'échéancier →</button>
+                  {encaisse && (
+                    <button onClick={() => ouvrirEncaisser(eleve)} className="rounded-lg bg-or-500 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-or-400">Encaisser</button>
+                  )}
+                </div>
               </Carte>
             )}
 
@@ -414,6 +428,9 @@ export default function FicheEleve() {
                 {echeancier && <BadgeStatut statut={echeancier.statut} />}
                 {gereTarif && echeancier && (
                   <button onClick={() => setModaleTarif(true)} className="text-sm font-medium text-navy-700 hover:text-or-600">Tarif</button>
+                )}
+                {encaisse && (
+                  <button onClick={() => ouvrirEncaisser(eleve)} className="rounded-lg bg-or-500 px-3 py-1.5 text-sm font-semibold text-navy-900 hover:bg-or-400">Encaisser</button>
                 )}
               </div>
             </div>

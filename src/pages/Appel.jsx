@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, EtatVide, Modale } from "@/composants/ui.jsx";
@@ -30,6 +31,7 @@ export default function Appel() {
   const [enseignant, setEnseignant] = useState(null);
   const [classes, setClasses] = useState([]);
   const [classeId, setClasseId] = useState("");
+  const [params] = useSearchParams();
   const [eleves, setEleves] = useState([]);
   const [etats, setEtats] = useState({}); // eleve_id -> etat
   const [erreur, setErreur] = useState("");
@@ -52,7 +54,9 @@ export default function Appel() {
           ? await getClasses(ecoleId, an?.id)
           : ens ? await getMesClasses(ecoleId, an?.id, ens.id) : [];
         setClasses(cls);
-        if (cls.length) setClasseId(cls[0].id);
+        //  `?classe=` : « Ma journée » mène directement à la classe du cours.
+        const voulue = cls.find((c) => c.id === params.get("classe"));
+        if (cls.length) setClasseId((voulue || cls[0]).id);
       } catch (e) { setErreur(e.message); }
       finally { setChargement(false); }
     })();

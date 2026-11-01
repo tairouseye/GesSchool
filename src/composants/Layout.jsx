@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-do
 import { ChargementPage, Modale } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { LIBELLES_ROLES } from "@/lib/permissions.js";
+import { LIBELLES_ROLES, peutVoir } from "@/lib/permissions.js";
 import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeCouvre, routeOuvrable, itemPourType, grouperItems,
          routeDAtterrissage, libelleItem } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
@@ -16,6 +16,9 @@ import InvitePush from "@/composants/InvitePush.jsx";
 import BandeauDemo from "@/composants/BandeauDemo.jsx";
 import RechercheGlobale from "@/composants/RechercheGlobale.jsx";
 import CentreNotifications from "@/composants/CentreNotifications.jsx";
+import FenetreEncaisser from "@/composants/FenetreEncaisser.jsx";
+import { EVENEMENT_ENCAISSER } from "@/lib/encaisser.js";
+import { moduleActif } from "@/lib/modules.js";
 import { compterNonLuesPersonnel } from "@/lib/notificationsPersonnel.js";
 import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
@@ -136,6 +139,7 @@ export default function Layout() {
   const [tour, setTour] = useState(false);
   const [recherche, setRecherche] = useState(false); // fenêtre de recherche globale (Ctrl+K)
   const [cloche, setCloche] = useState(false);         // panneau des notifications du personnel
+  const [encaisser, setEncaisser] = useState(null);    // fenêtre « Encaisser » : { eleve } quand ouverte
   const [nonLues, setNonLues] = useState(0);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
@@ -221,6 +225,17 @@ export default function Layout() {
     window.addEventListener("keydown", touche);
     return () => window.removeEventListener("keydown", touche);
   }, []);
+
+  //  Fenêtre « Encaisser » (lot 3) : ouverte par un événement, pour que
+  //  n'importe quel écran puisse la demander sans la monter lui-même. Seuls
+  //  les rôles qui ouvrent Paiements l'obtiennent ; la RLS reste le verrou.
+  const peutEncaisser = peutVoir(roles, "paiements") && moduleActif(modulesActifs, "paiements");
+  useEffect(() => {
+    if (!peutEncaisser) return undefined;
+    const ouvrir = (e) => setEncaisser({ eleve: e.detail?.eleve || null });
+    window.addEventListener(EVENEMENT_ENCAISSER, ouvrir);
+    return () => window.removeEventListener(EVENEMENT_ENCAISSER, ouvrir);
+  }, [peutEncaisser]);
 
   //  Les écrans proposés par la recherche : ceux du menu, tous espaces
   //  confondus, une seule fois chacun.
@@ -663,6 +678,7 @@ export default function Layout() {
       <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
       <RechercheGlobale ouvert={recherche} onFermer={() => setRecherche(false)} pages={pagesRecherche} />
       <CentreNotifications ouvert={cloche} onFermer={() => setCloche(false)} onChange={setNonLues} />
+      <FenetreEncaisser ouvert={!!encaisser} eleve={encaisser?.eleve} onFermer={() => setEncaisser(null)} />
     </div>
   );
 }

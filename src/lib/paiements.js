@@ -105,6 +105,19 @@ export async function getFacture(id) {
   return data;
 }
 
+// Les factures d'un élève qui peuvent encore recevoir un encaissement
+// (fenêtre « Encaisser »). Le tri et le filtre fin sont dans encaisser.js.
+export async function facturesOuvertesEleve(ecoleId, eleveId) {
+  const { data, error } = await supabase
+    .from("factures")
+    .select("id, numero, montant_total, montant_paye, statut, date_emission, date_echeance, notes, facture_lignes(libelle)")
+    .eq("ecole_id", ecoleId)
+    .eq("eleve_id", eleveId)
+    .not("statut", "in", "(annulee,payee,brouillon)");
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function creerFacture(ecoleId, { eleve_id, annee_id, date_echeance, lignes }) {
   const montant_total = lignes.reduce((s, l) => s + Number(l.quantite) * Number(l.prix_unitaire), 0);
   const { data: facture, error } = await supabase

@@ -5,6 +5,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { peutVoir } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import { chercherPartout, chercherPages } from "@/lib/recherche.js";
+import { ouvrirEncaisser } from "@/lib/encaisser.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -54,7 +55,9 @@ export default function RechercheGlobale({ ouvert, onFermer, pages = [] }) {
     { titre: "Élèves", items: res.eleves.map((e) => {
       const insc = (e.inscriptions || []).find((i) => i.annees_scolaires?.courante) || e.inscriptions?.[0];
       return { cle: `e${e.id}`, to: `/eleves/${e.id}`, icone: "👤", titre: `${e.prenom} ${e.nom}`,
-        detail: [insc?.classes?.libelle, e.matricule].filter(Boolean).join(" · ") };
+        detail: [insc?.classes?.libelle, e.matricule].filter(Boolean).join(" · "),
+        //  Au guichet, on cherche l'élève POUR encaisser : le geste est sur la ligne.
+        encaisser: voir.factures ? { id: e.id, prenom: e.prenom, nom: e.nom, matricule: e.matricule } : null };
     }) },
     { titre: "Parents", items: res.parents.flatMap((t) => {
       const enfants = (t.eleve_tuteurs || []).map((x) => x.eleves).filter(Boolean);
@@ -107,16 +110,24 @@ export default function RechercheGlobale({ ouvert, onFermer, pages = [] }) {
                 index += 1;
                 const i = index;
                 return (
-                  <button key={it.cle} type="button" role="option" aria-selected={i === actif}
-                    onMouseEnter={() => setActif(i)} onClick={() => ouvrir(it)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left ${i === actif ? "bg-or-500/15" : "hover:bg-navy-900/[0.04]"}`}>
-                    <span className="w-6 text-center text-base" aria-hidden="true">{it.icone}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-navy-900">{it.titre}</span>
-                      {it.detail && <span className="block truncate text-xs text-navy-900/60">{it.detail}</span>}
-                    </span>
-                    {i === actif && <span className="text-xs text-navy-900/50" aria-hidden="true">↵</span>}
-                  </button>
+                  <div key={it.cle} className={`flex items-center rounded-xl ${i === actif ? "bg-or-500/15" : "hover:bg-navy-900/[0.04]"}`}
+                    onMouseEnter={() => setActif(i)}>
+                    <button type="button" role="option" aria-selected={i === actif} onClick={() => ouvrir(it)}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left">
+                      <span className="w-6 text-center text-base" aria-hidden="true">{it.icone}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-navy-900">{it.titre}</span>
+                        {it.detail && <span className="block truncate text-xs text-navy-900/60">{it.detail}</span>}
+                      </span>
+                      {i === actif && !it.encaisser && <span className="text-xs text-navy-900/50" aria-hidden="true">↵</span>}
+                    </button>
+                    {it.encaisser && (
+                      <button type="button" onClick={() => { onFermer(); ouvrirEncaisser(it.encaisser); }}
+                        className="mr-2 shrink-0 rounded-lg border border-or-500/50 bg-white px-2.5 py-1 text-xs font-semibold text-navy-900 hover:bg-or-500/20">
+                        Encaisser
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

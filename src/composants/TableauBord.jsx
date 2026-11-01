@@ -360,11 +360,16 @@ export function ilYa(date) {
 export function RaccourcisBloc({ items = [] }) {
   return (
     <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
-      {items.filter(Boolean).map((r) => (
+      {items.filter(Boolean).map((r) => (r.onClick ? (
+        //  Un raccourci peut ouvrir une fenêtre (« Encaisser ») au lieu d'une page.
+        <button key={r.label} type="button" onClick={r.onClick} className="rounded-xl bg-fond p-3 text-left text-navy-900 transition hover:bg-or-500/15">
+          <span className="block text-base" aria-hidden="true">{r.icone}</span>{r.label}
+        </button>
+      ) : (
         <Link key={r.to} to={r.to} className="rounded-xl bg-fond p-3 text-navy-900 transition hover:bg-or-500/15">
           <span className="block text-base" aria-hidden="true">{r.icone}</span>{r.label}
         </Link>
-      ))}
+      )))}
     </div>
   );
 }

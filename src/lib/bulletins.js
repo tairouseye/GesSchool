@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase.js";
 import { archiverDocument } from "@/lib/documents.js";
+import { bulletinsPerimes } from "@/lib/circuitBulletin.js";
 
 // GesSchool — couche « notes & bulletins » : évaluations, notes, calculs.
 
@@ -512,4 +513,37 @@ export async function retirerSignature(conseilId, profilId) {
     .from("conseil_signatures").delete()
     .eq("conseil_id", conseilId).eq("profil_id", profilId);
   if (error) throw error;
+}
+
+/**
+ * Où en est CHAQUE classe pour une période (vue « Toutes les classes »,
+ * lot 3 de l'audit). Une lecture `etat_bulletins` par classe, en parallèle :
+ * la fonction subit la RLS (mig. 189), un rôle cloisonné ne voit donc que
+ * ses classes. Pas de nouvelle RPC : l'écran assemble ce qui existe.
+ *
+ * Pour les classes qui ont quelque chose d'arrêté ou de diffusé, on
+ * vérifie aussi l'écart avec les notes (`bulletinsPerimes`) : c'est ce
+ * contrôle qui décide si une classe peut partir aux familles. `perimes`
+ * vaut `null` quand la vérification a échoué — la classe sera exclue.
+ */
+export async function etatBulletinsPeriode(ecoleId, classes, anneeId, periodeId, matieres, cfg = DEFAUT_NOTATION, onEtats = null) {
+  if (!periodeId || !classes?.length) return [];
+  const etats = await Promise.allSettled(classes.map((c) => etatBulletins(c.id, periodeId)));
+  //  Les états arrivent vite, la vérification des notes non (cinq lectures
+  //  par classe) : l'écran montre déjà les classes pendant qu'elle tourne.
+  onEtats?.(classes.map((classe, i) => ({ classe, etat: etats[i].status === "fulfilled" ? etats[i].value : null, erreur: etats[i].status === "rejected" })));
+  return Promise.all(classes.map(async (classe, i) => {
+    const etat = etats[i].status === "fulfilled" ? etats[i].value : null;
+    let perimes;
+    if (etat && (etat.valide + etat.publie) > 0) {
+      try {
+        const [res, enregistres] = await Promise.all([
+          calculerBulletins(ecoleId, classe.id, anneeId, periodeId, matieres, cfg),
+          bulletinsEnregistres(classe.id, periodeId),
+        ]);
+        perimes = bulletinsPerimes({ calculs: res.eleves, enregistres });
+      } catch { perimes = null; }
+    }
+    return { classe, etat, perimes, erreur: etats[i].status === "rejected" };
+  }));
 }

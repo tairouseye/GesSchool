@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Alerte } from "@/composants/ui.jsx";
@@ -10,6 +9,7 @@ import {
 import { statsGestion, periodesAnnee } from "@/lib/dashboard.js";
 import { getAnneeCourante } from "@/lib/academique.js";
 import { MODES } from "@/lib/paiements.js";
+import { ouvrirEncaisser } from "@/lib/encaisser.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { peutVoir } from "@/lib/permissions.js";
@@ -97,9 +97,9 @@ export default function TableauDeBord() {
     <>
       <EnTete titre="Gestion" sousTitre={annee ? `${ecole?.nom} · Année ${annee.libelle}` : ecole?.nom}
         action={ouvert("paiements") && (
-          <Link to="/paiements" className="rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-creme hover:bg-navy-800">
+          <button type="button" onClick={() => ouvrirEncaisser()} className="rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-creme hover:bg-navy-800">
             + Encaisser un paiement
-          </Link>
+          </button>
         )} />
       <div className="space-y-4 p-4 sm:p-6 lg:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
@@ -165,7 +165,7 @@ export default function TableauDeBord() {
           <Bloc titre="Raccourcis">
             <RaccourcisBloc items={[
               ouvert("eleves") && { to: "/eleves", icone: "👤", label: "Inscrire un élève" },
-              ouvert("paiements") && { to: "/paiements", icone: "₣", label: "Encaisser" },
+              ouvert("paiements") && { icone: "₣", label: "Encaisser", onClick: () => ouvrirEncaisser() },
               ouvert("situation_paiements") && { to: "/situation-paiements", icone: "💳", label: "Situation des paiements" },
               ouvert("annonces") && { to: "/annonces", icone: "📣", label: "Écrire aux familles" },
             ]} />

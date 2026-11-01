@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
@@ -16,6 +17,7 @@ import { getAnneeCourante, getNiveaux, getCycles } from "@/lib/academique.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois } from "@/lib/avance.js";
 import { objetFacture } from "@/lib/paiementStatut.js";
+import { ouvrirEncaisser, EVENEMENT_ENCAISSE } from "@/lib/encaisser.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -38,7 +40,14 @@ export default function Paiements() {
   const [modaleNouvelle, setModaleNouvelle] = useState(false);
   const [modaleLot, setModaleLot] = useState(false);
   const [modaleAvance, setModaleAvance] = useState(false);
-  const [factureId, setFactureId] = useState(null);
+  //  `?facture=` : la fenêtre « Encaisser » mène ici pour imprimer le reçu.
+  const [params, setParams] = useSearchParams();
+  const [factureId, setFactureId] = useState(() => params.get("facture"));
+  useEffect(() => {
+    const f = params.get("facture");
+    if (f) { setFactureId(f); setParams({}, { replace: true }); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const [pageFac, setPageFac] = useState(0);
   const [totalFac, setTotalFac] = useState(0);
@@ -112,6 +121,13 @@ export default function Paiements() {
   //  du référentiel, ce qui relancerait la liste en boucle.
   useEffect(() => { chargerFactures(annee?.id); }, [chargerFactures, annee?.id]);
 
+  //  Encaissement fait par la fenêtre « Encaisser » : la liste suit.
+  useEffect(() => {
+    const maj = () => chargerFactures(annee?.id);
+    window.addEventListener(EVENEMENT_ENCAISSE, maj);
+    return () => window.removeEventListener(EVENEMENT_ENCAISSE, maj);
+  }, [chargerFactures, annee?.id]);
+
   const wrap = async (fn, msg) => {
     try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
     catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
@@ -138,6 +154,7 @@ export default function Paiements() {
               <Bouton onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
                 + Nouvelle facture
               </Bouton>
+              <Bouton variante="or" onClick={() => ouvrirEncaisser()}>Encaisser</Bouton>
             </div>
           )
         }

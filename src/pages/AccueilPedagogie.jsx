@@ -14,6 +14,7 @@ import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
+import MaJournee from "@/composants/MaJournee.jsx";
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 // Couleur d'une moyenne /20 : rouge sous la barre, ambre limite, vert au-dessus.
@@ -62,6 +63,9 @@ export default function AccueilPedagogie() {
   //  L'avancement de la saisie compare les enseignants entre eux : c'est
   //  un outil de direction, pas une vitrine entre collègues.
   const direction = estRoleComplet(roles) || (roles || []).includes("direction");
+  //  L'enseignant voit d'abord SA journée (lot 3) ; les chiffres de l'école
+  //  restent dessous, limités par la RLS à ce qu'il peut lire.
+  const enseignant = !direction && (roles || []).includes("enseignant");
   const scolaire = couvreScolaire(ecole);
   const superieur = couvreSuperieur(ecole);
 
@@ -97,6 +101,8 @@ export default function AccueilPedagogie() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <Salutation prenom={profil?.prenom}>{blocs?.periodeEnCours ? `Période en cours : ${blocs.periodeEnCours.libelle}.` : null}</Salutation>
+
+        {enseignant && annee?.id && scolaire && <MaJournee anneeId={annee.id} ouvert={ouvert} />}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Chiffre chargement={!blocs && chargement} label="Taux de présence (semaine)" icone="✓" ton="vert"

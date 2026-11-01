@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
@@ -26,6 +27,8 @@ export default function Notes() {
   const [classeId, setClasseId] = useState("");
   const [periodeId, setPeriodeId] = useState("");
   const [matiereId, setMatiereId] = useState("");
+  //  `?classe=&matiere=&periode=` : « Ma journée » ouvre l'évaluation à compléter.
+  const [params] = useSearchParams();
   const [evaluations, setEvaluations] = useState([]);
   const [evalActive, setEvalActive] = useState(null);
   const [erreur, setErreur] = useState("");
@@ -53,7 +56,12 @@ export default function Notes() {
         setClasses(cls);
         setPeriodes(per);
         setMatieres(mat);
-        if (per[0]) setPeriodeId(per[0].id);
+        const perVoulue = per.find((p) => p.id === params.get("periode"));
+        if (perVoulue || per[0]) setPeriodeId((perVoulue || per[0]).id);
+        if (cls.some((c) => c.id === params.get("classe"))) {
+          setClasseId(params.get("classe"));
+          if (params.get("matiere")) setMatiereId(params.get("matiere"));
+        }
       } catch (e) {
         setErreur(e.message);
       }

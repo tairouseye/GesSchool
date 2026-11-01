@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee, Onglets, SkeletonListe } from "@/composants/ui.jsx";
 import * as api from "@/lib/bulletins.js";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codeBulletin } from "@/lib/verification.js";
@@ -10,7 +10,7 @@ import { getAnneeCourante, getClasses, getMatieres, getSignataires, getNiveaux,
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
 import { actions as actionsCircuit, etatGlobal, etatSignatures, qualitesSignables,
-         bulletinsPerimes, LIBELLES, EXPLICATIONS, TON } from "@/lib/circuitBulletin.js";
+         bulletinsPerimes, planPeriode, LIBELLES, EXPLICATIONS, TON } from "@/lib/circuitBulletin.js";
 import { Badge } from "@/composants/ui.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import { GESPRO } from "@/lib/gespro.js";
@@ -30,6 +30,8 @@ export default function Bulletins() {
   const [classes, setClasses] = useState([]);
   const [periodes, setPeriodes] = useState([]);
   const [matieres, setMatieres] = useState([]);
+  //  « Une classe » ou « Toutes les classes » (direction seulement, lot 3).
+  const [vue, setVue] = useState("classe");
   const [classeId, setClasseId] = useState("");
   const [periodeId, setPeriodeId] = useState("");
   const [resultats, setResultats] = useState(null);
@@ -194,6 +196,19 @@ export default function Bulletins() {
         <Alerte ton="erreur">{erreur}</Alerte>
         {!annee && <SansAnnee />}
 
+        {toutVoir && (
+          <Onglets actif={vue} onChange={setVue}
+            items={[["classe", "Une classe"], ["toutes", "Toutes les classes"]]} />
+        )}
+
+        {vue === "toutes" && toutVoir ? (
+          <VueToutesClasses
+            ecoleId={ecoleId} classes={classes} annee={annee} periodes={periodes}
+            periodeId={periodeId} setPeriodeId={setPeriodeId}
+            matieres={matieres} notation={notation} confirmer={confirmer} toast={toast}
+            onOuvrir={(id) => { setClasseId(id); setVue("classe"); }}
+          />
+        ) : (<>
         <div className="flex flex-wrap items-end gap-3">
           <Sel label="Classe" value={classeId} onChange={setClasseId} options={classes.map((c) => [c.id, c.libelle])} />
           <Sel label="Période" value={periodeId} onChange={setPeriodeId} options={periodes.map((p) => [p.id, p.libelle])} />
@@ -274,6 +289,7 @@ export default function Bulletins() {
             )}
           </Carte>
         )}
+        </>)}
       </div>
 
       <ModaleBulletin
@@ -780,5 +796,162 @@ function PanneauCircuit({ etat, perimes, peutAvancer, estResponsableDuCycle, rol
         </p>
       )}
     </Carte>
+  );
+}
+
+// =====================================================================
+//  Toutes les classes d'une période (lot 3 de l'audit du 31/10/2026)
+//
+//  Valider puis publier une période se faisait classe par classe : plus de
+//  soixante clics par trimestre pour douze classes. Cette vue montre l'état
+//  de chaque classe et fait le geste pour toutes celles qui sont PRÊTES.
+//  Le tri entre « prête » et « à reprendre » est dans `planPeriode`
+//  (circuitBulletin.js) ; l'écriture reste `avancer_bulletins`, classe par
+//  classe, avec ses droits (mig. 166/185) : aucune écriture en masse côté base.
+// =====================================================================
+function VueToutesClasses({ ecoleId, classes, annee, periodes, periodeId, setPeriodeId,
+                            matieres, notation, confirmer, toast, onOuvrir }) {
+  const [lignes, setLignes] = useState(null);
+  const [enCours, setEnCours] = useState(false);
+  //  Faux tant que la vérification des notes n'est pas revenue : rien ne se
+  //  publie sur un contrôle qui n'a pas encore eu lieu.
+  const [verifie, setVerifie] = useState(false);
+  const [tour, setTour] = useState(0); // relance la lecture après une action
+
+  useEffect(() => {
+    let vivant = true;
+    setLignes(null); setVerifie(false);
+    if (!periodeId || !annee?.id || classes.length === 0) { setLignes([]); return undefined; }
+    api.etatBulletinsPeriode(ecoleId, classes, annee.id, periodeId, matieres, notation,
+      (premiers) => { if (vivant) setLignes(premiers); })
+      .then((l) => { if (vivant) { setLignes(l); setVerifie(true); } })
+      .catch((e) => { if (vivant) { setLignes([]); toast.erreur(e.message); } });
+    return () => { vivant = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecoleId, periodeId, annee?.id, classes, matieres.length, notation?.bareme, tour]);
+
+  const plan = planPeriode(lignes || []);
+  const noms = (cs) => cs.map((c) => c.libelle).join(", ");
+
+  //  Classe par classe, en continuant si l'une échoue : le compte rendu dit
+  //  ce qui est passé et ce qui a échoué, nommément.
+  async function avancerTout(cs, statut, verbe) {
+    setEnCours(true);
+    const ok = []; const ko = [];
+    let n = 0;
+    for (const c of cs) {
+      try { n += await api.avancerBulletins(c.id, periodeId, statut); ok.push(c); }
+      catch (e) { ko.push(`${c.libelle} (${e.message})`); }
+    }
+    setEnCours(false);
+    if (ok.length) toast.succes(`${n} bulletin(s) ${verbe} — ${ok.length} classe(s).`);
+    if (ko.length) toast.erreur(`Échec : ${ko.join(" ; ")}`);
+    setTour((t) => t + 1);
+  }
+
+  async function valider() {
+    if (!(await confirmer({
+      titre: "Valider les bulletins",
+      message: `Les bulletins de ${plan.aValider.length} classe(s) seront arrêtés : ${noms(plan.aValider)}. Les familles ne les voient pas encore.`,
+      confirmer: "Valider",
+    }))) return;
+    avancerTout(plan.aValider, "valide", "validé(s)");
+  }
+
+  async function publier() {
+    const message = [
+      `Les bulletins de ${plan.aPublier.length} classe(s) seront visibles des familles : ${noms(plan.aPublier)}.`,
+      plan.sansPV.length ? ` ⚠️ PV non signé pour : ${noms(plan.sansPV)}.` : "",
+      plan.exclues.length ? ` Non publiées (à reprendre dans la classe) : ${plan.exclues.map((x) => x.classe.libelle).join(", ")}.` : "",
+    ].join("");
+    if (!(await confirmer({ titre: "Publier aux parents", message, confirmer: "Publier" }))) return;
+    avancerTout(plan.aPublier, "publie", "publié(s) aux parents");
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <Sel label="Période" value={periodeId} onChange={setPeriodeId} options={periodes.map((p) => [p.id, p.libelle])} />
+        {lignes && (
+          <div className="flex flex-wrap gap-2">
+            <Bouton onClick={valider} disabled={enCours || plan.aValider.length === 0}>
+              ✓ Valider {plan.aValider.length} classe(s) en brouillon
+            </Bouton>
+            <Bouton variante="or" onClick={publier} disabled={enCours || !verifie || plan.aPublier.length === 0}>
+              {verifie ? `📤 Publier ${plan.aPublier.length} classe(s) validée(s)` : "Contrôle des notes…"}
+            </Bouton>
+          </div>
+        )}
+      </div>
+
+      {verifie && plan.exclues.length > 0 && (
+        <Alerte ton="or">
+          {plan.exclues.length} classe(s) ne partiront pas avec la publication groupée :{" "}
+          {plan.exclues.map((x) => `${x.classe.libelle} (${x.raison})`).join(" · ")}. Ouvrez-les pour les reprendre.
+        </Alerte>
+      )}
+
+      <Carte className="overflow-hidden">
+        {lignes === null ? (
+          <div className="p-4"><SkeletonListe lignes={6} /></div>
+        ) : lignes.length === 0 ? (
+          <EtatVide icone="🎓" titre="Aucune classe">Choisissez une période.</EtatVide>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="bg-navy-900/[0.03] text-navy-900/60">
+                <tr>
+                  <th className="px-5 py-3 font-medium">Classe</th>
+                  <th className="px-5 py-3 font-medium">État</th>
+                  <th className="px-5 py-3 font-medium">PV</th>
+                  <th className="px-5 py-3 font-medium">Contrôle des notes</th>
+                  <th className="px-5 py-3 text-right font-medium">Lus</th>
+                  <th className="px-5 py-3"><span className="sr-only">Ouvrir</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {lignes.map(({ classe, etat, perimes, erreur }) => {
+                  const g = etat ? etatGlobal(etat) : { total: 0 };
+                  const sign = etat ? etatSignatures(etat.signatures) : null;
+                  return (
+                    <tr key={classe.id} className="border-t border-navy-900/5 hover:bg-creme/60">
+                      <td className="px-5 py-3 font-medium text-navy-900">{classe.libelle}</td>
+                      <td className="px-5 py-3">
+                        {erreur ? <span className="text-xs text-rose-700">lecture impossible</span>
+                          : g.total === 0 ? <span className="text-xs text-navy-900/55">Rien d&apos;enregistré</span>
+                          : g.melange ? <Badge ton="warning">{g.total} · états mélangés</Badge>
+                          : <Badge ton={TON[g.etat] || "neutre"}>{LIBELLES[g.etat]} · {g.total}</Badge>}
+                      </td>
+                      <td className="px-5 py-3 text-xs">
+                        {g.total === 0 ? "" : sign?.complet
+                          ? <span className="text-emerald-700">✓ signé</span>
+                          : <span className="text-amber-700">{sign?.manquantes ?? 2} signature(s) manquante(s)</span>}
+                      </td>
+                      <td className="px-5 py-3 text-xs">
+                        {!verifie && etat && (etat.valide + etat.publie) > 0 ? <span className="text-navy-900/55">vérification…</span>
+                          : perimes === undefined ? <span className="text-navy-900/40">—</span>
+                          : perimes === null ? <span className="text-rose-700">vérification impossible</span>
+                          : perimes.nb > 0 ? <span className="font-medium text-rose-700">⚠️ {perimes.nb} écart(s)</span>
+                          : <span className="text-emerald-700">✓ à jour</span>}
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono text-xs text-navy-900/60">
+                        {etat?.publie ? `${etat.consultes}/${etat.publie}` : ""}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <button type="button" onClick={() => onOuvrir(classe.id)} className="text-sm text-navy-700 hover:text-or-600">Ouvrir →</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Carte>
+      <p className="text-xs text-navy-900/55">
+        Une classe sans bulletin enregistré se prépare dans « Une classe » : Calculer, puis Enregistrer.
+        La publication groupée n&apos;envoie que des classes entièrement validées dont les bulletins correspondent aux notes.
+      </p>
+    </div>
   );
 }

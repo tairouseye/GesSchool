@@ -427,3 +427,51 @@ export async function blocsPedagogie(ecoleId, annee, effectif) {
 
   return { periode, periodeEnCours: per.courante, horsAnnee, assiduite, presence, presenceAvant, saisie, saisieTotal, saisieFaites, agenda };
 }
+
+/**
+ * Les lectures de « Ma journée » (lot 3) : l'emploi du temps de
+ * l'enseignant, ses affectations, les évaluations de la période et leurs
+ * notes, les absences du jour dans ses classes. Tout passe par la RLS de
+ * l'enseignant ; les calculs sont dans maJournee.js.
+ */
+export async function donneesMaJournee(ecoleId, anneeId, ensId) {
+  if (!ensId || !anneeId) return null;
+  const jour = isoJour(new Date());
+  const [edt, aff, per, pp] = await Promise.all([
+    supabase.from("emplois_du_temps").select("id, jour, heure_debut, heure_fin, salle, activite, classe_id, matiere_id, matieres(libelle), classes(libelle)")
+      .eq("ecole_id", ecoleId).eq("enseignant_id", ensId),
+    supabase.from("affectations").select("classe_id, matiere_id, classes(libelle), matieres(libelle)")
+      .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("enseignant_id", ensId),
+    periodesAnnee(ecoleId, anneeId),
+    supabase.from("classes").select("id, libelle").eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("prof_principal_id", ensId),
+  ]);
+  const affectations = aff.data ?? [];
+  const classes = {};
+  for (const a of affectations) if (a.classe_id) classes[a.classe_id] = { id: a.classe_id, libelle: a.classes?.libelle || "" };
+  for (const c of pp.data ?? []) classes[c.id] = c;
+  const ids = Object.keys(classes);
+  const periode = per.reference;
+
+  const [ev, abs] = await Promise.all([
+    periode && ids.length
+      ? supabase.from("evaluations").select("id, classe_id, matiere_id, date_eval, type, libelle, actif, classes(libelle), matieres(libelle)")
+          .eq("ecole_id", ecoleId).eq("periode_id", periode.id).in("classe_id", ids)
+      : Promise.resolve({ data: [] }),
+    ids.length
+      ? supabase.from("absences").select("classe_id").eq("ecole_id", ecoleId).eq("date_abs", jour).in("classe_id", ids).limit(2000)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const evaluations = ev.data ?? [];
+  //  Une évaluation « a des notes » dès la première : on ne lit que la clé.
+  const notesParEval = {};
+  const evIds = evaluations.filter((e) => e.date_eval && e.date_eval <= jour).map((e) => e.id);
+  if (evIds.length) {
+    const { data } = await supabase.from("notes").select("evaluation_id").in("evaluation_id", evIds).limit(20000);
+    for (const n of data ?? []) notesParEval[n.evaluation_id] = (notesParEval[n.evaluation_id] || 0) + 1;
+  }
+  return {
+    creneaux: edt.data ?? [], affectations, evaluations, notesParEval,
+    absencesJour: abs.data ?? [], mesClasses: Object.values(classes).sort((a, b) => a.libelle.localeCompare(b.libelle)),
+    periode, periodeEnCours: per.courante,
+  };
+}

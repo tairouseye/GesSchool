@@ -221,3 +221,49 @@ export function qualitesSignables({ roles = [], estResponsableDuCycle = false, d
   //  proposer.
   return dejaSignePar.length ? [] : out;
 }
+
+/**
+ * Publication GROUPÉE d'une période (lot 3 de l'audit du 31/10/2026).
+ *
+ * Douze classes, c'était plus de soixante clics par trimestre : ouvrir
+ * chaque classe, valider, publier. La vue « Toutes les classes » fait le
+ * même geste pour plusieurs classes d'un coup — mais ne choisit QUE des
+ * classes sans ambiguïté.
+ *
+ * 🔴 RIEN DE DOUTEUX NE PART AUX FAMILLES. Une classe n'est publiable que si
+ * TOUS ses bulletins sont validés ET que la vérification des écarts avec
+ * les notes a abouti sans en trouver. Une vérification impossible exclut
+ * la classe : on ne publie pas « sans doute juste ». Une classe aux états
+ * mélangés se traite à la main, dans la classe.
+ *
+ * Le PV non signé AVERTIT sans exclure, comme dans la vue d'une classe
+ * (`actions`) : la base n'exige pas le PV pour publier.
+ *
+ * @param {Array<{classe:{id:string, libelle:string}, etat:object|null, perimes:object|null|undefined}>} lignes
+ *        `etat` = sortie de `etatBulletins` ; `perimes` = sortie de
+ *        `bulletinsPerimes`, `null` si la vérification a échoué.
+ */
+export function planPeriode(lignes = []) {
+  const aValider = [];
+  const aPublier = [];
+  const exclues = [];
+  const sansPV = [];
+  for (const l of lignes || []) {
+    const e = l?.etat;
+    if (!l?.classe || !e) continue;
+    const { etat, total, melange } = etatGlobal(e);
+    if (total === 0) continue;
+    if (melange) { exclues.push({ classe: l.classe, raison: "états mélangés" }); continue; }
+    if (etat === "brouillon") { aValider.push(l.classe); continue; }
+    if (etat !== "valide") continue;
+    if (l.perimes === null || l.perimes === undefined) {
+      exclues.push({ classe: l.classe, raison: "vérification des notes impossible" });
+    } else if (l.perimes.nb > 0) {
+      exclues.push({ classe: l.classe, raison: `${l.perimes.nb} bulletin(s) ne correspondent plus aux notes` });
+    } else {
+      aPublier.push(l.classe);
+      if (!e.conseilComplet) sansPV.push(l.classe);
+    }
+  }
+  return { aValider, aPublier, exclues, sansPV };
+}
