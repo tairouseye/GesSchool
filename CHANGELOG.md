@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.290.0] — Recherche globale et cloche du personnel
+- **LE BESOIN** (audit du 31/10/2026, lot 2) : retrouver un élève en un geste, et ne plus laisser passer ce que les familles envoient.
+- **Recherche globale** (bouton « Rechercher » de la barre latérale, loupe sur téléphone, **Ctrl + K** ou « / ») : élève (nom, prénom, matricule), **parent par nom ou numéro de téléphone** (espaces ignorés), facture par numéro (ouvre l'onglet Paiements de l'élève), écran du menu. Flèches et Entrée. Lectures sous RLS uniquement, bornées à l'école (`src/lib/recherche.js`, test `test/recherche.test.mjs`).
+- **Cloche du personnel** (mig. 219) : paiement mobile déclaré, justificatif d'absence, message d'un parent, demande de document. Destinataires = les membres qui ont la case de l'écran qui traite (`personnel_acces`, comme `a_acces`) et les promoteurs ; pas de doublon tant qu'une alerte identique n'est pas lue ; push sur les appareils abonnés (mig. 066). Aucune table nouvelle. Essai : `supabase/tests/essai_219.sql` (4 catégories, doublon = 0).
+- Fiche élève : `?onglet=paiements` ouvre directement l'onglet. Mode d'emploi (§1) mis à jour.
+
 ## [2.289.0] — Tableaux de bord « Classter », école et parents
 - **LE BESOIN** (promoteur, 31/10/2026) : des tableaux de bord de qualité professionnelle dans chaque espace, sur le modèle de Classter. Maquette validée (`docs/maquette-tableaux-classter.html`), lot 1 de l'audit du 31/10.
 - **Même ordre de lecture partout** : bonjour daté, quatre chiffres clés **avec leur évolution** (▲/▼, par rapport à quoi ; vert = bonne nouvelle), puis des blocs. Briques communes dans `src/composants/TableauBord.jsx`.
