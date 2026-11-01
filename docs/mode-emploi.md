@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.290 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.291 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -283,6 +283,16 @@ La section **« Invitations en attente »** liste les codes non utilisés (Copie
 
 Quatre gestes, dans l'ordre d'une journée.
 
+### 5.0 « Ma journée », en arrivant
+
+L'accueil **Pédagogie** d'un enseignant commence par **sa** journée, en trois cartes :
+
+- **Mes cours** : les cours du jour tirés de votre emploi du temps, celui **en cours** surligné.
+- **L'appel** : les classes où vous avez cours aujourd'hui, avec le nombre d'**absences déjà saisies**. Le bouton **Appel** ouvre la feuille de présence directement sur la bonne classe. *(L'écran ne dit jamais « appel fait » : un appel où tout le monde est présent n'enregistre rien, l'appli ne peut donc pas le savoir.)*
+- **Notes à saisir** pour la période en cours : en rouge, les évaluations **passées** qui n'ont encore **aucune note** ; en orange, les matières de vos classes **sans aucune évaluation**. Un clic ouvre la saisie sur la bonne classe et la bonne matière.
+
+Si la carte dit que votre compte n'est pas relié à une fiche enseignant, voyez §4.6.
+
 ### 5.1 Le matin : la feuille de présence
 
 *(Anciennement « Appel ».)*
@@ -415,6 +425,20 @@ Deux précisions :
 - Un **brouillon** périmé n'est jamais signalé : rien n'a été arrêté ni diffusé, et le recalculer est le geste normal.
 - Le **rang** compte autant que la moyenne : il suffit qu'un camarade soit corrigé pour que le rang imprimé sur le bulletin d'un autre devienne faux.
 
+### 7.2 bis Toutes les classes d'un coup (onglet **Toutes les classes**, direction)
+
+En fin de trimestre, plutôt que d'ouvrir les classes une à une : onglet **Toutes les classes**, choisissez la **période**. Chaque classe affiche son **état** (brouillon, validé, publié, ou états mélangés), son **PV**, le **contrôle des notes** et le nombre de bulletins **lus** par les familles.
+
+- **✓ Valider N classe(s) en brouillon** arrête d'un coup les classes entièrement en brouillon.
+- **📤 Publier N classe(s) validée(s)** les rend visibles des familles. La confirmation **nomme les classes** et signale celles dont le PV n'est pas signé.
+
+**Ne partent jamais avec la publication groupée** — elles restent à reprendre dans la classe (**Ouvrir →**) :
+- une classe dont un bulletin **ne correspond plus aux notes** ;
+- une classe dont la **vérification n'a pas pu se faire** (réseau) ;
+- une classe aux **états mélangés**.
+
+Le bouton de publication attend la fin du **contrôle des notes** (« Contrôle des notes… ») : sur une connexion lente, comptez quelques secondes. Une classe sans bulletin enregistré se prépare toujours dans **Une classe** : **Calculer**, puis **Enregistrer**.
+
 ### 7.3 Le procès-verbal du conseil de classe
 Dans le même panneau, le **PV** attend **deux signatures** :
 
@@ -534,6 +558,16 @@ Cliquez une facture : vous voyez son détail, ses encaissements, et un **reçu i
 - Le **statut de la facture se recalcule tout seul** : émise → partiellement payée → payée. Vous n'avez pas à le changer à la main.
 - Les **paiements partiels** sont normaux : encaissez autant de fois que nécessaire.
 - **Annuler la facture** est possible : elle n'engage alors plus la famille et sort des comptes d'impayés.
+
+#### La fenêtre « Encaisser », de partout
+
+Au guichet, pas besoin d'ouvrir Paiements et de chercher la facture : le bouton **Encaisser** ouvre une fenêtre depuis
+- le tableau de bord **Gestion** (**+ Encaisser un paiement**, ou le raccourci **Encaisser**) ;
+- la **recherche** (Ctrl K) : bouton **Encaisser** sur la ligne de l'élève ;
+- la **fiche de l'élève** (carte Paiements, onglet Paiements) ;
+- la page **Paiements**.
+
+Trois gestes : l'**élève** → la **facture** (la plus ancienne échéance est choisie d'office, avec son reste dû) → le **montant** et le **mode**. Un montant **supérieur au reste dû** est refusé. Ensuite, **Voir et imprimer le reçu** ouvre la facture dans Paiements, sur le reçu. Un paiement **d'avance** (mois pas encore facturés) se saisit toujours avec **⏩ Encaisser une avance**.
 
 ### 10.4 Les paiements déclarés par les familles (onglet **Paiement mobile**)
 

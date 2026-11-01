@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.291.0] — Encaisser de partout, bulletins de toutes les classes, « Ma journée »
+- **LE BESOIN** (audit du 31/10/2026, lot 3) : encaisser en trois gestes, publier un trimestre sans ouvrir douze classes, et donner à l'enseignant ce qu'il a à faire aujourd'hui.
+- **Fenêtre « Encaisser »** (`src/composants/FenetreEncaisser.jsx`) : élève → facture due (la plus ancienne échéance d'abord, avec son reste) → montant et mode. Ouvrable depuis le tableau de bord Gestion, la recherche (bouton sur la ligne de l'élève), la fiche élève et Paiements. Un montant supérieur au reste dû est refusé. « Voir et imprimer le reçu » ouvre la facture dans Paiements (`?facture=`). Offerte aux seuls rôles qui ouvrent Paiements ; l'écriture reste celle de Paiements, sous RLS.
+- **Bulletins → Toutes les classes** (direction) : pour une période, l'état de chaque classe, son PV, le contrôle des notes et les bulletins lus. « Valider N classes en brouillon » et « Publier N classes validées », avec une confirmation qui nomme les classes. Ne partent jamais en groupe : une classe dont un bulletin ne correspond plus aux notes, dont la vérification a échoué, ou aux états mélangés (`planPeriode`, `src/lib/circuitBulletin.js`). L'écriture reste `avancer_bulletins`, classe par classe : droits de la mig. 166/185 inchangés, aucune migration.
+- **« Ma journée »** en tête de l'accueil Pédagogie d'un enseignant : cours du jour, classes à l'appel avec les absences déjà saisies (jamais « appel fait », que la base ne peut pas savoir), notes à saisir pour la période. Appel et Notes acceptent `?classe=` (et `&matiere=&periode=`).
+- Tests : `test/lot3.test.mjs`. Mode d'emploi : §5.0, §7.2 bis, §10.3.
+
 ## [2.290.1] — Le bouton « Mettre à jour » ne reste plus bloqué
 - **LE BESOIN** (promoteur, 01/11/2026) : après un toucher sur **Mettre à jour**, le bandeau restait sur « … ».
 - Cause : le bouton attendait un signal de bascule qui ne vient pas quand la nouvelle version a déjà été activée ailleurs (autre onglet, réouverture) ou qu'aucune n'attend plus. Désormais l'ordre d'activation est envoyé directement à la version en attente, la page se recharge dès qu'elle prend la main, et un filet la recharge de toute façon au bout de 6 secondes. Le bandeau affiche « Installation… la page va se recharger ».
