@@ -42,7 +42,7 @@ test("🔴 l'ancienne forme NE passait PAS la regex SQL", async () => {
   const ancien = `${ECOLE}/${ELEVE}-1700000000000.jpg`;
   const segments = ancien.split("/");
   assert.equal(segments.length, 2, "l'ancienne forme n'avait que deux segments");
-  assert.equal(segments[1], undefined ?? segments[1]);
+  assert.equal(typeof segments[1], "string");
   assert.ok(!REGEX_SQL.test(segments[1]), "le 2e segment ne pouvait pas être lu comme un élève");
 });
 

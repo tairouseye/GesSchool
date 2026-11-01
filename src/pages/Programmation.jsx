@@ -20,7 +20,7 @@ import * as api from "@/lib/programmation.js";
 // mois, pour toute l'année. Le niveau et le mois sont donc TOUJOURS
 // confirmés à la main, même quand l'en-tête les annonce.
 
-const nomMois = (m) => (MOIS.find(([n]) => Number(n) === Number(m)) || [, ""])[1];
+const nomMois = (m) => (MOIS.find(([n]) => Number(n) === Number(m)) || [null, ""])[1];
 
 export default function Programmation() {
   const { ecoleId } = useAuth();

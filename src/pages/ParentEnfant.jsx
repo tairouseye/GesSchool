@@ -900,7 +900,7 @@ function ProgrammeDuMois({ eleveId }) {
   if (!donnees) return <Carte className="p-5"><SkeletonListe lignes={3} /></Carte>;
   if (!donnees.niveau) return null;
 
-  const nomMois = (m) => (MOIS_PROGRAMME.find(([n]) => Number(n) === Number(m)) || [, ""])[1];
+  const nomMois = (m) => (MOIS_PROGRAMME.find(([n]) => Number(n) === Number(m)) || [null, ""])[1];
   const dispo = new Set((donnees.mois_disponibles || []).map(Number));
   //  Les mois de l'année scolaire, d'octobre à juillet, grisés s'ils ne sont
   //  pas encore publiés.
@@ -1051,10 +1051,13 @@ function Cahier({ entrees }) {
 // le serveur vérifie d'abord que ce parent a le droit de voir l'annonce.
 function PiecesJointes({ fichiers }) {
   const liste = Array.isArray(fichiers) ? fichiers : [];
-  if (liste.length === 0) return null;
   //  ⚠️ Un échec était silencieux : le parent touchait la pièce jointe et
   //  rien ne se passait.
+  //  Le hook AVANT le `return` : appelé sous condition, il faisait planter
+  //  l'écran dès qu'une annonce passait de « sans » à « avec » pièce jointe
+  //  (relevé par ESLint, lot 5).
   const [echec, setEchec] = useState("");
+  if (liste.length === 0) return null;
   async function ouvrir(f) {
     setEchec("");
     try {

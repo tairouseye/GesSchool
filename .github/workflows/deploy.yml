@@ -41,6 +41,11 @@ jobs:
       # `docs/*.docx` n'est pas dans le dépôt).
       - run: npm test
 
+      # Lot 5 (audit du 31/10/2026) : ESLint. Une ERREUR bloque la mise en
+      # ligne (hook appelé sous condition, variable inconnue…) ; les
+      # avertissements sont signalés sans bloquer.
+      - run: npm run lint
+
       - run: npm run build   # charge automatiquement .env.production
 
       # ⚠️ v4 a introduit un changement CASSANT : les fichiers cachés

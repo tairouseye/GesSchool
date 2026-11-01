@@ -237,7 +237,7 @@ function ModaleProgrammation({ ouvert, onFermer, lignes, onChoisir }) {
     (!domaine || l.domaine === domaine)
     && (!semaine || (semaine === "mois" ? l.semaine == null : String(l.semaine) === semaine)));
 
-  const moisCourant = (MOIS.find(([n]) => Number(n) === new Date().getMonth() + 1) || [, ""])[1];
+  const moisCourant = (MOIS.find(([n]) => Number(n) === new Date().getMonth() + 1) || [null, ""])[1];
 
   return (
     <Modale ouvert={ouvert} onFermer={onFermer} large titre={`Programmation officielle — ${moisCourant}`}>
