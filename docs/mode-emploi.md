@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.291 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.292 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -887,6 +887,11 @@ Inscription → **Je suis un parent** → saisir le **code**.
 - **Changer d'enfant** (à partir de deux) : toucher le **prénom** dans l'en-tête → choisir l'enfant. On **reste sur la même rubrique** ; si l'autre enfant ne l'a pas (pas de cantine…), sa grille s'ouvre.
 - Les **panneaux qui montent du bas** se ferment en les glissant vers le bas, en touchant le fond, ou par ✕.
 - Dans **Alertes**, le bouton **« Voir »** ouvre directement la bonne rubrique : une nouvelle facture mène à Paiements, une absence à Absences, une note à Notes.
+
+### 17.2 bis Sans réseau
+Chaque lecture réussie de l'espace parent est gardée sur le téléphone, sous le compte du parent. Si le réseau coupe — même à l'ouverture de l'appli — le parent voit ses dernières informations sous un bandeau **« Hors ligne »** qui dit de quand elles datent ; les envois attendent le retour du réseau. Une erreur qui n'est **pas** due au réseau (droit refusé) n'est jamais masquée par une copie. Tout est **effacé à la déconnexion**.
+
+Les montants s'affichent dans la **devise de l'école** de l'enfant (Paramètres), et non plus toujours en XOF.
 
 ### 17.3 Plusieurs enfants — y compris dans des écoles différentes
 Un parent gère **tous ses enfants depuis un seul compte**, même dans des établissements différents :

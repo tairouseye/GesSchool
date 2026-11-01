@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.292.0] — Espace parent lisible sans réseau, devise de l'école
+- **LE BESOIN** (audit du 31/10/2026, lot 4) : sur un réseau instable, le parent ne voyait plus rien et ne savait pas pourquoi ; les montants s'affichaient en XOF quelle que soit l'école.
+- **Hors ligne** (`src/lib/horsLigne.js`) : chaque lecture parent réussie (enfants, notes, factures, échéancier, absences, bulletins, emploi du temps, cahier, annonces, acquis, notifications, messages…) est gardée sur le téléphone, rangée sous le compte. Si une lecture échoue **pour cause de réseau**, la dernière copie revient ; un refus du serveur n'est jamais masqué. Le service worker ne pouvait pas le faire : les RPC partent en POST, que le cache du navigateur ne garde pas.
+- À l'ouverture **sans réseau**, un parent retrouve son espace (profil repris de la dernière copie ; réservé aux parents). Vérifié sur la version de production : rechargement en mode avion, les données et le bandeau s'affichent.
+- **Bandeau « Hors ligne »** : dit de quand datent les informations ; « Actualiser » quand la connexion revient. Côté personnel, il signale simplement que rien ne peut se charger.
+- **Téléphone partagé** : toutes les copies sont effacées à la déconnexion (et à toute fin de session).
+- **Devise** (mig. 220) : `mes_enfants` rend la devise de l'école de l'enfant, en fin de liste ; l'espace parent n'écrit plus « XOF » en dur (repli XOF tant que la migration n'est pas appliquée).
+- Paiement en ligne : code prêt (fonction `paiement`, onglet visible seulement si un prestataire est configuré) ; déploiement et recette en bac à sable en attente d'un compte marchand de test.
+- Tests : `test/horsLigne.test.mjs`. Guide parent §9, mode d'emploi §17.2 bis.
+
 ## [2.291.0] — Encaisser de partout, bulletins de toutes les classes, « Ma journée »
 - **LE BESOIN** (audit du 31/10/2026, lot 3) : encaisser en trois gestes, publier un trimestre sans ouvrir douze classes, et donner à l'enseignant ce qu'il a à faire aujourd'hui.
 - **Fenêtre « Encaisser »** (`src/composants/FenetreEncaisser.jsx`) : élève → facture due (la plus ancienne échéance d'abord, avec son reste) → montant et mode. Ouvrable depuis le tableau de bord Gestion, la recherche (bouton sur la ligne de l'élève), la fiche élève et Paiements. Un montant supérieur au reste dû est refusé. « Voir et imprimer le reçu » ouvre la facture dans Paiements (`?facture=`). Offerte aux seuls rôles qui ouvrent Paiements ; l'écriture reste celle de Paiements, sous RLS.

@@ -132,6 +132,18 @@ Sur **iPhone**, il faut d'abord installer l'application (« Partager → Sur l'�
 
 ---
 
+## 9. Sans réseau
+
+Si la connexion coupe, l'application **reste lisible** : un bandeau **« Hors ligne »** s'affiche en haut et vous voyez les **dernières informations** chargées sur ce téléphone, avec leur heure (« enregistrées aujourd'hui à 15 h 36 »). Notes, factures, emploi du temps et absences restent consultables.
+
+- Les **envois** (déclarer un paiement, écrire un message, justifier une absence) ont besoin du réseau : ils attendent son retour.
+- Quand la connexion revient, touchez **Actualiser** dans le bandeau vert.
+- Ces informations sont **effacées du téléphone quand vous vous déconnectez**. Sur un téléphone partagé, pensez à vous déconnecter (**Plus → Déconnexion**).
+
+Les montants s'affichent dans la **monnaie de l'école** de chaque enfant.
+
+---
+
 ## Si ça ne marche pas
 
 **« Mon code ne fonctionne pas »** → vérifiez les majuscules, et qu'il n'a pas déjà été utilisé par l'autre parent. Demandez-en un nouveau au secrétariat.
