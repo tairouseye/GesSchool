@@ -5,6 +5,10 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.290.1] — Le bouton « Mettre à jour » ne reste plus bloqué
+- **LE BESOIN** (promoteur, 01/11/2026) : après un toucher sur **Mettre à jour**, le bandeau restait sur « … ».
+- Cause : le bouton attendait un signal de bascule qui ne vient pas quand la nouvelle version a déjà été activée ailleurs (autre onglet, réouverture) ou qu'aucune n'attend plus. Désormais l'ordre d'activation est envoyé directement à la version en attente, la page se recharge dès qu'elle prend la main, et un filet la recharge de toute façon au bout de 6 secondes. Le bandeau affiche « Installation… la page va se recharger ».
+
 ## [2.290.0] — Recherche globale et cloche du personnel
 - **LE BESOIN** (audit du 31/10/2026, lot 2) : retrouver un élève en un geste, et ne plus laisser passer ce que les familles envoient.
 - **Recherche globale** (bouton « Rechercher » de la barre latérale, loupe sur téléphone, **Ctrl + K** ou « / ») : élève (nom, prénom, matricule), **parent par nom ou numéro de téléphone** (espaces ignorés), facture par numéro (ouvre l'onglet Paiements de l'élève), écran du menu. Flèches et Entrée. Lectures sous RLS uniquement, bornées à l'école (`src/lib/recherche.js`, test `test/recherche.test.mjs`).
