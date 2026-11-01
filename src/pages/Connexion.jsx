@@ -12,6 +12,7 @@ import { getEncartsConnexion } from "@/lib/encarts.js";
 import { messageErreur } from "@/lib/erreurs.js";
 import { biometrieSupportee, connecterBiometrie, messageBiometrie } from "@/lib/biometrie.js";
 import { entrerEnDemo } from "@/lib/demo.js";
+import { connexionTelephone, activerTelephone, connexionParentMemorisee } from "@/lib/connexionTelephone.js";
 
 // Page Connexion / Inscription (onglets).
 export default function Connexion() {
@@ -21,6 +22,14 @@ export default function Connexion() {
   const [params] = useSearchParams();
   const [mode, setMode] = useState(params.get("mode") === "inscription" ? "inscription" : "connexion"); // 'connexion' | 'inscription'
   const [email, setEmail] = useState("");
+  //  Parents : connexion par NUMÉRO (mig. 221). Proposée d'office sur
+  //  téléphone — c'est là qu'arrive un parent qui a scanné le QR code — et
+  //  sur un appareil où un parent s'est déjà connecté ainsi.
+  const [voie, setVoie] = useState(() => (connexionParentMemorisee()
+    || (typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches) ? "telephone" : "email"));
+  const [telephone, setTelephone] = useState("");
+  const [avecCode, setAvecCode] = useState(false); // première connexion ou mot de passe oublié
+  const [code, setCode] = useState("");
   const [mdp, setMdp] = useState("");
   const [erreur, setErreur] = useState("");
   const [info, setInfo] = useState("");
@@ -68,7 +77,11 @@ export default function Connexion() {
     setInfo("");
     setEnCours(true);
     try {
-      if (mode === "connexion") {
+      if (mode === "connexion" && voie === "telephone") {
+        if (avecCode) await activerTelephone(telephone, code, mdp);
+        else await connexionTelephone(telephone, mdp);
+        navigate("/", { replace: true });
+      } else if (mode === "connexion") {
         const { error } = await connexion(email, mdp);
         if (error) throw error;
         navigate("/", { replace: true });
@@ -133,29 +146,79 @@ export default function Connexion() {
             ))}
           </div>
 
+          {mode === "connexion" && (
+            <div className="mb-4 flex justify-center gap-1 text-sm" role="tablist" aria-label="Se connecter avec">
+              {[["telephone", "Mon numéro"], ["email", "Mon e-mail"]].map(([v, l]) => (
+                <button key={v} type="button" role="tab" aria-selected={voie === v}
+                  onClick={() => { setVoie(v); setErreur(""); setInfo(""); }}
+                  className={`rounded-full px-4 py-1.5 font-medium transition ${voie === v ? "bg-white/90 text-navy-900 [text-shadow:none]" : "text-creme/85 hover:text-creme"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
+
           <form onSubmit={soumettre} className="space-y-4">
-            <ChampConnexion
-              label="E-mail" type="email" required autoComplete="email"
-              value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@ecole.sn"
-            />
-            <ChampConnexion
-              motDePasse label="Mot de passe" required minLength={6}
-              autoComplete={mode === "connexion" ? "current-password" : "new-password"}
-              value={mdp} onChange={(e) => setMdp(e.target.value)}
-              placeholder="••••••••"
-            />
+            {mode === "connexion" && voie === "telephone" ? (
+              <>
+                <ChampConnexion
+                  label="Mon numéro de téléphone" type="tel" inputMode="tel" required autoComplete="tel"
+                  value={telephone} onChange={(e) => setTelephone(e.target.value)}
+                  placeholder="77 123 45 67"
+                />
+                {avecCode && (
+                  <ChampConnexion
+                    label="Code parent (remis par l'école)" required autoComplete="one-time-code"
+                    value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    placeholder="A1B2C3D4" style={{ letterSpacing: "0.2em" }}
+                  />
+                )}
+                <ChampConnexion
+                  motDePasse label={avecCode ? "Choisissez un mot de passe (8 caractères ou plus)" : "Mot de passe"}
+                  required minLength={avecCode ? 8 : 6}
+                  autoComplete={avecCode ? "new-password" : "current-password"}
+                  value={mdp} onChange={(e) => setMdp(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </>
+            ) : (
+              <>
+                <ChampConnexion
+                  label="E-mail" type="email" required autoComplete="email"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="vous@ecole.sn"
+                />
+                <ChampConnexion
+                  motDePasse label="Mot de passe" required minLength={6}
+                  autoComplete={mode === "connexion" ? "current-password" : "new-password"}
+                  value={mdp} onChange={(e) => setMdp(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </>
+            )}
 
             <Alerte ton="erreur">{erreur}</Alerte>
             <Alerte ton="succes">{info}</Alerte>
 
             <Bouton type="submit" variante="or" disabled={enCours}
               className="w-full">
-              {enCours ? "Patientez…" : mode === "connexion" ? "Se connecter" : "Créer le compte"}
+              {enCours ? "Patientez…" : mode === "connexion" && voie === "telephone" && avecCode ? "Ouvrir mon espace"
+                : mode === "connexion" ? "Se connecter" : "Créer le compte"}
             </Bouton>
           </form>
 
-          {mode === "connexion" && (
+          {mode === "connexion" && voie === "telephone" && (
+            <div className="mt-4 text-center text-sm">
+              <button type="button" onClick={() => { setAvecCode((a) => !a); setErreur(""); }}
+                className="text-creme underline-offset-2 hover:text-or-400 hover:underline">
+                {avecCode ? "J'ai déjà mon mot de passe" : "Première connexion ou mot de passe oublié ? J'ai un code parent"}
+              </button>
+              {avecCode && (
+                <p className="mt-2 text-xs text-creme/80">Pas de code ? Demandez-le au secrétariat de l&apos;école.</p>
+              )}
+            </div>
+          )}
+          {mode === "connexion" && voie === "email" && (
             <div className="mt-4 text-center">
               <Link to="/mot-de-passe-oublie" className="text-sm text-creme hover:text-or-400">
                 Mot de passe oublié ?

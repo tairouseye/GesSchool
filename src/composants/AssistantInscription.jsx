@@ -399,7 +399,10 @@ function EtapeCode({ ecole, eleve, tuteur, voitCodes, onFermer, onAutre }) {
           <p className="text-sm text-navy-900/70">{ecole?.nom} · Espace parent</p>
           <p className="mt-1 text-sm">Pour <b>{tuteur.prenom} {tuteur.nom}</b>, parent de <b>{eleve.prenom}</b></p>
           <p className="my-3 font-mono text-3xl font-bold tracking-widest text-navy-900">{code}</p>
-          <p className="text-xs text-navy-900/70">1. Ouvrez {origine} · 2. « Je suis un parent » · 3. Entrez ce code</p>
+          <p className="text-xs text-navy-900/70">
+            1. Ouvrez {origine} · 2. « Mon numéro », puis « J&apos;ai un code parent » ·
+            3. Votre numéro{tuteur.telephone ? ` (${tuteur.telephone})` : ""}, ce code et un mot de passe
+          </p>
         </div>
       )}
 

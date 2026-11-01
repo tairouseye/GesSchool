@@ -315,6 +315,18 @@ export async function lierParent(code) {
 }
 
 // Côté admin : génère/renouvelle le code de liaison d'un tuteur.
+// Numéros portés par des personnes DIFFÉRENTES dans l'école (mig. 221) :
+// ils ne servent pas à se connecter tant qu'ils ne sont pas corrigés.
+// `null` tant que la migration n'est pas appliquée.
+export async function numerosAVerifier() {
+  const { data, error } = await supabase.rpc("numeros_a_verifier");
+  if (error) {
+    if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) return null;
+    throw error;
+  }
+  return data ?? [];
+}
+
 export async function genererCodeTuteur(tuteurId) {
   const { data, error } = await supabase.rpc("generer_code_tuteur", { p_tuteur: tuteurId });
   if (error) throw error;

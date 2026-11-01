@@ -46,5 +46,6 @@ export function fraisParDefaut(applicables = []) {
 export function messageCodeParent(origin, ecoleNom, prenomEnfant, code) {
   return `Bonjour, voici votre accès à l'espace parent GesSchool${ecoleNom ? ` (${ecoleNom})` : ""} pour suivre `
     + `${prenomEnfant || "votre enfant"} : notes, absences et paiements.\n\n`
-    + `1) Ouvrez ${origin}\n2) Créez votre compte (« Je suis un parent »)\n3) Entrez le code : ${code}`;
+    + `1) Ouvrez ${origin}\n2) Touchez « Mon numéro », puis « J'ai un code parent »\n`
+    + `3) Votre numéro, ce code : ${code}, et un mot de passe de votre choix`;
 }

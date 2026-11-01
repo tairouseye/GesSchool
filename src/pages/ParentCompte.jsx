@@ -3,6 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { Carte, ChampMotDePasse, Bouton, Alerte } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { GestionBiometrie } from "@/composants/Biometrie.jsx";
+import { telephoneDuCompte } from "@/lib/connexionTelephone.js";
 
 // Espace parent — « Mon compte » : changer son mot de passe.
 // La session étant active, Supabase autorise la mise à jour directe
@@ -46,7 +47,11 @@ export default function ParentCompte() {
 
       <Carte className="p-6">
         <p className="text-sm text-navy-900/70">
-          Connecté avec <span className="font-medium text-navy-900">{utilisateur?.email}</span>
+          {/*  Un compte ouvert par le numéro (mig. 221) porte une adresse
+               technique : on montre le numéro, pas l'adresse. */}
+          Connecté avec <span className="font-medium text-navy-900">
+            {telephoneDuCompte(utilisateur?.email) ? `le ${telephoneDuCompte(utilisateur?.email)}` : utilisateur?.email}
+          </span>
         </p>
       </Carte>
 

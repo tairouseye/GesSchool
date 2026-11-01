@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion par téléphone</title>
+<style>
+  :root { --navy:#0B1F3A; --or:#c9a227; --creme:#F6F1E7; --fond:#EDE7DB; --gris:#5b6475; --vert:#047857; --rouge:#be123c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fond); font-family: "Segoe UI", system-ui, sans-serif; color:var(--navy); }
+  header { padding:28px 24px 8px; max-width:1300px; margin:auto; }
+  h1 { margin:0; font-size:24px; } header p { color:var(--gris); margin:6px 0 0; max-width:900px; line-height:1.5; }
+  .ecrans { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; padding:24px; max-width:1300px; margin:auto; }
+  .bloc { width:290px; }
+  .etiq { font-weight:700; font-size:13px; margin:0 0 8px; } .etiq span { display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:var(--or); margin-right:6px; font-size:12px; }
+  .tel { width:290px; height:590px; border-radius:34px; background:var(--navy); padding:12px; box-shadow:0 12px 30px rgba(11,31,58,.25); }
+  .ecran { height:100%; border-radius:24px; background:linear-gradient(160deg,#16325a,#0B1F3A); padding:22px 18px; display:flex; flex-direction:column; color:var(--creme); overflow:hidden; }
+  .logo { text-align:center; font-weight:800; font-size:22px; } .logo b { color:var(--or); }
+  .ecole { text-align:center; font-size:12px; opacity:.7; margin-top:2px; }
+  .carte { margin-top:18px; background:rgba(255,255,255,.96); color:var(--navy); border-radius:18px; padding:16px; }
+  .carte h2 { margin:0 0 4px; font-size:16px; } .carte p { margin:0 0 12px; font-size:12px; color:var(--gris); line-height:1.45; }
+  label { display:block; font-size:11px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
+  .champ { border:1px solid #d5d9e0; border-radius:10px; padding:10px 12px; font-size:15px; background:#fff; display:flex; gap:8px; align-items:center; }
+  .champ .ind { color:var(--gris); border-right:1px solid #e3e6eb; padding-right:8px; }
+  .code { letter-spacing:6px; font-family:Consolas, monospace; font-weight:700; }
+  .btn { margin-top:14px; background:var(--or); color:var(--navy); border-radius:11px; padding:11px; text-align:center; font-weight:700; font-size:14px; }
+  .btn.sec { background:#fff; border:1px solid #d5d9e0; font-weight:600; }
+  .lien { text-align:center; font-size:12px; color:#1d4ed8; margin-top:10px; }
+  .onglets { display:flex; background:#eef0f3; border-radius:10px; padding:3px; margin-bottom:10px; font-size:12px; font-weight:600; }
+  .onglets div { flex:1; text-align:center; padding:7px; border-radius:8px; color:var(--gris); } .onglets .on { background:#fff; color:var(--navy); box-shadow:0 1px 2px rgba(0,0,0,.1); }
+  .ok { background:#ecfdf5; color:var(--vert); border-radius:10px; padding:9px 10px; font-size:12px; margin-top:10px; }
+  .stop { background:#fff1f2; color:var(--rouge); border-radius:10px; padding:10px; font-size:12px; line-height:1.45; }
+  .empreinte { margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px dashed #c9cfd8; border-radius:11px; padding:10px; font-size:13px; font-weight:600; }
+  .enfants { display:flex; gap:6px; margin-top:8px; } .enfants div { background:#f3f4f6; border-radius:999px; padding:4px 10px; font-size:12px; }
+  .note { font-size:12px; color:var(--gris); line-height:1.5; margin-top:10px; }
+  .regles { max-width:1100px; margin:0 auto 40px; padding:0 24px; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .regles div { background:#fff; border-radius:16px; padding:16px 18px; font-size:14px; line-height:1.5; } .regles h3 { margin:0 0 6px; font-size:15px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Connexion des parents par numéro de téléphone — maquette</h1>
+  <p>Le parent scanne le QR code, tape <b>son numéro</b> (celui que l'école a déjà). La <b>première fois</b>, il prouve que c'est lui avec le <b>code parent</b> remis par l'école, puis choisit un mot de passe. <b>Ensuite</b> : numéro + mot de passe, ou son empreinte. Aucun SMS, aucun coût.</p>
+</header>
+
+<div class="ecrans">
+  <div class="bloc">
+    <p class="etiq"><span>1</span>Après le scan du QR code</p>
+    <div class="tel"><div class="ecran">
+      <div class="logo">Ges<b>School</b></div>
+      <div class="carte">
+        <div class="onglets"><div class="on">Parent</div><div>École</div></div>
+        <h2>Bonjour !</h2>
+        <p>Entrez le numéro de téléphone que vous avez donné à l'école.</p>
+        <label>Mon numéro</label>
+        <div class="champ"><span class="ind">+221</span>77 123 45 67</div>
+        <div class="btn">Continuer</div>
+        <div class="lien">Je me connecte avec mon e-mail</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="bloc">
+    <p class="etiq"><span>2</span>Première fois : le code de l'école</p>
+    <div class="tel"><div class="ecran">
+      <div class="logo">Ges<b>School</b></div>
+      <div class="ecole">Tut'Tank</div>
+      <div class="carte">
+        <h2>Bienvenue, Madame Diop</h2>
+        <p>Pour vérifier que c'est bien vous, entrez le <b>code parent</b> remis par l'école (papier ou WhatsApp).</p>
+        <label>Code parent</label>
+        <div class="champ code">K7 4P 9X</div>
+        <label>Choisissez un mot de passe</label>
+        <div class="champ">••••••••</div>
+        <div class="btn">Ouvrir mon espace</div>
+        <p class="note">Pas de code ? Demandez-le au secrétariat de l'école.</p>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="bloc">
+    <p class="etiq"><span>3</span>Les fois suivantes</p>
+    <div class="tel"><div class="ecran">
+      <div class="logo">Ges<b>School</b></div>
+      <div class="carte">
+        <h2>Bon retour, Madame Diop</h2>
+        <label>Mon numéro</label>
+        <div class="champ"><span class="ind">+221</span>77 123 45 67</div>
+        <label>Mot de passe</label>
+        <div class="champ">••••••••</div>
+        <div class="btn">Se connecter</div>
+        <div class="empreinte">👆 Avec mon empreinte</div>
+        <div class="lien">Mot de passe oublié ?</div>
+      </div>
+      <div class="ok" style="margin-top:14px">Ses enfants apparaissent tous, même dans deux écoles :<div class="enfants"><div>Awa · CM1</div><div>Moussa · CP</div></div></div>
+    </div></div>
+  </div>
+
+  <div class="bloc">
+    <p class="etiq"><span>4</span>Numéro partagé par deux familles</p>
+    <div class="tel"><div class="ecran">
+      <div class="logo">Ges<b>School</b></div>
+      <div class="carte">
+        <h2>Ce numéro est à vérifier</h2>
+        <div class="stop">L'école a enregistré ce numéro pour <b>plusieurs familles</b>. Pour protéger les informations des enfants, la connexion par ce numéro est suspendue jusqu'à ce que l'école corrige la fiche.</div>
+        <p class="note">Contactez le secrétariat de l'école, ou connectez-vous avec votre e-mail si vous en avez un.</p>
+        <div class="btn sec">Je me connecte avec mon e-mail</div>
+      </div>
+      <p class="note" style="color:#cbd5e1;margin-top:14px">Côté école : un écran « Numéros à vérifier » liste ces cas pour les corriger.</p>
+    </div></div>
+  </div>
+
+  <div class="bloc">
+    <p class="etiq"><span>5</span>Mot de passe oublié</p>
+    <div class="tel"><div class="ecran">
+      <div class="logo">Ges<b>School</b></div>
+      <div class="carte">
+        <h2>Mot de passe oublié</h2>
+        <p>Demandez un <b>nouveau code parent</b> à l'école. Avec ce code, vous choisirez un nouveau mot de passe.</p>
+        <label>Mon numéro</label>
+        <div class="champ"><span class="ind">+221</span>77 123 45 67</div>
+        <label>Nouveau code parent</label>
+        <div class="champ code">M2 8R 4T</div>
+        <label>Nouveau mot de passe</label>
+        <div class="champ">••••••••</div>
+        <div class="btn">Valider</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="regles">
+  <div><h3>🔒 Le numéro seul ne suffit jamais</h3>Il faut toujours une preuve : le code parent la première fois, puis le mot de passe ou l'empreinte. Connaître le numéro d'un parent ne donne accès à rien.</div>
+  <div><h3>👪 Un numéro = un parent = tous ses enfants</h3>Si la même personne figure sur plusieurs fiches (une par enfant), elle les retrouve toutes. Si deux personnes différentes partagent le numéro, il est bloqué jusqu'à correction.</div>
+  <div><h3>📧 Rien ne change pour les comptes existants</h3>Un parent déjà inscrit avec son e-mail continue comme avant. Il pourra ajouter son numéro depuis « Mon compte ».</div>
+</div>
+</body>
+</html>

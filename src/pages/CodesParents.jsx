@@ -3,7 +3,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, Recherche } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
-import { getTuteursCodes, genererCodeTuteur } from "@/lib/parent.js";
+import { getTuteursCodes, genererCodeTuteur, numerosAVerifier } from "@/lib/parent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
 
 // GesSchool — génération et envoi EN MASSE des codes d'accès parents.
@@ -32,7 +32,9 @@ function messageParent(origin, ecoleNom, enfants, code) {
     `Bonjour, voici votre accès à l'espace parent GesSchool` +
     (ecoleNom ? ` (${ecoleNom})` : "") +
     ` pour suivre ${qui} : notes, absences et paiements.\n\n` +
-    `1) Ouvrez ${origin}\n2) Créez votre compte\n3) Entrez le code : ${code}`
+    //  Connexion par le numéro (mig. 221) : ni e-mail, ni compte à créer à part.
+    `1) Ouvrez ${origin}\n2) Touchez « Mon numéro », puis « J'ai un code parent »\n` +
+    `3) Votre numéro, ce code : ${code}, et un mot de passe de votre choix`
   );
 }
 
@@ -56,6 +58,7 @@ export default function CodesParents() {
   const [filtre, setFiltre] = useState("tous");
   const [progression, setProgression] = useState(null); // { fait, total } pendant un lot
   const [enCours, setEnCours] = useState(false); // id d'un tuteur en génération unitaire
+  const [aVerifier, setAVerifier] = useState([]); // numéros partagés par des personnes différentes (mig. 221)
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const ecoleNom = ecole?.nom || "";
@@ -66,6 +69,7 @@ export default function CodesParents() {
     setErreur("");
     try {
       setTuteurs(await getTuteursCodes(ecoleId));
+      numerosAVerifier().then((l) => setAVerifier(l || [])).catch(() => setAVerifier([]));
     } catch (e) {
       setErreur(e.message || "Chargement impossible.");
     } finally {
@@ -198,6 +202,24 @@ export default function CodesParents() {
           puis <b>« WhatsApp »</b> sur chaque ligne pour envoyer le message pré-rempli (envoi assisté : vous
           confirmez l'envoi dans WhatsApp). Les parents sans numéro reçoivent leur code via l'export Excel ou l'impression.
         </p>
+
+        {/*  Connexion par le numéro (mig. 221) : un numéro porté par deux
+             personnes différentes est BLOQUÉ, pour qu'une famille ne voie pas
+             les enfants d'une autre. L'école corrige la fiche, et c'est réglé. */}
+        {aVerifier.length > 0 && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 print:hidden">
+            <p className="font-semibold">⚠️ {aVerifier.length} numéro(s) à vérifier : ces parents ne peuvent pas se connecter par leur numéro</p>
+            <p className="mt-1 text-xs">
+              Le même numéro est enregistré pour des personnes différentes. Corrigez le numéro ou le nom sur la fiche
+              de l&apos;élève (Responsables) ; s&apos;il s&apos;agit bien de la même personne, écrivez son nom à l&apos;identique.
+            </p>
+            <ul className="mt-2 space-y-1">
+              {aVerifier.map((n) => (
+                <li key={n.telephone}><b className="font-mono">{n.telephone}</b> · {n.noms}{n.enfants ? <span className="text-amber-800"> — {n.enfants}</span> : null}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Cartes de synthèse */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 print:hidden">
