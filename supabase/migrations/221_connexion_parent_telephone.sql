@@ -41,12 +41,18 @@ $$;
 
 create index if not exists tuteurs_tel_normalise_idx on public.tuteurs (public.tel_normalise(telephone));
 
---  Deux fiches désignent-elles la même personne ? Casse, espaces, tirets et
---  accents courants ignorés (« Aïssatou » = « AISSATOU »).
+--  Deux fiches désignent-elles la même personne ? Casse, tirets et accents
+--  courants ignorés (« Aïssatou » = « AISSATOU »), et L'ORDRE DES MOTS aussi :
+--  « Seye Tairou » et « Tairou SEYE » sont la même personne, saisie tantôt
+--  « Prénom Nom », tantôt « NOM Prénom » (relevé par le diagnostic du 01/11).
 create or replace function public._nom_parent(p_prenom text, p_nom text) returns text
 language sql immutable parallel safe as $$
-  select regexp_replace(translate(lower(coalesce(p_prenom, '') || coalesce(p_nom, '')),
-                                  'àâäáãéèêëíìîïóòôöõúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z]', '', 'g')
+  select coalesce(string_agg(m, ' ' order by m), '')
+    from regexp_split_to_table(
+           regexp_replace(translate(lower(coalesce(p_prenom, '') || ' ' || coalesce(p_nom, '')),
+                                    'àâäáãéèêëíìîïóòôöõúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z]+', ' ', 'g'),
+           ' ') as m
+   where m <> ''
 $$;
 
 -- --- 2. Vérifier une activation (sans rien écrire) -------------------------

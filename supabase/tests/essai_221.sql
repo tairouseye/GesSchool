@@ -31,6 +31,10 @@ begin
   v := public._verifier_activation_telephone('770009902', 'ESSAI221');
   r := r || ' · autre_numero=' || (v->>'statut');
 
+  -- 2 bis. Nom et prénom inversés : toujours la même personne
+  r := r || ' · ordre_ignore=' || (public._nom_parent('Tairou', 'SEYE') = public._nom_parent('Seye', 'Tairou')
+    and public._nom_parent('Aïssatou', 'Diallo') = public._nom_parent('AISSATOU', 'DIALLO'))::text;
+
   -- 3. Une autre personne sur le même numéro : bloqué
   insert into tuteurs (ecole_id, prenom, nom, telephone)
   values (v_ecole, 'Autre', 'Famille', '770009901') returning id into v_t3;
@@ -55,6 +59,6 @@ begin
 
   raise exception 'RÉSULTAT (tout est annulé) : %', r;
 end $$;
--- Attendu : normalise=true · ok=ok · mauvais_code=code_invalide · autre_numero=code_invalide
+-- Attendu : normalise=true · ok=ok · mauvais_code=code_invalide · autre_numero=code_invalide · ordre_ignore=true
 --   · deux_familles=a_verifier · lier=ok fiches=2 · relies=2 · role_parent=1 · code_efface=true
 --   · code_reutilise=code_invalide · fermees_au_public=true
