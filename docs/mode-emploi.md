@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.292 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.293 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -144,21 +144,18 @@ Au-dessus, trois outils :
 
 > **« Non inscrit »** n'est pas une erreur : c'est un élève créé dans l'établissement mais pas encore rattaché à une classe pour l'année en cours. Cela arrive à l'import quand la colonne Classe ne correspond à aucune classe existante.
 
-### 3.2 Ajouter un élève un par un
+### 3.2 Inscrire un élève : l'assistant en quatre étapes
 
-**+ Nouvel élève**, puis :
+**+ Nouvel élève** ouvre l'**assistant d'inscription**. Il enchaîne ce qui demandait quatre écrans :
 
-| Champ | Obligatoire | Remarque |
-|---|---|---|
-| **Prénom**, **Nom** | oui | — |
-| **Sexe** | non | Masculin / Féminin — sert aux accords dans les documents (« né » / « née ») |
-| **Date** et **lieu de naissance** | non | nécessaires pour les certificats ; vous pouvez compléter plus tard |
-| **Matricule** | non | **laissez vide** : il est attribué automatiquement selon votre format (§2.2) |
-| **Classe** | non | inscrit l'élève pour l'année en cours |
-| **Responsable** | non | nom + téléphone. Crée le parent et le rattache à l'enfant |
-| Vos **champs personnalisés** | selon votre réglage | ceux que vous avez définis dans Paramètres |
+1. **Élève** : prénom et nom (obligatoires), sexe, date et lieu de naissance, **classe** de l'année. Le **matricule** est attribué automatiquement (§2.2).
+   - **Doublon possible** : si un élève porte déjà ce prénom et ce nom, l'assistant le montre (matricule, date de naissance, classe) **avant** de créer quoi que ce soit. Même enfant → ouvrez sa fiche ; autre enfant → **C'est un autre enfant, continuer**. Deux homonymes nés à des dates différentes ne sont pas signalés.
+2. **Famille** : le **téléphone** du responsable. Si ce numéro est déjà connu (un frère, une sœur), l'assistant propose de **rattacher** l'enfant à ce parent plutôt que d'en créer un second — le parent retrouvera ses enfants dans le même espace. Sinon, prénom, nom et lien. Case « Pas de responsable pour l'instant » si besoin.
+   **Rien n'est enregistré avant la fin de cette étape** : fermer l'assistant plus tôt ne laisse aucune trace.
+3. **Frais** *(gestion)* : les frais de la classe d'après la grille tarifaire, obligatoires cochés (inscription, mensualité du mois en cours). **Émettre la facture**, puis, si la famille paie sur place, le **premier paiement** (ou **Plus tard**). Le tarif propre de l'élève, une exonération ou une réduction fratrie s'appliquent comme pour « Générer en lot ».
+4. **Code parent** : le code d'accès à remettre au parent, avec **Imprimer** (fiche à découper), **Copier le message** ou **WhatsApp**. Un parent qui a déjà son espace n'a pas besoin de code : l'enfant y apparaît aussitôt. Un code déjà remis n'est jamais remplacé.
 
-**Ce qui se passe ensuite** : l'élève apparaît dans la liste avec son matricule. S'il a une classe, il est **inscrit** ; sinon il reste **non inscrit** jusqu'à ce que vous l'inscriviez depuis sa fiche.
+Si une étape échoue après la création de l'élève (réseau…), **Réessayer** reprend là où l'on s'est arrêté, sans le recréer. Les **champs personnalisés** se complètent ensuite sur la fiche.
 
 ### 3.3 Importer une liste (Excel ou CSV)
 

@@ -5,6 +5,16 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.293.0] — Assistant d'inscription, finitions et filet de qualité
+- **LE BESOIN** (audit du 31/10/2026, lot 5) : plus d'écran vide trompeur, un ton uniforme, un filet de sécurité automatique, et inscrire un élève sans passer par quatre écrans.
+- **Assistant d'inscription** (« + Nouvel élève ») : Élève → Famille → Frais et premier paiement → Code parent imprimable. Un homonyme (prénom + nom, accents ignorés, date de naissance si connue) est montré **avant** toute création ; un parent déjà connu par son téléphone (fratrie) est **rattaché**, pas recréé, et son code déjà remis n'est pas remplacé. Rien n'est enregistré avant la fin de l'étape Famille ; si une étape suivante échoue, « Réessayer » reprend sans recréer l'élève. Les frais passent par le même calcul que « Générer en lot » (tarif propre, exonération, inscription/réinscription).
+- **Vouvoiement partout** : une trentaine de textes tutoyaient (Appel, RH, Comptabilité, Paramètres, Élèves…). Une épreuve (`test/vouvoiement.test.mjs`) empêche le retour du tutoiement ; la console super-admin en est exclue.
+- **Témoins de chargement** sur onze pages de travail (Annonces, Assiduité, Cahier de textes, Cantine, Certificats, Demandes, Enseignants, Fournitures, Transport, Progression, Paramètres) au lieu d'un « Aucun… » trompeur. Paramètres : champs élève et signataires ne s'enregistrent plus avant d'avoir été lus (ajouter trop tôt effaçait la liste existante).
+- **Espace étudiant** : chaque rubrique est gardée par le module de sa tuile ; une adresse tapée renvoie à l'accueil en disant pourquoi.
+- **ESLint** (`eslint.config.js`) dans la chaîne de déploiement : une erreur bloque la mise en ligne. Il a aussitôt relevé un vrai défaut : les pièces jointes d'une annonce, côté parent, appelaient un hook après un `return` conditionnel (plantage quand une annonce gagnait une pièce jointe) — corrigé.
+- **Parcours de bout en bout** : `npm run e2e` rejoue 5 parcours avec les comptes de démo dans Chrome (accueil parent, paiements de l'enfant, tableau Gestion, recherche, fenêtre Encaisser). Local, hors chaîne de déploiement.
+- Mode d'emploi §3.2.
+
 ## [2.292.0] — Espace parent lisible sans réseau, devise de l'école
 - **LE BESOIN** (audit du 31/10/2026, lot 4) : sur un réseau instable, le parent ne voyait plus rien et ne savait pas pourquoi ; les montants s'affichaient en XOF quelle que soit l'école.
 - **Hors ligne** (`src/lib/horsLigne.js`) : chaque lecture parent réussie (enfants, notes, factures, échéancier, absences, bulletins, emploi du temps, cahier, annonces, acquis, notifications, messages…) est gardée sur le téléphone, rangée sous le compte. Si une lecture échoue **pour cause de réseau**, la dernière copie revient ; un refus du serveur n'est jamais masqué. Le service worker ne pouvait pas le faire : les RPC partent en POST, que le cache du navigateur ne garde pas.
