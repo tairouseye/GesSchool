@@ -353,6 +353,48 @@ export async function ajouterTuteur(ecoleId, eleveId, t, lien) {
   return tuteur;
 }
 
+// --- Assistant d'inscription (lot 5) ---
+// Les élèves qui portent déjà ce nom : l'assistant les montre avant de créer,
+// pour ne pas inscrire deux fois le même enfant (filtre fin : inscription.js).
+export async function elevesHomonymes(ecoleId, nom) {
+  const n = String(nom || "").trim();
+  if (!ecoleId || n.length < 2) return [];
+  const { data, error } = await supabase
+    .from("eleves")
+    .select("id, prenom, nom, matricule, date_naissance, inscriptions(annee_id, classes(libelle))")
+    .eq("ecole_id", ecoleId)
+    .ilike("nom", n.replace(/[%*,()\\]/g, ""))
+    .limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Un parent déjà connu de l'école, retrouvé par son téléphone (fratrie) :
+// on le RATTACHE au nouvel enfant au lieu d'en créer un second.
+export async function tuteursParTelephone(ecoleId, motif) {
+  if (!ecoleId || !motif) return [];
+  const { data, error } = await supabase
+    .from("tuteurs")
+    .select("id, prenom, nom, telephone, code_acces, profil_id, eleve_tuteurs(eleves(prenom, nom))")
+    .eq("ecole_id", ecoleId)
+    .ilike("telephone", motif)
+    .limit(5);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function lierTuteur(ecoleId, eleveId, tuteurId, lien) {
+  const { error } = await supabase.from("eleve_tuteurs").insert({
+    ecole_id: ecoleId,
+    eleve_id: eleveId,
+    tuteur_id: tuteurId,
+    lien_parente: lien?.lien_parente || null,
+    responsable_legal: lien?.responsable_legal ?? true,
+    responsable_paiement: lien?.responsable_paiement ?? true,
+  });
+  if (error) throw error;
+}
+
 export async function retirerLienTuteur(lienId) {
   const { error } = await supabase.from("eleve_tuteurs").delete().eq("id", lienId);
   if (error) throw error;

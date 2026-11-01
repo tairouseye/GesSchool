@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
-import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, SkeletonListe, Badge, Recherche } from "@/composants/ui.jsx";
+import { Bouton, Carte, Alerte, Modale, EtatVide, SkeletonListe, Badge, Recherche } from "@/composants/ui.jsx";
+import AssistantInscription from "@/composants/AssistantInscription.jsx";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/eleves.js";
 import { getAnneeCourante, getClasses, getChampsEleve } from "@/lib/academique.js";
@@ -404,17 +405,17 @@ export default function Eleves() {
         </Carte>
       </div>
 
-      <ModaleNouvelEleve
+      {/*  Assistant d'inscription (lot 5) : élève, famille, frais, code
+           parent. Il reste ouvert après la création — la liste se met à jour
+           derrière lui. */}
+      <AssistantInscription
         ouvert={modale}
         onFermer={() => setModale(false)}
         ecoleId={ecoleId}
         sigle={ecole?.sigle}
         annee={annee}
         classes={classes}
-        onCree={() => {
-          setModale(false);
-          recharger();
-        }}
+        onCree={recharger}
       />
 
       <ModaleImport
@@ -646,114 +647,6 @@ function ModaleImport({ ouvert, onFermer, ecoleId, sigle, annee, classes, champs
           </div>
         )}
       </div>
-    </Modale>
-  );
-}
-
-function ModaleNouvelEleve({ ouvert, onFermer, ecoleId, sigle, annee, classes, onCree }) {
-  const { ecole } = useAuth();
-  const M = motEleve(ecole?.type_etablissement);
-  const vide = {
-    prenom: "", nom: "", sexe: "", date_naissance: "", lieu_naissance: "",
-    classe_id: "", t_prenom: "", t_nom: "", t_tel: "", t_lien: "Parent",
-  };
-  const [f, setF] = useState(vide);
-  const [erreur, setErreur] = useState("");
-  const [enCours, setEnCours] = useState(false);
-  const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
-
-  async function soumettre(e) {
-    e.preventDefault();
-    setErreur("");
-    setEnCours(true);
-    try {
-      const matricule = await api.genererMatricule(ecoleId, sigle);
-      const eleve = await api.creerEleve(ecoleId, {
-        matricule,
-        prenom: f.prenom.trim(),
-        nom: f.nom.trim(),
-        sexe: f.sexe || null,
-        date_naissance: f.date_naissance || null,
-        lieu_naissance: f.lieu_naissance || null,
-      });
-      if (f.classe_id && annee) {
-        await api.inscrire(ecoleId, eleve.id, f.classe_id, annee.id);
-      }
-      if (f.t_prenom.trim() && f.t_nom.trim()) {
-        await api.ajouterTuteur(
-          ecoleId, eleve.id,
-          { prenom: f.t_prenom.trim(), nom: f.t_nom.trim(), telephone: f.t_tel.trim() },
-          { lien_parente: f.t_lien, responsable_legal: true, responsable_paiement: true }
-        );
-      }
-      setF(vide);
-      onCree();
-    } catch (err) {
-      setErreur(err.message);
-    } finally {
-      setEnCours(false);
-    }
-  }
-
-  return (
-    <Modale ouvert={ouvert} onFermer={onFermer} titre={`Nouvel ${M}`} large>
-      <form onSubmit={soumettre} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Champ label="Prénom *" value={f.prenom} onChange={(e) => maj("prenom", e.target.value)} required />
-          <Champ label="Nom *" value={f.nom} onChange={(e) => maj("nom", e.target.value)} required />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Sexe</span>
-            <select
-              value={f.sexe} onChange={(e) => maj("sexe", e.target.value)}
-              className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
-            >
-              <option value="">—</option>
-              <option value="M">Masculin</option>
-              <option value="F">Féminin</option>
-            </select>
-          </label>
-          <Champ label="Date de naissance" type="date" value={f.date_naissance} onChange={(e) => maj("date_naissance", e.target.value)} />
-          <Champ label="Lieu de naissance" value={f.lieu_naissance} onChange={(e) => maj("lieu_naissance", e.target.value)} />
-        </div>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Classe (inscription année courante)</span>
-          <select
-            value={f.classe_id} onChange={(e) => maj("classe_id", e.target.value)}
-            className="w-full rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-or-500"
-          >
-            <option value="">— Pas d'inscription pour l'instant —</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.libelle}</option>
-            ))}
-          </select>
-          {classes.length === 0 && (
-            <span className="mt-1 block text-xs text-navy-900/40">
-              Aucune classe : créez-en dans « Niveaux & classes » pour pouvoir inscrire.
-            </span>
-          )}
-        </label>
-
-        <div className="rounded-xl border border-navy-900/10 bg-creme/50 p-4">
-          <p className="mb-3 text-sm font-medium text-navy-900/70">Responsable (optionnel)</p>
-          <div className="grid grid-cols-2 gap-4">
-            <Champ label="Prénom" value={f.t_prenom} onChange={(e) => maj("t_prenom", e.target.value)} />
-            <Champ label="Nom" value={f.t_nom} onChange={(e) => maj("t_nom", e.target.value)} />
-            <Champ label="Téléphone" type="tel" value={f.t_tel} onChange={(e) => maj("t_tel", e.target.value)} />
-            <Champ label="Lien" value={f.t_lien} onChange={(e) => maj("t_lien", e.target.value)} placeholder="Père, Mère, Tuteur…" />
-          </div>
-        </div>
-
-        <Alerte ton="erreur">{erreur}</Alerte>
-        <div className="flex justify-end gap-2">
-          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit" disabled={enCours || !f.prenom.trim() || !f.nom.trim()}>
-            {enCours ? "Création…" : `Créer l'${M}`}
-          </Bouton>
-        </div>
-      </form>
     </Modale>
   );
 }

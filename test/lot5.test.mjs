@@ -40,3 +40,44 @@ test("Paramètres : une liste n'est jamais réécrite avant d'avoir été lue", 
   assert.match(s, /if \(!charge \|\| !f\.libelle\.trim\(\)\) return;/);
   assert.match(s, /if \(!charge \|\| !f\.fonction\.trim\(\)\) return;/);
 });
+
+//  P2-12 : l'assistant d'inscription.
+const I = () => import("../src/lib/inscription.js");
+
+test("assistant : un homonyme est signalé, sauf date de naissance différente", async () => {
+  const { doublonsPossibles } = await I();
+  const existants = [
+    { id: 1, prenom: "Awa", nom: "Diop", date_naissance: "2018-03-02" },
+    { id: 2, prenom: "AWA", nom: "DIOP", date_naissance: null },
+    { id: 3, prenom: "Awa", nom: "Diop", date_naissance: "2019-01-01" },
+    { id: 4, prenom: "Awa", nom: "Ndiaye" },
+  ];
+  assert.deepEqual(doublonsPossibles(existants, { prenom: " awa ", nom: "Diop", date_naissance: "2018-03-02" }).map((e) => e.id), [1, 2]);
+  assert.deepEqual(doublonsPossibles(existants, { prenom: "Awa", nom: "Diop" }).map((e) => e.id), [1, 2, 3]);
+  assert.deepEqual(doublonsPossibles(existants, { prenom: "Aïssa", nom: "Diop" }), []);
+  assert.deepEqual(doublonsPossibles([{ prenom: "Mame-Diarra", nom: "Sène" }], { prenom: "mame diarra", nom: "SENE" }).length, 1);
+});
+
+test("assistant : les frais du niveau, obligatoires cochés, jamais la réinscription", async () => {
+  const { fraisApplicables, fraisParDefaut } = await I();
+  const frais = [
+    { id: "a", niveau_id: null, cycle_id: null, obligatoire: true, public: "nouveaux" },   // inscription
+    { id: "b", niveau_id: "CP", obligatoire: true, recurrent: true },                      // mensualité CP
+    { id: "c", niveau_id: "CM2", obligatoire: true },                                      // autre niveau
+    { id: "d", cycle_id: "elem", obligatoire: false },                                     // facultatif du cycle
+    { id: "e", niveau_id: null, cycle_id: null, obligatoire: true, public: "anciens" },    // réinscription
+  ];
+  const appl = fraisApplicables(frais, "CP", "elem");
+  assert.deepEqual(appl.map((f) => f.id), ["a", "b", "d", "e"]);
+  assert.deepEqual(fraisParDefaut(appl), { a: true, b: true });
+});
+
+test("assistant : rien n'est créé avant la fin de l'étape Famille ; parent connu rattaché, pas recréé", () => {
+  const s = readFileSync("src/composants/AssistantInscription.jsx", "utf8");
+  const avantCreer = s.slice(0, s.indexOf("async function creer()"));
+  assert.doesNotMatch(avantCreer, /api\.(creerEleve|inscrire|ajouterTuteur|lierTuteur)\(/);
+  assert.match(s, /if \(!etat\.eleve\) \{/, "un nouvel essai ne recrée pas l'élève");
+  assert.match(s, /if \(famille\.tuteurExistant\) \{\s*await api\.lierTuteur\(/);
+  //  Un code déjà remis n'est pas régénéré.
+  assert.match(s, /if \(!tuteur \|\| tuteur\.profil_id \|\| tuteur\.code_acces \|\| !voitCodes\) return;/);
+});
