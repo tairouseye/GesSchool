@@ -36,6 +36,8 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 - Chaque **module** (Finances, Évaluations, RH, Cantine, Transport…) peut être activé/désactivé **par le promoteur** (Paramètres → Modules).
 - Chaque accueil met en avant une zone **« À traiter »** (ce qui demande une action) — voir §15.
 - Chacun **atterrit dans son espace** à la connexion (un enseignant arrive sur la **Feuille de présence**, un comptable sur son **tableau de bord Gestion**…).
+- **Rechercher** (en haut de la barre latérale, la loupe sur téléphone, ou **Ctrl + K** depuis n'importe quel écran) : tapez un nom ou un matricule d'élève, le **nom ou le numéro de téléphone d'un parent** (les espaces ne comptent pas : « 77 123 45 67 » ou « 771234567 »), un **numéro de facture**, ou le nom d'un écran (« recouvrement »). Les flèches ↑ ↓ choisissent, **Entrée** ouvre. Vous ne trouvez que ce que votre rôle peut voir.
+- **La cloche 🔔** (à côté de Rechercher) vous prévient de ce qui attend **votre** action : un **paiement mobile déclaré** par un parent, un **justificatif d'absence**, un **message** d'un parent, une **demande de document**. Elle va à ceux qui ont accès à l'écran qui le traite (cases cochées dans **Membres**) et aux promoteurs. Toucher une alerte l'ouvre directement ; si les notifications sont activées sur l'appareil, elle arrive aussi en push.
 - **Le menu s'adapte à ce que l'établissement couvre.** Un établissement qui ne fait que l'élémentaire ne voit pas les écrans du supérieur, et inversement. Un établissement qui couvre les deux voit les deux (voir §2.4).
 
 **Rôles disponibles :** Promoteur, Responsable pédagogique, Comptable / Gestion, Responsable RH, Secrétaire / Caisse, Enseignant, Surveillant, Parent, Super-admin.

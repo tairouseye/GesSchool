@@ -15,6 +15,8 @@ import { etatPush, activerPush, desactiverPush, pushSupporte } from "@/lib/push.
 import InvitePush from "@/composants/InvitePush.jsx";
 import BandeauDemo from "@/composants/BandeauDemo.jsx";
 import RechercheGlobale from "@/composants/RechercheGlobale.jsx";
+import CentreNotifications from "@/composants/CentreNotifications.jsx";
+import { compterNonLuesPersonnel } from "@/lib/notificationsPersonnel.js";
 import InviteVisite from "@/composants/InviteVisite.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import { GestionBiometrie, InviteBiometrie } from "@/composants/Biometrie.jsx";
@@ -133,6 +135,8 @@ export default function Layout() {
   const [pushMsg, setPushMsg] = useState("");
   const [tour, setTour] = useState(false);
   const [recherche, setRecherche] = useState(false); // fenêtre de recherche globale (Ctrl+K)
+  const [cloche, setCloche] = useState(false);         // panneau des notifications du personnel
+  const [nonLues, setNonLues] = useState(0);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
   const sigle = ecole?.sigle || "GS";
@@ -143,7 +147,18 @@ export default function Layout() {
   useEffect(() => {
     compterASigner().then(setASigner).catch(() => {});
     compterDemandesEnAttente(ecole?.id).then(setDemandes).catch(() => {});
-  }, [location.pathname, ecole?.id]);
+    compterNonLuesPersonnel(profil?.id, ecole?.id).then(setNonLues).catch(() => {});
+  }, [location.pathname, ecole?.id, profil?.id]);
+
+  //  Cloche (mig. 219) : recomptée à chaque navigation, et toutes les deux
+  //  minutes tant que l'onglet est visible — une déclaration de paiement
+  //  doit se voir sans recharger la page.
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") compterNonLuesPersonnel(profil?.id, ecole?.id).then(setNonLues).catch(() => {});
+    }, 120000);
+    return () => clearInterval(t);
+  }, [profil?.id, ecole?.id]);
 
   const pastille = (cle) => (cle === "signatures" ? aSigner : cle === "demandes" ? demandes : 0);
 
@@ -323,12 +338,19 @@ export default function Layout() {
         </div>
 
         {/* Recherche globale */}
-        <div className="px-3 pb-3">
+        <div className="flex gap-2 px-3 pb-3">
           <button type="button" onClick={() => setRecherche(true)}
-            className="flex w-full items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-creme/60 transition hover:bg-white/10 hover:text-creme">
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-creme/60 transition hover:bg-white/10 hover:text-creme">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             Rechercher…
-            <kbd className="ml-auto rounded bg-white/10 px-1.5 text-[10px] text-creme/60">Ctrl K</kbd>
+            <kbd className="ml-auto whitespace-nowrap rounded bg-white/10 px-1.5 text-[10px] text-creme/60">Ctrl K</kbd>
+          </button>
+          <button type="button" onClick={() => setCloche(true)} aria-label={nonLues ? `Notifications : ${nonLues} non lues` : "Notifications"}
+            className="relative grid w-10 shrink-0 place-items-center rounded-lg bg-white/5 text-creme/70 transition hover:bg-white/10 hover:text-creme">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+            {nonLues > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{nonLues > 9 ? "9+" : nonLues}</span>
+            )}
           </button>
         </div>
 
@@ -456,8 +478,15 @@ export default function Layout() {
         <div className="flex items-center gap-2.5 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme lg:hidden">
           <LogoEcole logoUrl={ecole?.logo_url} sigle={sigle} size={26} />
           <span className="truncate font-display font-bold">{ecole?.nom || "GesSchool"}</span>
+          <button onClick={() => setCloche(true)} aria-label={nonLues ? `Notifications : ${nonLues} non lues` : "Notifications"}
+            className="relative ml-auto grid h-9 w-9 place-items-center rounded-xl bg-navy-800 text-creme/80">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+            {nonLues > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{nonLues > 9 ? "9+" : nonLues}</span>
+            )}
+          </button>
           <button onClick={() => setRecherche(true)} aria-label="Rechercher"
-            className="ml-auto grid h-9 w-9 place-items-center rounded-xl bg-navy-800 text-creme/80">
+            className="grid h-9 w-9 place-items-center rounded-xl bg-navy-800 text-creme/80">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
           </button>
           <button onClick={() => setCompte(true)} aria-label="Mon compte"
@@ -633,6 +662,7 @@ export default function Layout() {
         }`} />
       <Tour steps={TOUR_STAFF} ouvert={tour} onFermer={fermerTour} />
       <RechercheGlobale ouvert={recherche} onFermer={() => setRecherche(false)} pages={pagesRecherche} />
+      <CentreNotifications ouvert={cloche} onFermer={() => setCloche(false)} onChange={setNonLues} />
     </div>
   );
 }
