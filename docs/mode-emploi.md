@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.294 · mise à jour du 1er novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.295 · mise à jour du 2 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -270,6 +270,8 @@ L'invité crée un compte, choisit **« 🧑‍💼 Je suis un membre du personn
 Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doit correspondre à sa **fiche** :
 1. **Enseignants** → ouvrir la fiche (e-mail conseillé) → **« Code d'accès »** → l'enseignant choisit **« 🧑‍🏫 Je suis un enseignant »** et le saisit. *Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.*
 2. **Affectations** : relier enseignant × classe × matière (alimente coefficients **et** la génération d'emploi du temps).
+
+**Modifier ou supprimer un enseignant** : touchez sa ligne → sa fiche s'ouvre, avec **Supprimer** en bas à gauche (sur ordinateur, les liens *modifier* / *supprimer* restent aussi en bout de ligne). La confirmation dit combien d'**affectations** partent avec lui ; ses créneaux d'emploi du temps restent, sans enseignant.
 
 ### 4.7 Invitations en attente & 4.8 Révoquer/suspendre
 La section **« Invitations en attente »** liste les codes non utilisés (Copier le lien / Annuler). Sur chaque personne gérée : **✕** retire un rôle ; **Suspendre** bloque l'accès (« Compte suspendu »), **Réactiver** le rétablit.
@@ -612,6 +614,10 @@ Le même état colore le nom de l'élève dans la **liste des élèves** (filtr�
 
 - **📊 Exporter en Excel** : le tableau dans un fichier Excel, avec les formules de total en bas (elles se recalculent si l'on corrige une case). Le fichier sort sans couleurs.
 - **🖨️ Imprimer / PDF** : la grille en A4 paysage, avec les couleurs et le logo. Pour un PDF, choisissez « Enregistrer au format PDF » comme imprimante.
+- **📥 Confronter mon fichier** : chargez **votre** fichier Excel de suivi (colonnes Matricule, Nom, Prénom, Classe, Montant mensualité, Inscription, puis un mois par colonne — le fichier exporté ci-dessus convient aussi). L'appli le compare **élève par élève, par matricule**, à ce qu'elle a enregistré :
+  - **À enregistrer dans l'appli** : les mois (et inscriptions) payés dans le fichier mais pas — ou moins — dans l'appli. Ils sont **cochés** ; décochez ceux qui ne doivent pas l'être, choisissez le **mode** et la **date** de paiement, puis **Enregistrer**. Seule la **différence** est encaissée (30 000 dans le fichier, 10 000 dans l'appli → 20 000), jamais plus que ce qui reste dû : un mois ne peut pas être payé deux fois. Les parents ne reçoivent pas de notification (paiements déjà faits au guichet).
+  - **Pour information** (rien n'est modifié) : mois payé dans l'appli seulement, mensualité différente, matricule introuvable, élève inscrit absent du fichier. À corriger à la main si besoin.
+  - Réservé à qui peut **encaisser**.
 
 ### 10.5 Recouvrement (menu **Recouvrement**)
 
@@ -645,6 +651,10 @@ GesSchool **génère automatiquement** les emplois du temps sous contraintes (au
 **Onglet Par classe** : choisissez la classe, puis l'un des deux modes.
 - **Affichage** (par défaut) : la semaine présentée comme l'emploi du temps papier — les heures en lignes, les jours en colonnes, un cours de deux heures sur deux lignes, une couleur par matière (légende sous la grille), les pauses en bandeau gris. Deux groupes sur le même horaire partagent la case (« G1 · Psychomotricité / G2 · Jeux »).
 - **✏️ Modifier** : la saisie, jour par jour — **+ Ajouter** un créneau, **✕** pour le supprimer (avec confirmation).
+
+**📄 Charger un PDF** : pour reprendre un emploi du temps déjà fait sous Word ou Excel, sans tout ressaisir. Choisissez le PDF ; l'appli lit la grille (jours en colonnes, horaires à gauche), retrouve la classe d'après le titre (« EMPLOI DU TEMPS CI / CP A ») — un même PDF peut servir à plusieurs classes —, puis vous demande la **matière** de chaque activité (pré-remplie d'après ce que l'école a déjà rangé ; « Sans cours » pour les pauses). La grille obtenue s'affiche ; **Remplacer l'emploi du temps** l'enregistre.
+- ⚠️ **Cela remplace** tout l'emploi du temps de la classe. Le **PDF n'est pas conservé** : la grille de l'appli reste le seul emploi du temps en circulation, celui que voient les parents. Pour une correction, rechargez le PDF corrigé ou retouchez en mode **Modifier**.
+- Les cases sur plusieurs horaires, les pauses communes à toute la semaine et les groupes (« Psychomotricité (G1) / Jeux (G2) ») sont reconnus. Un PDF **scanné** (une photo) ne contient pas de texte : il ne peut pas être lu.
 
 **🖨️ Imprimer / PDF** reprend la même grille, avec l'en-tête de l'école — préférez l'orientation **Paysage**. L'onglet **Par enseignant** et l'**espace parent** montrent aussi cette grille.
 

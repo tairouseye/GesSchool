@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.295.0] — Emploi du temps depuis un PDF, fichier de suivi des mensualités, suppression d'un enseignant
+- **LE BESOIN** (Mme Kane, Tut'Tank, 02/11/2026) : supprimer un enseignant ; charger les emplois du temps en PDF ; charger le tableau de suivi des paiements.
+- **Supprimer un enseignant** : la base l'autorisait, mais le lien « supprimer », en bout de tableau, sortait de l'écran sur téléphone. La ligne ouvre désormais la fiche, qui porte **Supprimer** ; la confirmation chiffre les affectations retirées. Un refus des droits s'affiche en erreur au lieu d'un « supprimé » trompeur.
+- **📄 Charger un PDF** (Emploi du temps → Par classe) : la grille est lue dans le navigateur (pdf.js, chargé à la demande), les matières sont proposées d'après ce que l'école a déjà rangé, l'aperçu s'affiche avant **Remplacer l'emploi du temps** (RPC `remplacer_emploi_classe`, une transaction). **Le PDF n'est pas conservé** (décision du promoteur : un seul emploi du temps en circulation). Sur les 6 PDF de Tut'Tank, 32 jours sur 40 identiques à la base ; les 8 autres sont des retouches manuelles du 19/10.
+- **📥 Confronter mon fichier** (Situation des paiements → Suivi des mensualités) : l'Excel de l'école est comparé par matricule ; les paiements manquants sont cochés et enregistrés par `encaisser_mois_suivi` — la différence seulement, plafonnée au reste dû, sans notification. Les autres écarts sont signalés.
+- Migration **222** (appliquée le 02/11). Essai : `supabase/tests/essai_222.sql` (4/4 OK, tout annulé). Tests : `test/lectureEdtPdf.test.mjs`, `test/suiviFichier.test.mjs`. Mode d'emploi §4.6, §10.4 ter, §11.
+
 ## [2.294.0] — Les parents se connectent avec leur numéro de téléphone
 - **LE BESOIN** (promoteur, 01/11/2026) : le parent scanne le QR code de l'école et se connecte avec le numéro que l'école a déjà, sans e-mail. Maquette validée (`docs/maquette-connexion-telephone.html`).
 - **Connexion** : onglet **Mon numéro** (proposé d'office sur téléphone). La première fois et après un oubli : numéro + **code parent** + mot de passe choisi ; ensuite numéro + mot de passe, ou empreinte. Aucun SMS, aucun coût.
