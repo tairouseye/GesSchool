@@ -276,7 +276,9 @@ test("🔴 le SQL EN VIGUEUR reproduit exactement la carte et les modèles du JS
   //  migration 188, qui n'a rien à voir avec la carte des cases. L'épreuve
   //  échouait en lisant le mauvais bloc — un faux positif, mais elle avait
   //  raison de crier : c'est bien son heuristique qui était trop large.
-  const carte = derniere(/function public\.boite_de_cle/);
+  //  `create … function`, pas un simple `alter function … set search_path`
+  //  (mig. 223), qui ne redéfinit rien.
+  const carte = derniere(/create (or replace )?function public\.boite_de_cle/);
   assert.ok(carte, "aucune migration ne définit `boite_de_cle`");
   const paires = [...carte.sql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => [m[1], m[2]]);
   const attendu = FUSIONS.flatMap((f) => f.cles.map((c) => [c, f.id]));

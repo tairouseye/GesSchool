@@ -502,7 +502,8 @@ function ModulesActifs({ ecole, onSave }) {
     <Carte className="p-6">
       <p className="mb-4 text-xs text-navy-900/65">
         Active ou désactive des modules pour cet établissement. Un module désactivé disparaît
-        des menus et son accès est bloqué.
+        des menus et son accès est bloqué. Seuls les modules de votre offre peuvent être activés :
+        pour en ajouter un, contactez GesPro.
       </p>
       <div className="space-y-2">
         {MODULES.map((m) => (
