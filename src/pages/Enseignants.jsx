@@ -53,6 +53,15 @@ export default function Enseignants() {
 
   useEffect(() => { recharger(); }, [recharger]);
 
+  // La confirmation dit ce que la suppression emporte : les affectations
+  // partent avec la fiche, les créneaux et évaluations restent sans enseignant.
+  async function supprimer(e) {
+    const nb = affectations.filter((a) => a.enseignant_id === e.id).length;
+    const suite = nb > 0 ? ` Ses ${nb} affectation${nb > 1 ? "s" : ""} seront retirée${nb > 1 ? "s" : ""} ; ses créneaux d'emploi du temps resteront, sans enseignant.` : "";
+    if (!(await confirmer(`Supprimer ${e.prenom} ${e.nom} ?${suite}`))) return false;
+    return wrap(async () => { await api.supprimerEnseignant(e.id); setModale(null); }, "Enseignant supprimé.");
+  }
+
   const wrap = async (fn, msg) => {
     try { await fn(); await recharger(); if (msg) toast.succes(msg); return true; }
     catch (e) { toast.erreur(e.message || "Une erreur est survenue."); return false; }
@@ -81,9 +90,13 @@ export default function Enseignants() {
               Ajoutez vos enseignants, puis reliez leur compte avec un code d'accès.
             </EtatVide>
           ) : (
+            //  Toute la ligne ouvre la fiche, qui porte aussi « Supprimer » :
+            //  sur téléphone, la colonne d'actions sortait de l'écran (Mme Kane,
+            //  02/11 : « je peux ajouter mais pas supprimer »).
             <Table
               keyField="id"
               rows={ensFiltres}
+              onRowClick={(e) => setModale(e)}
               columns={[
                 { key: "nom", label: "Enseignant", render: (e) => <span className="font-medium text-navy-900">{e.prenom} {e.nom}</span> },
                 { key: "specialite", label: "Spécialité", hideMobile: true, render: (e) => <span className="text-navy-900/70">{e.specialite || "—"}</span> },
@@ -92,11 +105,11 @@ export default function Enseignants() {
                   ? <Badge ton="success">✓ compte lié</Badge>
                   : codes[e.id]
                     ? <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codes[e.id]}</span>
-                    : <button onClick={() => genererCode(e.id)} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button> },
-                { key: "actions", label: "", align: "right", render: (e) => (
+                    : <button onClick={(ev) => { ev.stopPropagation(); genererCode(e.id); }} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button> },
+                { key: "actions", label: "", align: "right", hideMobile: true, render: (e) => (
                   <>
-                    <button onClick={() => setModale(e)} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
-                    <button onClick={async () => { if (await confirmer("Supprimer cet enseignant ?")) wrap(() => api.supprimerEnseignant(e.id), "Enseignant supprimé."); }} className="ml-3 text-xs text-danger-600 hover:underline">supprimer</button>
+                    <button onClick={(ev) => { ev.stopPropagation(); setModale(e); }} className="text-xs text-navy-700 hover:text-or-500">modifier</button>
+                    <button onClick={(ev) => { ev.stopPropagation(); supprimer(e); }} className="ml-3 text-xs text-danger-600 hover:underline">supprimer</button>
                   </>
                 ) },
               ]}
@@ -115,6 +128,7 @@ export default function Enseignants() {
         ouvert={!!modale}
         enseignant={modale === "new" ? null : modale}
         onFermer={() => setModale(null)}
+        onSupprimer={modale && modale !== "new" ? () => supprimer(modale) : null}
         onValider={(data) =>
           wrap(async () => {
             if (modale === "new") await api.creerEnseignant(ecoleId, data);
@@ -299,7 +313,7 @@ function Sel({ label, value, onChange, options }) {
   );
 }
 
-function ModaleEnseignant({ ouvert, enseignant, onFermer, onValider }) {
+function ModaleEnseignant({ ouvert, enseignant, onFermer, onValider, onSupprimer }) {
   const [f, setF] = useState({ prenom: "", nom: "", specialite: "", telephone: "", email: "" });
   useEffect(() => {
     setF(enseignant
@@ -328,9 +342,12 @@ function ModaleEnseignant({ ouvert, enseignant, onFermer, onValider }) {
           <Champ label="Téléphone" type="tel" value={f.telephone} onChange={(e) => maj("telephone", e.target.value)} />
           <Champ label="E-mail" value={f.email} onChange={(e) => maj("email", e.target.value)} />
         </div>
-        <div className="flex justify-end gap-2">
-          <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
-          <Bouton type="submit" disabled={!f.prenom.trim() || !f.nom.trim()}>{enseignant ? "Enregistrer" : "Créer"}</Bouton>
+        <div className="flex flex-wrap items-center gap-2">
+          {onSupprimer && <Bouton type="button" variante="danger" onClick={onSupprimer}>Supprimer</Bouton>}
+          <div className="ml-auto flex gap-2">
+            <Bouton type="button" variante="fantome" onClick={onFermer}>Annuler</Bouton>
+            <Bouton type="submit" disabled={!f.prenom.trim() || !f.nom.trim()}>{enseignant ? "Enregistrer" : "Créer"}</Bouton>
+          </div>
         </div>
       </form>
     </Modale>

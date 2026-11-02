@@ -8,6 +8,7 @@ import { getAnneeCourante, getClasses, getMatieres, getNiveaux } from "@/lib/aca
 import { getEnseignants } from "@/lib/enseignants.js";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import GrilleEmploi from "@/composants/GrilleEmploi.jsx";
+import ImportEdtPdf from "@/composants/ImportEdtPdf.jsx";
 
 const hhmm = (t) => (t ? String(t).slice(0, 5) : "");
 const ONGLETS = [
@@ -80,6 +81,7 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
   // ajoute et supprime. Mélanger les deux encombrait la lecture.
   const [mode, setMode] = useState("affichage");
   const [erreur, setErreur] = useState("");
+  const [importer, setImporter] = useState(false);
   const classeLibelle = classes.find((c) => c.id === classeId)?.libelle || "";
 
   const recharger = useCallback(async () => {
@@ -103,6 +105,7 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
             {classes.map((c) => <option key={c.id} value={c.id}>{c.libelle}</option>)}
           </select>
         </label>
+        <Bouton variante="fantome" onClick={() => setImporter(true)}>📄 Charger un PDF</Bouton>
         {classeId && (
           <div className="flex flex-wrap items-center gap-2">
             <div role="group" aria-label="Mode" className="inline-flex rounded-xl border border-navy-900/15 bg-white p-1 text-sm">
@@ -179,6 +182,9 @@ function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants,
           setModale(null);
         })}
       />
+
+      <ImportEdtPdf ouvert={importer} onFermer={() => setImporter(false)} ecoleId={ecoleId} annee={annee}
+        classes={classes} matieres={matieres} classeId={classeId} onFini={recharger} />
 
       <Modale ouvert={imprimer} onFermer={() => setImprimer(false)} titre={`Emploi du temps — ${classeLibelle}`} large>
         <EmploiImprimable ecole={ecole} annee={annee} titre={`Classe ${classeLibelle}`} creneaux={creneaux} />

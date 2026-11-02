@@ -30,9 +30,12 @@ export async function majEnseignant(id, e) {
   return data;
 }
 
+// Sans `.select()`, un refus des droits supprime 0 ligne SANS erreur : l'écran
+// annonçait « supprimé » et l'enseignant revenait au rechargement.
 export async function supprimerEnseignant(id) {
-  const { error } = await supabase.from("enseignants").delete().eq("id", id);
+  const { data, error } = await supabase.from("enseignants").delete().eq("id", id).select("id");
   if (error) throw error;
+  if (!data?.length) throw new Error("Suppression refusée : votre accès ne permet pas de supprimer cet enseignant.");
 }
 
 // --- Compte enseignant (liaison par code, comme l'espace parent) ---

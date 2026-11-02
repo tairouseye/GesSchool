@@ -607,3 +607,15 @@ export async function getSoldesEleves(ecoleId, anneeId) {
   }
   return map;
 }
+
+// Enregistre le paiement d'un mois (ou de l'inscription, mois = null) lu dans
+// le fichier de suivi de l'école (mig. 222). La base règle la facture du mois,
+// ou la crée ; elle refuse d'encaisser au-delà de ce qui reste dû.
+export async function encaisserMoisSuivi(eleveId, mois, montant, { mode = "especes", reference = null, date = null } = {}) {
+  const { data, error } = await supabase.rpc("encaisser_mois_suivi", {
+    p_eleve: eleveId, p_mois: mois, p_montant: montant,
+    p_mode: mode, p_reference: reference, p_date: date || null,
+  });
+  if (error) throw error;
+  return Number(data) || 0;
+}

@@ -3,6 +3,7 @@ import { Alerte, Bouton, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import { grilleMensualites } from "@/lib/paiements.js";
 import { etat as etatPaiement } from "@/lib/paiementStatut.js";
+import ImportSuivi from "@/composants/ImportSuivi.jsx";
 
 // GesSchool — le suivi des mensualités, à l'image du fichier Excel tenu à la
 // main par l'école (Tut'Tank, « Suivi mensualités 2026-2027.xlsx ») :
@@ -38,6 +39,8 @@ export default function GrilleMensualites({ annee, classeId, ecole }) {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [export_, setExport] = useState(false);
+  const [importer, setImporter] = useState(false);
+  const [version, setVersion] = useState(0); // relit la grille après un import
 
   useEffect(() => {
     if (!annee?.id) return undefined;
@@ -48,7 +51,7 @@ export default function GrilleMensualites({ annee, classeId, ecole }) {
       .catch((e) => { if (vivant) setErreur(e.message); })
       .finally(() => { if (vivant) setChargement(false); });
     return () => { vivant = false; };
-  }, [annee?.id, classeId]);
+  }, [annee?.id, classeId, version]);
 
   // Les mois de l'année, dans l'ordre (ceux de l'échéancier de chacun).
   const mois = useMemo(() => {
@@ -154,6 +157,7 @@ export default function GrilleMensualites({ annee, classeId, ecole }) {
       <div className="no-print flex flex-wrap items-center gap-2 border-b border-navy-900/10 p-4">
         <Bouton onClick={exporterExcel} disabled={export_}>{export_ ? "…" : "📊 Exporter en Excel"}</Bouton>
         <Bouton variante="fantome" onClick={() => window.print()}>🖨️ Imprimer / PDF</Bouton>
+        <Bouton variante="fantome" onClick={() => setImporter(true)}>📥 Confronter mon fichier</Bouton>
         <span className="text-xs text-navy-900/45">
           Montant payé par mois · <span className="rounded bg-emerald-50 px-1 text-emerald-800">payé</span>{" "}
           <span className="rounded bg-amber-50 px-1 text-amber-800">acompte</span>{" "}
@@ -243,6 +247,8 @@ export default function GrilleMensualites({ annee, classeId, ecole }) {
           </tfoot>
         </table>
       </div>
+      <ImportSuivi ouvert={importer} onFermer={() => setImporter(false)} annee={annee} devise={devise}
+        onFini={() => setVersion((v) => v + 1)} />
     </>
   );
 }

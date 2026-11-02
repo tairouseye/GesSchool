@@ -224,3 +224,33 @@ export async function appliquerGeneration(ecoleId, classeIds, creneaux) {
   if (error) throw error;
   return { inseres: rows.length };
 }
+
+// --- Import d'un emploi du temps PDF (mig. 222) ---
+
+// Ce que l'école a déjà rangé : activité → matière (« Conjugaison » → Langue
+// et communication). Sert à proposer la matière d'une activité lue dans un PDF.
+export async function getActivitesConnues(ecoleId) {
+  const { data, error } = await supabase
+    .from("emplois_du_temps")
+    .select("activite, matiere_id")
+    .eq("ecole_id", ecoleId)
+    .not("activite", "is", null);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Affectations brutes de l'année (y compris « toutes matières », mig. 161).
+export async function getAffectationsAnnee(ecoleId, anneeId) {
+  let q = supabase.from("affectations").select("classe_id, matiere_id, enseignant_id").eq("ecole_id", ecoleId);
+  if (anneeId) q = q.eq("annee_id", anneeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Remplace tous les créneaux de la classe, en une transaction.
+export async function remplacerEmploiClasse(classeId, creneaux) {
+  const { data, error } = await supabase.rpc("remplacer_emploi_classe", { p_classe: classeId, p_creneaux: creneaux });
+  if (error) throw error;
+  return data;
+}
