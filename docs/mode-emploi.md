@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.295 · mise à jour du 2 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.296 · mise à jour du 2 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -94,7 +94,7 @@ Tant qu'une rubrique a des **modifications non enregistrées**, une barre **« M
 - **Matricule** : préfixe, séparateur, nombre de chiffres, et **Année** — laissez vide pour l'année civile automatique, **ou fixez-la** (ex. 2026) pour que toute une rentrée porte le même « 26 », quelle que soit la date de saisie. Aperçu ex. `CLB-26-0001`.
 - **Relances automatiques** (groupe Finances, module Recouvrement) : les paliers de rappel d'impayés (§ Recouvrement).
 - **Paiement en ligne** (groupe Finances, réservé au **promoteur**) : prestataire et clés.
-- **Modules actifs** (groupe Abonnement, réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus.
+- **Modules actifs** (groupe Abonnement, réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus. Seuls les modules **compris dans votre offre** peuvent être activés ; pour en ajouter un, contactez GesPro.
 
 ### 2.3 Paiement mobile (menu **Paiements → onglet Paiement mobile**)
 Saisir vos numéros **Wave / Orange Money / Free Money** (affichés aux parents pour régler les factures et déclarer un paiement).
@@ -274,7 +274,7 @@ Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doi
 **Modifier ou supprimer un enseignant** : touchez sa ligne → sa fiche s'ouvre, avec **Supprimer** en bas à gauche (sur ordinateur, les liens *modifier* / *supprimer* restent aussi en bout de ligne). La confirmation dit combien d'**affectations** partent avec lui ; ses créneaux d'emploi du temps restent, sans enseignant.
 
 ### 4.7 Invitations en attente & 4.8 Révoquer/suspendre
-La section **« Invitations en attente »** liste les codes non utilisés (Copier le lien / Annuler). Sur chaque personne gérée : **✕** retire un rôle ; **Suspendre** bloque l'accès (« Compte suspendu »), **Réactiver** le rétablit.
+La section **« Invitations en attente »** liste les codes non utilisés (Copier le lien / Annuler). **Une invitation vaut 7 jours** : passé ce délai, elle est refusée — envoyez-en une nouvelle. Sur chaque personne gérée : **✕** retire un rôle ; **Suspendre** bloque l'accès (« Compte suspendu »), **Réactiver** le rétablit.
 
 ---
 
@@ -876,6 +876,8 @@ Ce qui **persiste** d'une année à l'autre (à ne pas refaire) : niveaux, cycle
 
 ### 17.1 Donner l'accès
 Fiche élève → Responsables → **Code parent** (ou **Codes parents** pour tous d'un coup) → communiquer le code au parent.
+
+**Un code ne sert qu'une fois** (parents, enseignants, étudiants) : il s'efface dès que le compte est relié. Un code qui a circulé dans un groupe ne permet donc pas de prendre la place du parent. Si le parent doit refaire l'opération (mot de passe oublié, nouveau téléphone), générez un **nouveau code**. Les codes font 10 caractères, sans 0/O ni 1/I/L pour se dicter sans erreur.
 
 **Connexion par le numéro de téléphone.** Le parent n'a pas besoin d'e-mail : sur la page de connexion, **Mon numéro** → **« J'ai un code parent »** → son numéro (celui de sa fiche), le code, un mot de passe. Tous les enfants enregistrés sous ce numéro, au nom de cette même personne, apparaissent. Ensuite : numéro + mot de passe, ou empreinte.
 - Le **numéro seul ne donne accès à rien** : il faut le code la première fois, puis le mot de passe. Le code **ne sert qu'une fois**.

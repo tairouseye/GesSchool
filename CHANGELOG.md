@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.296.0] — Durcissement de sécurité (audit du 02/11/2026)
+- **L'AUDIT** (base, stockage, fonctions Edge, appli), mené sur la production en se mettant à la place de vrais comptes, dans des transactions annulées. **Cloisonnement confirmé** : aucune ligne d'une autre école sur 140 tables ; un parent n'obtient rien d'un enfant qui n'est pas le sien (19 fonctions de lecture, 7 d'écriture) ; aucune élévation de rôle ; un visiteur ou un compte sans école ne voit rien ; la fonction `push` refuse les appels sans secret.
+- **Modules** : le promoteur pouvait écrire lui-même `modules_actifs` (modules payants débloqués sans payer). Désormais, seuls les modules de son offre (plan du dernier abonnement) s'activent ; `demonstration` et `id` sont réservés au super-administrateur (déclencheur `trg_proteger_ecole`).
+- **Logos et cachets** (stockage `ecoles`) : n'importe quel compte connecté pouvait remplacer ou supprimer ceux de n'importe quelle école. L'écriture est limitée au dossier de sa propre école (direction), au sien pendant la création de l'école, et aux encarts pour le super-administrateur.
+- **Codes d'accès** : 10 caractères tirés de `gen_random_bytes` (au lieu de 8 hexadécimaux de `random()`), **effacés dès qu'ils ont servi** (parents, enseignants, étudiants) — un code ancien ne peut plus détourner une fiche. Les codes des comptes déjà reliés sont effacés.
+- **Invitations du personnel** : valables 7 jours ; les plus anciennes sont révoquées.
+- `search_path` fixé sur 6 fonctions ; `react-router-dom` 6.30.6 (la faille signalée par npm n'est corrigée qu'en v7 ; l'appli, en HashRouter et sans rendu serveur, y est peu exposée).
+- Migration **223**, essai `supabase/tests/essai_223.sql` (12 contrôles, validé à blanc sur la production : 12/12). Mode d'emploi §2, §4.7, §17.1.
+
 ## [2.295.0] — Emploi du temps depuis un PDF, fichier de suivi des mensualités, suppression d'un enseignant
 - **LE BESOIN** (Mme Kane, Tut'Tank, 02/11/2026) : supprimer un enseignant ; charger les emplois du temps en PDF ; charger le tableau de suivi des paiements.
 - **Supprimer un enseignant** : la base l'autorisait, mais le lien « supprimer », en bout de tableau, sortait de l'écran sur téléphone. La ligne ouvre désormais la fiche, qui porte **Supprimer** ; la confirmation chiffre les affectations retirées. Un refus des droits s'affiche en erreur au lieu d'un « supprimé » trompeur.
