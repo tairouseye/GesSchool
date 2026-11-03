@@ -1522,3 +1522,41 @@ test("🔴 un rejet MUET est impossible : le parent doit savoir pourquoi", () =>
     "`enfant_declarations` contourne la RLS : sans `_parent_possede`, un parent"
     + " lirait les déclarations de l'enfant d'un autre");
 });
+
+// ---------------------------------------------------------------------
+//  Les modules souscrits, contrôlés par la base (mig. 224)
+// ---------------------------------------------------------------------
+
+test("🔴 la carte SQL clé → module est celle du JS, ni plus ni moins", async () => {
+  //  La base doit refuser exactement ce que le menu cache : une clé de
+  //  trop et un écran affiché tombe en erreur ; une de moins et un module
+  //  non souscrit s'ouvre par l'API.
+  const { MODULES } = await chargerLib("modules224", ['export { MODULES } from "@/lib/modules.js";']);
+  const attendu = new Map();
+  for (const m of MODULES) for (const c of m.cles) attendu.set(c, m.id);
+  //  Une boîte ne suit un module que si TOUTES ses pages en font partie.
+  for (const f of FUSIONS) {
+    const mods = new Set(f.cles.map((c) => attendu.get(c) ?? null));
+    if (mods.size === 1 && !mods.has(null)) attendu.set(f.id, [...mods][0]);
+  }
+  const fichiers = fs.readdirSync(DOSSIER_MIG).filter((f) => /^\d+_.*\.sql$/.test(f)).sort().reverse();
+  const f = fichiers.find((x) => /create (or replace )?function public\._module_de_cle/
+    .test(fs.readFileSync(path.join(DOSSIER_MIG, x), "utf8")));
+  assert.ok(f, "aucune migration ne définit `_module_de_cle`");
+  const sql = fs.readFileSync(path.join(DOSSIER_MIG, f), "utf8");
+  const bloc = sql.slice(sql.indexOf("function public._module_de_cle"), sql.indexOf("$fn$;", sql.indexOf("function public._module_de_cle")));
+  const paires = [...bloc.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => `${m[1]}→${m[2]}`).sort();
+  assert.deepEqual(paires, [...attendu].map(([c, m]) => `${c}→${m}`).sort(),
+    `${f} : la carte des modules ne correspond plus à src/lib/modules.js — régénérez le bloc`);
+});
+
+test("🔴 a_acces garde la condition de module, y compris pour le promoteur", () => {
+  const fichiers = fs.readdirSync(DOSSIER_MIG).filter((f) => /^\d+_.*\.sql$/.test(f)).sort().reverse();
+  const f = fichiers.find((x) => /create (or replace )?function public\.a_acces/
+    .test(fs.readFileSync(path.join(DOSSIER_MIG, x), "utf8")));
+  const sql = fs.readFileSync(path.join(DOSSIER_MIG, f), "utf8");
+  const def = sql.slice(sql.indexOf("function public.a_acces"));
+  const corps = def.slice(0, def.indexOf("$fn$;"));
+  assert.match(corps, /_module_ouvert\(p_cle\) and \(\s*a_role\('admin_ecole'\)/,
+    `${f} : le promoteur (admin_ecole) doit passer par le contrôle de module`);
+});
