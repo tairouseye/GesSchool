@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.301.0] — Prise en main, lot 2 : démarrer en une heure
+- **LE CONSTAT** (audit du 03/11) : deux écoles inscrites sur quatre n'ont rien créé après l'assistant — chaque niveau, classe et matière se tapait à la main, une soixantaine de saisies avant le premier élève.
+- **Structure type, en un clic** (mig. **227**, `appliquer_structure_type`) : niveaux officiels (TPS → GS, CI → CM2, 6e → 3e, Seconde → Terminale), une classe par niveau, matières du programme, coefficients usuels du collège, et dates des trimestres (ou semestres). **Ne remplit que ce qui est vide** : un cycle qui a déjà un niveau ou des matières est laissé tel quel, les périodes ne sont datées que si aucune ne l'est — Tut'Tank, essayée à blanc, n'est pas touchée. Proposée par l'assistant de création (case cochée d'office) et dans Structure académique tant qu'un cycle est vide. Essai `supabase/tests/essai_227.sql` (6 contrôles, 6/6 à blanc).
+- **Mise en route en 9 étapes**, en haut des accueils Pilotage, **Gestion et Pédagogie**, pour le promoteur **et la direction** : niveaux & classes, dates des trimestres, matières, grille tarifaire, élèves, enseignants & affectations, **comptes des enseignants**, **parents connectés** (validée à partir de la moitié des familles), paiement mobile. Barre d'avancement, prochaine étape en clair, liens vers le bon onglet, bouton **Replier**. Elle s'arrêtait auparavant aux élèves inscrits : Tut'Tank l'avait « terminée » avec 0 enseignant relié et 4 parents sur 145.
+- **Paiements** s'ouvre sur un onglet donné (`?onglet=frais`, `?onglet=mobile`).
+- **Année proposée à la création** : bascule au 1er juillet (et non plus en août) — une école créée le 06/07/2026 avait reçu 2025-2026, une année finie.
+
 ## [2.300.0] — Prise en main, lot 1 : un quotidien plus lisible
 - **Audit de prise en main** (03/11, `AUDIT_GESCHOOL/AUDIT_PRISE_EN_MAIN.md`) : deux écoles inscrites sur quatre n'ont rien créé après l'assistant ; à Tut'Tank, aucun enseignant n'a de compte et 4 parents sur 145 sont reliés. Plan en quatre lots ; voici le premier.
 - **Liste des élèves** : la colonne **Classe** affichait « — » pour tous les élèves, dans toutes les écoles (la requête paginée ne chargeait plus le libellé de la classe). Rétablie.
