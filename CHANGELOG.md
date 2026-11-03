@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.302.0] — Prise en main, lot 3 : connecter les enseignants et les familles
+- **LE CONSTAT** (03/11) : à Tut'Tank, aucun des 10 enseignants n'a de compte — aucun code n'avait été généré, et leurs fiches ne portent ni téléphone ni e-mail — et 4 parents sur 145 sont reliés. La pédagogie (0 note saisie) et l'espace parent sont donc à l'arrêt.
+- **Les enseignants se connectent par leur numéro** (mig. **228**) : « Mon numéro » → « J'ai un code », leur numéro, le code remis par l'école et un mot de passe — comme les parents depuis la mig. 221, sans e-mail. La fonction Edge `parent-telephone` est inchangée ; ses deux fonctions d'activation reconnaissent désormais un code enseignant. 🔒 Un numéro porté par un parent et un enseignant **différents** est bloqué (ils partageraient un compte) ; mesuré : aucune école réelle concernée. Essai `supabase/tests/essai_228.sql` (6 contrôles, 6/6 à blanc).
+- **Enseignants → 🔑 Donner les accès** : tous les enseignants d'un coup — codes manquants générés en une fois, message **WhatsApp** pré-rempli quand la fiche porte un numéro, **fiches imprimables** à remettre en main propre, état de chacun (connecté, prêt, numéro manquant, pas de code), nouveau code pour un mot de passe oublié.
+- **Une seule porte par population** : **Membres** ne propose plus les rôles Enseignant et Parent — une invitation y donnait le rôle sans la fiche (aucune classe, aucun enfant) ; un encadré renvoie vers Enseignants et Codes parents.
+- **À traiter** (accueils Gestion, et Pédagogie pour la direction) : « N enseignants sans compte » → Donner les accès, « N parents pas encore connectés » → Codes parents.
+
 ## [2.301.0] — Prise en main, lot 2 : démarrer en une heure
 - **LE CONSTAT** (audit du 03/11) : deux écoles inscrites sur quatre n'ont rien créé après l'assistant — chaque niveau, classe et matière se tapait à la main, une soixantaine de saisies avant le premier élève.
 - **Structure type, en un clic** (mig. **227**, `appliquer_structure_type`) : niveaux officiels (TPS → GS, CI → CM2, 6e → 3e, Seconde → Terminale), une classe par niveau, matières du programme, coefficients usuels du collège, et dates des trimestres (ou semestres). **Ne remplit que ce qui est vide** : un cycle qui a déjà un niveau ou des matières est laissé tel quel, les périodes ne sont datées que si aucune ne l'est — Tut'Tank, essayée à blanc, n'est pas touchée. Proposée par l'assistant de création (case cochée d'office) et dans Structure académique tant qu'un cycle est vide. Essai `supabase/tests/essai_227.sql` (6 contrôles, 6/6 à blanc).
