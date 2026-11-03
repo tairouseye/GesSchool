@@ -50,3 +50,21 @@ export function etapesMiseEnRoute(etat, { paiements = true } = {}) {
   ];
   return etapes.filter(Boolean);
 }
+
+//  Les lignes « À traiter » de l'adoption (prise en main, lot 3) : elles
+//  restent après la mise en route, et le secrétariat les voit aussi. Une
+//  ligne n'apparaît que si l'écran qui la traite est ouvert à ce rôle.
+//  `a` : { enseignants, enseignantsRelies, tuteurs, tuteursRelies }.
+export function lignesAdoption(a, ouvert) {
+  if (!a) return [];
+  const sansCompte = Math.max(0, (a.enseignants || 0) - (a.enseignantsRelies || 0));
+  const familles = Math.max(0, (a.tuteurs || 0) - (a.tuteursRelies || 0));
+  return [
+    ouvert("enseignants") && sansCompte > 0 && {
+      to: "/enseignants", ton: "or", bouton: "Donner les accès",
+      titre: `${pl(sansCompte, "enseignant")} sans compte (${a.enseignantsRelies || 0} / ${a.enseignants} connecté${(a.enseignantsRelies || 0) > 1 ? "s" : ""})` },
+    ouvert("codes_parents") && familles > 0 && {
+      to: "/codes-parents", ton: "navy", bouton: "Inviter",
+      titre: `${pl(familles, "parent")} pas encore connecté${familles > 1 ? "s" : ""} (${a.tuteursRelies || 0} / ${a.tuteurs})` },
+  ].filter(Boolean);
+}

@@ -34,3 +34,13 @@ test("sans le module Encaissements, ni grille tarifaire ni paiement mobile", () 
 test("chaque étape mène à un écran", () => {
   for (const e of etapesMiseEnRoute({})) assert.match(e.to, /^\/[a-z]/, e.id);
 });
+
+test("🔴 adoption : Tut'Tank voit ses 10 enseignants sans compte et 141 parents à connecter", async () => {
+  const { lignesAdoption } = await import("../src/lib/miseEnRoute.js");
+  const l = lignesAdoption({ enseignants: 10, enseignantsRelies: 0, tuteurs: 145, tuteursRelies: 4 }, () => true);
+  assert.equal(l.length, 2);
+  assert.match(l[0].titre, /10 enseignants sans compte/);
+  assert.match(l[1].titre, /141 parents pas encore connectés \(4 \/ 145\)/);
+  assert.equal(lignesAdoption({ enseignants: 10, enseignantsRelies: 0 }, (c) => c !== "enseignants").length, 0);
+  assert.equal(lignesAdoption({ enseignants: 2, enseignantsRelies: 2, tuteurs: 3, tuteursRelies: 3 }, () => true).length, 0);
+});

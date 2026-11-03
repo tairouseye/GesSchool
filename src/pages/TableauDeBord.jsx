@@ -7,7 +7,7 @@ import {
   BarresListe, Anneau, FilActivite, RaccourcisBloc, ilYa,
 } from "@/composants/TableauBord.jsx";
 import { statsGestion, periodesAnnee } from "@/lib/dashboard.js";
-import { getAnneeCourante } from "@/lib/academique.js";
+import { getAnneeCourante, compterAdoption } from "@/lib/academique.js";
 import { MODES } from "@/lib/paiements.js";
 import { ouvrirEncaisser } from "@/lib/encaisser.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -15,6 +15,7 @@ import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
+import { lignesAdoption } from "@/lib/miseEnRoute.js";
 
 const fmtMontant = (n) => {
   const v = Math.round(Number(n) || 0);
@@ -39,6 +40,7 @@ export default function TableauDeBord() {
   const [periodes, setPeriodes] = useState([]);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
+  const [adoption, setAdoption] = useState(null);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
@@ -54,6 +56,7 @@ export default function TableauDeBord() {
           compterDemandesEnAttente(ecoleId).catch(() => 0),
         ]);
         setStats(s); setPeriodes(per.liste); setASigner(sig); setDemandes(dem);
+        compterAdoption(ecoleId).then(setAdoption).catch(() => {});
       } catch (e) {
         setErreur(e.message);
       } finally {
@@ -78,6 +81,7 @@ export default function TableauDeBord() {
       to: "/demandes", ton: "violet", bouton: "Traiter", titre: `${pl(demandes, "demande")} de document` },
     ouvert("signatures") && aSigner > 0 && {
       to: "/a-signer", ton: "bleu", bouton: "Signer", titre: `${pl(aSigner, "document")} à signer` },
+    ...lignesAdoption(adoption, ouvert),
   ].filter(Boolean) : [];
 
   //  Agenda : les échéances de paiement à venir, puis les fins de période.

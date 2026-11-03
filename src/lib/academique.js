@@ -48,6 +48,19 @@ export async function etatMiseEnRoute(ecoleId, anneeId) {
     periodes, periodesDatees, enseignantsRelies, tuteurs, tuteursRelies, mobile };
 }
 
+// Qui est connecté : enseignants et parents reliés à un compte (lignes
+// « À traiter » des accueils, lot 3). En cas de refus, rien plutôt qu'une erreur.
+export async function compterAdoption(ecoleId) {
+  const nb = (q) => q.then(({ count }) => count ?? 0).catch(() => 0);
+  const [enseignants, enseignantsRelies, tuteurs, tuteursRelies] = await Promise.all([
+    nb(supabase.from("enseignants").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("enseignants").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null)),
+    nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
+    nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null)),
+  ]);
+  return { enseignants, enseignantsRelies, tuteurs, tuteursRelies };
+}
+
 // Structure type en un clic (mig. 227) : niveaux officiels, une classe par
 // niveau, matières, coefficients du collège, trimestres datés — seulement là
 // où c'est vide. Renvoie ce qui a été créé.

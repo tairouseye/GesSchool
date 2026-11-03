@@ -168,7 +168,7 @@ export default function Connexion() {
                 />
                 {avecCode && (
                   <ChampConnexion
-                    label="Code parent (remis par l'école)" required autoComplete="one-time-code"
+                    label="Code remis par l'école (parent ou enseignant)" required autoComplete="one-time-code"
                     value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
                     placeholder="A1B2C3D4" style={{ letterSpacing: "0.2em" }}
                   />
@@ -211,7 +211,7 @@ export default function Connexion() {
             <div className="mt-4 text-center text-sm">
               <button type="button" onClick={() => { setAvecCode((a) => !a); setErreur(""); }}
                 className="text-creme underline-offset-2 hover:text-or-400 hover:underline">
-                {avecCode ? "J'ai déjà mon mot de passe" : "Première connexion ou mot de passe oublié ? J'ai un code parent"}
+                {avecCode ? "J'ai déjà mon mot de passe" : "Première connexion ou mot de passe oublié ? J'ai un code"}
               </button>
               {avecCode && (
                 <p className="mt-2 text-xs text-creme/80">Pas de code ? Demandez-le au secrétariat de l&apos;école.</p>

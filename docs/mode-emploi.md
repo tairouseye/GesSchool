@@ -239,7 +239,9 @@ Promoteur                → configure l'école, garde un raccourci total
 ### 4.2 Inviter un membre
 1. Ouvrir le menu **Membres** (présent dans votre espace).
 2. **+ Inviter un membre** → choisir le **rôle** + e-mail (optionnel) → **Générer le code d'invitation**.
-3. Un **code à 8 caractères** et un **lien** s'affichent → les transmettre via **Copier**, **WhatsApp** ou **Email**.
+3. Un **code à 10 caractères** et un **lien** s'affichent → les transmettre via **Copier**, **WhatsApp** ou **Email**.
+
+> ⚠️ **Enseignants et parents ne s'invitent pas ici.** Une invitation Membres donne un rôle, mais pas la fiche : un enseignant invité ainsi se connectait sans aucune classe, un parent sans aucun enfant. Un **enseignant** reçoit son accès depuis **Enseignants & affectations → Donner les accès** (§4.6), un **parent** depuis **Codes parents** (§17.1).
 
 > 🔒 **Verrouillage par e-mail (optionnel)** : si vous renseignez l'e-mail, l'invitation n'est utilisable **que** par un compte créé avec **cette** adresse. Laissez vide pour un code utilisable par tout destinataire. Transmettez le code **en privé**.
 
@@ -271,10 +273,17 @@ Le sélecteur n'apparaît **que si votre école a au moins deux cycles**, et **s
 L'invité crée un compte, choisit **« 🧑‍💼 Je suis un membre du personnel »** et saisit le code — ou ouvre le **lien d'invitation** (code pré-rempli). ✅ Son compte est créé avec le bon rôle.
 
 ### 4.6 Enseignants reliés à leur fiche
-Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doit correspondre à sa **fiche** :
-1. **Enseignants** → ouvrir la fiche (e-mail conseillé) → **« Code d'accès »** → l'enseignant choisit **« 🧑‍🏫 Je suis un enseignant »** et le saisit. *Astuce : si l'e-mail du compte = l'e-mail de la fiche, la liaison est automatique.*
-2. **Affectations** : relier enseignant × classe × matière (alimente coefficients **et** la génération d'emploi du temps).
-
+Pour qu'un enseignant retrouve **ses** classes (Appel, Notes…), son compte doit correspondre à sa **fiche**. Sans compte, il ne peut ni faire l'appel ni saisir de notes.
+1. **Enseignants & affectations → 🔑 Donner les accès** : la liste de tous vos enseignants, avec leur **numéro**, leur **code** et leur état (*connecté*, *prêt à envoyer*, *numéro manquant*, *pas de code*).
+   - **Générer les codes manquants** : un code pour chaque enseignant sans compte, en une fois.
+   - **WhatsApp** (quand la fiche porte un numéro) : le message est déjà rédigé — les trois gestes et le code.
+   - **🖨️ Imprimer les fiches** : une fiche à découper par enseignant, à remettre en main propre.
+   - **+ ajouter le numéro** ouvre la fiche : **le numéro est indispensable** pour la connexion par téléphone.
+   - **nouveau code** : pour un mot de passe oublié — l'ancien code ne vaut plus.
+2. **Côté enseignant** : il ouvre GesSchool, touche **« Mon numéro »** puis **« J'ai un code »**, saisit son numéro, le code et un mot de passe de son choix. Il n'a besoin ni d'e-mail ni de compte à créer à part. (S'il préfère un e-mail : il crée son compte, choisit **« 🧑‍🏫 Je suis un enseignant »** et saisit le même code.)
+   > 🔒 Si un parent et un enseignant **différents** sont enregistrés avec le même numéro, la connexion par ce numéro est suspendue (ils partageraient un compte) : corrigez l'une des fiches — le numéro apparaît dans **Codes parents → Numéros à vérifier**.
+3. **Affectations** : relier enseignant × classe × matière (alimente coefficients **et** la génération d'emploi du temps).
+4. Les accueils **Gestion** et **Pédagogie** (direction) rappellent dans **À traiter** combien d'enseignants n'ont pas encore de compte, et combien de parents ne sont pas connectés.
 **Modifier ou supprimer un enseignant** : touchez sa ligne → sa fiche s'ouvre, avec **Supprimer** en bas à gauche (sur ordinateur, les liens *modifier* / *supprimer* restent aussi en bout de ligne). La confirmation dit combien d'**affectations** partent avec lui ; ses créneaux d'emploi du temps restent, sans enseignant.
 
 ### 4.7 Invitations en attente & 4.8 Révoquer/suspendre

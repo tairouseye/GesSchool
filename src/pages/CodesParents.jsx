@@ -33,7 +33,7 @@ function messageParent(origin, ecoleNom, enfants, code) {
     (ecoleNom ? ` (${ecoleNom})` : "") +
     ` pour suivre ${qui} : notes, absences et paiements.\n\n` +
     //  Connexion par le numéro (mig. 221) : ni e-mail, ni compte à créer à part.
-    `1) Ouvrez ${origin}\n2) Touchez « Mon numéro », puis « J'ai un code parent »\n` +
+    `1) Ouvrez ${origin}\n2) Touchez « Mon numéro », puis « J'ai un code »\n` +
     `3) Votre numéro, ce code : ${code}, et un mot de passe de votre choix`
   );
 }

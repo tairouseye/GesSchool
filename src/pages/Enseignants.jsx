@@ -5,9 +5,12 @@ import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Recherche, filtreTexte,
 import * as api from "@/lib/enseignants.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
+import { lienWhatsApp } from "@/lib/recouvrement.js";
+import { messageEnseignant, etatAcces, fichesImprimables } from "@/lib/accesEnseignants.js";
 
 export default function Enseignants() {
-  const { ecoleId } = useAuth();
+  const { ecoleId, ecole } = useAuth();
+  const [acces, setAcces] = useState(false); // fenêtre « Donner les accès »
   const confirmer = useConfirm();
   const toast = useToast();
   const [onglet, setOnglet] = useState("enseignants");
@@ -27,9 +30,12 @@ export default function Enseignants() {
   const ensFiltres = filtreTexte(enseignants, q, ["prenom", "nom", "specialite", "telephone", "email"]);
 
   async function genererCode(id) {
-    try { const code = await api.genererCodeEnseignant(id); setCodes((s) => ({ ...s, [id]: code })); }
-    catch (e) { toast.erreur(e.message); }
+    try { const code = await api.genererCodeEnseignant(id); setCodes((s) => ({ ...s, [id]: code })); return code; }
+    catch (e) { toast.erreur(e.message); return null; }
   }
+  //  Le code affiché : celui qu'on vient de générer, sinon celui en base.
+  const codeDe = (e) => codes[e.id] || e.code_acces || null;
+  const sansCompte = enseignants.filter((e) => !e.profil_id).length;
 
   const recharger = useCallback(async () => {
     setErreur("");
@@ -72,7 +78,16 @@ export default function Enseignants() {
       <EnTete
         titre="Enseignants & affectations"
         sousTitre={annee ? `Année ${annee.libelle}` : ""}
-        action={onglet === "enseignants" && <Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>}
+        action={onglet === "enseignants" && (
+          <div className="flex flex-wrap gap-2">
+            {enseignants.length > 0 && (
+              <Bouton variante="fantome" onClick={() => setAcces(true)}>
+                🔑 Donner les accès{sansCompte ? ` (${sansCompte})` : ""}
+              </Bouton>
+            )}
+            <Bouton onClick={() => setModale("new")}>+ Nouvel enseignant</Bouton>
+          </div>
+        )}
       />
       <div className="space-y-5 p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
@@ -103,8 +118,8 @@ export default function Enseignants() {
                 { key: "contact", label: "Contact", hideMobile: true, render: (e) => <span className="text-navy-900/60">{e.telephone || e.email || "—"}</span> },
                 { key: "compte", label: "Compte", render: (e) => e.profil_id
                   ? <Badge ton="success">✓ compte lié</Badge>
-                  : codes[e.id]
-                    ? <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codes[e.id]}</span>
+                  : codeDe(e)
+                    ? <span className="rounded-lg bg-or-500/15 px-2 py-1 font-mono text-xs font-bold tracking-widest text-or-600">{codeDe(e)}</span>
                     : <button onClick={(ev) => { ev.stopPropagation(); genererCode(e.id); }} className="text-xs text-navy-700 hover:text-or-500">Code d'accès</button> },
                 { key: "actions", label: "", align: "right", hideMobile: true, render: (e) => (
                   <>
@@ -123,6 +138,12 @@ export default function Enseignants() {
           />
         )}
       </div>
+
+      <ModaleAcces
+        ouvert={acces} onFermer={() => setAcces(false)}
+        enseignants={enseignants} codeDe={codeDe} genererCode={genererCode} ecoleNom={ecole?.nom || ""}
+        onModifier={(e) => { setAcces(false); setModale(e); }}
+      />
 
       <ModaleEnseignant
         ouvert={!!modale}
@@ -297,6 +318,99 @@ function PanneauAffectations({ ecoleId, annee, enseignants, classes, matieres, a
           ))
       )}
     </div>
+  );
+}
+
+//  « Donner les accès » (prise en main, lot 3) : tous les enseignants sans
+//  compte d'un coup — codes générés en une fois, envoi WhatsApp pré-rempli
+//  quand la fiche porte un numéro, fiches imprimables sinon. Depuis la
+//  mig. 228, l'enseignant se connecte avec son numéro et ce code.
+const LIBELLE_ETAT = {
+  connecte: ["success", "✓ connecté"],
+  pret: ["info", "prêt à envoyer"],
+  sans_tel: ["warning", "numéro manquant"],
+  sans_code: ["neutre", "pas de code"],
+};
+
+function ModaleAcces({ ouvert, onFermer, enseignants, codeDe, genererCode, ecoleNom, onModifier }) {
+  const [progression, setProgression] = useState(null);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const manquants = enseignants.filter((e) => !e.profil_id && !codeDe(e));
+  const aRemettre = enseignants.filter((e) => !e.profil_id && codeDe(e));
+
+  async function genererManquants() {
+    setProgression({ fait: 0, total: manquants.length });
+    for (const [i, e] of manquants.entries()) {
+      await genererCode(e.id);
+      setProgression({ fait: i + 1, total: manquants.length });
+    }
+    setProgression(null);
+  }
+
+  //  Une fenêtre à part, qui ne contient que les fiches : imprimer la page
+  //  emporterait le menu et la fenêtre.
+  function imprimer() {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(fichesImprimables(origin, ecoleNom, aRemettre.map((e) => ({ enseignant: e, code: codeDe(e) }))));
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  return (
+    <Modale ouvert={ouvert} onFermer={onFermer} titre="Donner leur accès aux enseignants" large>
+      <div className="space-y-4">
+        <p className="rounded-xl bg-creme/60 px-4 py-3 text-sm text-navy-900/70">
+          Chaque enseignant reçoit un <b>code</b>. Il ouvre GesSchool, touche <b>« Mon numéro »</b> puis <b>« J&apos;ai un code »</b>,
+          et saisit son numéro, ce code et un mot de passe de son choix. <b>Son numéro doit figurer sur sa fiche.</b>
+          {" "}Sans compte, il ne peut ni faire l&apos;appel ni saisir de notes.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Bouton onClick={genererManquants} disabled={!manquants.length || !!progression}>
+            {progression ? `Génération… ${progression.fait} / ${progression.total}` : `Générer les codes manquants (${manquants.length})`}
+          </Bouton>
+          <Bouton variante="fantome" onClick={imprimer} disabled={!aRemettre.length}>🖨️ Imprimer les fiches ({aRemettre.length})</Bouton>
+        </div>
+        <div className="max-h-[50vh] overflow-auto rounded-xl border border-navy-900/10">
+          <table className="w-full text-left text-sm">
+            <thead className="sticky top-0 bg-white text-xs text-navy-900/50">
+              <tr>
+                <th className="px-3 py-2 font-medium">Enseignant</th><th className="px-3 py-2 font-medium">Numéro</th>
+                <th className="px-3 py-2 font-medium">Code</th><th className="px-3 py-2 font-medium">État</th><th className="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {enseignants.map((e) => {
+                const code = codeDe(e);
+                const etat = etatAcces(e, code);
+                const [ton, lib] = LIBELLE_ETAT[etat];
+                const wa = etat === "pret" ? lienWhatsApp(e.telephone, messageEnseignant(origin, ecoleNom, e, code)) : null;
+                return (
+                  <tr key={e.id} className="border-t border-navy-900/5">
+                    <td className="px-3 py-2 font-medium text-navy-900">{e.prenom} {e.nom}</td>
+                    <td className="px-3 py-2 text-navy-900/70">
+                      {e.telephone || (
+                        <button onClick={() => onModifier(e)} className="text-xs font-medium text-rose-700 hover:underline">+ ajouter le numéro</button>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs tracking-widest text-or-600">{code || "—"}</td>
+                    <td className="px-3 py-2"><Badge ton={ton}>{lib}</Badge></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-emerald-700 hover:underline">WhatsApp</a>}
+                      {/*  Mot de passe oublié : un nouveau code remplace l'ancien. */}
+                      <button onClick={() => genererCode(e.id)} className="ml-3 text-xs text-navy-700 hover:text-or-500">
+                        {code || etat === "connecte" ? "nouveau code" : "générer"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </Modale>
   );
 }
 

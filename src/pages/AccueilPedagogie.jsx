@@ -8,7 +8,7 @@ import {
 } from "@/composants/TableauBord.jsx";
 import { statsPedagogie, blocsPedagogie } from "@/lib/dashboard.js";
 import { getAbsencesRecentes, STATUTS_JUSTIF } from "@/lib/viescolaire.js";
-import { getAnneeCourante } from "@/lib/academique.js";
+import { getAnneeCourante, compterAdoption } from "@/lib/academique.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
@@ -16,6 +16,7 @@ import { moduleActif } from "@/lib/modules.js";
 import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
 import MaJournee from "@/composants/MaJournee.jsx";
 import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
+import { lignesAdoption } from "@/lib/miseEnRoute.js";
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 // Couleur d'une moyenne /20 : rouge sous la barre, ambre limite, vert au-dessus.
@@ -34,6 +35,7 @@ export default function AccueilPedagogie() {
   const [absences, setAbsences] = useState([]);
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
+  const [adoption, setAdoption] = useState(null);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
@@ -49,6 +51,7 @@ export default function AccueilPedagogie() {
           compterDemandesEnAttente(ecoleId).catch(() => 0),
         ]);
         setStats(st); setAbsences(abs); setASigner(sig); setDemandes(dem);
+        compterAdoption(ecoleId).then(setAdoption).catch(() => {});
         //  Les blocs détaillés après les chiffres : l'écran s'affiche sans les attendre.
         setBlocs(await blocsPedagogie(ecoleId, an, st.effectif));
       } catch (e) {
@@ -86,6 +89,8 @@ export default function AccueilPedagogie() {
       to: "/demandes", ton: "navy", bouton: "Traiter", titre: `${pl(demandes, "demande")} de document` },
     ouvert("signatures") && aSigner > 0 && {
       to: "/a-signer", ton: "bleu", bouton: "Signer", titre: `${pl(aSigner, "document")} à signer` },
+    //  L'enseignant n'a pas à voir combien de collègues sont connectés.
+    ...(direction ? lignesAdoption(adoption, ouvert) : []),
   ].filter(Boolean) : [];
 
   const evolPresence = blocs?.presence != null && blocs?.presenceAvant != null

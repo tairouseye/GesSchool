@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase.js";
 
-// GesSchool — connexion des parents par numéro de téléphone (mig. 221).
+// GesSchool — connexion par numéro de téléphone : parents (mig. 221) et,
+// depuis la mig. 228, enseignants — avec le code remis par l'école.
 //
 // Le numéro IDENTIFIE le parent, le mot de passe l'AUTHENTIFIE. La première
 // fois (et après un oubli), c'est le code parent remis par l'école qui fait
@@ -35,7 +36,7 @@ export async function connexionTelephone(telephone, motDePasse) {
   const { error } = await supabase.auth.signInWithPassword({ email: emailTelephone(tel), password: motDePasse });
   if (error) {
     if (/invalid login credentials/i.test(error.message || "")) {
-      throw new Error("Numéro ou mot de passe incorrect. Première connexion ou mot de passe oublié ? Utilisez « J'ai un code parent ».");
+      throw new Error("Numéro ou mot de passe incorrect. Première connexion ou mot de passe oublié ? Utilisez « J'ai un code ».");
     }
     throw error;
   }

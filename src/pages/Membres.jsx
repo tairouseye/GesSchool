@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
@@ -330,14 +331,23 @@ export default function Membres() {
       <ModaleInvitation
         ouvert={modale}
         onFermer={() => { setModale(false); charger(); }}
-        rolesPossibles={invitables}
+        rolesPossibles={invitables.filter((r) => !ROLES_RELIES.includes(r))}
+        renvois={invitables.filter((r) => ROLES_RELIES.includes(r))}
         ecole={ecole}
       />
     </>
   );
 }
 
-function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
+//  🔴 UNE SEULE PORTE PAR POPULATION (audit de prise en main, 03/11/2026).
+//  Une invitation « Membres » donne un RÔLE, pas une FICHE : un enseignant
+//  invité ici se connectait sans aucune classe, un parent sans aucun enfant
+//  (`rejoindre` ne touche ni `enseignants` ni `tuteurs`). Ces deux rôles se
+//  donnent donc là où la fiche existe : le code de la page Enseignants, le
+//  code parent.
+const ROLES_RELIES = ["enseignant", "parent"];
+
+function ModaleInvitation({ ouvert, onFermer, rolesPossibles, renvois = [], ecole }) {
   const [role, setRole] = useState(rolesPossibles[0] || "");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -382,6 +392,19 @@ function ModaleInvitation({ ouvert, onFermer, rolesPossibles, ecole }) {
               {rolesPossibles.map((r) => <option key={r} value={r}>{LIBELLES_ROLES[r] || r}</option>)}
             </select>
           </label>
+          {renvois.length > 0 && (
+            <p className="rounded-xl bg-creme/60 px-3 py-2.5 text-xs text-navy-900/70">
+              {renvois.includes("enseignant") && (
+                <>Un <b>enseignant</b> reçoit son accès depuis{" "}
+                  <Link to="/enseignants" onClick={onFermer} className="font-semibold text-navy-900 underline">Enseignants &amp; affectations</Link>
+                  {" "}(bouton « Donner les accès ») : son compte y est relié à ses classes. </>
+              )}
+              {renvois.includes("parent") && (
+                <>Un <b>parent</b> reçoit le sien depuis{" "}
+                  <Link to="/codes-parents" onClick={onFermer} className="font-semibold text-navy-900 underline">Codes parents</Link> : son compte y est relié à ses enfants.</>
+              )}
+            </p>
+          )}
           <div>
             <Champ label="Email (optionnel)" type="email" value={email}
               onChange={(e) => setEmail(e.target.value)} placeholder="personne@exemple.com" />
