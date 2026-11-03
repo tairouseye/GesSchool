@@ -46,11 +46,18 @@ async function session(largeur, hauteur) {
     const d = JSON.parse(m.data);
     if (d.id && enAttente.has(d.id)) { enAttente.get(d.id)(d); enAttente.delete(d.id); }
     if (d.method === "Runtime.exceptionThrown") erreurs.push(d.params.exceptionDetails?.exception?.description?.split("\n")[0] || "exception");
+    //  Une ressource refusée par la politique de contenu (CSP) ne lève pas
+    //  d'exception : le navigateur l'écrit dans sa console. Elle compte
+    //  comme une erreur, sinon une CSP trop stricte passerait l'épreuve.
+    if (d.method === "Log.entryAdded" && /Content Security Policy/i.test(d.params.entry?.text || "")) {
+      erreurs.push(`CSP : ${d.params.entry.text.slice(0, 160)}`);
+    }
   });
   const cmd = (method, params = {}) => new Promise((r) => { const i = ++id; enAttente.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
   const evalue = async (expr) => (await cmd("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
   await cmd("Emulation.setDeviceMetricsOverride", { width: largeur, height: hauteur, deviceScaleFactor: 1, mobile: largeur < 600 });
   await cmd("Runtime.enable");
+  await cmd("Log.enable");
   const aller = (chemin) => cmd("Page.navigate", { url: `${BASE}/#${chemin}` });
   const texte = () => evalue("document.body.innerText");
   //  Attend qu'une condition (expression JS) devienne vraie, sans sommeil fixe.
