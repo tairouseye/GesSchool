@@ -4,8 +4,9 @@ export const TOUR_STAFF = [
   { titre: "Bienvenue sur GesSchool 👋", texte: "Faisons un tour rapide de votre espace de travail — moins d'une minute." },
   { selector: '[data-tour="espaces"]', titre: "Vos espaces", texte: "Basculez entre Pédagogie, Gestion, RH et Pilotage selon votre besoin. Vous ne voyez que les espaces autorisés pour votre rôle." },
   { selector: '[data-tour="menu"]', titre: "Vos outils", texte: "Chaque espace affiche les menus de son métier. Cliquez pour naviguer." },
-  { selector: '[data-tour="profil"]', titre: "Votre profil", texte: "Votre rôle, l'accès à la console super-admin (si vous êtes promoteur), et la déconnexion." },
-  { selector: '[data-tour="aide"]', titre: "Rejouer ce guide", texte: "Cliquez sur « ? » à tout moment pour revoir cette visite. Bonne utilisation ! 🎓" },
+  { selector: '[data-tour="profil"]', titre: "Votre compte", texte: "Cliquez sur votre nom : notifications, connexion par empreinte, aide et déconnexion." },
+  { titre: "Une aide sur chaque écran", texte: "Le « ? » à côté du titre d'une page ouvre l'explication de cet écran dans le mode d'emploi." },
+  { selector: '[data-tour="aide"]', titre: "Rejouer ce guide", texte: "Cliquez sur ce « ? » à tout moment pour revoir cette visite. Bonne utilisation ! 🎓" },
 ];
 
 export const TOUR_PARENT = [

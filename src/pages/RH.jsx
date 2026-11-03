@@ -14,6 +14,7 @@ import { creerDocument } from "@/lib/documents.js";
 import DocumentOfficiel from "@/composants/DocumentOfficiel.jsx";
 import SceauVerification from "@/composants/SceauVerification.jsx";
 import { codePaie } from "@/lib/verification.js";
+import { dateFr } from "@/lib/dates.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 const moisCourant = () => new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -2169,7 +2170,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                 <span>
                   <b className="text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</b>
-                  <span className="text-navy-900/50"> — {typeLbl[c.type] || c.type} · {c.jours} j · {c.date_debut} → {c.date_fin}</span>
+                  <span className="text-navy-900/50"> — {typeLbl[c.type] || c.type} · {c.jours} j · {dateFr(c.date_debut)} → {dateFr(c.date_fin)}</span>
                   {c.motif && <span className="text-navy-900/40"> · {c.motif}</span>}
                 </span>
                 <span className="flex items-center gap-3 text-xs">
@@ -2221,7 +2222,7 @@ function PanneauConges({ conges, soldesConges, congesJoursAn, personnels, absenc
                 <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-navy-900">{c.personnels?.prenom} {c.personnels?.nom}</p>
-                    <p className="text-xs text-navy-900/50">{typeLbl[c.type] || c.type} · <span className="font-mono">{c.date_debut} → {c.date_fin}</span> · {c.jours} j</p>
+                    <p className="text-xs text-navy-900/50">{typeLbl[c.type] || c.type} · <span className="font-mono">{dateFr(c.date_debut)} → {dateFr(c.date_fin)}</span> · {c.jours} j</p>
                   </div>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b[0]}`}>{b[1]}</span>
                   <button onClick={() => onSuppr(c.id)} className="rounded-lg px-2.5 py-1.5 text-sm text-danger-600 hover:bg-navy-900/5">suppr.</button>

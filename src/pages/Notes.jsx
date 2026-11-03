@@ -7,7 +7,10 @@ import * as api from "@/lib/bulletins.js";
 import { getAnneeCourante, getClasses, getMatieres } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses, getMesMatieresParClasse, matieresAutorisees } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
+import { periodeDeReference } from "@/lib/dashboard.js";
+import { isoJour } from "@/lib/apercuEnfant.js";
 import { useConfirm, useToast } from "@/composants/Feedback.jsx";
+import { dateFr } from "@/lib/dates.js";
 
 const TYPES = ["devoir", "composition", "examen", "interro", "tp", "oral", "projet"];
 
@@ -57,7 +60,10 @@ export default function Notes() {
         setPeriodes(per);
         setMatieres(mat);
         const perVoulue = per.find((p) => p.id === params.get("periode"));
-        if (perVoulue || per[0]) setPeriodeId((perVoulue || per[0]).id);
+        //  Sans période demandée : celle en cours (même règle que le tableau
+        //  de bord), et non plus toujours la première de l'année.
+        const perDefaut = perVoulue || periodeDeReference(per, isoJour(new Date())).reference;
+        if (perDefaut) setPeriodeId(perDefaut.id);
         if (cls.some((c) => c.id === params.get("classe"))) {
           setClasseId(params.get("classe"));
           if (params.get("matiere")) setMatiereId(params.get("matiere"));
@@ -187,7 +193,7 @@ export default function Notes() {
                           <span className="font-mono text-xs text-navy-900/50">/{ev.bareme} · coef {ev.coefficient}</span>
                         </div>
                         {ev.libelle && <p className="text-xs text-navy-900/50">{ev.libelle}</p>}
-                        {ev.date_eval && <p className="font-mono text-[11px] text-navy-900/40">{ev.date_eval}</p>}
+                        {ev.date_eval && <p className="font-mono text-[11px] text-navy-900/40">{dateFr(ev.date_eval)}</p>}
                       </button>
                       <div className="mt-1 flex justify-end gap-3 px-1">
                         {ev.actif === false ? (

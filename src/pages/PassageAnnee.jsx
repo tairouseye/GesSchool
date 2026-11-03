@@ -5,6 +5,7 @@ import { Bouton, Champ, Carte, Alerte, Modale } from "@/composants/ui.jsx";
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { getAnnees, ouvrirAnnee, proposerPromotions, appliquerPromotions, resumeSource, supprimerAnnee, inscriptionsParAnnee } from "@/lib/annee.js";
 import { getClasses, getNiveaux } from "@/lib/academique.js";
+import { dateFr } from "@/lib/dates.js";
 
 const anneeSuivante = () => {
   const a = new Date().getFullYear();
@@ -71,7 +72,7 @@ export default function PassageAnnee() {
                   <span className="ml-2 text-xs text-navy-900/40">· {nbInsc[a.id] || 0} inscrit(s)</span>
                 </span>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-navy-900/40">{a.date_debut} → {a.date_fin}</span>
+                  <span className="font-mono text-xs text-navy-900/40">{dateFr(a.date_debut)} → {dateFr(a.date_fin)}</span>
                   {(nbInsc[a.id] || 0) === 0 && annees.length > 1 && (
                     <button onClick={() => supprimer(a)} title="Supprimer cette année (vide)"
                       className="rounded-lg px-2 py-1 text-xs text-navy-900/40 hover:bg-rose-50 hover:text-rose-700">

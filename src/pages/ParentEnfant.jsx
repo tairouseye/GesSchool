@@ -35,6 +35,7 @@ import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 import { messageErreur } from "@/lib/erreurs.js";
 import { useApercuEnfant } from "@/composants/ApercuEnfant.jsx";
 import { aRegler, resumeRubriques, pourQuand } from "@/lib/apercuEnfant.js";
+import { dateFr } from "@/lib/dates.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
 
@@ -1887,7 +1888,7 @@ function Absences({ absences, onChange }) {
         <Carte key={a.id || i} className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="min-w-0">
             <p className="text-sm">
-              <span className="font-mono text-xs text-navy-900/50">{a.date_abs}</span>{" "}
+              <span className="font-mono text-xs text-navy-900/50">{dateFr(a.date_abs)}</span>{" "}
               <span className="font-medium text-navy-900 capitalize">{a.type === "retard" ? "Retard" : "Absence"}</span>
               {a.motif && <span className="text-navy-900/50"> · {a.motif}</span>}
             </p>

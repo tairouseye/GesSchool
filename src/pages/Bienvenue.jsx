@@ -82,7 +82,7 @@ export default function Bienvenue() {
                 label="Code d'invitation"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="EX. 3F9A2B7C"
+                placeholder="EX. K7M2XQ9P4R"
                 className="font-mono tracking-widest"
               />
               <Alerte ton="erreur">{erreur}</Alerte>

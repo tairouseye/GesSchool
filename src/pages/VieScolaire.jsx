@@ -9,6 +9,7 @@ import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
 import { useConfirm } from "@/composants/Feedback.jsx";
+import { dateFr } from "@/lib/dates.js";
 
 const aujourdHui = () => new Date().toISOString().slice(0, 10);
 const TYPES_INCIDENT = [
@@ -178,7 +179,7 @@ function Appel({ ecoleId, annee, classes, onErreur }) {
             <tbody>
               {recents.map((a) => (
                   <tr key={a.id} className={`border-t border-navy-900/5 ${a.statut === "en_attente" ? "bg-or-500/5" : ""}`}>
-                    <td className="px-6 py-2 font-mono text-xs">{a.date_abs}</td>
+                    <td className="px-6 py-2 font-mono text-xs">{dateFr(a.date_abs)}</td>
                     <td className="px-6 py-2 font-medium text-navy-900">{a.eleves?.prenom} {a.eleves?.nom}</td>
                     <td className="px-6 py-2 text-navy-900/60">{a.classes?.libelle}</td>
                     <td className="px-6 py-2 capitalize">{a.type === "retard" ? "Retard" : "Absence"}</td>
@@ -236,7 +237,7 @@ function Incidents({ ecoleId, onErreur }) {
             <tbody>
               {incidents.map((i) => (
                 <tr key={i.id} className="border-t border-navy-900/5">
-                  <td className="px-6 py-2 font-mono text-xs">{i.date_incident}</td>
+                  <td className="px-6 py-2 font-mono text-xs">{dateFr(i.date_incident)}</td>
                   <td className="px-6 py-2 font-medium text-navy-900">{i.eleves?.prenom} {i.eleves?.nom}</td>
                   <td className={`px-6 py-2 font-medium capitalize ${couleur(i.type)}`}>{(TYPES_INCIDENT.find((t) => t[0] === i.type) || [])[1] || i.type}</td>
                   <td className="px-6 py-2 text-navy-900/70">{i.description}</td>

@@ -18,6 +18,7 @@ import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois } from "@/lib/avance.js";
 import { objetFacture } from "@/lib/paiementStatut.js";
 import { ouvrirEncaisser, EVENEMENT_ENCAISSE } from "@/lib/encaisser.js";
+import { dateFr } from "@/lib/dates.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
@@ -208,7 +209,7 @@ export default function Paiements() {
                             <span className="ml-2 font-mono text-xs font-normal text-navy-900/45">{f.eleves.matricule}</span>
                           )}
                         </td>
-                        <td className="px-6 py-3 font-mono text-xs">{f.date_echeance || "—"}</td>
+                        <td className="px-6 py-3 font-mono text-xs">{dateFr(f.date_echeance) || "—"}</td>
                         <td className="px-6 py-3 text-right font-mono">{fmt(f.montant_total)}</td>
                         <td className="px-6 py-3 text-right font-mono">{fmt(f.montant_paye)}</td>
                         <td className="px-6 py-3"><Pastille ton={s.ton}>{s.label}</Pastille></td>
@@ -1164,7 +1165,7 @@ function ModaleFacture({ factureId, onFermer, ecoleId, ecole, devise, utilisateu
                 <ul className="space-y-1">
                   {facture.paiements.map((p) => (
                     <li key={p.id} className="flex items-center justify-between rounded-lg border border-navy-900/10 px-3 py-2 text-sm">
-                      <span className="font-mono">{p.date_paiement}</span>
+                      <span className="font-mono">{dateFr(p.date_paiement)}</span>
                       <span className="capitalize">{(api.MODES.find((m) => m[0] === p.mode) || [])[1] || p.mode}</span>
                       <span className="font-mono">{fmt(p.montant)} {devise}</span>
                       <button onClick={async () => { try { await api.supprimerPaiement(p.id); await recharger(); onChange(); } catch (e) { setErreur(e.message); } }}

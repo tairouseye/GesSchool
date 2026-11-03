@@ -114,7 +114,11 @@ export async function importerEleves(ecoleId, anneeId, lignes, classes, sigle, c
 // `statut = "non_inscrit"` est le cas retors : il faut une jointure GAUCHE
 // bornée à l'année, puis tester l'absence. Vérifié sur la base réelle —
 // avec une année sans inscription, les 96 élèves ressortent bien.
-const SEL_ELEVE = "*, inscriptions!{J}(id, classe_id, statut)";
+//  ⚠️ `classes(libelle)` est INDISPENSABLE : la liste affiche la classe de
+//  chaque élève par `inscriptions[0].classes.libelle`. Sans lui, la colonne
+//  « Classe » montrait « — » pour tous les élèves, dans toutes les écoles
+//  (relevé par l'audit de prise en main du 03/11/2026).
+const SEL_ELEVE = "*, inscriptions!{J}(id, classe_id, statut, classes(libelle))";
 
 function requeteEleves(ecoleId, { anneeId, q, classeId, statut, classesAutorisees } = {}) {
   const nonInscrit = statut === "non_inscrit";

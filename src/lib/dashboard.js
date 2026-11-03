@@ -247,12 +247,18 @@ export async function periodesAnnee(ecoleId, anneeId) {
   const { data } = await supabase.from("periodes").select("id, libelle, ordre, date_debut, date_fin")
     .eq("ecole_id", ecoleId).eq("annee_id", anneeId).order("ordre");
   const liste = data ?? [];
-  const jour = isoJour(new Date());
+  return { ...periodeDeReference(liste, isoJour(new Date())), liste };
+}
+
+//  Règle pure, partagée avec l'écran Notes : il ouvrait toujours sur la
+//  PREMIÈRE période, même au 3e trimestre que le tableau de bord annonçait.
+//  `jour` au format AAAA-MM-JJ (comparaison de chaînes, comme les dates SQL).
+export function periodeDeReference(liste = [], jour) {
   const courante = liste.find((p) => p.date_debut && p.date_fin && p.date_debut <= jour && jour <= p.date_fin) || null;
   const reference = courante
-    || [...liste].reverse().find((p) => p.date_debut && p.date_debut <= jour)
+    || [...liste].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0)).reverse().find((p) => p.date_debut && p.date_debut <= jour)
     || liste[0] || null;
-  return { courante, reference, liste };
+  return { courante, reference };
 }
 
 // Bulletins d'un état pour l'année en cours : un brouillon oublié l'an passé

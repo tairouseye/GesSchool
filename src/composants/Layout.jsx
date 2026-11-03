@@ -8,6 +8,7 @@ import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, route
          routeDAtterrissage, libelleItem } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
 import { TOUR_STAFF } from "@/lib/tours.js";
+import { sectionAide } from "@/lib/aidePages.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { Icone } from "@/composants/Icones.jsx";
@@ -135,6 +136,7 @@ export default function Layout() {
   const [tuiles, setTuiles] = useState(true);   // mobile : grille de tuiles de l'espace
   const [compte, setCompte] = useState(false);  // mobile : panneau compte / déconnexion
   const [bio, setBio] = useState(false);        // fenêtre « Connexion par empreinte »
+  const [profilOuvert, setProfilOuvert] = useState(false); // desktop : menu du compte (pied de barre)
   const [pushEtat, setPushEtat] = useState(null); // 'actif' | 'inactif' | 'refuse' | 'non_supporte'
   const [pushMsg, setPushMsg] = useState("");
   const [tour, setTour] = useState(false);
@@ -440,31 +442,33 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="border-t border-navy-800 px-5 py-4" data-tour="profil">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</p>
-              <p className="truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</p>
-            </div>
-            <button data-tour="aide" onClick={() => setTour(true)} title="Visite guidée" aria-label="Aide et visite guidée"
-              className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
-          </div>
-          {/* Activation des notifications sur cet appareil (desktop) */}
-          {pushSupporte() && (
-            <button onClick={basculerPush}
-              className="mt-3 flex w-full items-center justify-between rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
-              <span>🔔 Notifications</span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pushEtat === "actif" ? "bg-emerald-500/20 text-emerald-300" : "bg-or-500/20 text-or-500"}`}>
-                {pushEtat === "actif" ? "ON" : "Activer"}
-              </span>
-            </button>
-          )}
-          {pushMsg && <p className="mt-1 text-center text-[10px] text-creme/50">{pushMsg}</p>}
-          {estSuperAdmin && (
-            <Link to="/super-admin" className="mt-3 block rounded-lg bg-or-500/20 px-3 py-1.5 text-center text-xs font-medium text-or-500 hover:bg-or-500/30">
-              🛠️ Console super-admin
-            </Link>
-          )}
+        {/*  Le pied de la barre tient en UNE ligne (audit de prise en main,
+             03/11/2026) : il empilait nom, notifications, aide, empreinte,
+             déconnexion, signature et version — environ 355 px, plus que le
+             menu lui-même. Sur un portable de 768 px, il restait quatre
+             lignes de menu. Tout cela s'ouvre désormais d'un clic sur le nom. */}
+        <div className="relative border-t border-navy-800 px-3 py-3" data-tour="profil">
+          {profilOuvert && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setProfilOuvert(false)} aria-hidden="true" />
+              <div className="absolute inset-x-3 bottom-full z-50 mb-2 rounded-2xl bg-white p-3 text-navy-900 shadow-2xl" role="menu">
+                {/* Activation des notifications sur cet appareil (desktop) */}
+                {pushSupporte() && (
+                  <button onClick={basculerPush}
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-navy-900/80 hover:bg-creme">
+                    <span>🔔 Notifications</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pushEtat === "actif" ? "bg-emerald-500/15 text-emerald-700" : "bg-or-500/20 text-or-600"}`}>
+                      {pushEtat === "actif" ? "ON" : "Activer"}
+                    </span>
+                  </button>
+                )}
+                {pushMsg && <p className="px-3 text-[11px] text-navy-900/60">{pushMsg}</p>}
+                {estSuperAdmin && (
+                  <Link to="/super-admin" onClick={() => setProfilOuvert(false)}
+                    className="mt-1 block rounded-lg bg-or-500/15 px-3 py-2 text-sm font-medium text-or-600 hover:bg-or-500/25">
+                    🛠️ Console super-admin
+                  </Link>
+                )}
           {/*  ⚠️ LE MANUEL DOIT ETRE ATTEIGNABLE, sinon il n'existe pas.
                Il a longtemps vecu dans `docs/`, c'est-a-dire nulle part pour
                une directrice. Il est desormais servi avec l'application et
@@ -475,17 +479,35 @@ export default function Layout() {
                guide de role — une enseignante qui cherche comment faire
                l'appel n'a pas a traverser la comptabilite.
                `target="_blank"` pour ne pas perdre le travail en cours. */}
-          <a href="aide.html" target="_blank" rel="noopener noreferrer"
-            className="mt-3 block rounded-lg border border-creme/20 px-3 py-1.5 text-center text-xs text-creme/80 hover:bg-navy-800">
-            📖 Aide &amp; mode d&apos;emploi
-          </a>
-          <button onClick={() => setBio(true)} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
-            👆 Connexion par empreinte
-          </button>
-          <button onClick={deconnexion} className="mt-2 w-full rounded-lg border border-creme/20 px-3 py-1.5 text-xs text-creme/80 hover:bg-navy-800">
-            Déconnexion
-          </button>
-          <GesProSignature ton="sombre" avecContacts className="mt-3" />
+                <a href="aide.html" target="_blank" rel="noopener noreferrer" onClick={() => setProfilOuvert(false)}
+                  className="mt-1 block rounded-lg px-3 py-2 text-sm text-navy-900/80 hover:bg-creme">
+                  📖 Aide &amp; mode d&apos;emploi
+                </a>
+                <button onClick={() => { setProfilOuvert(false); setTour(true); }}
+                  className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-navy-900/80 hover:bg-creme">❓ Visite guidée</button>
+                <button onClick={() => { setProfilOuvert(false); setBio(true); }}
+                  className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-navy-900/80 hover:bg-creme">👆 Connexion par empreinte</button>
+                <button onClick={deconnexion}
+                  className="mt-2 w-full rounded-lg bg-navy-900 px-3 py-2 text-sm font-semibold text-creme hover:bg-navy-800">Déconnexion</button>
+                <div className="mt-3 border-t border-navy-900/10 pt-2">
+                  <GesProSignature ton="clair" avecContacts />
+                </div>
+              </div>
+            </>
+          )}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setProfilOuvert((o) => !o)} aria-expanded={profilOuvert} aria-haspopup="menu"
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-navy-800">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-navy-800 text-xs font-bold text-or-500">{initiales}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-creme/90">{profil ? `${profil.prenom} ${profil.nom}` : "—"}</span>
+                <span className="block truncate text-xs text-creme/50">{LIBELLES_ROLES[roles[0]] || roles[0] || "utilisateur"}</span>
+              </span>
+              <span className={`text-xs text-creme/40 transition-transform ${profilOuvert ? "rotate-180" : ""}`} aria-hidden="true">▲</span>
+            </button>
+            <button data-tour="aide" onClick={() => setTour(true)} title="Visite guidée" aria-label="Aide et visite guidée"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-creme/20 text-sm text-creme/70 hover:bg-navy-800">?</button>
+          </div>
         </div>
       </aside>
 
@@ -686,11 +708,21 @@ export default function Layout() {
 }
 
 // En-tête de page réutilisable (responsive).
+//  Le « ? » ouvre la section du mode d'emploi consacrée à CET écran
+//  (src/lib/aidePages.js), dans un nouvel onglet pour ne pas perdre la saisie.
 export function EnTete({ titre, sousTitre, action }) {
+  const ancre = sectionAide(useLocation().pathname);
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-900/10 bg-white px-4 py-4 sm:px-8 sm:py-5">
       <div>
-        <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{titre}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{titre}</h1>
+          {ancre && (
+            <a href={`mode-emploi.html#${ancre}`} target="_blank" rel="noopener noreferrer"
+              title="Aide sur cet écran" aria-label={`Aide : ${titre}`}
+              className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-navy-900/15 text-xs font-semibold text-navy-900/50 transition hover:border-or-500 hover:text-navy-900">?</a>
+          )}
+        </div>
         {sousTitre && <p className="text-sm text-navy-900/50">{sousTitre}</p>}
       </div>
       {action}
