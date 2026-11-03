@@ -8,9 +8,12 @@ export const CYCLES = [
   { type: "universite", libelle: "Université", desc: "Licence / Master" },
 ];
 
-// Année scolaire par défaut selon la date courante (rentrée ≈ août).
+// Année scolaire par défaut selon la date courante.
+//  ⚠️ Bascule au 1er JUILLET, pas en août : une école qui s'inscrit en juillet
+//  prépare la rentrée d'octobre. Avec l'ancien seuil, Bakany Soucko (créée le
+//  06/07/2026) avait reçu 2025-2026, une année déjà finie.
 export function anneeParDefaut(d = new Date()) {
-  const annee = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  const annee = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
   return {
     libelle: `${annee}-${annee + 1}`,
     debut: `${annee}-10-01`,

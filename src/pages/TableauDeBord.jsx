@@ -12,8 +12,9 @@ import { MODES } from "@/lib/paiements.js";
 import { ouvrirEncaisser } from "@/lib/encaisser.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
-import { peutVoir } from "@/lib/permissions.js";
+import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
+import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
 
 const fmtMontant = (n) => {
   const v = Math.round(Number(n) || 0);
@@ -105,6 +106,12 @@ export default function TableauDeBord() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <Salutation prenom={profil?.prenom}>Voici l'essentiel de {ecole?.nom || "votre établissement"}.</Salutation>
+
+        {/*  Mise en route (prise en main, lot 2) : pour ceux qui paramètrent
+             l'école — promoteur et direction —, tant qu'elle n'est pas finie. */}
+        {(estRoleComplet(roles) || (roles || []).includes("direction")) && (
+          <MiseEnRoute ecoleId={ecoleId} ecole={ecole} modulesActifs={modulesActifs} compacte />
+        )}
 
         {/* Chiffres clés, chacun avec son évolution */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

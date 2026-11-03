@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { supabase } from "@/lib/supabase.js";
+import { appliquerStructureType } from "@/lib/academique.js";
 import { CYCLES, anneeParDefaut } from "@/lib/cycles.js";
 import { PAYS, deviseDuPays } from "@/lib/pays.js";
 import Logo from "@/composants/Logo.jsx";
@@ -28,6 +29,7 @@ export default function Onboarding() {
     prenom: "", nom_admin: "",
     annee_libelle: annee.libelle, annee_debut: annee.debut, annee_fin: annee.fin,
     decoupage: "trimestre",
+    structureType: true,
   });
   const maj = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const toggleCycle = (t) =>
@@ -66,6 +68,10 @@ export default function Onboarding() {
       if (error) throw error;
 
       await rafraichirProfil();
+      //  Structure type (mig. 227) : sans elle, deux écoles sur quatre se sont
+      //  arrêtées ici. Un échec n'empêche pas d'entrer : la mise en route la
+      //  propose de nouveau.
+      if (f.structureType) await appliquerStructureType().catch(() => {});
       navigate("/", { replace: true });
     } catch (err) {
       setErreur(err.message || "Échec de la création de l'établissement.");
@@ -196,6 +202,17 @@ export default function Onboarding() {
                     </button>
                   ))}
                 </div>
+              </label>
+              <label className="flex items-start gap-3 rounded-xl border border-or-500/40 bg-or-500/5 p-3">
+                <input type="checkbox" checked={f.structureType} onChange={(e) => maj("structureType", e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-navy-900" />
+                <span className="text-sm text-navy-900/80">
+                  <b className="text-navy-900">Préparer la structure type</b> — les niveaux officiels, une classe par niveau,
+                  les matières du programme et les dates des trimestres. Vous gagnez une heure ; tout reste modifiable.
+                  {f.cycles.length > 0 && f.cycles.every((c) => c === "formation_pro" || c === "universite") && (
+                    <span className="mt-1 block text-xs text-navy-900/50">Pas de modèle pour la formation professionnelle ni l&apos;université : vous créerez vos filières vous-même.</span>
+                  )}
+                </span>
               </label>
             </div>
           )}

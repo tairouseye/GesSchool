@@ -44,7 +44,13 @@ export default function Paiements() {
   //  `?facture=` : la fenêtre « Encaisser » mène ici pour imprimer le reçu.
   const [params, setParams] = useSearchParams();
   const [factureId, setFactureId] = useState(() => params.get("facture"));
+  //  `?onglet=` : la mise en route ouvre directement la grille tarifaire ou
+  //  le paiement mobile, au lieu de l'onglet Factures.
   useEffect(() => {
+    const o = params.get("onglet");
+    if (o && ["factures", "declarations", "enligne", "frais", "mobile"].includes(o)) {
+      setOnglet(o); setParams({}, { replace: true });
+    }
     const f = params.get("facture");
     if (f) { setFactureId(f); setParams({}, { replace: true }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -63,12 +63,12 @@ Au premier accès, l'écran **Bienvenue** propose quatre entrées :
 > Si vous avez reçu un **lien d'invitation** (`…/#/rejoindre?code=…`), il vous suffit de l'ouvrir : après création du compte, le code est pré-rempli automatiquement.
 
 ### 1.3 Assistant de création de l'école (3 étapes)
-1. **Identité** : nom, sigle, type (Privé / Public / Confessionnel / Franco-arabe), logo et cachet (optionnels), couleurs.
+1. **Identité** : nom, sigle, type (**École** — préscolaire, primaire, secondaire — ou **Enseignement supérieur (LMD)**), pays et ville, logo et cachet (optionnels), couleurs.
 2. **Cycles ouverts** : cocher les cycles présents (Préscolaire, Élémentaire, Collège, Lycée, Formation pro, Université).
-3. **Responsable & année** : prénom/nom, libellé de l'année (ex. 2025-2026), dates, et découpage **Trimestres (3)** ou **Semestres (2)**.
+3. **Responsable & année** : prénom/nom, libellé de l'année (ex. 2026-2027 — proposé d'office à partir du 1er juillet), dates, et découpage **Trimestres (3)** ou **Semestres (2)**. La case **Préparer la structure type** est cochée d'office (voir §2.1).
 4. **Créer l'établissement**.
 
-➡️ L'école, ses cycles, votre compte admin, l'année et les périodes sont créés automatiquement. La **checklist de mise en route** (§15) vous guide ensuite pour le reste du paramétrage.
+➡️ L'école, ses cycles, votre compte admin, l'année et les périodes sont créés automatiquement — et, si la case est cochée, la **structure type** : niveaux officiels, une classe par niveau, matières du programme et dates des trimestres. La **mise en route** (§15) vous guide ensuite pour le reste.
 
 ---
 
@@ -76,6 +76,8 @@ Au premier accès, l'écran **Bienvenue** propose quatre entrées :
 
 ### 2.1 Structure académique (**Paramètres → Structure académique**)
 Depuis la v2.280.0, la structure est une rubrique de **Paramètres** (groupe Scolarité), et non plus une entrée du menu Pédagogie. La page est en **volets repliés** : touchez un cycle pour voir ses niveaux, puis un niveau pour voir ses classes et le formulaire de création ; Matières, Coefficients, Découpage de l'année et Responsables de cycle se déroulent de la même façon.
+
+**Structure type, en un clic.** Tant qu'un cycle n'a aucun niveau, un encadré propose **Créer la structure type**. Pour le préscolaire (TPS → GS), l'élémentaire (CI → CM2), le collège (6e → 3e) et le lycée (Seconde → Terminale), il crée les niveaux officiels, **une classe par niveau** (renommez-la, ou générez-en d'autres), les **matières du programme** — avec, au collège, les coefficients usuels (Français et Mathématiques 4, Anglais, Histoire-Géographie, SVT, Sciences physiques et LV2 2, Éducation civique et EPS 1) — et **date les trimestres** s'ils ne le sont pas. **Rien de ce que vous avez déjà saisi n'est modifié** : un cycle qui a déjà un niveau, ou des matières, est laissé tel quel. Au lycée, les coefficients dépendent de la série : fixez-les vous-même. Pas de modèle pour la formation professionnelle ni l'université.
 
 Ordre logique : **Niveaux → Classes → Matières → (Séries) → Coefficients**.
 - **Niveaux** : dans chaque cycle, taper un niveau (6e, CP, Seconde) → **+ Niveau**. ⚠️ L'**ordre** des niveaux doit être correct (6e avant 5e…) : il sert de base à la **promotion des élèves** au passage d'année (§16).
@@ -852,7 +854,7 @@ Les accueils **Gestion**, **Pédagogie** et **Pilotage** se lisent dans le même
   > ⚠️ **« Dates des périodes hors de l'année »** dans À traiter : vos trimestres portent des dates d'une autre année scolaire (par exemple après l'ouverture d'une année sans les décaler). Tant qu'ils ne sont pas corrigés (Paramètres › Structure), aucune période n'est « en cours » et l'agenda reste vide.
 - **RH** : salaires à payer, fiches à générer, contrats à échéance · masse salariale, répartition par fonction.
 
-**Checklist de mise en route** (accueil **Pilotage**, promoteur) : passe en revue Structure, Matières, Enseignants, Affectations, Grille tarifaire, Élèves — chaque étape en **✓** ou **⚠️** avec un lien **« Configurer »**. Idéale à la création de l'école **et** à chaque rentrée après le passage d'année.
+**Mise en route** (en haut des accueils **Pilotage**, **Gestion** et **Pédagogie**, pour le promoteur **et la direction**) : neuf étapes, dans l'ordre du travail réel — **niveaux & classes**, **dates des trimestres**, **matières**, **grille tarifaire**, **élèves inscrits** (import Excel possible), **enseignants & affectations**, **comptes des enseignants** (combien sont connectés), **parents connectés** (l'étape n'est validée qu'à partir de la moitié des familles reliées) et **paiement mobile**. Une barre montre l'avancement, une phrase dit **la prochaine étape**, et chaque lien ouvre le bon écran — la grille tarifaire ou le paiement mobile directement sur leur onglet. Pour une école vide, le bouton **Créer la structure type** fait la première étape d'un clic. **Replier** la réduit à une ligne (mémorisé). Sur Gestion et Pédagogie, elle disparaît une fois terminée ; sur Pilotage, elle affiche « Mise en route terminée ». Les étapes de frais et de paiement mobile n'apparaissent que si le module Encaissements est actif.
 
 ---
 

@@ -8,6 +8,9 @@ import { getEnseignants } from "@/lib/enseignants.js";
 import { getMembres } from "@/lib/membres.js";
 import { estRoleComplet } from "@/lib/permissions.js";
 
+//  Cycles pour lesquels la structure type (mig. 227) a un modèle.
+const CYCLES_MODELE = ["prescolaire", "premier_cycle", "second_cycle", "lycee"];
+
 // Phase 0.5 — Structure académique : cycles → niveaux → classes + matières.
 // `integre` : affichée comme rubrique de Paramètres (/parametres/structure),
 // donc sans en-tête de page ni marges propres.
@@ -126,6 +129,22 @@ export default function Structure({ integre = false }) {
           → <b className="text-navy-900/70">Classe</b> (CP A, CP B…).
           Les cycles sont fixés à la création de l'école ; les niveaux et les classes se gèrent ici.
         </p>
+
+        {/*  Structure type (mig. 227) : proposée tant qu'un cycle qui a un
+             modèle n'a aucun niveau. Elle ne remplit que ce qui est vide. */}
+        {annee && cycles.some((c) => CYCLES_MODELE.includes(c.type) && !niveaux.some((n) => n.cycle_id === c.id)) && (
+          <Carte className="flex flex-wrap items-center gap-3 border-l-4 border-l-or-500 p-4">
+            <p className="min-w-0 flex-1 text-sm text-navy-900/80">
+              <b className="text-navy-900">Partir d&apos;une structure type.</b> Les niveaux officiels, une classe par niveau,
+              les matières du programme (et les coefficients du collège) et les dates des trimestres, pour les cycles encore vides.
+              Rien de ce que vous avez déjà saisi n&apos;est modifié.
+            </p>
+            <Bouton variante="or" onClick={() => wrap(async () => {
+              const r = await api.appliquerStructureType();
+              toast.succes(`Créé : ${r.niveaux || 0} niveau(x), ${r.classes || 0} classe(s), ${r.matieres || 0} matière(s). Tout reste modifiable.`);
+            })}>Créer la structure type</Bouton>
+          </Carte>
+        )}
 
         {/* Cycles → Niveaux → Classes. Tout est replié : on déroule le cycle,
             puis le niveau, au lieu de faire défiler toute l'école. */}

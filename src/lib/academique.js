@@ -28,7 +28,33 @@ export async function etatMiseEnRoute(ecoleId, anneeId) {
     nb(supabase.from("frais").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId)),
     nb(supabase.from("inscriptions").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", anneeId || "00000000-0000-0000-0000-000000000000")),
   ]);
-  return { niveaux, classes, matieres, enseignants, affectations, frais, inscriptions };
+  //  Prise en main, lot 2 (03/11/2026) : la liste s'arrêtait aux élèves
+  //  inscrits. Tut'Tank l'avait donc « terminée » avec 0 enseignant relié et
+  //  4 parents sur 145. Chaque compte peut échouer (droits) : 0 plutôt
+  //  qu'une liste qui ne s'affiche pas.
+  const zero = (p) => p.catch(() => 0);
+  const an = anneeId || "00000000-0000-0000-0000-000000000000";
+  const [periodes, periodesDatees, enseignantsRelies, tuteurs, tuteursRelies, mobile] = await Promise.all([
+    zero(nb(supabase.from("periodes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", an))),
+    zero(nb(supabase.from("periodes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", an).not("date_debut", "is", null).not("date_fin", "is", null))),
+    zero(nb(supabase.from("enseignants").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null))),
+    zero(nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId))),
+    zero(nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null))),
+    supabase.from("parametres").select("valeur").eq("ecole_id", ecoleId).eq("cle", "paiement_mobile").maybeSingle()
+      .then(({ data }) => Object.values(data?.valeur || {}).some((v) => (typeof v === "string" ? v.trim() : v)))
+      .catch(() => false),
+  ]);
+  return { niveaux, classes, matieres, enseignants, affectations, frais, inscriptions,
+    periodes, periodesDatees, enseignantsRelies, tuteurs, tuteursRelies, mobile };
+}
+
+// Structure type en un clic (mig. 227) : niveaux officiels, une classe par
+// niveau, matières, coefficients du collège, trimestres datés — seulement là
+// où c'est vide. Renvoie ce qui a été créé.
+export async function appliquerStructureType(cycles = null) {
+  const { data, error } = await supabase.rpc("appliquer_structure_type", { p_cycles: cycles });
+  if (error) throw error;
+  return data || {};
 }
 
 // --- Cycles (créés à l'onboarding ; lecture seule ici) ---

@@ -15,6 +15,7 @@ import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
 import MaJournee from "@/composants/MaJournee.jsx";
+import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 // Couleur d'une moyenne /20 : rouge sous la barre, ambre limite, vert au-dessus.
@@ -101,6 +102,12 @@ export default function AccueilPedagogie() {
         <Alerte ton="erreur">{erreur}</Alerte>
 
         <Salutation prenom={profil?.prenom}>{blocs?.periodeEnCours ? `Période en cours : ${blocs.periodeEnCours.libelle}.` : null}</Salutation>
+
+        {/*  Mise en route (prise en main, lot 2) : pour ceux qui paramètrent
+             l'école — promoteur et direction —, tant qu'elle n'est pas finie. */}
+        {direction && (
+          <MiseEnRoute ecoleId={ecoleId} ecole={ecole} modulesActifs={modulesActifs} compacte />
+        )}
 
         {enseignant && annee?.id && scolaire && <MaJournee anneeId={annee.id} ouvert={ouvert} />}
 
