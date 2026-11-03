@@ -5,6 +5,15 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.300.0] — Prise en main, lot 1 : un quotidien plus lisible
+- **Audit de prise en main** (03/11, `AUDIT_GESCHOOL/AUDIT_PRISE_EN_MAIN.md`) : deux écoles inscrites sur quatre n'ont rien créé après l'assistant ; à Tut'Tank, aucun enseignant n'a de compte et 4 parents sur 145 sont reliés. Plan en quatre lots ; voici le premier.
+- **Liste des élèves** : la colonne **Classe** affichait « — » pour tous les élèves, dans toutes les écoles (la requête paginée ne chargeait plus le libellé de la classe). Rétablie.
+- **Barre latérale** : son pied (nom, notifications, aide, empreinte, déconnexion, signature, version) occupait ≈ 355 px, plus que le menu — sur un portable de 768 px, il restait quatre lignes de menu. Il tient désormais en **une ligne** ; le reste s'ouvre d'un clic sur son nom. Le menu montre une dizaine de lignes de plus.
+- **Aide sur chaque écran** : un **« ? »** à côté du titre ouvre la section du mode d'emploi consacrée à cet écran. Les 52 écrans du menu en ont une ; une épreuve (`test/aidePages.test.mjs`) refuse une ancre cassée ou un écran sans aide.
+- **Dates au format français** (07/08/2026) dans les factures, les paiements, les évaluations, les absences, les incidents, les congés et le passage d'année.
+- **Notes** ouvre sur la **période en cours** (même règle que le tableau de bord), et non plus toujours sur la première.
+- Visite guidée et exemple de code d'invitation mis à jour (la visite promettait au promoteur une console réservée à l'éditeur).
+
 ## [2.299.0] — Relances et état de paiement sous contrôle du module Encaissements
 - **Dernier point de l'audit du 02/11** : les vieilles gardes par rôle qui ignoraient les modules. Recensement des règles et fonctions qui ne passent pas par `a_acces` : seules les relances touchaient un module payant (notes et bulletins y passent déjà ; le reste relève du cœur).
 - **Journal des relances** : il se lisait par **tout membre** de l'école — à Tut'Tank, le compte RH voyait les 28 rappels d'impayés, montants compris. Désormais réservé à ceux qui relancent (`p_relancer`) ou voient l'état de paiement (`p_voir_impayes`), et seulement avec le module Encaissements.
