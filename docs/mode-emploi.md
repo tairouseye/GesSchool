@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.296 · mise à jour du 2 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.297 · mise à jour du 3 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -94,7 +94,7 @@ Tant qu'une rubrique a des **modifications non enregistrées**, une barre **« M
 - **Matricule** : préfixe, séparateur, nombre de chiffres, et **Année** — laissez vide pour l'année civile automatique, **ou fixez-la** (ex. 2026) pour que toute une rentrée porte le même « 26 », quelle que soit la date de saisie. Aperçu ex. `CLB-26-0001`.
 - **Relances automatiques** (groupe Finances, module Recouvrement) : les paliers de rappel d'impayés (§ Recouvrement).
 - **Paiement en ligne** (groupe Finances, réservé au **promoteur**) : prestataire et clés.
-- **Modules actifs** (groupe Abonnement, réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus. Seuls les modules **compris dans votre offre** peuvent être activés ; pour en ajouter un, contactez GesPro.
+- **Modules actifs** (groupe Abonnement, réservé au **promoteur**) : activer/désactiver des modules (Cantine, Transport, RH…). Un module désactivé disparaît des menus. Seuls les modules **compris dans votre offre** peuvent être activés ; pour en ajouter un, contactez GesPro. Un module désactivé est fermé **aussi côté serveur** : ses données ne sont plus accessibles au personnel, même avec la case cochée dans Membres (les parents gardent ce qui les concerne).
 
 ### 2.3 Paiement mobile (menu **Paiements → onglet Paiement mobile**)
 Saisir vos numéros **Wave / Orange Money / Free Money** (affichés aux parents pour régler les factures et déclarer un paiement).

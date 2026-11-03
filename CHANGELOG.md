@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.297.0] — Les modules souscrits sont contrôlés par la base
+- **LE TROU** (audit du 02/11) : un module non souscrit disparaissait du menu, mais son API restait ouverte — aucune règle ne lisait `ecoles.modules_actifs`.
+- **Le correctif** : `a_acces(clé)`, qui porte les droits de ~300 règles et fonctions, refuse désormais une clé dont le module n'est pas souscrit — au personnel comme au promoteur ; seul le super-administrateur passe outre. Carte clé → module (`_module_de_cle`) **générée depuis `src/lib/modules.js`**, et une épreuve (`test/acces.test.mjs`) refuse qu'elles divergent. Une boîte n'est rattachée à un module que si toutes ses pages en font partie (`presence_vie`, qui contient l'appel du supérieur, reste hors module) : la base ne bloque jamais ce que l'écran montre.
+- Non couverts : les chemins des familles (ils ne dépendent pas des modules), les gardes par rôle historiques, la bibliothèque (`_biblio_gestion`).
+- Impact vérifié à blanc sur la production : à Tut'Tank, seuls la cantine, le transport et la bibliothèque (non souscrits) se ferment ; aucun nombre de factures ou de créneaux visibles ne change. Module RH retiré le temps de l'essai : les 13 fiches du personnel deviennent invisibles.
+- Migration **224**, essai `supabase/tests/essai_224.sql` (7 contrôles, 7/7 à blanc). Mode d'emploi §2.
+
 ## [2.296.0] — Durcissement de sécurité (audit du 02/11/2026)
 - **L'AUDIT** (base, stockage, fonctions Edge, appli), mené sur la production en se mettant à la place de vrais comptes, dans des transactions annulées. **Cloisonnement confirmé** : aucune ligne d'une autre école sur 140 tables ; un parent n'obtient rien d'un enfant qui n'est pas le sien (19 fonctions de lecture, 7 d'écriture) ; aucune élévation de rôle ; un visiteur ou un compte sans école ne voit rien ; la fonction `push` refuse les appels sans secret.
 - **Modules** : le promoteur pouvait écrire lui-même `modules_actifs` (modules payants débloqués sans payer). Désormais, seuls les modules de son offre (plan du dernier abonnement) s'activent ; `demonstration` et `id` sont réservés au super-administrateur (déclencheur `trg_proteger_ecole`).
