@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.298.0] — Bibliothèque sous contrôle des modules, politique de contenu (CSP)
+- **Bibliothèque** (mig. 225) : ses gardes propres (`_biblio_gestion`, `_biblio_lecteur`) ignoraient les modules. Elles exigent désormais un des trois modules bibliothèque ; les documents numériques exigent `bibliotheque_numerique` (ou `memoires_theses`, un mémoire publié en devient un) ; le dépôt institutionnel exige `memoires_theses`. Six tables du catalogue recopiaient la garde de gestion dans leur règle au lieu d'appeler la fonction : elles passent par elle. Vérifié à blanc sur l'université de test : sans module, plus rien (0 notice sur 25, 0 exemplaire sur 100, 0 dépôt) ; catalogue seul, les notices reviennent mais pas les dépôts. Essai `supabase/tests/essai_225.sql` (6 contrôles).
+- **Politique de sécurité du contenu (CSP)** : posée à la compilation (`vite.config.js`), par une balise `<meta>` puisque GitHub Pages n'autorise aucun en-tête. Scripts du site seulement (une injection HTML ne peut plus exécuter de code) ; données vers Supabase, OpenLibrary et Crossref. `frame-ancestors` (anti-iframe) reste impossible sans en-tête HTTP.
+- **Parcours de bout en bout** (`scripts/e2e.mjs`) : une ressource refusée par la CSP compte désormais comme une erreur. Les 5 parcours passent sur la version compilée, CSP comprise.
+
 ## [2.297.0] — Les modules souscrits sont contrôlés par la base
 - **LE TROU** (audit du 02/11) : un module non souscrit disparaissait du menu, mais son API restait ouverte — aucune règle ne lisait `ecoles.modules_actifs`.
 - **Le correctif** : `a_acces(clé)`, qui porte les droits de ~300 règles et fonctions, refuse désormais une clé dont le module n'est pas souscrit — au personnel comme au promoteur ; seul le super-administrateur passe outre. Carte clé → module (`_module_de_cle`) **générée depuis `src/lib/modules.js`**, et une épreuve (`test/acces.test.mjs`) refuse qu'elles divergent. Une boîte n'est rattachée à un module que si toutes ses pages en font partie (`presence_vie`, qui contient l'appel du supérieur, reste hors module) : la base ne bloque jamais ce que l'écran montre.
