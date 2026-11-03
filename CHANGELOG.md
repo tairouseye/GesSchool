@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.299.0] — Relances et état de paiement sous contrôle du module Encaissements
+- **Dernier point de l'audit du 02/11** : les vieilles gardes par rôle qui ignoraient les modules. Recensement des règles et fonctions qui ne passent pas par `a_acces` : seules les relances touchaient un module payant (notes et bulletins y passent déjà ; le reste relève du cœur).
+- **Journal des relances** : il se lisait par **tout membre** de l'école — à Tut'Tank, le compte RH voyait les 28 rappels d'impayés, montants compris. Désormais réservé à ceux qui relancent (`p_relancer`) ou voient l'état de paiement (`p_voir_impayes`), et seulement avec le module Encaissements.
+- **Envois** : `p_relancer` n'étant rattaché à aucun module, les relances manuelles et leur annulation marchaient sans le module ; elles l'exigent. Le passage automatique (cron) saute les écoles qui ne l'ont pas.
+- **Indicateur de paiement** de la liste Élèves (`statut_paiement_classe`) : il nommait encore les rôles ; il passe au pouvoir `p_voir_impayes`. Mesuré sur la production : personne ne gagne ni ne perd l'indicateur.
+- Migration **226**, essai `supabase/tests/essai_226.sql` (7 contrôles, 7/7 à blanc).
+
 ## [2.298.0] — Bibliothèque sous contrôle des modules, politique de contenu (CSP)
 - **Bibliothèque** (mig. 225) : ses gardes propres (`_biblio_gestion`, `_biblio_lecteur`) ignoraient les modules. Elles exigent désormais un des trois modules bibliothèque ; les documents numériques exigent `bibliotheque_numerique` (ou `memoires_theses`, un mémoire publié en devient un) ; le dépôt institutionnel exige `memoires_theses`. Six tables du catalogue recopiaient la garde de gestion dans leur règle au lieu d'appeler la fonction : elles passent par elle. Vérifié à blanc sur l'université de test : sans module, plus rien (0 notice sur 25, 0 exemplaire sur 100, 0 dépôt) ; catalogue seul, les notices reviennent mais pas les dépôts. Essai `supabase/tests/essai_225.sql` (6 contrôles).
 - **Politique de sécurité du contenu (CSP)** : posée à la compilation (`vite.config.js`), par une balise `<meta>` puisque GitHub Pages n'autorise aucun en-tête. Scripts du site seulement (une injection HTML ne peut plus exécuter de code) ; données vers Supabase, OpenLibrary et Crossref. `frame-ancestors` (anti-iframe) reste impossible sans en-tête HTTP.
