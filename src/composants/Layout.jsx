@@ -244,7 +244,7 @@ export default function Layout() {
   //  confondus, une seule fois chacun.
   const pagesRecherche = (() => {
     const vus = new Set();
-    return accessibles.flatMap((e) => menusDe(e).map((it) => ({ to: it.to, label: libItem(it), espace: e.label, icone: it.icone })))
+    return accessibles.flatMap((e) => menusDe(e).map((it) => ({ to: it.to, label: libItem(it), espace: e.label, icone: it.icone, aide: it.aide })))
       .filter((p) => (vus.has(p.to) ? false : vus.add(p.to)));
   })();
 
@@ -420,6 +420,7 @@ export default function Layout() {
               key={item.to}
               to={item.to}
               end={item.exact}
+              title={item.aide}
               onClick={() => setMenu(false)}
               className={({ isActive }) =>
                 //  Page active : fond à peine éclairci et filet or à gauche
@@ -645,7 +646,12 @@ export default function Layout() {
                         <button key={item.to} onClick={() => ouvrirTuile(item.to)}
                           className="group relative flex min-h-[100px] flex-col items-start justify-between rounded-2xl border border-white/5 bg-navy-800 p-4 text-left shadow-md ring-1 ring-inset ring-white/5 transition active:scale-[.98]">
                           <Icone name={item.cle} className="h-7 w-7 text-or-500" />
-                          <span className="text-sm font-semibold text-creme">{libItem(item)}</span>
+                          <span className="text-sm font-semibold text-creme">
+                            {libItem(item)}
+                            {/*  Une phrase pour les noms qui se ressemblent
+                                 (Cahier de textes, Avancement, Programmation…). */}
+                            {item.aide && <span className="mt-1 block text-[11px] font-normal leading-snug text-creme/55">{item.aide}</span>}
+                          </span>
                           {pastille(item.cle) > 0 && (
                             <span className="absolute right-2.5 top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-or-500 px-1.5 text-[11px] font-bold text-navy-900 shadow">
                               {pastille(item.cle)}

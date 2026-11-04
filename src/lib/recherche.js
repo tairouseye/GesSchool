@@ -29,7 +29,7 @@ export function motifTelephone(q) {
 export function chercherPages(pages = [], q) {
   const mots = sansAccents(q).split(" ").filter(Boolean);
   if (mots.length === 0) return [];
-  return pages.filter((p) => { const l = sansAccents(`${p.label} ${p.espace || ""}`); return mots.every((m) => l.includes(m)); }).slice(0, LIMITE);
+  return pages.filter((p) => { const l = sansAccents(`${p.label} ${p.espace || ""} ${p.aide || ""}`); return mots.every((m) => l.includes(m)); }).slice(0, LIMITE);
 }
 
 export const sansAccents = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();

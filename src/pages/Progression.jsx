@@ -62,7 +62,7 @@ export default function Progression() {
   return (
     <>
       <EnTete
-        titre="Cahier de progression"
+        titre="Avancement du programme"
         sousTitre={annee ? `Année ${annee.libelle}` : ""}
         action={classes.length > 0 && (
           <select value={classeId} onChange={(e) => setClasseId(e.target.value)}

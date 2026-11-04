@@ -10,7 +10,7 @@ import { ouvrirEncaisser } from "@/lib/encaisser.js";
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
 // Fenêtre de recherche globale (Ctrl+K) — lot 2 de l'audit du 31/10/2026.
-// `pages` : les écrans du menu ouverts à ce rôle [{ to, label, espace, icone }].
+// `pages` : les écrans du menu ouverts à ce rôle [{ to, label, espace, icone, aide }].
 // Flèches ↑ ↓ pour choisir, Entrée pour ouvrir, Échap pour fermer.
 export default function RechercheGlobale({ ouvert, onFermer, pages = [] }) {
   const { ecoleId, ecole, roles, modulesActifs } = useAuth();
@@ -69,7 +69,7 @@ export default function RechercheGlobale({ ouvert, onFermer, pages = [] }) {
       cle: `f${f.id}`, to: `/eleves/${f.eleve_id}?onglet=paiements`, icone: "🧾", titre: `Facture ${f.numero}`,
       detail: `${f.eleves?.prenom || ""} ${f.eleves?.nom || ""} · reste ${fmt(Math.max(0, f.montant_total - f.montant_paye))} ${devise}`.trim(),
     })) },
-    { titre: "Écrans", items: chercherPages(pages, q).map((p) => ({ cle: `p${p.to}`, to: p.to, icone: p.icone, titre: p.label, detail: p.espace })) },
+    { titre: "Écrans", items: chercherPages(pages, q).map((p) => ({ cle: `p${p.to}`, to: p.to, icone: p.icone, titre: p.label, detail: p.aide ? `${p.espace} · ${p.aide}` : p.espace })) },
   ].filter((g) => g.items.length > 0);
   const tous = groupes.flatMap((g) => g.items);
 

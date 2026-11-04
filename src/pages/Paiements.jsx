@@ -41,6 +41,7 @@ export default function Paiements() {
   const [modaleNouvelle, setModaleNouvelle] = useState(false);
   const [modaleLot, setModaleLot] = useState(false);
   const [modaleAvance, setModaleAvance] = useState(false);
+  const [plus, setPlus] = useState(false); // menu « Plus » de l'en-tête
   //  `?facture=` : la fenêtre « Encaisser » mène ici pour imprimer le reçu.
   const [params, setParams] = useSearchParams();
   const [factureId, setFactureId] = useState(() => params.get("facture"));
@@ -152,12 +153,31 @@ export default function Paiements() {
         action={
           onglet === "factures" && (
             <div className="flex flex-wrap gap-2">
-              <Bouton variante="fantome" onClick={() => setModaleLot(true)} disabled={inscrits.length === 0 || frais.length === 0}>
-                ⚡ Générer en lot
-              </Bouton>
-              <Bouton variante="fantome" onClick={() => setModaleAvance(true)} disabled={inscrits.length === 0}>
-                ⏩ Encaisser une avance
-              </Bouton>
+              {/*  Au guichet, une secrétaire hésitait entre quatre boutons.
+                   « Encaisser » et « Nouvelle facture » restent en vue ; les
+                   deux actions plus rares passent dans « Plus ». */}
+              <div className="relative">
+                <Bouton variante="fantome" onClick={() => setPlus((o) => !o)} aria-expanded={plus} aria-haspopup="menu">Plus ▾</Bouton>
+                {plus && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setPlus(false)} aria-hidden="true" />
+                    <div role="menu" className="absolute right-0 z-40 mt-2 w-72 rounded-xl border border-navy-900/10 bg-white p-1.5 shadow-xl">
+                      <button role="menuitem" disabled={inscrits.length === 0 || frais.length === 0}
+                        onClick={() => { setPlus(false); setModaleLot(true); }}
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-creme disabled:opacity-40">
+                        ⚡ Générer en lot
+                        <span className="block text-xs text-navy-900/50">Les factures de toute une classe ou de toute l&apos;école</span>
+                      </button>
+                      <button role="menuitem" disabled={inscrits.length === 0}
+                        onClick={() => { setPlus(false); setModaleAvance(true); }}
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-creme disabled:opacity-40">
+                        ⏩ Encaisser une avance
+                        <span className="block text-xs text-navy-900/50">Un paiement pour des mois pas encore facturés</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <Bouton onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
                 + Nouvelle facture
               </Bouton>

@@ -20,14 +20,14 @@ export const ESPACES = [
       { to: "/pilotage", label: "Vue d'ensemble", icone: "🎯", cle: "_pilotage" },
       { to: "/passage-annee", label: "Passage d'année", icone: "🗓️", cle: "_passage_annee" },
       { to: "/abonnement", label: "Mon abonnement", icone: "🎫", cle: "_abonnement" },
-      { to: "/organigramme", label: "Organigramme", icone: "🗂️", cle: "_organigramme" },
-      { to: "/documentation", label: "Documentation", icone: "📁", cle: "_documentation" },
-      { to: "/journal", label: "Journal des actes", icone: "🗒️", cle: "_journal" },
+      { to: "/organigramme", label: "Organigramme", aide: "Qui fait quoi dans l'école.", icone: "🗂️", cle: "_organigramme" },
+      { to: "/documentation", label: "Documentation", aide: "Les fichiers de l'école (règlement, modèles, comptes rendus), rangés et partagés.", icone: "📁", cle: "_documentation" },
+      { to: "/journal", label: "Journal des actes", aide: "Qui a fait quoi, et quand : l'historique des actes.", icone: "🗒️", cle: "_journal" },
       // `transverse` : utilitaire, jamais une page d'atterrissage (cf.
       // premiereRoute). Pilotage n'est pas regroupé — huit entrées se lisent
       // d'un bloc — mais la nature de ces deux-là ne change pas pour autant.
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", transverse: true },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", transverse: true },
+      { to: "/membres", label: "Membres", aide: "Les comptes du personnel, et ce que chacun peut voir.", icone: "👥", cle: "membres", transverse: true },
+      { to: "/a-signer", label: "À signer", aide: "Les documents qui attendent votre signature.", icone: "✍️", cle: "signatures", transverse: true },
     ],
   },
   {
@@ -44,26 +44,26 @@ export const ESPACES = [
       // lien d'accueil doit rester le premier : ce n'est pas au regroupement
       // de décider de l'ordre de lecture.
       { to: "/gestion", label: "Accueil", icone: "▦", cle: "_gestion", exact: true, groupe: "Établissement" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
+      { to: "/membres", label: "Membres", aide: "Les comptes du personnel, et ce que chacun peut voir.", icone: "👥", cle: "membres", groupe: "Établissement", transverse: true },
+      { to: "/a-signer", label: "À signer", aide: "Les documents qui attendent votre signature.", icone: "✍️", cle: "signatures", groupe: "Établissement", transverse: true },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Établissement", transverse: true },
       // Le corps enseignant est une affaire d'établissement (recrutement,
       // affectations, professeur principal), pas un geste de classe : rangé
       // à côté de Membres. La Structure académique, elle, est une rubrique
       // de Paramètres (/parametres/structure).
-      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Établissement" },
+      { to: "/enseignants", label: "Enseignants & affectations", aide: "Les fiches des enseignants, leurs classes et leur accès.", icone: "🧑‍🏫", cle: "enseignants", groupe: "Établissement" },
 
       // Scolarité
       { to: "/eleves", label: "Élèves & inscriptions", labelSup: "Étudiants", icone: "👤", cle: "eleves", groupe: "Scolarité" },
-      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Scolarité" },
-      { to: "/certificats", label: "Documents", icone: "🧾", cle: "certificats", groupe: "Scolarité" },
-      { to: "/demandes", label: "Demandes", icone: "📥", cle: "demandes", groupe: "Scolarité" },
+      { to: "/codes-parents", label: "Codes parents", aide: "Les codes qui relient chaque parent à ses enfants.", icone: "🔑", cle: "codes_parents", groupe: "Scolarité" },
+      { to: "/certificats", label: "Documents officiels", aide: "Certificats et attestations, avec cachet et QR de vérification.", icone: "🧾", cle: "certificats", groupe: "Scolarité" },
+      { to: "/demandes", label: "Demandes", aide: "Les documents demandés par les familles, à préparer.", icone: "📥", cle: "demandes", groupe: "Scolarité" },
 
       // Finances
-      { to: "/paiements", label: "Paiements", icone: "₣", cle: "paiements", groupe: "Finances" },
-      { to: "/recouvrement", label: "Recouvrement", icone: "🔔", cle: "recouvrement", groupe: "Finances" },
-      { to: "/situation-paiements", label: "Situation des paiements", icone: "💳", cle: "situation_paiements", groupe: "Finances" },
-      { to: "/comptabilite", label: "Comptabilité", icone: "💰", cle: "comptabilite", groupe: "Finances" },
+      { to: "/paiements", label: "Paiements", aide: "Factures, encaissements, grille tarifaire et paiement mobile.", icone: "₣", cle: "paiements", groupe: "Finances" },
+      { to: "/recouvrement", label: "Recouvrement", aide: "Les impayés et les rappels envoyés aux familles.", icone: "🔔", cle: "recouvrement", groupe: "Finances" },
+      { to: "/situation-paiements", label: "Situation des paiements", aide: "Où en est chaque famille : facturé, payé, reste à payer.", icone: "💳", cle: "situation_paiements", groupe: "Finances" },
+      { to: "/comptabilite", label: "Comptabilité", aide: "Trésorerie, recettes, dépenses et résultat (SYSCOHADA).", icone: "💰", cle: "comptabilite", groupe: "Finances" },
 
       // Services aux familles
       { to: "/cantine", label: "Cantine", icone: "🍽️", cle: "cantine", groupe: "Services" },
@@ -101,12 +101,12 @@ export const ESPACES = [
       { to: "/pedagogie", label: "Accueil", icone: "▦", cle: "_pedagogie", exact: true },
 
       // Au quotidien
-      { to: "/appel", label: "Feuille de présence", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/appel", label: "Feuille de présence", aide: "Présents, absents et retards du jour, classe par classe.", icone: "✅", cle: "appel", types: ["ecole"], groupe: "Au quotidien" },
       { to: "/appel-sup", label: "Présence par séance", icone: "✅", cle: "appel_sup", types: ["superieur"], groupe: "Au quotidien" },
-      { to: "/cahier-textes", label: "Cahier de textes", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
-      { to: "/progression", label: "Progression", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
-      { to: "/acquis", label: "Suivi des acquis", icone: "🧸", cle: "acquis", types: ["ecole"], groupe: "Au quotidien" },
-      { to: "/programmation", label: "Programmation officielle", icone: "📑", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/cahier-textes", label: "Cahier de textes", aide: "Ce qui a été fait en classe, et les devoirs donnés.", icone: "📓", cle: "cahier", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/progression", label: "Avancement du programme", aide: "Où en est chaque classe dans son programme, chapitre par chapitre.", icone: "🗂️", cle: "progression", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/acquis", label: "Suivi des acquis", aide: "Au préscolaire : les compétences observées, sans notes.", icone: "🧸", cle: "acquis", types: ["ecole"], groupe: "Au quotidien" },
+      { to: "/programmation", label: "Programmation officielle", aide: "Le document officiel de l'IEF : ce qu'il faut couvrir dans l'année.", icone: "📑", cle: "programmation", types: ["ecole"], groupe: "Au quotidien" },
       // Deux pages pour un même besoin, parce que les modèles diffèrent :
       // `emplois_du_temps` planifie par CLASSE (école), `emplois_sup` par
       // FILIÈRE et SEMESTRE (université, migration 138). D'où le gating.
@@ -121,7 +121,7 @@ export const ESPACES = [
       // d'accès est CALCULÉ depuis ce menu (acces.js) — la retirer
       // supprimerait la case `structure` que les policies citent.
       { to: "/parametres/structure", label: "Niveaux & classes", icone: "🏫", cle: "structure", types: ["ecole"], groupe: "Élèves & structure", horsMenu: true, transverse: true },
-      { to: "/fournitures", label: "Fournitures", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Élèves & structure" },
+      { to: "/fournitures", label: "Fournitures", aide: "La liste des fournitures par classe, et ce qui a été remis.", icone: "🎒", cle: "fournitures", types: ["ecole"], groupe: "Élèves & structure" },
       { to: "/filieres", label: "Filières & maquettes", icone: "🏛️", cle: "filieres", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/admissions", label: "Admissions", icone: "📨", cle: "admissions", types: ["superieur"], groupe: "Élèves & structure" },
       { to: "/inscriptions-sup", label: "Inscriptions", icone: "📝", cle: "inscriptions_sup", types: ["superieur"], groupe: "Élèves & structure" },
@@ -129,7 +129,7 @@ export const ESPACES = [
       // Évaluation
       { to: "/notes", label: "Notes", labelMixte: "Notes (classes)", icone: "✎", cle: "notes", types: ["ecole"], groupe: "Évaluation" },
       { to: "/bulletins", label: "Bulletins", icone: "🎓", cle: "bulletins", types: ["ecole"], groupe: "Évaluation" },
-      { to: "/classement", label: "Classement", icone: "🏆", cle: "classement", types: ["ecole"], groupe: "Évaluation" },
+      { to: "/classement", label: "Classement", aide: "Le rang des élèves et le tableau d'honneur.", icone: "🏆", cle: "classement", types: ["ecole"], groupe: "Évaluation" },
       { to: "/notes-lmd", label: "Notes", labelMixte: "Notes (UE)", icone: "✎", cle: "notes_lmd", types: ["superieur"], groupe: "Évaluation" },
       { to: "/deliberations", label: "Délibérations & relevés", icone: "⚖️", cle: "deliberations_sup", types: ["superieur"], groupe: "Évaluation" },
 
@@ -140,8 +140,8 @@ export const ESPACES = [
       { to: "/biblio-depots", label: "Mémoires & thèses", icone: "📜", cle: "biblio_depots", types: ["superieur"], groupe: "Bibliothèque" },
 
       // Vie scolaire
-      { to: "/vie-scolaire", label: "Vie scolaire", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
-      { to: "/assiduite", label: "Assiduité", icone: "📊", cle: "assiduite", types: ["ecole"], groupe: "Vie scolaire" },
+      { to: "/vie-scolaire", label: "Vie scolaire", aide: "Absences, retards, justificatifs et incidents.", icone: "📋", cle: "vie_scolaire", types: ["ecole"], groupe: "Vie scolaire" },
+      { to: "/assiduite", label: "Assiduité", aide: "Les taux d'absence, par classe et par élève.", icone: "📊", cle: "assiduite", types: ["ecole"], groupe: "Vie scolaire" },
 
       // Communication — la direction y a droit (ACCES) mais ces pages ne
       // vivaient que dans Gestion, espace auquel elle n'accède pas.
@@ -149,14 +149,14 @@ export const ESPACES = [
       { to: "/messagerie", label: "Messagerie", icone: "💬", cle: "messagerie", groupe: "Communication" },
 
       // Administration — en dernier, voir le commentaire de l'accueil.
-      { to: "/situation-paiements", label: "Situation des paiements", icone: "💳", cle: "situation_paiements", groupe: "Administration" },
-      { to: "/codes-parents", label: "Codes parents", icone: "🔑", cle: "codes_parents", groupe: "Administration" },
+      { to: "/situation-paiements", label: "Situation des paiements", aide: "Où en est chaque famille : facturé, payé, reste à payer.", icone: "💳", cle: "situation_paiements", groupe: "Administration" },
+      { to: "/codes-parents", label: "Codes parents", aide: "Les codes qui relient chaque parent à ses enfants.", icone: "🔑", cle: "codes_parents", groupe: "Administration" },
       { to: "/codes-etudiants", label: "Codes étudiants", icone: "🔑", cle: "codes_etudiants", types: ["superieur"], groupe: "Administration" },
       // La direction n'a pas accès à Gestion : sans cette entrée, elle
       // perdrait les enseignants et les affectations.
-      { to: "/enseignants", label: "Enseignants & affectations", icone: "🧑‍🏫", cle: "enseignants", groupe: "Administration" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", groupe: "Administration", transverse: true },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", groupe: "Administration", transverse: true },
+      { to: "/enseignants", label: "Enseignants & affectations", aide: "Les fiches des enseignants, leurs classes et leur accès.", icone: "🧑‍🏫", cle: "enseignants", groupe: "Administration" },
+      { to: "/membres", label: "Membres", aide: "Les comptes du personnel, et ce que chacun peut voir.", icone: "👥", cle: "membres", groupe: "Administration", transverse: true },
+      { to: "/a-signer", label: "À signer", aide: "Les documents qui attendent votre signature.", icone: "✍️", cle: "signatures", groupe: "Administration", transverse: true },
       { to: "/parametres", label: "Paramètres", icone: "⚙️", cle: "parametres", groupe: "Administration", transverse: true },
     ],
   },
@@ -167,10 +167,10 @@ export const ESPACES = [
     accueil: "/rh",
     roles: ["rh"], // la Comptabilité a rejoint l'espace Gestion (côté comptable)
     items: [
-      { to: "/rh", label: "Personnel & paie", icone: "🧑‍💼", cle: "rh", exact: true },
-      { to: "/enseignants", label: "Enseignants", icone: "🧑‍🏫", cle: "enseignants" },
-      { to: "/membres", label: "Membres", icone: "👥", cle: "membres", transverse: true },
-      { to: "/a-signer", label: "À signer", icone: "✍️", cle: "signatures", transverse: true },
+      { to: "/rh", label: "Personnel & paie", aide: "Les salariés : contrats, paie et congés.", icone: "🧑‍💼", cle: "rh", exact: true },
+      { to: "/enseignants", label: "Enseignants", aide: "Les fiches des enseignants, leurs classes et leur accès.", icone: "🧑‍🏫", cle: "enseignants" },
+      { to: "/membres", label: "Membres", aide: "Les comptes du personnel, et ce que chacun peut voir.", icone: "👥", cle: "membres", transverse: true },
+      { to: "/a-signer", label: "À signer", aide: "Les documents qui attendent votre signature.", icone: "✍️", cle: "signatures", transverse: true },
     ],
   },
 ];

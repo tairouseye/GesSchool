@@ -26,8 +26,8 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 | Espace | Icône | Pour qui | Menus |
 |---|---|---|---|
 | **Pilotage** | 🎯 | Promoteur (accès total) | Vue consolidée de toutes ses écoles, **Mise en route**, **Passage d'année**, **Membres** |
-| **Pédagogie** | 🎓 | Responsable pédagogique, enseignants, surveillants | Accueil, **Feuille de présence**, **Cahier de textes**, **Progression**, **Programmation officielle**, **Suivi des acquis**, Élèves, **Photos des élèves**, Structure, Notes, Bulletins, **Classement**, **Emploi du temps**, Vie scolaire, **Assiduité**, Fournitures, **Membres** |
-| **Gestion** | 💼 | Comptable, secrétaire / caisse | Accueil, Élèves & inscriptions, **Documents**, **Demandes**, Paiements, Recouvrement, **Cantine**, **Transport**, Annonces, Messagerie, **Membres**, Paramètres |
+| **Pédagogie** | 🎓 | Responsable pédagogique, enseignants, surveillants | Accueil, **Feuille de présence**, **Cahier de textes**, **Avancement du programme**, **Programmation officielle**, **Suivi des acquis**, Élèves, **Photos des élèves**, Structure, Notes, Bulletins, **Classement**, **Emploi du temps**, Vie scolaire, **Assiduité**, Fournitures, **Membres** |
+| **Gestion** | 💼 | Comptable, secrétaire / caisse | Accueil, Élèves & inscriptions, **Documents officiels**, **Demandes**, Paiements, Recouvrement, **Cantine**, **Transport**, Annonces, Messagerie, **Membres**, Paramètres |
 | **RH & Paie** | 🧑‍💼 | Responsable RH | Personnel & paie, Enseignants, Comptabilité, **Membres** |
 | **Parent** | 👪 | Familles | Suivi de chaque enfant (voir §17) |
 
@@ -40,6 +40,7 @@ Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depu
 - **La cloche 🔔** (à côté de Rechercher) vous prévient de ce qui attend **votre** action : un **paiement mobile déclaré** par un parent, un **justificatif d'absence**, un **message** d'un parent, une **demande de document**. Elle va à ceux qui ont accès à l'écran qui le traite (cases cochées dans **Membres**) et aux promoteurs. Toucher une alerte l'ouvre directement ; si les notifications sont activées sur l'appareil, elle arrive aussi en push.
 - **Le « ? » à côté du titre de chaque écran** ouvre, dans un nouvel onglet, la section de ce mode d'emploi qui explique **cet écran-là**. Votre saisie en cours n'est pas perdue.
 - **Votre compte** est en bas de la barre latérale : cliquez sur votre nom pour activer les notifications, gérer la connexion par empreinte, ouvrir l'aide, revoir la visite guidée ou vous déconnecter.
+- **Une phrase par écran** : sur ordinateur, laissez la souris sur une entrée du menu ; sur téléphone, elle est écrite sous la tuile. La recherche (Ctrl + K) la lit aussi : « impayés » trouve **Recouvrement**.
 - **Le menu s'adapte à ce que l'établissement couvre.** Un établissement qui ne fait que l'élémentaire ne voit pas les écrans du supérieur, et inversement. Un établissement qui couvre les deux voit les deux (voir §2.4).
 
 **Rôles disponibles :** Promoteur, Responsable pédagogique, Comptable / Gestion, Responsable RH, Secrétaire / Caisse, Enseignant, Surveillant, Parent, Super-admin.
@@ -332,6 +333,8 @@ Une entrée par séance : **date**, **matière**, **contenu** de la séance, et 
 - Les entrées sont **visibles des parents** : un enfant absent retrouve ce qui a été fait.
 
 ### 5.3 Au fil des semaines : la progression
+Menu **Avancement du programme** (appelé « Progression » jusqu'à la v2.302) : où en est chaque classe dans son programme, chapitre par chapitre — à ne pas confondre avec le **Cahier de textes** (ce qui a été fait à chaque séance) ni avec la **Programmation officielle** (le document de l'IEF).
+
 
 Planifiez vos leçons à l'avance : un **titre** (chapitre, leçon), une **description**, une **période**, une **date prévue**, et un état — **À faire** · **En cours** · **Fait**.
 
@@ -495,6 +498,8 @@ Ces seuils suivent le barème de l'école (§2.2) : si vous notez sur 10, ils so
 ## 9. Documents administratifs (espace Gestion)
 
 ### 9.1 Produire un certificat ou une attestation (menu **Documents**)
+Menu **Documents officiels** (appelé « Documents » jusqu'à la v2.302).
+
 
 **Le principe** : un document officiel engage l'établissement. Il n'est donc pas imprimable directement — il passe par une **validation** par un signataire habilité.
 
@@ -557,7 +562,7 @@ La facturation en lot et le paiement anticipé appliquent ce tarif : un élève 
 
 > **On CHERCHE l'élève, on ne le déroule plus.** Tapez deux lettres du nom, du prénom ou du matricule : l'application interroge le serveur et propose huit résultats. C'était une liste déroulante jusqu'à la version 2.242 — praticable à cent élèves, impossible à dix mille, et surtout **plafonnée à 1 000 noms sans le dire** : au-delà, un élève en fin d'alphabet était absent de la liste, donc impossible à facturer. Le même champ de recherche sert maintenant partout où l'on désigne un élève : facture, incident de vie scolaire, document, cantine, transport, messagerie.
 
-**Toute une promotion** — **⚡ Générer en lot** : choisissez le niveau ; les frais obligatoires sont pré-cochés, **y compris ceux définis au niveau du cycle**. L'application **ne crée pas de doublon** : un élève déjà facturé pour le même frais est ignoré.
+**Toute une promotion** — **Plus ▾ → ⚡ Générer en lot** (en haut de Paiements, à côté de **Encaisser** et **+ Nouvelle facture**) : choisissez le niveau ; les frais obligatoires sont pré-cochés, **y compris ceux définis au niveau du cycle**. L'application **ne crée pas de doublon** : un élève déjà facturé pour le même frais est ignoré.
 
 > **Mettez une date d'échéance.** Sans elle, une facture impayée n'est jamais comptée « en retard » (§19) et n'entre pas dans les relances. L'application ne devine pas une échéance que vous n'avez pas donnée.
 
@@ -597,7 +602,7 @@ Un parent qui paie par mobile money **déclare** son paiement depuis son espace,
 Une famille peut **payer un ou plusieurs mois avant que l'école les facture**.
 
 - **Depuis l'espace parent**, carte **« Payer d'avance »** dans Paiements : le parent coche les mois (le prochain est coché d'office), le montant est calculé d'après la **grille tarifaire** (frais **mensuels** et **obligatoires** de la classe), il paie par mobile money et joint sa **preuve**. Sa déclaration arrive dans l'onglet **Déclarations**, marquée **« Avance · Novembre 2026 »**.
-- **Au guichet**, bouton **⏩ Encaisser une avance** : cherchez l'élève, cochez les mois, encaissez.
+- **Au guichet**, **Plus ▾ → ⏩ Encaisser une avance** : cherchez l'élève, cochez les mois, encaissez.
 
 Dans les deux cas, **la facture du mois est créée au moment où vous validez, déjà réglée**. La famille reçoit « Paiement anticipé validé », et non « Nouvelle facture ». Quand vous lancerez **⚡ Générer en lot** pour ce mois, l'élève sera **ignoré** : il est déjà facturé et payé. Un mois dont l'avance attend encore votre validation est lui aussi sauté.
 
