@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.303.0] — Prise en main, lot 4 : un vocabulaire qui se comprend
+- **Une phrase par écran** pour les noms qui se ressemblent (Cahier de textes, Avancement du programme, Programmation officielle ; Paiements, Recouvrement, Situation des paiements ; Membres, Enseignants, Personnel & paie…) : en infobulle dans la barre latérale, sous la tuile sur téléphone, et dans la recherche globale, qui la lit aussi — « impayés » trouve Recouvrement.
+- **Deux noms plus parlants** : « Progression » devient **Avancement du programme**, « Documents » devient **Documents officiels**.
+- **Paiements** : **Encaisser** et **+ Nouvelle facture** restent en vue ; **Générer en lot** et **Encaisser une avance** passent dans **Plus ▾**, chacun avec une ligne d'explication.
+- Restent ouverts de l'audit : le résumé « ce que voit ce membre » dans Membres, et les doublons du menu du promoteur — à reprendre après un essai avec une directrice.
+
 ## [2.302.0] — Prise en main, lot 3 : connecter les enseignants et les familles
 - **LE CONSTAT** (03/11) : à Tut'Tank, aucun des 10 enseignants n'a de compte — aucun code n'avait été généré, et leurs fiches ne portent ni téléphone ni e-mail — et 4 parents sur 145 sont reliés. La pédagogie (0 note saisie) et l'espace parent sont donc à l'arrêt.
 - **Les enseignants se connectent par leur numéro** (mig. **228**) : « Mon numéro » → « J'ai un code », leur numéro, le code remis par l'école et un mot de passe — comme les parents depuis la mig. 221, sans e-mail. La fonction Edge `parent-telephone` est inchangée ; ses deux fonctions d'activation reconnaissent désormais un code enseignant. 🔒 Un numéro porté par un parent et un enseignant **différents** est bloqué (ils partageraient un compte) ; mesuré : aucune école réelle concernée. Essai `supabase/tests/essai_228.sql` (6 contrôles, 6/6 à blanc).
