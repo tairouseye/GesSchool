@@ -247,3 +247,12 @@ test("une valeur héritée de type_etablissement n'ampute pas le menu d'une éco
     assert.equal(itemPourType(it, "superieur"), true);
   }
 });
+
+test("accueil de métier : enseignant et caisse ; qui dirige ou gère garde ses chiffres", () => {
+  assert.equal(P.accueilMetier(["enseignant"]), "enseignant");
+  assert.equal(P.accueilMetier(["secretaire"]), "caisse");
+  assert.equal(P.accueilMetier(["enseignant", "secretaire"]), "enseignant");
+  for (const r of [["direction"], ["comptable"], ["admin_ecole"], ["direction", "enseignant"], ["comptable", "secretaire"], ["surveillant"], []]) {
+    assert.equal(P.accueilMetier(r), null, r.join("+"));
+  }
+});

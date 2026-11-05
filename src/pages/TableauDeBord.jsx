@@ -12,7 +12,8 @@ import { MODES } from "@/lib/paiements.js";
 import { ouvrirEncaisser } from "@/lib/encaisser.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
-import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
+import { peutVoir, estRoleComplet, accueilMetier } from "@/lib/permissions.js";
+import AccueilCaisse from "@/composants/AccueilCaisse.jsx";
 import { moduleActif } from "@/lib/modules.js";
 import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
 import { lignesAdoption } from "@/lib/miseEnRoute.js";
@@ -32,7 +33,13 @@ const initiales = (nom) => String(nom || "").split(" ").filter(Boolean).map((x) 
 // (docs/maquette-tableaux-classter.html, onglet 1) : chiffres avec leur
 // évolution, l'année comparée à la précédente, agenda, à traiter,
 // recouvrement par classe, modes de paiement, activité récente.
+//  La secrétaire / caisse a son propre accueil : le guichet d'abord.
 export default function TableauDeBord() {
+  const { roles } = useAuth();
+  return accueilMetier(roles) === "caisse" ? <AccueilCaisse /> : <TableauGestion />;
+}
+
+function TableauGestion() {
   const { ecoleId, ecole, profil, roles, modulesActifs } = useAuth();
   const devise = ecole?.devise || "XOF";
   const [annee, setAnnee] = useState(null);

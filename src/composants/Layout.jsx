@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-do
 import { ChargementPage, Modale } from "@/composants/ui.jsx";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Cachet from "@/composants/Cachet.jsx";
-import { LIBELLES_ROLES, peutVoir, estRoleComplet } from "@/lib/permissions.js";
+import { LIBELLES_ROLES, peutVoir, accueilMetier } from "@/lib/permissions.js";
 import { espacesAccessibles, espaceParDefaut, espaceParId, espacesDeRoute, routeCouvre, routeOuvrable, itemPourType, grouperItems,
          routeDAtterrissage, libelleItem } from "@/lib/espaces.js";
 import Tour from "@/composants/Tour.jsx";
@@ -133,9 +133,9 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);      // (desktop, hérité — non utilisé en mobile)
-  //  Mobile : grille de tuiles de l'espace. L'enseignant, lui, arrive sur son
-  //  accueil (ses gestes du jour) ; la grille reste à un toucher (▦).
-  const [tuiles, setTuiles] = useState(() => !(roles || []).includes("enseignant") || estRoleComplet(roles) || (roles || []).includes("direction"));
+  //  Mobile : grille de tuiles de l'espace. Qui a un accueil de métier arrive
+  //  sur ses gestes du jour ; la grille reste à un toucher (▦).
+  const [tuiles, setTuiles] = useState(() => !accueilMetier(roles));
   const [compte, setCompte] = useState(false);  // mobile : panneau compte / déconnexion
   const [bio, setBio] = useState(false);        // fenêtre « Connexion par empreinte »
   const [profilOuvert, setProfilOuvert] = useState(false); // desktop : menu du compte (pied de barre)

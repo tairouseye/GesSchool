@@ -12,7 +12,7 @@ import { getAbsencesRecentes, STATUTS_JUSTIF } from "@/lib/viescolaire.js";
 import { getAnneeCourante, compterAdoption } from "@/lib/academique.js";
 import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
-import { peutVoir, estRoleComplet } from "@/lib/permissions.js";
+import { peutVoir, estRoleComplet, accueilMetier } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
 import MaJournee from "@/composants/MaJournee.jsx";
@@ -32,8 +32,7 @@ const pct = (v) => (v == null ? "—" : `${v.toFixed(1).replace(".", ",")} %`);
 //  pas à traverser les chiffres de l'école pour faire l'appel.
 export default function AccueilPedagogie() {
   const { ecole, roles } = useAuth();
-  const direction = estRoleComplet(roles) || (roles || []).includes("direction");
-  return !direction && (roles || []).includes("enseignant") && couvreScolaire(ecole) ? <MaJournee /> : <AccueilDirection />;
+  return accueilMetier(roles) === "enseignant" && couvreScolaire(ecole) ? <MaJournee /> : <AccueilDirection />;
 }
 
 function AccueilDirection() {
