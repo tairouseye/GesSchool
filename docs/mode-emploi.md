@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.309 · mise à jour du 5 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.310 · mise à jour du 5 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -529,6 +529,8 @@ Pour chacune : **En cours** · **Marquer prêt** · **Rejeter**, avec la possibi
 ---
 
 ## 10. Paiements & recouvrement (espace Gestion)
+
+**L'accueil de la secrétaire / caisse.** En arrivant, elle voit son guichet : une grande recherche (élève, parent, matricule), **Encaisser**, **Inscrire un élève**, **Faire un document**, puis **À traiter** (paiements déclarés par les parents, documents demandés, parents pas encore connectés) et **La caisse aujourd'hui**. Tout le reste est dans le menu. Qui a aussi un rôle de comptable ou de direction garde le tableau de bord Gestion.
 
 L'écran **Paiements** a quatre onglets : **Factures**, **Paiements en ligne**, **Grille tarifaire**, **Paiement mobile**. L'ordre dans lequel on s'en sert est l'inverse : on règle d'abord la grille, puis on facture, puis on encaisse.
 

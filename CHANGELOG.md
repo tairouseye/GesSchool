@@ -5,6 +5,11 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.310.0] — L'accueil de la secrétaire / caisse
+- **Le guichet d'abord** : une grande recherche, Encaisser, Inscrire un élève, Faire un document.
+- **À traiter** : paiements déclarés par les parents, documents demandés, parents pas encore connectés. **La caisse aujourd'hui** à côté.
+- Qui cumule un rôle de comptable ou de direction garde le tableau de bord Gestion.
+
 ## [2.309.0] — Savoir qu'un appel a été fait
 - **L'appel validé est enregistré**, même quand tout le monde est présent (mig. 231). L'enseignant voit « appel à faire » ou « appel validé », et le grand bouton va à la classe qui attend. La feuille de présence rappelle l'heure de validation.
 - **La direction voit les classes sans appel** dans À traiter : celles dont un cours a commencé aujourd'hui. Sans emploi du temps saisi, une classe n'est pas signalée. Essai : `supabase/tests/essai_231.sql` (5 contrôles).
