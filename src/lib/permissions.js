@@ -187,12 +187,13 @@ export function estRoleComplet(roles) {
   return (roles || []).some((r) => ROLES_COMPLETS.includes(r));
 }
 
-// L'accueil de métier (modèle de l'espace parent) : « enseignant », « caisse »,
-// ou `null` pour ceux qui gardent le tableau de bord. Qui cumule un rôle de
-// direction ou de gestion garde ses chiffres.
+// L'accueil de métier (modèle de l'espace parent), ou `null` pour ceux qui
+// gardent le tableau de bord (promoteur). Le rôle le plus large l'emporte.
 export function accueilMetier(roles) {
   const r = roles || [];
-  if (estRoleComplet(r) || r.includes("direction") || r.includes("comptable")) return null;
+  if (estRoleComplet(r)) return null;
+  if (r.includes("direction")) return "responsable";
+  if (r.includes("comptable")) return "comptable";
   if (r.includes("enseignant")) return "enseignant";
   return r.includes("secretaire") ? "caisse" : null;
 }

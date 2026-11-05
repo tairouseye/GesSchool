@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Alerte } from "@/composants/ui.jsx";
@@ -14,9 +15,10 @@ import { compterASigner } from "@/lib/documents.js";
 import { compterDemandesEnAttente } from "@/lib/demandes.js";
 import { peutVoir, estRoleComplet, accueilMetier } from "@/lib/permissions.js";
 import AccueilCaisse from "@/composants/AccueilCaisse.jsx";
+import AccueilComptable from "@/composants/AccueilComptable.jsx";
+import { aTraiterGestion } from "@/lib/aTraiter.js";
 import { moduleActif } from "@/lib/modules.js";
 import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
-import { lignesAdoption } from "@/lib/miseEnRoute.js";
 
 const fmtMontant = (n) => {
   const v = Math.round(Number(n) || 0);
@@ -33,10 +35,15 @@ const initiales = (nom) => String(nom || "").split(" ").filter(Boolean).map((x) 
 // (docs/maquette-tableaux-classter.html, onglet 1) : chiffres avec leur
 // évolution, l'année comparée à la précédente, agenda, à traiter,
 // recouvrement par classe, modes de paiement, activité récente.
-//  La secrétaire / caisse a son propre accueil : le guichet d'abord.
+//  Secrétaire et comptable ont leur accueil de métier. `?chiffres=1` : le
+//  tableau de bord, qui reste à un toucher.
 export default function TableauDeBord() {
   const { roles } = useAuth();
-  return accueilMetier(roles) === "caisse" ? <AccueilCaisse /> : <TableauGestion />;
+  const [params] = useSearchParams();
+  const metier = params.get("chiffres") ? null : accueilMetier(roles);
+  if (metier === "caisse") return <AccueilCaisse />;
+  if (metier === "comptable") return <AccueilComptable />;
+  return <TableauGestion />;
 }
 
 function TableauGestion() {
@@ -77,19 +84,7 @@ function TableauGestion() {
   const ouvert = (cle) => peutVoir(roles, cle) && moduleActif(modulesActifs, cle);
   const reste = stats ? stats.totalFacture - stats.totalPaye : 0;
 
-  const aTraiter = stats ? [
-    ouvert("paiements") && stats.declEnAttente > 0 && {
-      to: "/paiements", ton: "or", bouton: "Valider", titre: `${pl(stats.declEnAttente, "paiement mobile", "paiements mobiles")} à valider` },
-    ouvert("recouvrement") && stats.nbEnRetard > 0 && {
-      to: "/recouvrement", ton: "rouge", bouton: "Relancer", titre: `${pl(stats.nbEnRetard, "élève")} en impayé` },
-    ouvert("recouvrement") && stats.echeanceNb > 0 && {
-      to: "/recouvrement", ton: "navy", bouton: "Voir", titre: `${pl(stats.echeanceNb, "échéance")} dans les 7 jours` },
-    ouvert("demandes") && demandes > 0 && {
-      to: "/demandes", ton: "violet", bouton: "Traiter", titre: `${pl(demandes, "demande")} de document` },
-    ouvert("signatures") && aSigner > 0 && {
-      to: "/a-signer", ton: "bleu", bouton: "Signer", titre: `${pl(aSigner, "document")} à signer` },
-    ...lignesAdoption(adoption, ouvert),
-  ].filter(Boolean) : [];
+  const aTraiter = aTraiterGestion({ stats, demandes, aSigner, adoption, ouvert });
 
   //  Agenda : les échéances de paiement à venir, puis les fins de période.
   const jour = new Date().toISOString().slice(0, 10);

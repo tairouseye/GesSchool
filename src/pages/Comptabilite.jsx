@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, EtatVide, Table, SkeletonListe, Onglets } from "@/composants/ui.jsx";
@@ -19,7 +20,8 @@ export default function Comptabilite() {
   const confirmer = useConfirm();
   const toast = useToast();
   const devise = ecole?.devise || "XOF";
-  const [onglet, setOnglet] = useState("synthese");
+  const [adresse] = useSearchParams();
+  const [onglet, setOnglet] = useState(() => adresse.get("onglet") || "synthese");
   const [debut, setDebut] = useState(debutAnnee());
   const [fin, setFin] = useState(auj());
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Alerte, Badge } from "@/composants/ui.jsx";
@@ -16,8 +16,9 @@ import { peutVoir, estRoleComplet, accueilMetier } from "@/lib/permissions.js";
 import { moduleActif } from "@/lib/modules.js";
 import { couvreScolaire, couvreSuperieur } from "@/lib/paliers.js";
 import MaJournee from "@/composants/MaJournee.jsx";
+import AccueilResponsable from "@/composants/AccueilResponsable.jsx";
+import { aTraiterPedagogie } from "@/lib/aTraiter.js";
 import MiseEnRoute from "@/composants/MiseEnRoute.jsx";
-import { lignesAdoption } from "@/lib/miseEnRoute.js";
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "");
 // Couleur d'une moyenne /20 : rouge sous la barre, ambre limite, vert au-dessus.
@@ -28,11 +29,16 @@ const pct = (v) => (v == null ? "—" : `${v.toFixed(1).replace(".", ",")} %`);
 
 // Accueil Pédagogie — version « Classter » validée le 31/10/2026
 // (docs/maquette-tableaux-classter.html, onglet 2).
-//  L'enseignant a son propre accueil, sur le modèle de l'espace parent : il n'a
-//  pas à traverser les chiffres de l'école pour faire l'appel.
+//  Enseignant et responsable pédagogique ont leur accueil de métier, sur le
+//  modèle de l'espace parent. `?chiffres=1` : le tableau de bord, qui reste à
+//  un toucher.
 export default function AccueilPedagogie() {
   const { ecole, roles } = useAuth();
-  return accueilMetier(roles) === "enseignant" && couvreScolaire(ecole) ? <MaJournee /> : <AccueilDirection />;
+  const [params] = useSearchParams();
+  const metier = couvreScolaire(ecole) && !params.get("chiffres") ? accueilMetier(roles) : null;
+  if (metier === "enseignant") return <MaJournee />;
+  if (metier === "responsable") return <AccueilResponsable />;
+  return <AccueilDirection />;
 }
 
 function AccueilDirection() {
@@ -80,28 +86,7 @@ function AccueilDirection() {
   const scolaire = couvreScolaire(ecole);
   const superieur = couvreSuperieur(ecole);
 
-  const aTraiter = stats ? [
-    blocs?.horsAnnee && ouvert("structure") && {
-      to: "/parametres/structure", ton: "rouge", bouton: "Corriger",
-      titre: `Dates des périodes hors de l'année ${annee?.libelle || ""}`.trim() },
-    ouvert("appel") && sansAppel.length > 0 && {
-      to: `/appel?classe=${sansAppel[0].id}`, ton: "rouge", bouton: "Voir",
-      titre: `${pl(sansAppel.length, "classe")} sans appel : ${sansAppel.slice(0, 3).map((c) => c.libelle).join(", ")}${sansAppel.length > 3 ? "…" : ""}` },
-    ouvert("assiduite") && stats.justifEnAttente > 0 && {
-      to: "/assiduite", ton: "or", bouton: "Examiner", titre: `${pl(stats.justifEnAttente, "justificatif")} d'absence` },
-    ouvert("assiduite") && stats.absNonJustif > 0 && {
-      to: "/assiduite", ton: "rouge", bouton: "Relancer", titre: pl(stats.absNonJustif, "absence non justifiée", "absences non justifiées") },
-    ouvert("bulletins") && stats.bulletinsBrouillon > 0 && {
-      to: "/bulletins", ton: "bleu", bouton: "Relire", titre: `${pl(stats.bulletinsBrouillon, "bulletin")} en relecture` },
-    ouvert("bulletins") && stats.bulletinsValides > 0 && {
-      to: "/bulletins", ton: "violet", bouton: "Publier", titre: `${pl(stats.bulletinsValides, "bulletin")} à publier` },
-    ouvert("demandes") && demandes > 0 && {
-      to: "/demandes", ton: "navy", bouton: "Traiter", titre: `${pl(demandes, "demande")} de document` },
-    ouvert("signatures") && aSigner > 0 && {
-      to: "/a-signer", ton: "bleu", bouton: "Signer", titre: `${pl(aSigner, "document")} à signer` },
-    //  L'enseignant n'a pas à voir combien de collègues sont connectés.
-    ...(direction ? lignesAdoption(adoption, ouvert) : []),
-  ].filter(Boolean) : [];
+  const aTraiter = aTraiterPedagogie({ stats, blocs, annee, demandes, aSigner, sansAppel, adoption, ouvert, direction });
 
   const evolPresence = blocs?.presence != null && blocs?.presenceAvant != null
     ? Math.round((blocs.presence - blocs.presenceAvant) * 10) / 10 : null;

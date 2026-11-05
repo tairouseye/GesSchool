@@ -248,11 +248,15 @@ test("une valeur héritée de type_etablissement n'ampute pas le menu d'une éco
   }
 });
 
-test("accueil de métier : enseignant et caisse ; qui dirige ou gère garde ses chiffres", () => {
+test("accueil de métier : le rôle le plus large l'emporte ; le promoteur garde ses chiffres", () => {
   assert.equal(P.accueilMetier(["enseignant"]), "enseignant");
   assert.equal(P.accueilMetier(["secretaire"]), "caisse");
+  assert.equal(P.accueilMetier(["comptable"]), "comptable");
+  assert.equal(P.accueilMetier(["direction"]), "responsable");
   assert.equal(P.accueilMetier(["enseignant", "secretaire"]), "enseignant");
-  for (const r of [["direction"], ["comptable"], ["admin_ecole"], ["direction", "enseignant"], ["comptable", "secretaire"], ["surveillant"], []]) {
+  assert.equal(P.accueilMetier(["comptable", "secretaire"]), "comptable");
+  assert.equal(P.accueilMetier(["direction", "enseignant"]), "responsable");
+  for (const r of [["admin_ecole"], ["super_admin"], ["admin_ecole", "enseignant"], ["surveillant"], []]) {
     assert.equal(P.accueilMetier(r), null, r.join("+"));
   }
 });
