@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.308.0] — L'accueil de l'enseignant
+Premier écran du modèle de l'espace parent appliqué au personnel.
+- **Ses gestes en grand** : Faire l'appel, sur la classe du cours en cours ou du prochain, Saisir des notes, Cahier de textes. Il ne traverse plus les chiffres de l'école.
+- **Aujourd'hui** : les cours qui restent, ses autres classes, les notes à saisir.
+- **Sur téléphone**, il arrive sur cet accueil et non plus sur la grille de tuiles, qui reste à un toucher.
+
 ## [2.307.0] — La charte de l'école dans toute l'application
 - **La couleur primaire de l'école** habille désormais barres, menus et boutons ; seul l'accent suivait la charte, et le bleu GesSchool restait partout.
 - **L'espace parent** prend aussi la charte, celle de l'école de l'enfant ouvert (un parent peut avoir des enfants dans deux écoles).
