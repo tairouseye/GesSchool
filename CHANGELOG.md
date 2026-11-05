@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.304.0] — Espace parent : l'accueil en cartes et les paiements mois par mois
+D'après la maquette de la directrice de Tut'Tank : elle connaît ses parents, qui ouvrent l'appli sur leur téléphone pour savoir d'un coup d'œil si tout va bien.
+- **Accueil en cartes** : une grande carte par enfant, avec sa photo ou ses initiales, sa classe et l'état de ses paiements en clair (« À jour », « 1 mois à payer », « Payé d'avance ») ; un toucher ouvre sa fiche. **✉️ Écrire à l'école** en tête, **la dernière annonce** en bas. L'école n'est écrite sur la carte que si les enfants sont dans des écoles différentes.
+- **Paiements mois par mois** : l'inscription puis chaque mois, son montant et son état en toutes lettres (Payé le…, En retard, À venir avant le…, Payé d'avance), avec **Facture**, **Reçu** et **Payer** sur la ligne même. La liste des factures (numéros) se déplie par **Voir les factures**.
+- **Migration 229** : chaque ligne de l'échéancier porte sa facture et son dernier reçu (`_echeancier_json`, gardes inchangées). Essai : `supabase/tests/essai_229.sql` (4 contrôles).
+
 ## [2.303.0] — Prise en main, lot 4 : un vocabulaire qui se comprend
 - **Une phrase par écran** pour les noms qui se ressemblent (Cahier de textes, Avancement du programme, Programmation officielle ; Paiements, Recouvrement, Situation des paiements ; Membres, Enseignants, Personnel & paie…) : en infobulle dans la barre latérale, sous la tuile sur téléphone, et dans la recherche globale, qui la lit aussi — « impayés » trouve Recouvrement.
 - **Deux noms plus parlants** : « Progression » devient **Avancement du programme**, « Documents » devient **Documents officiels**.
