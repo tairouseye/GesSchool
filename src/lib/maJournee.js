@@ -48,6 +48,22 @@ export function classesAppel({ cours = [], mesClasses = [], absencesJour = [] } 
 }
 
 /**
+ * La classe du grand bouton « Faire l'appel » : celle du cours en cours, sinon
+ * du prochain, sinon la première de la liste.
+ */
+export function appelEnTete(appel = [], cours = []) {
+  const c = cours.find((x) => x.moment === "en_cours") || cours.find((x) => x.moment === "a_venir");
+  return (c && appel.find((a) => a.id === c.classe_id)) || appel[0] || null;
+}
+
+/** « CE1/CE2 · 2 absences saisies aujourd'hui » : un fait, jamais « appel fait ». */
+export function resumeAppel(c) {
+  const n = Number(c?.absences) || 0;
+  const absences = n === 0 ? "aucune absence saisie" : n > 1 ? `${n} absences saisies` : "1 absence saisie";
+  return `${c?.libelle || ""} · ${absences}`;
+}
+
+/**
  * Les notes à saisir pour la période : les évaluations passées de MES
  * classes et matières qui n'ont encore aucune note, puis les couples
  * classe × matière qui n'ont aucune évaluation.

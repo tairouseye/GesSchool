@@ -27,7 +27,15 @@ const pct = (v) => (v == null ? "—" : `${v.toFixed(1).replace(".", ",")} %`);
 
 // Accueil Pédagogie — version « Classter » validée le 31/10/2026
 // (docs/maquette-tableaux-classter.html, onglet 2).
+//  L'enseignant a son propre accueil, sur le modèle de l'espace parent : il n'a
+//  pas à traverser les chiffres de l'école pour faire l'appel.
 export default function AccueilPedagogie() {
+  const { ecole, roles } = useAuth();
+  const direction = estRoleComplet(roles) || (roles || []).includes("direction");
+  return !direction && (roles || []).includes("enseignant") && couvreScolaire(ecole) ? <MaJournee /> : <AccueilDirection />;
+}
+
+function AccueilDirection() {
   const { ecoleId, ecole, profil, roles, modulesActifs } = useAuth();
   const [annee, setAnnee] = useState(null);
   const [stats, setStats] = useState(null);
@@ -67,9 +75,6 @@ export default function AccueilPedagogie() {
   //  L'avancement de la saisie compare les enseignants entre eux : c'est
   //  un outil de direction, pas une vitrine entre collègues.
   const direction = estRoleComplet(roles) || (roles || []).includes("direction");
-  //  L'enseignant voit d'abord SA journée (lot 3) ; les chiffres de l'école
-  //  restent dessous, limités par la RLS à ce qu'il peut lire.
-  const enseignant = !direction && (roles || []).includes("enseignant");
   const scolaire = couvreScolaire(ecole);
   const superieur = couvreSuperieur(ecole);
 
@@ -113,8 +118,6 @@ export default function AccueilPedagogie() {
         {direction && (
           <MiseEnRoute ecoleId={ecoleId} ecole={ecole} modulesActifs={modulesActifs} compacte />
         )}
-
-        {enseignant && annee?.id && scolaire && <MaJournee anneeId={annee.id} ouvert={ouvert} />}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Chiffre chargement={!blocs && chargement} label="Taux de présence (semaine)" icone="✓" ton="vert"

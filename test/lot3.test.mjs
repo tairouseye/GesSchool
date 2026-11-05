@@ -140,3 +140,14 @@ test("ma journée : notes à saisir sur SES classes et matières seulement", asy
   assert.deepEqual(r.sansNotes.map((e) => e.id), ["e4", "e2"]);
   assert.deepEqual(r.sansEvaluation.map((a) => a.matiere_id), ["svt"]);
 });
+
+test("le grand bouton vise la classe du cours en cours, sinon du prochain", async () => {
+  const { appelEnTete, resumeAppel } = await J();
+  const appel = [{ id: "a", libelle: "CM1", absences: 0 }, { id: "b", libelle: "CE1", absences: 2 }];
+  assert.equal(appelEnTete(appel, [{ classe_id: "a", moment: "passe" }, { classe_id: "b", moment: "en_cours" }]).id, "b");
+  assert.equal(appelEnTete(appel, [{ classe_id: "a", moment: "passe" }, { classe_id: "b", moment: "a_venir" }]).id, "b");
+  assert.equal(appelEnTete(appel, []).id, "a");
+  assert.equal(appelEnTete([], []), null);
+  assert.equal(resumeAppel(appel[1]), "CE1 · 2 absences saisies");
+  assert.equal(resumeAppel(appel[0]), "CM1 · aucune absence saisie");
+});
