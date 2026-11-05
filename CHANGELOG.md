@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.307.0] — La charte de l'école dans toute l'application
+- **La couleur primaire de l'école** habille désormais barres, menus et boutons ; seul l'accent suivait la charte, et le bleu GesSchool restait partout.
+- **L'espace parent** prend aussi la charte, celle de l'école de l'enfant ouvert (un parent peut avoir des enfants dans deux écoles).
+- **Toujours lisible** : une couleur primaire trop claire est foncée automatiquement, en gardant sa teinte ; le texte sur fond clair ne change pas. Épreuve : `test/contraste.test.mjs`, sur les couleurs des écoles et des cas difficiles.
+- **Paramètres → Apparence** : aperçu en direct de la couleur primaire, et l'avertissement compare l'accent à la couleur de l'école.
+
 ## [2.306.0] — Espace parent sans pied de page
 - Le bloc « Développé par GesPro », avec le numéro de version, ne s'affiche plus dans l'espace parent. Il reste dans les autres espaces.
 
