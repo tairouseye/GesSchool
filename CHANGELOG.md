@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.311.0] — L'accueil du responsable pédagogique et du comptable
+- **Responsable pédagogique** : ce qui demande une décision d'abord, l'école aujourd'hui à côté, puis Absences du jour, Bulletins, Écrire une annonce, Messages.
+- **Comptable** : Encaisser, Voir les impayés, Saisir une dépense, puis ce qui attend et les chiffres clés.
+- **Le tableau de bord reste à un toucher** (« Voir le tableau de bord ») ; le promoteur le garde à l'arrivée. Le rôle le plus large décide de l'accueil.
+- Les lignes « À traiter » sont les mêmes partout (`src/lib/aTraiter.js`) ; « paiements mobiles à valider » ouvre directement l'onglet Déclarations.
+
 ## [2.310.0] — L'accueil de la secrétaire / caisse
 - **Le guichet d'abord** : une grande recherche, Encaisser, Inscrire un élève, Faire un document.
 - **À traiter** : paiements déclarés par les parents, documents demandés, parents pas encore connectés. **La caisse aujourd'hui** à côté.
