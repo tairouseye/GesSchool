@@ -1,7 +1,7 @@
 {
   "name": "gesschool",
   "private": true,
-  "version": "2.305.0",
+  "version": "2.306.0",
   "type": "module",
   "description": "GesSchool — SaaS multi-tenant de gestion scolaire (PWA)",
   "scripts": {

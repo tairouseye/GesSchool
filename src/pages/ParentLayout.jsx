@@ -9,7 +9,6 @@ import BandeauHorsLigne from "@/composants/BandeauHorsLigne.jsx";
 import { compterNonLues, mesMessagesNonLus, mesEnfants } from "@/lib/parent.js";
 import Tour from "@/composants/Tour.jsx";
 import InviteVisite from "@/composants/InviteVisite.jsx";
-import GesProSignature from "@/composants/GesProSignature.jsx";
 import PanneauBas from "@/composants/PanneauBas.jsx";
 import { Icone } from "@/composants/Icones.jsx";
 import { TOUR_PARENT } from "@/lib/tours.js";
@@ -159,8 +158,7 @@ export default function ParentLayout() {
       <header ref={entete} onFocus={() => setMasque(false)}
         className={`z-30 flex items-center justify-between gap-2 border-b border-navy-900/10 bg-white px-4 py-2 text-navy-900 max-lg:sticky max-lg:top-0 motion-safe:transition-transform motion-safe:duration-300 sm:px-6 sm:py-3 ${masque ? "max-lg:-translate-y-full" : ""}`}>
         {/*  L'ÉCOLE D'ABORD (écrans de Mme Kane, 05/11/2026) : le parent
-            reconnaît son école, pas un logiciel. GesSchool reste en bas de
-            page. Enfants dans deux écoles sans fiche ouverte : aucune des
+            reconnaît son école, pas un logiciel. Enfants dans deux écoles sans fiche ouverte : aucune des
             deux ne prend le pas, GesSchool reste. */}
         <Link to="/parent" aria-label={`${marque?.ecole || "GesSchool"} — accueil de l'espace parent`} className="flex min-w-0 items-center gap-3">
           {marque?.logo
@@ -226,9 +224,6 @@ export default function ParentLayout() {
           <Outlet context={{ nonLues, msgNonLus }} />
         </Suspense>
       </main>
-      <footer className="pb-6">
-        <GesProSignature ton="clair" avecContacts />
-      </footer>
 
       {/*  Onglets du bas (téléphone). Quatre destinations et « Plus » : au-delà
            de cinq, les cibles passent sous la largeur d'un doigt à 320 px. */}

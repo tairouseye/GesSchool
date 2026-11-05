@@ -5,10 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.306.0] — Espace parent sans pied de page
+- Le bloc « Développé par GesPro », avec le numéro de version, ne s'affiche plus dans l'espace parent. Il reste dans les autres espaces.
+
 ## [2.305.0] — Espace parent : au plus près des écrans de Mme Kane
 La 2.304 restait loin de ses écrans. Celle-ci en reprend la présentation, en gardant les données et la sécurité de GesSchool.
 - **Correction, paiements** : la fiche de l'enfant affichait « 100 % / Tout est réglé ✓ » à 70 des 79 élèves de Tut'Tank en retard, parce qu'elle ne regardait que les factures. Accueil, fiche et rubrique disent maintenant la même chose. **Un mois dû sans facture se paie** depuis sa ligne (mig. 230) ; il n'y avait aucun moyen de le faire.
-- **L'école d'abord** : logo et nom de l'école en haut, sur fond blanc ; GesSchool reste en bas de page.
+- **L'école d'abord** : logo et nom de l'école en haut, sur fond blanc.
 - **Fiche de l'enfant** : bandeau à sa couleur et tuiles deux par ligne, avec une marque seulement quand il y a quelque chose à voir. **Programme** a sa tuile, **Mot de passe** aussi ; Notes et bulletins sont réunis.
 - **Rubriques** : un simple « ← Prénom » remplace la barre de rubriques.
 - **Accueil** : Écrire à l'école et **WhatsApp** côte à côte, âge de l'enfant sur sa carte.
