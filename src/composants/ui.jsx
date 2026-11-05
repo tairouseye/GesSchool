@@ -9,7 +9,7 @@ import { messageErreur } from "@/lib/erreurs.js";
 // petite courbe sous le chiffre — la tendance se lit sans graphique.
 export function Kpi({ label, valeur, suffixe, sous, ton, tonValeur, serie, chargement = false }) {
   const tons = { navy: "text-navy-900", or: "text-or-600", vert: "text-emerald-700", rouge: "text-rose-700" };
-  const traits = { navy: "#0B1F3A", or: "rgb(var(--or-500))", vert: "#10b981", rouge: "#e11d48" };
+  const traits = { navy: "rgb(var(--navy-900))", or: "rgb(var(--or-500))", vert: "#10b981", rouge: "#e11d48" };
   return (
     <Carte className="p-5">
       <p className="text-sm font-medium text-navy-900/60">{label}</p>

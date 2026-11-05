@@ -4,7 +4,7 @@ import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Champ, Carte, Alerte, Modale, SkeletonListe } from "@/composants/ui.jsx";
 import { majEcole, majConfigMatricule, televerserAsset, getSignataires, setSignataires, getChampsEleve, setChampsEleve } from "@/lib/academique.js";
-import { appliquerAccent, accentPeuVisible, COULEUR_DEFAUT } from "@/lib/theme.js";
+import { appliquerCharte, accentPeuVisible, COULEUR_DEFAUT } from "@/lib/theme.js";
 import { PAYS, deviseDuPays } from "@/lib/pays.js";
 import { MODULES, tousLesModules, moduleActif } from "@/lib/modules.js";
 import { estRoleComplet, peutVoirSection } from "@/lib/permissions.js";
@@ -424,9 +424,10 @@ function Apparence({ ecoleId, ecole, onSave, onErreur }) {
   });
   const { valeur: f, maj } = form;
   const [up, setUp] = useState("");
-  // Si l'aperçu live n'est pas enregistré, rétablir l'accent sauvegardé au départ.
-  useEffect(() => () => appliquerAccent(ecole?.couleur_secondaire), [ecole?.couleur_secondaire]);
-  const accent = (c) => { maj("couleur_secondaire", c); appliquerAccent(c); };
+  // Si l'aperçu live n'est pas enregistré, rétablir la charte sauvegardée au départ.
+  useEffect(() => () => appliquerCharte(ecole), [ecole]);
+  const accent = (c) => { maj("couleur_secondaire", c); appliquerCharte({ ...f, couleur_secondaire: c }); };
+  const primaire = (c) => { maj("couleur_primaire", c); appliquerCharte({ ...f, couleur_primaire: c }); };
 
   async function televerser(champ, file, prefixe) {
     if (!file) return;
@@ -448,7 +449,7 @@ function Apparence({ ecoleId, ecole, onSave, onErreur }) {
       <div className="flex items-end gap-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-navy-900/70">Couleur principale</span>
-          <input type="color" value={f.couleur_primaire} onChange={(e) => maj("couleur_primaire", e.target.value)}
+          <input type="color" value={f.couleur_primaire} onChange={(e) => primaire(e.target.value)}
             className="h-10 w-16 rounded-lg border border-navy-900/15" />
         </label>
         <label className="block">
@@ -476,7 +477,7 @@ function Apparence({ ecoleId, ecole, onSave, onErreur }) {
         {/* Les textes sur fond clair sont garantis par le calcul (theme.js) ;
             l'accent sur le navy des en-têtes, lui, est la couleur choisie telle
             quelle — une couleur foncée y devient illisible. On le dit. */}
-        {accentPeuVisible(f.couleur_secondaire) && (
+        {accentPeuVisible(f.couleur_secondaire, f.couleur_primaire) && (
           <p className="mt-2 text-xs font-medium text-amber-800">
             ⚠️ Cette couleur est trop foncée pour ressortir sur le bleu marine des en-têtes (logo, menus actifs).
             Choisissez une teinte plus claire ou plus vive.
@@ -485,7 +486,7 @@ function Apparence({ ecoleId, ecole, onSave, onErreur }) {
       </div>
 
       <PiedEnregistrer modifie={form.modifie} desactive={Boolean(up)}
-        onAnnuler={() => { form.annuler(); appliquerAccent(form.base.couleur_secondaire); }}
+        onAnnuler={() => { form.annuler(); appliquerCharte(form.base); }}
         onEnregistrer={async () => { await onSave(f); form.valider(); }} />
     </Carte>
   );

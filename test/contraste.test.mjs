@@ -27,7 +27,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import config, { PLANCHER_TEXTE } from "../tailwind.config.js";
 import { ratioContraste, melanger, BLANC, CREME, NAVY } from "../src/lib/contraste.js";
-import { nuancesAccent, accentPeuVisible, COULEUR_DEFAUT, CIBLE_TEXTE } from "../src/lib/theme.js";
+import { nuancesAccent, nuancesPrimaire, accentPeuVisible, COULEUR_DEFAUT, CIBLE_TEXTE } from "../src/lib/theme.js";
 
 const require = createRequire(import.meta.url);
 const PALETTE = require("tailwindcss/colors");
@@ -61,7 +61,7 @@ test("le plancher est bien appliqué par la configuration, et seulement en desso
   // Sans modificateur, Tailwind passe une variable CSS : elle doit traverser intacte.
   assert.equal(navy({ opacityValue: "var(--tw-text-opacity)" }), "rgb(11 31 58 / var(--tw-text-opacity))");
   // Les fonds ne passent pas par textColor : `bg-navy-900/5` reste pâle.
-  assert.equal(config.theme.extend.colors.navy[900], "#0B1F3A");
+  assert.equal(config.theme.extend.colors.navy[900], "rgb(var(--navy-900) / <alpha-value>)");
 });
 
 // Couleurs qu'une école pourrait choisir, y compris les pires pour du texte.
@@ -88,6 +88,36 @@ test("doré : l'avertissement de Paramètres repère les accents invisibles sur 
   assert.equal(accentPeuVisible("#000000"), true);
   assert.equal(accentPeuVisible("#1D4ED8"), true);
   assert.equal(accentPeuVisible("#FFFF00"), false);
+});
+
+test("charte : le texte crème tient sur la couleur principale de toute école", () => {
+  //  Les écoles réelles, puis les cas difficiles (clair, vif, gris, blanc).
+  const ecoles = ["#181848", "#0c3f40", "#0E4DA4", "#00cda1", "#FFFF00", "#FFFFFF", "#E11D48", "#808080", "#FFC0CB"];
+  for (const hex of ecoles) {
+    for (const [k, c] of Object.entries(nuancesPrimaire(hex))) {
+      const r = ratioContraste(melanger(CREME, c, PLANCHER_TEXTE.creme), c);
+      assert.ok(r >= SEUIL, `crème à ${PLANCHER_TEXTE.creme} sur navy-${k} de ${hex} : ${r.toFixed(2)}:1`);
+    }
+  }
+});
+
+test("charte : une couleur déjà sombre reste celle de l'école, sans école on garde GesSchool", () => {
+  assert.deepEqual(nuancesPrimaire("#181848")[900], hexEnRgb("#181848"));
+  assert.deepEqual(nuancesPrimaire(null), NAVY);
+  assert.deepEqual(nuancesPrimaire("#0b1f3a"), NAVY);
+  assert.deepEqual(nuancesPrimaire("bleu"), NAVY);
+});
+
+test("charte : l'avertissement compare l'accent à la couleur principale de l'école", () => {
+  assert.equal(accentPeuVisible("#181848", "#181848"), true);
+  assert.equal(accentPeuVisible("#00A8D8", "#181848"), false);
+});
+
+test("index.css porte le bleu GesSchool de contraste.js", () => {
+  const css = fs.readFileSync(path.join(RACINE, "index.css"), "utf8");
+  for (const [k, rgb] of Object.entries(NAVY)) {
+    assert.match(css, new RegExp(`--navy-${k}:\\s*${rgb.join(" ")};`));
+  }
 });
 
 test("index.css porte exactement les nuances calculées pour le doré d'origine", () => {
@@ -130,6 +160,7 @@ function fichiersSource(dir) {
 // Couleur [r,g,b] d'une teinte, ou null si inconnue (classe de taille, etc.).
 function resoudre(nom, nuance) {
   if (nom === "or") return nuance ? nuancesAccent(COULEUR_DEFAUT)[nuance] || null : null;
+  if (nom === "navy") return NAVY[nuance] || null; // le TEXTE navy est fixe (textColor)
   const perso = config.theme.extend.colors[nom];
   const v = perso?.[nuance] ?? PALETTE[nom]?.[nuance];
   return typeof v === "string" && v.startsWith("#") ? hexEnRgb(v) : null;

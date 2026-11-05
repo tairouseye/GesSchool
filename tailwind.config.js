@@ -30,7 +30,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: { 900: "#0B1F3A", 800: "#13294B", 700: "#1C3A66" },
+        // Couleur principale de l'école, pilotée par variables CSS comme l'accent
+        // (src/lib/theme.js). Ne concerne que les FONDS, bordures et traits : le
+        // TEXTE navy reste fixe (voir textColor), il doit rester lisible sur
+        // fond clair quelle que soit la charte.
+        navy: {
+          900: "rgb(var(--navy-900) / <alpha-value>)",
+          800: "rgb(var(--navy-800) / <alpha-value>)",
+          700: "rgb(var(--navy-700) / <alpha-value>)",
+        },
         // Accent « or » pilotable par variables CSS (personnalisable par école).
         or: {
           400: "rgb(var(--or-400) / <alpha-value>)",
@@ -53,7 +61,7 @@ export default {
       },
       // Uniquement la couleur du TEXTE (voir PLANCHER_TEXTE plus haut).
       textColor: {
-        navy: { 900: texteAvecPlancher("11 31 58", PLANCHER_TEXTE.navy) },
+        navy: { 900: texteAvecPlancher("11 31 58", PLANCHER_TEXTE.navy), 800: "#13294B", 700: "#1C3A66" },
         creme: texteAvecPlancher("247 245 239", PLANCHER_TEXTE.creme),
       },
       fontFamily: {

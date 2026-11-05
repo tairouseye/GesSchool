@@ -15,6 +15,7 @@ import { TOUR_PARENT } from "@/lib/tours.js";
 import { libelleCompteur } from "@/lib/accessibilite.js";
 import { useMasqueAuDefilement, useMedia } from "@/lib/defilement.js";
 import { InviteBiometrie } from "@/composants/Biometrie.jsx";
+import { appliquerCharte } from "@/lib/theme.js";
 
 // Commande d'en-tête : 40 × 40 px, la taille d'un doigt. La pastille de
 // non-lus se pose dans ce carré, sans le déborder.
@@ -41,7 +42,7 @@ const Pastille = ({ n, className = "" }) => (n > 0 ? (
 //  défiler la page vers le bas (voir `useMasqueAuDefilement`). Au-delà,
 //  l'en-tête d'origine reste tel quel.
 export default function ParentLayout() {
-  const { profil, deconnexion } = useAuth();
+  const { profil, ecole, deconnexion } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [nonLues, setNonLues] = useState(0);
@@ -92,6 +93,12 @@ export default function ParentLayout() {
   useEffect(() => { if (idEnfant) ecrire(CLE_DERNIER_ENFANT, idEnfant); }, [idEnfant]);
   const enfantAffiche = enfants.find((e) => e.eleve_id === idEnfant);
   const marque = enfantAffiche || (new Set(enfants.map((e) => e.ecole_id)).size === 1 ? enfants[0] : null);
+  //  La charte suit l'école de l'enfant : un parent n'est pas rattaché à une
+  //  école, et deux enfants peuvent être dans deux écoles différentes.
+  useEffect(() => {
+    appliquerCharte(marque || ecole);
+    return () => appliquerCharte(ecole);
+  }, [marque?.couleur_primaire, marque?.couleur_secondaire, ecole]); // eslint-disable-line react-hooks/exhaustive-deps
   //  « Mon enfant » rouvre le dernier consulté ; à défaut, le seul ; à défaut,
   //  on demande lequel.
   const dernier = enfants.find((e) => e.eleve_id === (idEnfant || lire(CLE_DERNIER_ENFANT)))

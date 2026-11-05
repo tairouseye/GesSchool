@@ -13,6 +13,10 @@
   --or-500: 201 162 39; /* #C9A227 */
   --or-600: 125 100 24; /* texte sur fond clair : 5,2:1 sur crème */
   --or-700: 100 80 19;  /* texte appuyé : 7,1:1 sur crème */
+  /* Couleur principale : le bleu GesSchool, tant qu'aucune école n'est ouverte. */
+  --navy-900: 11 31 58;
+  --navy-800: 19 41 75;
+  --navy-700: 28 58 102;
 }
 
 /* GesSchool — base globale */

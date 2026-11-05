@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase.js";
-import { appliquerAccent } from "@/lib/theme.js";
+import { appliquerCharte } from "@/lib/theme.js";
 import { typeDominant } from "@/lib/paliers.js";
 import { espaceDemo } from "@/lib/demo.js";
 import { signalerModeDemo } from "@/lib/erreurs.js";
@@ -122,11 +122,13 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe();
   }, [chargerProfil]);
 
-  // Applique l'accent de l'école (login, changement d'école, sauvegarde).
-  // couleur_secondaire = accent doré, déjà saisi à l'onboarding et en Paramètres.
+  // Applique la charte de l'école (login, changement d'école, sauvegarde) :
+  // ses deux couleurs, saisies à l'onboarding et en Paramètres → Apparence.
   useEffect(() => {
-    appliquerAccent(ecole?.couleur_secondaire);
-  }, [ecole?.couleur_secondaire]);
+    appliquerCharte(ecole);
+    // Seules les couleurs comptent, pas le reste de la fiche.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecole?.couleur_primaire, ecole?.couleur_secondaire]);
 
   // --- Actions ---
   const connexion = (email, motDePasse) =>
