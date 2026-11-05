@@ -88,9 +88,10 @@ async function connexionDemo(s, espace) {
 }
 
 const PARCOURS = [
-  ["Parent : l'accueil montre l'enfant et ses dernières notes", 390, 844, async (s) => {
+  ["Parent : l'accueil montre chaque enfant en carte", 390, 844, async (s) => {
     await connexionDemo(s, "parent");
-    if (!await s.jusqua(`document.body.innerText.includes("Dernières notes") || document.body.innerText.includes("Dernière note")`)) throw new Error("aperçu de l'enfant absent");
+    //  Une carte = un lien vers la fiche de l'enfant, sous « Mon enfant » / « Mes enfants ».
+    if (!await s.jusqua(`/Mes? enfants?/.test(document.body.innerText) && [...document.querySelectorAll("a")].some((a) => /enfant\\/[^/]+$/.test(a.getAttribute("href") || ""))`)) throw new Error("cartes des enfants absentes");
   }],
   ["Parent : la page de l'enfant ouvre la rubrique Paiements", 390, 844, async (s) => {
     await connexionDemo(s, "parent");
