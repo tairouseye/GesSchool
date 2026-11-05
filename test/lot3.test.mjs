@@ -104,7 +104,7 @@ test("ma journée : les cours du jour, dans l'ordre, sans les pauses", async () 
   assert.deepEqual(c.map((x) => [x.id, x.moment]), [[1, "passe"], [3, "en_cours"], [2, "a_venir"]]);
 });
 
-test("ma journée : l'appel dit les absences saisies, jamais « appel fait »", async () => {
+test("ma journée : sans la 231, l'appel dit seulement les absences saisies", async () => {
   const { classesAppel } = await J();
   const r = classesAppel({
     cours: [{ classe_id: "A", classe: "6e A", debut: "08:00" }, { classe_id: "A", classe: "6e A", debut: "10:00" }],
@@ -150,4 +150,29 @@ test("le grand bouton vise la classe du cours en cours, sinon du prochain", asyn
   assert.equal(appelEnTete([], []), null);
   assert.equal(resumeAppel(appel[1]), "CE1 · 2 absences saisies");
   assert.equal(resumeAppel(appel[0]), "CM1 · aucune absence saisie");
+});
+
+test("l'appel validé (mig. 231) : l'enseignant le lit, et « à faire » seulement si on sait", async () => {
+  const { classesAppel, resumeAppel, appelEnTete } = await J();
+  const mesClasses = [{ id: "A", libelle: "CM1" }, { id: "B", libelle: "CE1" }];
+  const r = classesAppel({ mesClasses, absencesJour: [{ classe_id: "A" }], valides: ["A"] });
+  assert.equal(resumeAppel(r[0]), "CM1 · appel validé · 1 absent");
+  assert.equal(resumeAppel(r[1]), "CE1 · appel à faire");
+  assert.equal(appelEnTete(r, []).id, "B", "le grand bouton va à la classe qui attend");
+  const inconnu = classesAppel({ mesClasses, valides: null });
+  assert.equal(resumeAppel(inconnu[0]), "CM1 · aucune absence saisie", "lecture en échec : on n'accuse personne");
+});
+
+test("classes sans appel : seulement celles dont le cours a commencé aujourd'hui", async () => {
+  const { classesSansAppel } = await J();
+  const jeudi = new Date(2026, 10, 5, 9, 0);
+  const creneaux = [
+    { jour: 4, heure_debut: "08:00:00", classe_id: "A", matiere_id: "m", classes: { libelle: "CM1" } },
+    { jour: 4, heure_debut: "08:00:00", classe_id: "B", matiere_id: "m", classes: { libelle: "CE1" } },
+    { jour: 4, heure_debut: "11:00:00", classe_id: "C", matiere_id: "m", classes: { libelle: "CP" } },
+    { jour: 5, heure_debut: "08:00:00", classe_id: "D", matiere_id: "m", classes: { libelle: "CI" } },
+    { jour: 4, heure_debut: "08:00:00", classe_id: "E", classes: { libelle: "Accueil" } },
+  ];
+  assert.deepEqual(classesSansAppel({ creneaux, valides: ["A"], now: jeudi }), [{ id: "B", libelle: "CE1" }]);
+  assert.deepEqual(classesSansAppel({ creneaux: [], valides: [], now: jeudi }), [], "sans emploi du temps : rien");
 });

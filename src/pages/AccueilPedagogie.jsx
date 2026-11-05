@@ -6,7 +6,8 @@ import { Alerte, Badge } from "@/composants/ui.jsx";
 import {
   Salutation, Bloc, Chiffre, Evolution, GraphiqueAnnuel, Agenda, ListeCompacte, BarresListe, RaccourcisBloc,
 } from "@/composants/TableauBord.jsx";
-import { statsPedagogie, blocsPedagogie } from "@/lib/dashboard.js";
+import { statsPedagogie, blocsPedagogie, donneesAppelsDuJour } from "@/lib/dashboard.js";
+import { classesSansAppel } from "@/lib/maJournee.js";
 import { getAbsencesRecentes, STATUTS_JUSTIF } from "@/lib/viescolaire.js";
 import { getAnneeCourante, compterAdoption } from "@/lib/academique.js";
 import { compterASigner } from "@/lib/documents.js";
@@ -44,6 +45,7 @@ function AccueilDirection() {
   const [aSigner, setASigner] = useState(0);
   const [demandes, setDemandes] = useState(0);
   const [adoption, setAdoption] = useState(null);
+  const [sansAppel, setSansAppel] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
 
@@ -60,6 +62,7 @@ function AccueilDirection() {
         ]);
         setStats(st); setAbsences(abs); setASigner(sig); setDemandes(dem);
         compterAdoption(ecoleId).then(setAdoption).catch(() => {});
+        donneesAppelsDuJour(ecoleId, an?.id).then((d) => d && setSansAppel(classesSansAppel(d))).catch(() => {});
         //  Les blocs détaillés après les chiffres : l'écran s'affiche sans les attendre.
         setBlocs(await blocsPedagogie(ecoleId, an, st.effectif));
       } catch (e) {
@@ -82,6 +85,9 @@ function AccueilDirection() {
     blocs?.horsAnnee && ouvert("structure") && {
       to: "/parametres/structure", ton: "rouge", bouton: "Corriger",
       titre: `Dates des périodes hors de l'année ${annee?.libelle || ""}`.trim() },
+    ouvert("appel") && sansAppel.length > 0 && {
+      to: `/appel?classe=${sansAppel[0].id}`, ton: "rouge", bouton: "Voir",
+      titre: `${pl(sansAppel.length, "classe")} sans appel : ${sansAppel.slice(0, 3).map((c) => c.libelle).join(", ")}${sansAppel.length > 3 ? "…" : ""}` },
     ouvert("assiduite") && stats.justifEnAttente > 0 && {
       to: "/assiduite", ton: "or", bouton: "Examiner", titre: `${pl(stats.justifEnAttente, "justificatif")} d'absence` },
     ouvert("assiduite") && stats.absNonJustif > 0 && {

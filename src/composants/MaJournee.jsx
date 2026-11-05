@@ -65,7 +65,7 @@ export default function MaJournee() {
   }
 
   const cours = coursDuJourEnseignant(d.creneaux, now);
-  const appel = classesAppel({ cours, mesClasses: d.mesClasses, absencesJour: d.absencesJour });
+  const appel = classesAppel({ cours, mesClasses: d.mesClasses, absencesJour: d.absencesJour, valides: d.appelsValides });
   const principale = appelEnTete(appel, cours);
   const notes = notesASaisir({ affectations: d.affectations, evaluations: d.evaluations, notesParEval: d.notesParEval, now });
   const lienNotes = (x) => `/notes?classe=${x.classe_id}&matiere=${x.matiere_id || ""}&periode=${d.periode?.id || ""}`;
@@ -101,8 +101,6 @@ export default function MaJournee() {
           </span>
           <span className="min-w-0">
             <span className="block font-display text-xl font-bold">Faire l&apos;appel</span>
-            {/*  On dit les absences saisies, un fait : un appel sans absent n'écrit rien en
-                base (voir `classesAppel`). */}
             <span className="block text-sm">{principale ? resumeAppel(principale) : "Aucune classe affectée"}</span>
           </span>
         </Link>

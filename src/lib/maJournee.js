@@ -34,17 +34,36 @@ export function coursDuJourEnseignant(creneaux = [], now = new Date()) {
  * Les classes à l'appel aujourd'hui : celles où l'enseignant a cours, ou à
  * défaut (pas d'emploi du temps saisi) toutes ses classes.
  *
- * ⚠️ « Appel fait » NE PEUT PAS SE SAVOIR : un appel où tout le monde est
- * présent n'écrit rien en base. On montre donc le nombre d'absences déjà
- * saisies aujourd'hui — un fait — et jamais « appel fait ».
+ * `valides` : les classes dont l'appel est validé aujourd'hui (mig. 231).
+ * ⚠️ `null` = on ne sait pas (231 non appliquée, lecture en échec) : on ne dit
+ * alors rien de l'appel, seulement le nombre d'absences déjà saisies, un fait.
  */
-export function classesAppel({ cours = [], mesClasses = [], absencesJour = [] } = {}) {
+export function classesAppel({ cours = [], mesClasses = [], absencesJour = [], valides = null } = {}) {
   const parClasse = {};
   for (const a of absencesJour || []) parClasse[a.classe_id] = (parClasse[a.classe_id] || 0) + 1;
   const duJour = new Map();
   for (const c of cours) if (c.classe_id && !duJour.has(c.classe_id)) duJour.set(c.classe_id, { id: c.classe_id, libelle: c.classe, debut: c.debut });
   const liste = duJour.size > 0 ? [...duJour.values()] : (mesClasses || []).map((c) => ({ id: c.id, libelle: c.libelle, debut: null }));
-  return liste.map((c) => ({ ...c, absences: parClasse[c.id] || 0 }));
+  return liste.map((c) => ({
+    ...c, absences: parClasse[c.id] || 0,
+    ...(valides ? { valide: valides.includes(c.id) } : {}),
+  }));
+}
+
+/**
+ * Les classes sans appel, pour la direction : celles qui ont déjà commencé un
+ * cours aujourd'hui. Sans emploi du temps saisi, on ne peut pas savoir si une
+ * classe a cours : elle n'est pas signalée, plutôt qu'accusée à tort.
+ */
+export function classesSansAppel({ creneaux = [], valides = [], now = new Date() } = {}) {
+  const j = jourSemaine(now);
+  const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const parClasse = new Map();
+  for (const c of creneaux || []) {
+    if (Number(c.jour) !== j || !c.classe_id || !(c.matiere_id || c.activite) || hm(c.heure_debut) > t) continue;
+    if (!valides.includes(c.classe_id)) parClasse.set(c.classe_id, c.classes?.libelle || "");
+  }
+  return [...parClasse].map(([id, libelle]) => ({ id, libelle }));
 }
 
 /**
@@ -53,14 +72,16 @@ export function classesAppel({ cours = [], mesClasses = [], absencesJour = [] } 
  */
 export function appelEnTete(appel = [], cours = []) {
   const c = cours.find((x) => x.moment === "en_cours") || cours.find((x) => x.moment === "a_venir");
-  return (c && appel.find((a) => a.id === c.classe_id)) || appel[0] || null;
+  return (c && appel.find((a) => a.id === c.classe_id)) || appel.find((a) => a.valide === false) || appel[0] || null;
 }
 
-/** « CE1/CE2 · 2 absences saisies aujourd'hui » : un fait, jamais « appel fait ». */
+/** « CE1/CE2 · appel validé · 2 absents », « CE1/CE2 · appel à faire ». */
 export function resumeAppel(c) {
   const n = Number(c?.absences) || 0;
-  const absences = n === 0 ? "aucune absence saisie" : n > 1 ? `${n} absences saisies` : "1 absence saisie";
-  return `${c?.libelle || ""} · ${absences}`;
+  const nom = c?.libelle || "";
+  if (c?.valide === true) return `${nom} · appel validé${n ? ` · ${n > 1 ? `${n} absents` : "1 absent"}` : ""}`;
+  if (c?.valide === false) return `${nom} · appel à faire`;
+  return `${nom} · ${n === 0 ? "aucune absence saisie" : n > 1 ? `${n} absences saisies` : "1 absence saisie"}`;
 }
 
 /**

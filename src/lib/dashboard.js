@@ -440,6 +440,19 @@ export async function blocsPedagogie(ecoleId, annee, effectif) {
  * notes, les absences du jour dans ses classes. Tout passe par la RLS de
  * l'enseignant ; les calculs sont dans maJournee.js.
  */
+// Les cours du jour et les appels validés, pour « classes sans appel » (direction).
+// `null` si l'un manque : on ne signale rien plutôt qu'à tort.
+export async function donneesAppelsDuJour(ecoleId, anneeId) {
+  const maintenant = new Date();
+  const [edt, val] = await Promise.all([
+    supabase.from("emplois_du_temps").select("jour, heure_debut, classe_id, matiere_id, activite, classes!inner(libelle, annee_id)")
+      .eq("ecole_id", ecoleId).eq("jour", ((maintenant.getDay() + 6) % 7) + 1).eq("classes.annee_id", anneeId),
+    supabase.from("appels_valides").select("classe_id").eq("ecole_id", ecoleId).eq("date_appel", isoJour(maintenant)),
+  ]);
+  if (edt.error || val.error) return null;
+  return { creneaux: edt.data ?? [], valides: (val.data ?? []).map((v) => v.classe_id), now: maintenant };
+}
+
 export async function donneesMaJournee(ecoleId, anneeId, ensId) {
   if (!ensId || !anneeId) return null;
   const jour = isoJour(new Date());
@@ -458,7 +471,7 @@ export async function donneesMaJournee(ecoleId, anneeId, ensId) {
   const ids = Object.keys(classes);
   const periode = per.reference;
 
-  const [ev, abs] = await Promise.all([
+  const [ev, abs, val] = await Promise.all([
     periode && ids.length
       ? supabase.from("evaluations").select("id, classe_id, matiere_id, date_eval, type, libelle, actif, classes(libelle), matieres(libelle)")
           .eq("ecole_id", ecoleId).eq("periode_id", periode.id).in("classe_id", ids)
@@ -466,6 +479,7 @@ export async function donneesMaJournee(ecoleId, anneeId, ensId) {
     ids.length
       ? supabase.from("absences").select("classe_id").eq("ecole_id", ecoleId).eq("date_abs", jour).in("classe_id", ids).limit(2000)
       : Promise.resolve({ data: [] }),
+    supabase.from("appels_valides").select("classe_id").eq("ecole_id", ecoleId).eq("date_appel", jour),
   ]);
   const evaluations = ev.data ?? [];
   //  Une évaluation « a des notes » dès la première : on ne lit que la clé.
@@ -477,7 +491,7 @@ export async function donneesMaJournee(ecoleId, anneeId, ensId) {
   }
   return {
     creneaux: edt.data ?? [], affectations, evaluations, notesParEval,
-    absencesJour: abs.data ?? [], mesClasses: Object.values(classes).sort((a, b) => a.libelle.localeCompare(b.libelle)),
+    absencesJour: abs.data ?? [], appelsValides: val.error ? null : (val.data ?? []).map((v) => v.classe_id), mesClasses: Object.values(classes).sort((a, b) => a.libelle.localeCompare(b.libelle)),
     periode, periodeEnCours: per.courante,
   };
 }

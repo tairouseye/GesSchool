@@ -7,7 +7,7 @@ import { getAnneeCourante, getClasses } from "@/lib/academique.js";
 import { getMonEnseignant, getMesClasses } from "@/lib/appel.js";
 import { voitToutesClasses } from "@/lib/permissions.js";
 import { getElevesClasse } from "@/lib/bulletins.js";
-import { getAbsencesJour, enregistrerAppel } from "@/lib/viescolaire.js";
+import { getAbsencesJour, enregistrerAppel, getAppelValide } from "@/lib/viescolaire.js";
 
 const ETATS = [
   ["present", "Présent", "bg-emerald-500 text-white", "text-emerald-700"],
@@ -39,6 +39,7 @@ export default function Appel() {
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(false);
   const [apercu, setApercu] = useState(false);   // feuille signée, imprimable
+  const [valideLe, setValideLe] = useState(null); // heure de validation du jour
 
   // Initialisation : année, fiche enseignant, classes du prof
   useEffect(() => {
@@ -67,11 +68,13 @@ export default function Appel() {
     if (!classeId || !annee) return;
     setErreur(""); setInfo("");
     try {
-      const [els, abs] = await Promise.all([
+      const [els, abs, valide] = await Promise.all([
         getElevesClasse(ecoleId, classeId, annee.id),
         getAbsencesJour(ecoleId, classeId, auj()),
+        getAppelValide(classeId, auj()),
       ]);
       setEleves(els);
+      setValideLe(valide);
       const map = {};
       for (const e of els) map[e.id] = "present";
       for (const a of abs) map[a.eleve_id] = a.type; // 'absence' | 'retard'
@@ -93,6 +96,7 @@ export default function Appel() {
     try {
       const entries = eleves.map((e) => ({ eleve_id: e.id, etat: etats[e.id] || "present", motif: null }));
       await enregistrerAppel(ecoleId, classeId, auj(), entries, utilisateur?.id);
+      setValideLe(new Date().toISOString());
       setInfo(`Appel validé ✓ ${compteurs.absence} absent(s), ${compteurs.retard} retard(s). Transmis à l'administration et aux parents concernés.`);
     } catch (e) { setErreur(e.message); }
     finally { setEnCours(false); }
@@ -133,6 +137,11 @@ export default function Appel() {
       <div className="space-y-4 p-4 sm:p-8">
         <Alerte ton="erreur">{erreur}</Alerte>
         {info && <Alerte ton="succes">{info}</Alerte>}
+        {!info && valideLe && (
+          <Alerte ton="succes">
+            Appel déjà validé aujourd&apos;hui à {new Date(valideLe).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}. Vous pouvez encore le corriger.
+          </Alerte>
+        )}
 
         {classes.length === 0 ? (
           <Carte className="p-6 text-sm text-navy-900/60">

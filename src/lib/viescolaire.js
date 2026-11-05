@@ -112,6 +112,20 @@ export async function enregistrerAppel(ecoleId, classeId, date, entries, saisiPa
     const { error } = await supabase.from("absences").insert(aInserer);
     if (error) throw error;
   }
+  //  Un appel sans absent n'écrit rien ci-dessus : cette ligne dit qu'il a eu
+  //  lieu (mig. 231). En dernier : une absence compte plus que le constat.
+  const { error } = await supabase.from("appels_valides").upsert(
+    { ecole_id: ecoleId, classe_id: classeId, date_appel: date, valide_par: saisiPar, valide_le: new Date().toISOString() },
+    { onConflict: "classe_id,date_appel" },
+  );
+  if (error && error.code !== "PGRST205") throw error; // table absente : 231 pas encore appliquée
+}
+
+// L'heure de validation de l'appel d'une classe, `null` s'il n'a pas eu lieu.
+export async function getAppelValide(classeId, date) {
+  const { data, error } = await supabase.from("appels_valides").select("valide_le")
+    .eq("classe_id", classeId).eq("date_appel", date).maybeSingle();
+  return error ? null : data?.valide_le || null;
 }
 
 export async function justifierAbsence(id, statut) {
