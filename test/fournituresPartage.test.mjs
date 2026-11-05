@@ -172,3 +172,12 @@ test("grouperFournitures : la colonne et le préfixe cohabitent pendant la trans
   assert.equal(g.length, 1, "même catégorie, un seul groupe");
   assert.deepEqual(g[0].items.map((i) => i.libelle), ["Cahiers de 100 pages", "Cahiers de 50 pages"]);
 });
+
+test("« vendu à l'école » n'est pas « donné par l'école »", async () => {
+  const { fourniParEcole, venduEcole } = await charger();
+  const protege = { libelle: "Protège-cahiers", note: "Vendu à l'école, 300 F l'unité" };
+  assert.equal(venduEcole(protege), true);
+  assert.equal(fourniParEcole(protege), false, "à préparer comme le reste");
+  assert.equal(venduEcole({ libelle: "Cahier d'artiste", fourni_ecole: true, note: "vendu" }), false, "la case fait foi");
+  assert.equal(venduEcole(null), false);
+});

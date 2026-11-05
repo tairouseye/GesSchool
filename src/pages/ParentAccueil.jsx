@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { mesEnfants, lierParent, enfantEcheancier, enfantFactures } from "@/lib/parent.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
-import { pastillePaiement, derniereAnnonce } from "@/lib/accueilParent.js";
-import { useAuth } from "@/contextes/AuthContext.jsx";
-import { Salutation } from "@/composants/TableauBord.jsx";
+import { pastillePaiement, derniereAnnonce, couleurEnfant, ageEnfant, TONS_PASTILLE } from "@/lib/accueilParent.js";
+import { lienWhatsApp } from "@/lib/recouvrement.js";
 import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
@@ -16,29 +15,17 @@ import Photo from "@/composants/Photo.jsx";
 //  écrire à l'école, et la dernière annonce. Le détail est sur la fiche de
 //  l'enfant, à un toucher.
 
-// Couleur stable par enfant (dérivée de son id) : pastille foncée, fond clair.
-const COULEURS = [
-  ["bg-sky-600", "bg-sky-50"], ["bg-rose-600", "bg-rose-50"], ["bg-indigo-700", "bg-indigo-50"],
-  ["bg-emerald-600", "bg-emerald-50"], ["bg-amber-600", "bg-amber-50"], ["bg-violet-600", "bg-violet-50"],
-];
-const couleurDe = (id) => {
-  let h = 0;
-  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return COULEURS[h % COULEURS.length];
-};
-const TONS_PASTILLE = {
-  rouge: "bg-rose-100 text-rose-800", vert: "bg-emerald-100 text-emerald-800",
-  bleu: "bg-sky-100 text-sky-800", neutre: "bg-white text-navy-900/70",
-};
 //  Même clé que l'onglet « Mon enfant » (ParentLayout) : la carte touchée
 //  devient l'enfant que cet onglet rouvre.
 const CLE_DERNIER_ENFANT = "parent_dernier_enfant";
 const ecrire = (v) => { try { localStorage.setItem(CLE_DERNIER_ENFANT, v); } catch { /* stockage bloqué */ } };
+const ICONE_MESSAGE = <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9h8M8 12h5" /></>;
+const ICONE_WHATSAPP = <><path d="M4 20l1.3-4A8 8 0 1 1 8 18.8z" /><path d="M9 9.5c.3 2 1.8 3.8 4 4.5l1.2-1.2 2 .8-.4 1.8c-3.6.4-7.4-3.2-7-7l1.8-.4.8 2z" /></>;
+const ICONE_ALERTE = <><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7" /><path d="M10 20a2 2 0 0 0 4 0" /></>;
 const dateAnnonce = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
 
 export default function ParentAccueil() {
   const toast = useToast();
-  const { profil } = useAuth();
   const [enfants, setEnfants] = useState([]);
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
@@ -82,13 +69,15 @@ export default function ParentAccueil() {
   //  écoles différentes : sinon, c'est une ligne de plus à lire pour rien.
   const plusieursEcoles = new Set(enfants.map((e) => e.ecole_id)).size > 1;
   const annonce = derniereAnnonce(enfants.map((e) => ({ annonces: details[e.eleve_id]?.annonces })));
+  //  WhatsApp ouvre la conversation avec l'école. Avec deux écoles, on ne
+  //  devine pas laquelle : les alertes prennent la place. (Les notifications
+  //  WhatsApp automatiques de la maquette demandent un service d'envoi payant.)
+  const whatsapp = !plusieursEcoles && enfants[0]?.telephone_ecole
+    ? lienWhatsApp(enfants[0].telephone_ecole, "Bonjour, je vous écris depuis l'espace parent.") : null;
   const enfantAnnonce = annonce && enfants.find((e) => (details[e.eleve_id]?.annonces || []).some((a) => a.id === annonce.id));
 
   return (
     <div className="space-y-5">
-      <Salutation prenom={profil?.prenom}>
-        {enfants.length > 1 ? "Touchez la carte d'un enfant pour voir sa scolarité." : "Touchez la carte de votre enfant pour voir sa scolarité."}
-      </Salutation>
       <Alerte ton="erreur">{erreur}</Alerte>
 
       {chargement ? (
@@ -105,15 +94,15 @@ export default function ParentAccueil() {
         </EtatVide>
       ) : (
         <>
-          {/* Le geste le plus demandé, nommé par un verbe. */}
-          <Link to="/parent/messages"
-            className="flex min-h-14 items-center gap-3 rounded-2xl bg-sky-50 px-4 py-3 text-navy-900 transition active:scale-[.98]">
-            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-xl">✉️</span>
-            <span className="min-w-0">
-              <span className="block font-semibold">Écrire à l'école</span>
-              <span className="block text-xs text-navy-900/60">Direction, enseignants, caisse</span>
-            </span>
-          </Link>
+          {/* Les deux gestes les plus demandés, nommés par ce qu'ils font. */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <Geste to="/parent/messages" fond="bg-sky-50" trait="stroke-sky-600" titre="Écrire à l'école" sous="Direction, enseignants, caisse" icone={ICONE_MESSAGE} />
+            {whatsapp ? (
+              <Geste href={whatsapp} fond="bg-emerald-50" trait="stroke-emerald-700" titre="WhatsApp" sous="Contacter l'école" icone={ICONE_WHATSAPP} />
+            ) : (
+              <Geste to="/parent/notifications" fond="bg-emerald-50" trait="stroke-emerald-700" titre="Alertes" sous="Ce que l'école vous signale" icone={ICONE_ALERTE} />
+            )}
+          </div>
 
           <section aria-labelledby="titre-enfants" className="space-y-3" data-tour="enfants">
             <h2 id="titre-enfants" className="font-display text-lg font-bold text-navy-900">
@@ -153,16 +142,35 @@ export default function ParentAccueil() {
   );
 }
 
-//  Une carte = un enfant : qui il est, sa classe, et si les paiements sont
-//  à jour. Toute la carte se touche (72 px de haut au moins).
+// Un geste de l'accueil : un lien dans l'appli, ou vers WhatsApp.
+function Geste({ to, href, fond, trait, titre, sous, icone }) {
+  const contenu = (
+    <>
+      <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-xl bg-white">
+        <svg viewBox="0 0 24 24" className={`h-6 w-6 fill-none ${trait}`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icone}</svg>
+      </span>
+      <span>
+        <span className="block text-sm font-bold">{titre}</span>
+        <span className="block text-xs text-navy-900/60">{sous}</span>
+      </span>
+    </>
+  );
+  const classe = `flex min-h-[7rem] flex-col gap-2.5 rounded-2xl p-3.5 text-navy-900 transition active:scale-[.98] ${fond}`;
+  return href
+    ? <a href={href} target="_blank" rel="noreferrer" className={classe}>{contenu}</a>
+    : <Link to={to} className={classe}>{contenu}</Link>;
+}
+
+//  Une carte = un enfant : qui il est, sa classe, son âge, et si les paiements
+//  sont à jour. Toute la carte se touche (72 px de haut au moins).
 function CarteEnfant({ enfant: e, detail, avecEcole }) {
-  const [fonce, clair] = couleurDe(e.eleve_id);
+  const { fonce, clair, texte } = couleurEnfant(e.eleve_id);
   const pastille = detail ? pastillePaiement(detail.echeancier, detail.factures) : null;
   const initiales = `${(e.prenom?.[0] || "").toUpperCase()}${(e.nom?.[0] || "").toUpperCase()}`;
-  const nbAnnonces = Number(e.annonces_nouvelles) || 0;
+  const age = ageEnfant(e.date_naissance);
   return (
     <Link to={`/parent/enfant/${e.eleve_id}`} onClick={() => ecrire(e.eleve_id)}
-      className={`flex min-h-[4.5rem] items-center gap-3 rounded-2xl p-3.5 text-navy-900 transition active:scale-[.98] ${clair}`}>
+      className={`flex min-h-[4.5rem] items-center gap-3 rounded-[1.4rem] p-3.5 text-navy-900 transition active:scale-[.98] ${clair}`}>
       {/*  La photo de SON enfant — et d'aucun autre : la policy de la
           migration 169 repose sur `_parent_possede`. Sans photo, les
           initiales colorées. */}
@@ -176,15 +184,15 @@ function CarteEnfant({ enfant: e, detail, avecEcole }) {
         <span className="block truncate font-display text-lg font-bold">{e.prenom} {e.nom}</span>
         <span className="mt-1 flex flex-wrap gap-1.5">
           {e.classe && <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-navy-900/80">{e.classe}</span>}
-          {pastille && <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONS_PASTILLE[pastille.ton]}`}>{pastille.texte}</span>}
-          {nbAnnonces > 0 && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-              {nbAnnonces > 1 ? `${nbAnnonces} annonces` : "1 annonce"}
-            </span>
-          )}
+          {pastille && <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${pastille.ton === "neutre" ? "bg-white text-navy-900/70" : TONS_PASTILLE[pastille.ton]}`}>{pastille.texte}</span>}
         </span>
         {avecEcole && e.ecole && <span className="mt-1 block truncate text-xs text-navy-900/60">{e.ecole}</span>}
       </span>
+      {age != null && (
+        <span className={`shrink-0 rounded-2xl bg-white px-2.5 py-1.5 text-center font-display text-xl font-bold leading-none ${texte}`}>
+          {age}<span className="mt-0.5 block font-sans text-[10px] font-semibold text-navy-900/60">ans</span>
+        </span>
+      )}
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0 fill-none stroke-navy-900/40" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
     </Link>
   );

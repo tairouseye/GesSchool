@@ -179,6 +179,7 @@ export function lignesDetail(donnees, moisCourant) {
       //  Mig. 229 : le libellé complet (« Octobre 2026 »), l'échéance, et de
       //  quoi ouvrir la facture et le reçu de la ligne (absents avant la 229).
       libelle: libelleLigne(l),
+      mois: l?.mois || null,
       echeance: l?.echeance || null,
       factureId: l?.facture_id || null,
       paiementId: l?.paiement_id || null,

@@ -82,7 +82,7 @@ async function connexionDemo(s, espace) {
     await s.cliquer("Démo");
     await s.jusqua(`[...document.querySelectorAll("button")].some((b) => b.textContent.includes("Comme ${espace}"))`, 5000);
     await s.cliquer(`Comme ${espace}`);
-    if (await s.jusqua(`!location.hash.includes("connexion") && document.body.innerText.includes("Bonjour")`, 30000)) return;
+    if (await s.jusqua(`!location.hash.includes("connexion") && /Bonjour|Mes? enfants?/.test(document.body.innerText)`, 30000)) return;
   }
   throw new Error("connexion démo non aboutie (2 essais)");
 }
@@ -101,7 +101,7 @@ const PARCOURS = [
     const lien = await s.evalue(enfant);
     if (!lien) throw new Error("aucun lien vers un enfant");
     await s.aller(`${lien.replace(/^#/, "")}/paiements`);
-    if (!await s.jusqua(`/Paiements|Scolarité/.test(document.body.innerText) && /réglé|payé|à régler|Aucune facture/i.test(document.body.innerText)`)) throw new Error("rubrique Paiements vide");
+    if (!await s.jusqua(`/Suivi paiements/.test(document.body.innerText) && /réglé|payé|à régler|Aucune facture|Tout ce qui/i.test(document.body.innerText)`)) throw new Error("rubrique Paiements vide");
   }],
   ["Direction : le tableau de bord Gestion affiche ses chiffres", 1366, 900, async (s) => {
     await connexionDemo(s, "direction");

@@ -75,7 +75,14 @@ export function categoriser(f) {
 // Un article est « fourni par l'école » si la case l'indique. Repli sur la
 // note pour les listes saisies avant la migration 105, qui posait la case.
 export function fourniParEcole(f) {
-  return f?.fourni_ecole === true || (f?.note || "").toLowerCase().includes("école");
+  if (f?.fourni_ecole === true) return true;
+  return (f?.note || "").toLowerCase().includes("école") && !venduEcole(f);
+}
+
+// « Vendu à l'école », « en vente à l'école » : à préparer comme le reste,
+// mais le parent sait où le trouver (écrans de Mme Kane, 05/11/2026).
+export function venduEcole(f) {
+  return f?.fourni_ecole !== true && /vendu|en vente/i.test(f?.note || "");
 }
 
 // Ce qu'il reste à acheter.

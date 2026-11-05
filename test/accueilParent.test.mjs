@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chargerLib } from "./bundle.helper.mjs";
 
 // Le module importe apercuEnfant.js, qui passe par l'alias « @/ » : on le lie.
-const { pastillePaiement, derniereAnnonce } = await chargerLib("accueilParent", ['export * from "@/lib/accueilParent.js";']);
+const { pastillePaiement, derniereAnnonce, ageEnfant, couleurEnfant } = await chargerLib("accueilParent", ['export * from "@/lib/accueilParent.js";']);
 
 const ligne = (etat, montant = 65000, paye = 0) => ({ etat, montant, paye });
 
@@ -33,4 +33,18 @@ test("la dernière annonce, une seule fois même si elle vise deux enfants", () 
   assert.equal(derniereAnnonce([{ annonces: [a2, a1] }, { annonces: [a1] }]).id, "a");
   assert.equal(derniereAnnonce([]), null);
   assert.equal(derniereAnnonce([{ annonces: undefined }]), null);
+});
+
+test("l'âge : années révolues, sans se tromper la veille de l'anniversaire", () => {
+  const le = (j, m) => new Date(2026, m - 1, j);
+  assert.equal(ageEnfant("2018-05-14", le(13, 5)), 7);
+  assert.equal(ageEnfant("2018-05-14", le(14, 5)), 8);
+  assert.equal(ageEnfant("2018-05-14", le(5, 11)), 8);
+  assert.equal(ageEnfant(null), null);
+  assert.equal(ageEnfant("bientôt"), null);
+});
+
+test("un enfant garde sa couleur, de la carte à la fiche", () => {
+  assert.deepEqual(couleurEnfant("abc"), couleurEnfant("abc"));
+  assert.ok(couleurEnfant("abc").fonce.startsWith("bg-"));
 });

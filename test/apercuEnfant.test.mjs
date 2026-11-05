@@ -87,7 +87,7 @@ test("rubriques : une donnée absente ne produit aucune ligne", async () => {
 });
 
 test("l'aperçu n'appelle jamais enfant_bulletins (elle marque « consulté »)", () => {
-  for (const f of ["src/lib/apercuEnfant.js", "src/composants/ApercuEnfant.jsx"]) {
+  for (const f of ["src/lib/apercuEnfant.js", "src/pages/ParentAccueil.jsx"]) {
     const src = readFileSync(f, "utf8").replace(/\/\/.*$/gm, "");
     assert.doesNotMatch(src, /enfantBulletins|enfant_bulletins/, `${f} ne doit pas lire les bulletins`);
   }

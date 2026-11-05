@@ -92,6 +92,7 @@ export default function ParentLayout() {
   const [, idEnfant, rubrique] = location.pathname.match(ROUTE_ENFANT) || [];
   useEffect(() => { if (idEnfant) ecrire(CLE_DERNIER_ENFANT, idEnfant); }, [idEnfant]);
   const enfantAffiche = enfants.find((e) => e.eleve_id === idEnfant);
+  const marque = enfantAffiche || (new Set(enfants.map((e) => e.ecole_id)).size === 1 ? enfants[0] : null);
   //  « Mon enfant » rouvre le dernier consulté ; à défaut, le seul ; à défaut,
   //  on demande lequel.
   const dernier = enfants.find((e) => e.eleve_id === (idEnfant || lire(CLE_DERNIER_ENFANT)))
@@ -140,7 +141,7 @@ export default function ParentLayout() {
   const surPlus = ["/parent/compte", "/parent/textes"].some((p) => location.pathname.startsWith(p));
 
   return (
-    <div className="min-h-dscreen bg-fond max-lg:pb-[calc(4.25rem+env(safe-area-inset-bottom))]">
+    <div className={`min-h-dscreen max-lg:pb-[calc(4.25rem+env(safe-area-inset-bottom))] ${surAccueil ? "bg-white" : "bg-fond"}`}>
       {/* Hors ligne : les dernières données gardées sur le téléphone (lot 4). */}
       <BandeauHorsLigne copies />
       {/*  ⚠️ L'EN-TÊTE DOIT TENIR DANS 320 PX. Il mesurait 421 px : à 390 px
@@ -156,28 +157,35 @@ export default function ParentLayout() {
            Sous 1024 px, ces commandes sont dans les onglets du bas : il ne
            reste ici que le sceau, la marque et le choix de l'enfant. */}
       <header ref={entete} onFocus={() => setMasque(false)}
-        className={`z-30 flex items-center justify-between gap-2 border-b border-navy-900/10 bg-navy-900 px-4 py-3 text-creme max-lg:sticky max-lg:top-0 motion-safe:transition-transform motion-safe:duration-300 sm:px-6 sm:py-4 ${masque ? "max-lg:-translate-y-full" : ""}`}>
-        <Link to="/parent" aria-label="GesSchool — accueil de l'espace parent" className="flex min-w-0 items-center gap-3">
-          <Logo size={36} className="shrink-0 text-or-500" />
-          {/* Les commandes parties dans les onglets, la marque a la place de
-              paraître aussi sur les petits écrans ; elle cède devant le choix
-              de l'enfant (`truncate`). */}
-          <span className="truncate font-display text-lg font-bold">
-            Ges<span className="text-or-500">School</span> <span className="hidden text-sm font-normal text-creme/60 sm:inline">· Espace parent</span>
+        className={`z-30 flex items-center justify-between gap-2 border-b border-navy-900/10 bg-white px-4 py-2 text-navy-900 max-lg:sticky max-lg:top-0 motion-safe:transition-transform motion-safe:duration-300 sm:px-6 sm:py-3 ${masque ? "max-lg:-translate-y-full" : ""}`}>
+        {/*  L'ÉCOLE D'ABORD (écrans de Mme Kane, 05/11/2026) : le parent
+            reconnaît son école, pas un logiciel. GesSchool reste en bas de
+            page. Enfants dans deux écoles sans fiche ouverte : aucune des
+            deux ne prend le pas, GesSchool reste. */}
+        <Link to="/parent" aria-label={`${marque?.ecole || "GesSchool"} — accueil de l'espace parent`} className="flex min-w-0 items-center gap-3">
+          {marque?.logo
+            ? <img src={marque.logo} alt="" className="h-12 w-auto max-w-[6rem] shrink-0 object-contain" />
+            : <Logo size={36} className="shrink-0 text-or-500" />}
+          <span className="truncate font-display text-base font-bold">
+            {marque?.ecole || <>Ges<span className="text-or-600">School</span></>}
           </span>
         </Link>
         <div className="flex min-w-0 shrink-0 items-center gap-1 text-sm sm:gap-2">
+          {surAccueil && (
+            <button type="button" onClick={deconnexion}
+              className="min-h-10 rounded-full bg-navy-900/5 px-3.5 text-xs font-bold text-navy-900 lg:hidden">Déconnexion</button>
+          )}
           {/*  Choix de l'enfant, dès qu'il y en a deux : sans revenir à
                l'accueil, et en restant sur la même rubrique. */}
           {enfantAffiche && enfants.length > 1 && (
             <button type="button" onClick={() => setPanneau("enfants")} aria-haspopup="dialog"
               aria-label={`Changer d'enfant (actuellement ${enfantAffiche.prenom} ${enfantAffiche.nom})`}
-              className="flex h-10 min-w-0 max-w-[11rem] items-center gap-2 rounded-lg border border-creme/20 px-2.5 hover:bg-navy-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500">
+              className="flex h-10 min-w-0 max-w-[11rem] items-center gap-2 rounded-lg border border-navy-900/15 px-2.5 hover:bg-navy-900/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500">
               <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-or-500 text-[11px] font-bold text-navy-900">
                 {(enfantAffiche.prenom || "?").charAt(0)}
               </span>
               <span className="truncate font-semibold">{enfantAffiche.prenom}</span>
-              <span aria-hidden="true" className="text-creme/60">▾</span>
+              <span aria-hidden="true" className="text-navy-900/60">▾</span>
             </button>
           )}
           {/* Nom accessible explicite (avec le nombre de non-lus) : l'emoji et
@@ -195,19 +203,19 @@ export default function ParentLayout() {
           </Link>
           <button {...ancre("aide-parent", true)} onClick={() => setTour(true)} title="Visite guidée" aria-label="Visite guidée"
             className={`${ICONE_ENTETE} max-lg:hidden`}>
-            <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full border border-creme/20 text-sm text-creme/70">?</span>
+            <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full border border-navy-900/15 text-sm text-navy-900/70">?</span>
           </button>
           <Link to="/parent/compte" title="Mon compte" aria-label="Mon compte" className={`${ICONE_ENTETE} max-lg:hidden`}>
             <span className="text-xl leading-none" aria-hidden="true">⚙️</span>
           </Link>
-          <span className="hidden text-creme/70 lg:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
+          <span className="hidden text-navy-900/70 lg:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
           <button onClick={deconnexion} title="Déconnexion" aria-label="Déconnexion"
-            className="grid h-10 min-w-10 place-items-center rounded-lg border border-creme/20 px-3 text-xs text-creme/80 hover:bg-navy-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500 max-lg:hidden">
+            className="grid h-10 min-w-10 place-items-center rounded-lg border border-navy-900/15 px-3 text-xs text-navy-900/80 hover:bg-navy-900/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500 max-lg:hidden">
             Déconnexion
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl space-y-4 p-6">
+      <main className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
         {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
         <BandeauDemo />
         <div className="empty:hidden lg:hidden"><InvitePush /></div>

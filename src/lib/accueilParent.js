@@ -5,6 +5,37 @@
 import { resumeEcheancier } from "./paiementStatut.js";
 import { aRegler } from "./apercuEnfant.js";
 
+//  Une couleur par enfant, la même sur sa carte et sur sa fiche.
+const COULEURS = [
+  { fonce: "bg-sky-700", clair: "bg-sky-50", texte: "text-sky-700" },
+  { fonce: "bg-rose-700", clair: "bg-rose-50", texte: "text-rose-700" },
+  { fonce: "bg-indigo-700", clair: "bg-indigo-50", texte: "text-indigo-700" },
+  { fonce: "bg-emerald-700", clair: "bg-emerald-50", texte: "text-emerald-700" },
+  { fonce: "bg-amber-700", clair: "bg-amber-50", texte: "text-amber-700" },
+  { fonce: "bg-violet-700", clair: "bg-violet-50", texte: "text-violet-700" },
+];
+
+/** Couleur stable d'un enfant, dérivée de son identifiant. */
+export function couleurEnfant(id) {
+  let h = 0;
+  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return COULEURS[h % COULEURS.length];
+}
+
+export const TONS_PASTILLE = {
+  rouge: "bg-rose-100 text-rose-800", vert: "bg-emerald-100 text-emerald-800",
+  bleu: "bg-sky-100 text-sky-800", neutre: "bg-navy-900/5 text-navy-900/70",
+};
+
+/** L'âge en années révolues ; `null` sans date de naissance. */
+export function ageEnfant(naissance, now = new Date()) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(naissance || "");
+  if (!m) return null;
+  const [annee, mois, jour] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const passe = now.getMonth() + 1 > mois || (now.getMonth() + 1 === mois && now.getDate() >= jour);
+  return now.getFullYear() - annee - (passe ? 0 : 1);
+}
+
 /**
  * La pastille de paiement d'une carte enfant.
  * L'échéancier (mig. 210) dit combien de MOIS sont dus : c'est ainsi qu'un

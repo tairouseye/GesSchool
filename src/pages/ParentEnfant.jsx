@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import BarreRubriques from "@/composants/BarreRubriques.jsx";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
@@ -18,10 +17,10 @@ import {
   declarationsAffichees, enAttenteParFacture, aDesRecus, recuParDefaut,
 } from "@/lib/situationParent.js";
 import DocumentCaisse from "@/composants/DocumentCaisse.jsx";
-import { fourniParEcole, aAcheter, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
+import { fourniParEcole, venduEcole, grouperFournitures, messageFournitures, lienPartageWhatsApp } from "@/lib/fournituresPartage.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
 import { lienFichier, poids } from "@/lib/fichiers.js";
-import { pourGrille } from "@/lib/emploi.js";
+import { pourGrille, JOURS as JOURS_EMPLOI } from "@/lib/emploi.js";
 import GrilleEmploi from "@/composants/GrilleEmploi.jsx";
 import { enfantCahier } from "@/lib/cahier.js";
 import { pspEtatEleve, initierPaiement } from "@/lib/paiementEnLigne.js";
@@ -33,8 +32,8 @@ import Photo from "@/composants/Photo.jsx";
 import { enfantAcquis } from "@/lib/acquis.js";
 import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 import { messageErreur } from "@/lib/erreurs.js";
-import { useApercuEnfant } from "@/composants/ApercuEnfant.jsx";
-import { aRegler, resumeRubriques, pourQuand } from "@/lib/apercuEnfant.js";
+import { devoirsAVenir } from "@/lib/apercuEnfant.js";
+import { pastillePaiement, couleurEnfant, ageEnfant, TONS_PASTILLE } from "@/lib/accueilParent.js";
 import { dateFr } from "@/lib/dates.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -58,6 +57,11 @@ export default function ParentEnfant() {
   const [enfant, setEnfant] = useState(null);
   const [notes, setNotes] = useState([]);
   const [factures, setFactures] = useState([]);
+  //  L'échéancier, dès la fiche : la tuile Paiements doit dire la même chose
+  //  que l'accueil et que la rubrique. Elle lisait les seules factures et
+  //  affichait « Tout est réglé ✓ » à 70 familles de Tut'Tank en retard sur
+  //  un mois sans facture (relevé du 05/11/2026).
+  const [echeancier, setEcheancier] = useState(undefined);
   const [absences, setAbsences] = useState([]);
   const [emploi, setEmploi] = useState([]);
   const [fournitures, setFournitures] = useState([]);
@@ -121,8 +125,9 @@ export default function ParentEnfant() {
   // ensuite « Aucune facture » à un parent qui en avait.
   const chargerInitial = useCallback(async () => {
     const pour = id;
-    const [enf, f, dem, can, tra, al] = await Promise.allSettled([
+    const [enf, f, dem, can, tra, al, ech] = await Promise.allSettled([
       mesEnfants(), enfantFactures(id), mesDemandes(), enfantCantine(id), enfantTransport(id), alertesEnfant(id),
+      enfantEcheancier(id),
     ]);
     if (enfantCourant.current !== pour) return;
     const val = (r, defaut) => (r.status === "fulfilled" ? r.value ?? defaut : defaut);
@@ -131,6 +136,7 @@ export default function ParentEnfant() {
     setInconnu(liste != null && !liste.some((x) => x.eleve_id === pour));
     setFactures(val(f, [])); setDemandes(val(dem, [])); setCantine(val(can, null)); setTransport(val(tra, null));
     setAlertes(val(al, {}));
+    setEcheancier(val(ech, null));
     const echec = [enf, f, dem, can, tra].find((r) => r.status === "rejected");
     setErreurInitiale(echec ? echec.reason?.message || "Erreur de chargement." : "");
     //  Sonde discrète : si la RPC refuse (consentement non accordé) ou ne
@@ -199,7 +205,7 @@ export default function ParentEnfant() {
     setEtats({});
     setErreur(""); setErreurInitiale(""); setInconnu(false);
     setEnfant(null); setNotes([]); setBulletins([]); setAcquis([]); setADesAcquis(false);
-    setFactures([]); setInfos({}); setDeclarations([]); setAbsences([]); setCahier([]);
+    setFactures([]); setEcheancier(undefined); setInfos({}); setDeclarations([]); setAbsences([]); setCahier([]);
     setEmploi([]); setFournitures([]); setAnnonces([]); setCantine(null); setMenu([]); setTransport(null);
     setAlertes({}); setAcces({ requiert: false, statut: null });
     chargerInitial().finally(() => { if (enfantCourant.current === id) setChargement(false); });
@@ -251,16 +257,14 @@ export default function ParentEnfant() {
   const notesGatees = acces.requiert && acces.statut !== "autorise";
 
   // Badges calculés depuis les données déjà chargées (aucune requête en plus).
-  //  Une facture annulée ou un brouillon ne doit rien : ni pastille, ni dette.
-  const impayes = syntheseFactures(factures).aRegler;
   //  `mes_demandes` couvre toute la fratrie : on ne garde que CET enfant
   //  (`eleve_id`, mig. 208). Sans la colonne (base pas encore migrée), on
   //  conserve l'ancien comportement plutôt que de tout masquer.
   const demandesEnfant = demandes.filter((d) => d.eleve_id === undefined || d.eleve_id === id);
   const demandesEnCours = demandesEnfant.filter((d) => d.statut === "en_attente" || d.statut === "en_cours").length;
   const badges = {
-    paiements: impayes, documents: demandesEnCours,
-    notes: alertes.note || 0, absences: alertes.absence || 0,
+    documents: demandesEnCours, notes: alertes.note || 0, absences: alertes.absence || 0,
+    annonces: Number(enfant?.annonces_nouvelles) || 0,
   };
 
   const sectionActive = TUILES.find((t) => t.cle === onglet);
@@ -268,28 +272,12 @@ export default function ParentEnfant() {
   return (
     <DeviseCtx.Provider value={enfant?.devise || "XOF"}>
     <div className="space-y-5">
+      {/*  Un seul chemin, comme sur les écrans de Mme Kane : la fiche revient
+          aux enfants, la rubrique revient à la fiche. */}
       {onglet === null || inconnu ? (
-        <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
+        <Link to="/parent" className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← Mes enfants</Link>
       ) : (
-        <>
-          {/* Dans une rubrique : l'enfant courant, le retour à sa grille, et
-              la barre pour passer directement à une autre rubrique. */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate font-display font-semibold text-navy-900">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
-              {enfant?.classe && <p className="truncate text-xs text-navy-900/60">{enfant.classe}{enfant.ecole ? ` · ${enfant.ecole}` : ""}</p>}
-            </div>
-            <Link to={lienRubrique(null)} className="shrink-0 text-sm font-medium text-navy-700 hover:text-or-600">Toutes les rubriques</Link>
-          </div>
-          <BarreRubriques
-            label={`Rubriques de ${enfant?.prenom || "l'enfant"}`}
-            className="-mx-6"
-            actif={onglet}
-            items={tuiles.map((t) => ({
-              cle: t.cle, label: t.label, to: lienRubrique(t.cle),
-              pastille: badges[t.cle] || 0, pastilleRouge: t.cle === "paiements",
-            }))} />
-        </>
+        <Link to={lienRubrique(null)} className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← {enfant?.prenom || "Mon enfant"}</Link>
       )}
       <Alerte ton="erreur">{erreur}</Alerte>
       {!chargement && !inconnu && erreurInitiale && (
@@ -316,39 +304,13 @@ export default function ParentEnfant() {
         </Carte>
       ) : onglet === null ? (
         <>
-          {/* En-tête + grille de tuiles colorées (accueil de l'enfant) */}
-          <div className="flex items-start justify-between gap-3 rounded-3xl bg-gradient-to-br from-navy-900 to-navy-700 p-5 text-creme">
-            <div className="flex min-w-0 items-center gap-3">
-              {/*  Rien ne s'affiche s'il n'y a pas de photo : pas de cadre
-                  vide ni d'icone generique, qui donneraient l'impression
-                  d'une image cassee. */}
-              {enfant?.photo && (
-                <Photo bucket="eleves" valeur={enfant.photo} alt=""
-                  className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-creme/25" />
-              )}
-              <div className="min-w-0">
-                <p className="text-sm text-creme/60">Bonjour 👋</p>
-                <p className="font-display text-2xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
-                <p className="truncate text-sm text-creme/70">{enfant?.classe || ""}{enfant?.ecole ? ` · ${enfant.ecole}` : ""}</p>
-              </div>
-            </div>
-            {enfant?.logo && (
-              <img src={enfant.logo} alt={enfant.ecole || "École"} title={enfant.ecole || ""}
-                className="h-14 w-14 shrink-0 rounded-xl bg-white object-contain p-1" />
-            )}
-          </div>
-
-          <Scolarite factures={factures} lien={lienRubrique("paiements")} />
-
-          <ListeRubriques eleveId={id} tuiles={tuiles} badges={badges} lienRubrique={lienRubrique}
-            factures={factures} alertes={alertes} demandesEnCours={demandesEnCours} />
+          <BandeauEnfant enfant={enfant} eleveId={id} />
+          <TuilesEnfant eleveId={id} tuiles={tuiles.filter((t) => !t.horsGrille)} badges={badges} lienRubrique={lienRubrique}
+            pastille={pastillePaiement(echeancier, factures)} accent={enfant?.couleur_secondaire} />
         </>
       ) : (
         <>
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold text-navy-900">
-            {sectionActive && <Icone name={sectionActive.cle} className="h-6 w-6 text-or-600" />}
-            {sectionActive?.label}
-          </h2>
+          <h2 className="font-display text-2xl font-bold text-navy-900">{sectionActive?.label}</h2>
           {!etats[onglet] ? (
         <div role="status" aria-label={`Chargement : ${sectionActive?.label || "rubrique"}`}><SkeletonListe lignes={4} /></div>
       ) : etats[onglet].erreur ? (
@@ -371,6 +333,8 @@ export default function ParentEnfant() {
         <AnnoncesEnfant items={annonces} enfant={enfant} />
       ) : onglet === "paiements" ? (
         <Paiements factures={factures} infos={infos} declarations={declarations} eleveId={id} onChange={rafraichir} />
+      ) : onglet === "programme" ? (
+        <ProgrammeDuMois eleveId={id} />
       ) : onglet === "documents" ? (
         <Documents eleveId={id} demandes={demandesEnfant} onChange={rafraichir} />
       ) : onglet === "cantine" ? (
@@ -387,92 +351,84 @@ export default function ParentEnfant() {
   );
 }
 
-// La scolarité de l'année en une carte (maquette « Classter », téléphone 2) :
-// part réglée, reste, retard, et les deux gestes qui suivent.
-function Scolarite({ factures, lien }) {
-  const devise = useDevise();
-  const a = aRegler(factures);
-  if (a.facture <= 0) return null;
+// Le bandeau de la fiche, à la couleur de la carte de l'enfant sur l'accueil :
+// le parent reconnaît d'un coup d'œil de quel enfant il s'agit.
+function BandeauEnfant({ enfant, eleveId }) {
+  const { fonce } = couleurEnfant(eleveId);
+  const age = ageEnfant(enfant?.date_naissance);
+  const initiales = `${(enfant?.prenom?.[0] || "").toUpperCase()}${(enfant?.nom?.[0] || "").toUpperCase()}`;
   return (
-    <div className="rounded-2xl border border-navy-900/10 bg-white p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-semibold text-navy-900">Scolarité</p>
-        <b className="font-display text-lg text-navy-900">{a.part} %</b>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-navy-900/10">
-        <div className={`h-full rounded-full ${a.part >= 100 ? "bg-emerald-500" : a.enRetard ? "bg-rose-500" : "bg-or-500"}`}
-          style={{ width: `${Math.max(a.part, a.part > 0 ? 2 : 0)}%` }} />
-      </div>
-      <p className="mt-2 text-xs text-navy-900/60">
-        {fmt(a.paye)} {devise} payés sur {fmt(a.facture)} {devise}
-        {a.reste > 0 && (a.enRetard ? ` · en retard depuis le ${fmtDate(a.echeance)}` : a.echeance ? ` · prochaine échéance ${pourQuand(a.echeance).replace("pour ", "")}` : "")}
-      </p>
-      <div className="mt-3 flex gap-2">
-        {a.reste > 0 && (
-          <Link to={lien} className="flex min-h-10 flex-1 items-center justify-center rounded-lg bg-navy-900 text-xs font-semibold text-creme">
-            Payer {fmt(a.reste)} {devise}
-          </Link>
-        )}
-        <Link to={lien} className={`flex min-h-10 items-center justify-center rounded-lg border border-navy-900/15 px-4 text-xs font-semibold text-navy-900 ${a.reste > 0 ? "" : "flex-1"}`}>
-          Factures et reçus
-        </Link>
+    <div className={`flex items-center gap-3.5 rounded-3xl p-4 text-white ${fonce}`}>
+      {/*  La photo de SON enfant : la policy de la migration 169 repose sur
+          `_parent_possede`. Sans photo, les initiales. */}
+      <Photo bucket="eleves" valeur={enfant?.photo} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-white/40"
+        fallback={<span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-white/20 font-display text-xl font-bold">{initiales}</span>} />
+      <div className="min-w-0">
+        <p className="truncate font-display text-xl font-bold">{enfant ? `${enfant.prenom} ${enfant.nom}` : "Mon enfant"}</p>
+        <p className="truncate text-sm text-white/90">
+          {[age != null ? `${age} ans` : null, enfant?.classe, enfant?.matricule].filter(Boolean).join(" · ")}
+        </p>
       </div>
     </div>
   );
 }
 
-// Les rubriques en liste dense : chacune dit déjà ce qu'elle contient
-// (« 2 devoirs pour lundi », « 1 à justifier »), sans qu'on ait à l'ouvrir.
-// Les lignes se complètent quand l'aperçu arrive ; avant, seul le nom s'affiche.
-function ListeRubriques({ eleveId, tuiles, badges, lienRubrique, factures, alertes, demandesEnCours }) {
-  const apercu = useApercuEnfant(eleveId, { factures, alertes });
-  const resume = apercu ? resumeRubriques({ ...apercu, factures, alertes, demandesEnCours }) : {};
-  const TONS = { rouge: "text-rose-700", or: "text-or-600", vert: "text-emerald-700" };
+// Les rubriques en tuiles, deux par ligne (écrans de Mme Kane) : le parent
+// voit tout sans faire défiler. Seul ce qui demande un geste porte une marque.
+function TuilesEnfant({ eleveId, tuiles, badges, lienRubrique, pastille, accent }) {
+  //  Seul chiffre qui ne vient pas de la fiche : les devoirs à venir.
+  const [devoirs, setDevoirs] = useState(0);
+  useEffect(() => {
+    let vivant = true;
+    enfantCahier(eleveId)
+      .then((c) => { if (vivant) setDevoirs(devoirsAVenir(c).length); })
+      .catch(() => { /* la tuile reste sans chiffre */ });
+    return () => { vivant = false; };
+  }, [eleveId]);
+  const nombres = { ...badges, cahier: devoirs };
+  const couleur = accent ? { color: accent } : undefined;
+  const classe = "relative flex min-h-24 flex-col gap-2 rounded-2xl border border-navy-900/10 bg-white p-3.5 text-navy-900 transition active:scale-[.98] [&:last-child:nth-child(odd)]:col-span-2";
   return (
-    <ul className="divide-y divide-navy-900/5 overflow-hidden rounded-2xl border border-navy-900/10 bg-white">
+    <nav aria-label="Rubriques" className="grid grid-cols-2 gap-2.5">
       {tuiles.map((t) => {
-        const r = resume[t.cle];
-        const n = badges[t.cle] || 0;
+        const n = nombres[t.cle] || 0;
         return (
-          <li key={t.cle}>
-            <Link to={lienRubrique(t.cle)} className="flex min-h-[60px] items-center gap-3 px-4 py-3 transition hover:bg-navy-900/[0.03] active:bg-navy-900/[0.06]">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-navy-900">
-                <Icone name={t.cle} className="h-5 w-5 text-or-500" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-navy-900">{t.label}</span>
-                {r?.texte && <span className={`block truncate text-xs ${TONS[r.ton] || "text-navy-900/60"}`}>{r.texte}</span>}
-              </span>
-              {n > 0 ? (
-                <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold ${
-                  t.cle === "paiements" ? "bg-rose-500 text-white" : "bg-or-500 text-navy-900"}`}>{n}</span>
-              ) : (
-                <span className="text-navy-900/30" aria-hidden="true">›</span>
-              )}
-            </Link>
-          </li>
+          <Link key={t.cle} to={lienRubrique(t.cle)} className={classe}>
+            <span style={couleur} className={accent ? "" : "text-sky-700"}><Icone name={t.icone || t.cle} className="h-7 w-7" /></span>
+            <span className="text-sm font-bold leading-tight">{t.label}</span>
+            {t.cle === "paiements" && pastille && (
+              <span className={`absolute right-2 top-2 max-w-[62%] truncate rounded-full px-2 py-0.5 text-[11px] font-bold ${TONS_PASTILLE[pastille.ton]}`}>{pastille.texte}</span>
+            )}
+            {n > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold text-amber-800">{n}</span>}
+          </Link>
         );
       })}
-    </ul>
+      <Link to="/parent/compte" className={classe}>
+        <span style={couleur} className={accent ? "" : "text-sky-700"}><Icone name="parametres" className="h-7 w-7" /></span>
+        <span className="text-sm font-bold leading-tight">Mot de passe</span>
+      </Link>
+    </nav>
   );
 }
 
-// Sections de l'enfant, en tuiles « sombre élégant » (navy + icône dorée).
-//  Ordre demandé par le promoteur (27/10/2026) : les paiements en tête, puis
-//  ce dont la famille a besoin pour la rentrée et la semaine.
+// Les rubriques de l'enfant, dans l'ordre et sous les noms des écrans de
+// Mme Kane (05/11/2026), qui connaît ses parents.
 const TUILES = [
-  { cle: "paiements",   label: "Paiements" },
-  { cle: "fournitures", label: "Fournitures" },
+  { cle: "paiements",   label: "Suivi paiements" },
   { cle: "emploi",      label: "Emploi du temps" },
+  { cle: "fournitures", label: "Fournitures" },
+  { cle: "programme",   label: "Programme", icone: "programmation" },
   { cle: "cahier",      label: "Cahier de textes" },
-  { cle: "notes",       label: "Notes" },
+  { cle: "notes",       label: "Notes / bulletins" },
   //  ⚠️ Au préscolaire on n'évalue pas, on OBSERVE : cette tuile remplace
   //  « Notes » pour les plus petits. Elle n'apparaît que si l'école a
   //  réellement enregistré des observations — une tuile vide inquiéterait
   //  un parent sans rien lui apprendre (mig. 172).
   { cle: "acquis",      label: "Suivi des acquis" },
-  { cle: "bulletins",   label: "Bulletins" },
-  { cle: "absences",    label: "Absences" },
+  //  Pas de tuile : on y va depuis les Notes. L'adresse reste valable, les
+  //  alertes « bulletin publié » y mènent.
+  { cle: "bulletins",   label: "Bulletins", horsGrille: true },
+  { cle: "absences",    label: "Absences / Retards" },
   { cle: "documents",   label: "Documents" },
   { cle: "annonces",    label: "Annonces" },
   { cle: "cantine",     label: "Cantine" },
@@ -617,16 +573,65 @@ function Notes({ notes, lienBulletins }) {
 // La semaine de l'enfant, présentée comme l'emploi du temps que l'école
 // imprime (heures × jours), et non plus jour par jour en liste à dérouler.
 // Couleurs et logo : ceux de l'école de l'enfant (mes_enfants, mig. 205).
+//  UN JOUR À LA FOIS (écrans de Mme Kane) : sur un téléphone, le tableau de la
+//  semaine se lit en le faisant glisser. Le parent cherche « aujourd'hui » :
+//  il l'a d'emblée, et la semaine entière reste à un toucher (impression).
+const TEINTES_MATIERES = ["#1aa6e6", "#2fae6b", "#e3c100", "#ef8a3c", "#8a6ad6", "#17a99a", "#ed127b", "#6b7280", "#b45309", "#4f46e5"];
 function Emploi({ creneaux, enfant }) {
+  const lignes = creneaux.map((c) => pourGrille(c));
+  const jours = JOURS_EMPLOI.filter(([n]) => lignes.some((c) => Number(c.jour) === n));
+  const aujourdhui = ((new Date().getDay() + 6) % 7) + 1;
+  const [jour, setJour] = useState(() => (jours.some(([n]) => n === aujourdhui) ? aujourdhui : jours[0]?.[0]));
+  const [semaine, setSemaine] = useState(false);
   if (creneaux.length === 0) {
     return <Carte className="p-6 text-sm text-navy-900/40">Aucun emploi du temps disponible.</Carte>;
   }
+  if (semaine) {
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => setSemaine(false)} className="no-print min-h-10 text-sm font-semibold text-navy-700">← Voir jour par jour</button>
+        <Carte className="p-4">
+          <GrilleEmploi creneaux={lignes}
+            ecole={{ couleur_primaire: enfant?.couleur_primaire, couleur_secondaire: enfant?.couleur_secondaire }}
+            entete={{ logo: enfant?.logo, nom: enfant?.ecole, titre: enfant?.classe ? `Classe ${enfant.classe}` : "", sous: "Emploi du temps" }} />
+        </Carte>
+      </div>
+    );
+  }
+  const heure = (h) => String(h || "").slice(0, 5);
+  const matieres = [...new Set(lignes.filter((c) => !c.pause).map((c) => c.couleur || c.titre))].sort((a, b) => a.localeCompare(b, "fr"));
+  const teinte = (c) => TEINTES_MATIERES[matieres.indexOf(c.couleur || c.titre) % TEINTES_MATIERES.length];
+  const duJour = lignes.filter((c) => Number(c.jour) === jour)
+    .sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)));
   return (
-    <Carte className="p-4">
-      <GrilleEmploi creneaux={creneaux.map((c) => pourGrille(c))}
-        ecole={{ couleur_primaire: enfant?.couleur_primaire, couleur_secondaire: enfant?.couleur_secondaire }}
-        entete={{ logo: enfant?.logo, nom: enfant?.ecole, titre: enfant?.classe ? `Classe ${enfant.classe}` : "", sous: "Emploi du temps" }} />
-    </Carte>
+    <div className="space-y-3">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Jour">
+        {jours.map(([n, nom]) => (
+          <button key={n} type="button" onClick={() => setJour(n)} aria-pressed={n === jour}
+            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold ${n === jour ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900"}`}>
+            {nom}{n === aujourdhui ? " ·" : ""}
+          </button>
+        ))}
+      </div>
+      <Carte className="divide-y divide-navy-900/5 px-4 py-1">
+        {duJour.map((c, i) => (
+          <div key={i} className="grid grid-cols-[6.5rem_1fr] items-center gap-3 py-3 text-sm">
+            <b className="tabular-nums text-navy-900">{heure(c.heure_debut)} – {heure(c.heure_fin)}</b>
+            {c.pause ? <span className="italic text-navy-900/55">{c.titre === "—" ? "Pause" : c.titre}</span> : (
+              <span className="border-l-4 pl-2.5 font-semibold text-navy-900" style={{ borderColor: teinte(c) }}>{c.titre}</span>
+            )}
+          </div>
+        ))}
+      </Carte>
+      <ul className="space-y-1 text-xs text-navy-900/60">
+        {matieres.map((m, i) => (
+          <li key={m} className="flex items-center gap-2">
+            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: TEINTES_MATIERES[i % TEINTES_MATIERES.length] }} />{m}
+          </li>
+        ))}
+      </ul>
+      <button type="button" onClick={() => setSemaine(true)} className="min-h-10 text-sm font-semibold text-navy-700">Voir toute la semaine</button>
+    </div>
   );
 }
 
@@ -829,8 +834,6 @@ function Documents({ eleveId, demandes, onChange }) {
 
   return (
     <div className="space-y-4">
-      <ProgrammeDuMois eleveId={eleveId} />
-
       <Carte className="p-5">
         <h3 className="mb-3 font-display font-semibold text-navy-900">Demander un document</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -899,7 +902,7 @@ function ProgrammeDuMois({ eleveId }) {
 
   if (erreur) return <Carte className="p-5"><Alerte ton="erreur">{erreur}</Alerte></Carte>;
   if (!donnees) return <Carte className="p-5"><SkeletonListe lignes={3} /></Carte>;
-  if (!donnees.niveau) return null;
+  if (!donnees.niveau) return <Carte className="p-6 text-sm text-navy-900/50">Le programme n'est pas encore publié par l'école.</Carte>;
 
   const nomMois = (m) => (MOIS_PROGRAMME.find(([n]) => Number(n) === Number(m)) || [null, ""])[1];
   const dispo = new Set((donnees.mois_disponibles || []).map(Number));
@@ -1123,10 +1126,15 @@ function AnnoncesEnfant({ items, enfant }) {
   );
 }
 
+//  LA LISTE À PRÉPARER (écrans de Mme Kane) : le parent coche ce qui est prêt,
+//  voit où il en est, et chaque article dit s'il est donné ou vendu par
+//  l'école. Les coches restent sur le téléphone, par enfant : une liste de
+//  rentrée se prépare en plusieurs fois.
+const lireCoches = (cle) => { try { return new Set(JSON.parse(localStorage.getItem(cle)) || []); } catch { return new Set(); } };
+const ecrireCoches = (cle, v) => { try { localStorage.setItem(cle, JSON.stringify([...v])); } catch { /* stockage bloqué */ } };
 function Fournitures({ items, enfant }) {
-  // Ce que le parent doit encore acheter : coché par défaut, il décoche ce
-  // qu'il a déjà. Une liste de rentrée s'achète en plusieurs fois.
-  const [pris, setPris] = useState(() => new Set());
+  const cle = `fournitures_prets_${enfant?.eleve_id || ""}`;
+  const [prets, setPrets] = useState(() => lireCoches(cle));
   const [copie, setCopie] = useState(false);
 
   if (items.length === 0) return <Carte className="p-6 text-sm text-navy-900/40">Aucune liste de fournitures publiée.</Carte>;
@@ -1134,20 +1142,21 @@ function Fournitures({ items, enfant }) {
   // Une clé stable par article : les libellés se répètent d'une catégorie à
   // l'autre (« Gomme » chez Maison ET Petit matériel), l'index seul ne suffit
   // pas à les distinguer une fois la liste regroupée.
-  const restants = aAcheter(items).map((f, i) => ({ ...f, _k: `${i}-${f.libelle}` }));
-  // `grouperFournitures` nettoie le libellé du préfixe mais conserve le
-  // reste de l'article — la clé `_k` posée ci-dessus survit au regroupement.
-  const groupes = grouperFournitures(restants);
-  const ecoleFournit = grouperFournitures(items.filter(fourniParEcole));
-  const selection = restants.filter((f) => !pris.has(f._k));
+  const tous = items.map((f, i) => ({ ...f, _k: `${i}-${f.libelle}` }));
+  const groupes = grouperFournitures(tous);
+  const aPreparer = tous.filter((f) => !fourniParEcole(f));
+  const obligatoires = aPreparer.filter((f) => f.obligatoire !== false);
+  const faits = obligatoires.filter((f) => prets.has(f._k)).length;
+  const restants = aPreparer.filter((f) => !prets.has(f._k));
 
-  const basculer = (k) => setPris((s) => {
+  const basculer = (k) => setPrets((s) => {
     const n = new Set(s);
     if (n.has(k)) n.delete(k); else n.add(k);
+    ecrireCoches(cle, n);
     return n;
   });
 
-  const message = messageFournitures(selection, {
+  const message = messageFournitures(restants, {
     enfant: enfant ? `${enfant.prenom} ${enfant.nom}` : null,
     classe: enfant?.classe, ecole: enfant?.ecole,
   });
@@ -1160,94 +1169,68 @@ function Fournitures({ items, enfant }) {
     } catch { /* presse-papiers indisponible : le bouton WhatsApp reste */ }
   }
 
+  const etiquette = "shrink-0 self-start whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold";
   return (
-    <div className="space-y-4">
-      <Carte className="p-6">
-        <h3 className="mb-1 font-display font-semibold text-navy-900">À acheter</h3>
-        <p className="mb-3 text-xs text-navy-900/50">
-          {restants.length === 0
-            ? "Rien à acheter : tout est fourni par l'école."
-            : "Décochez ce que vous avez déjà, puis envoyez la liste à votre boutique."}
+    <div className="space-y-3">
+      <Carte className="p-4">
+        <p className="flex justify-between gap-3 font-bold text-navy-900">
+          <span>{faits} / {obligatoires.length} articles préparés</span>
+          {enfant?.classe && <span className="font-normal text-navy-900/60">{enfant.classe}</span>}
         </p>
-
-        {restants.length > 0 && (
-          <>
-            <div className="space-y-4">
-              {groupes.map((g) => (
-                <div key={g.id}>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">
-                    {g.label} <span className="font-normal text-navy-900/30">({g.items.length})</span>
-                  </p>
-                  <ul className="divide-y divide-navy-900/5">
-                    {g.items.map((f) => {
-                      const fait = pris.has(f._k);
-                      return (
-                        <li key={f._k}>
-                          <label className="flex cursor-pointer items-start gap-3 py-2.5 text-sm">
-                            <input type="checkbox" checked={!fait} onChange={() => basculer(f._k)}
-                              className="mt-0.5 h-4 w-4 shrink-0 accent-or-500" />
-                            <span className={fait ? "text-navy-900/35 line-through" : "text-navy-900"}>
-                              <span className="font-mono text-xs text-or-600">×{f.quantite}</span>{" "}
-                              <span className="font-medium">{f.libelle}</span>
-                              {!f.obligatoire && <span className="ml-2 text-xs text-navy-900/40">(optionnel)</span>}
-                              {f.note && <span className="ml-2 text-xs text-navy-900/50">— {f.note}</span>}
-                            </span>
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <a
-                href={lienPartageWhatsApp(message)}
-                target="_blank" rel="noreferrer"
-                aria-disabled={selection.length === 0}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition ${
-                  selection.length === 0 ? "pointer-events-none bg-navy-900/25" : "bg-emerald-600 hover:bg-emerald-500"}`}
-              >
-                Envoyer par WhatsApp
-                {selection.length > 0 && <span className="rounded-full bg-white/20 px-1.5 text-xs">{selection.length}</span>}
-              </a>
-              <button type="button" onClick={copier} disabled={selection.length === 0}
-                className="rounded-xl border border-navy-900/15 bg-white px-4 py-2.5 text-sm font-medium text-navy-900/70 transition hover:border-or-500 disabled:opacity-40">
-                {copie ? "Copié ✓" : "Copier la liste"}
-              </button>
-              {selection.length === 0 && (
-                <span className="text-xs text-navy-900/45">Tout est coché comme déjà acheté.</span>
-              )}
-            </div>
-            <p className="mt-2 text-xs text-navy-900/40">
-              WhatsApp vous laissera choisir le destinataire.
-            </p>
-          </>
-        )}
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-navy-900/10">
+          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${obligatoires.length ? (faits / obligatoires.length) * 100 : 0}%` }} />
+        </div>
       </Carte>
 
-      {ecoleFournit.length > 0 && (
-        <Carte className="p-6">
-          <h3 className="mb-1 font-display font-semibold text-navy-900">Fourni par l&apos;école</h3>
-          <p className="mb-3 text-xs text-navy-900/50">Inutile de l&apos;acheter ailleurs.</p>
-          <div className="space-y-4">
-            {ecoleFournit.map((g) => (
-              <div key={g.id}>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-navy-900/45">{g.label}</p>
-                <ul className="divide-y divide-navy-900/5">
-                  {g.items.map((f, i) => (
-                    <li key={i} className="py-2 text-sm text-navy-900/70">
-                      <span className="font-mono text-xs text-navy-900/45">×{f.quantite}</span>{" "}
-                      <span className="font-medium">{f.libelle}</span>
-                      {f.note && <span className="ml-2 text-xs text-navy-900/45">— {f.note}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+      {groupes.map((g) => (
+        <Carte key={g.id} className="p-4">
+          <h3 className="font-display text-lg font-bold text-navy-900">{g.label}</h3>
+          <ul className="mt-1 divide-y divide-navy-900/5">
+            {g.items.map((f) => {
+              const donne = fourniParEcole(f);
+              const fait = prets.has(f._k);
+              const texte = (
+                <span className="min-w-0 flex-1">
+                  <span className={fait ? "text-navy-900/40 line-through" : "text-navy-900"}>
+                    {f.quantite > 1 && <span className="tabular-nums">{f.quantite} × </span>}{f.libelle}
+                  </span>
+                  {!f.obligatoire && <span className="ml-1.5 text-xs text-navy-900/45">(facultatif)</span>}
+                  {f.note && <span className="block text-xs text-navy-900/55">{f.note}</span>}
+                </span>
+              );
+              return (
+                <li key={f._k}>
+                  {donne ? (
+                    <div className="flex min-h-12 items-center gap-3 py-2.5 text-sm">
+                      <span aria-hidden="true" className="h-6 w-6 shrink-0 rounded-md border-2 border-emerald-600 bg-emerald-50" />
+                      {texte}
+                      <span className={`${etiquette} bg-emerald-100 text-emerald-800`}>Donné par l'école</span>
+                    </div>
+                  ) : (
+                    <label className="flex min-h-12 cursor-pointer items-center gap-3 py-2.5 text-sm">
+                      <input type="checkbox" checked={fait} onChange={() => basculer(f._k)} className="h-6 w-6 shrink-0 accent-emerald-600" />
+                      {texte}
+                      {venduEcole(f) && <span className={`${etiquette} bg-amber-100 text-amber-800`}>Vendu à l'école</span>}
+                    </label>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </Carte>
+      ))}
+
+      {restants.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <a href={lienPartageWhatsApp(message)} target="_blank" rel="noreferrer"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white">
+            Envoyer ce qui manque par WhatsApp
+          </a>
+          <button type="button" onClick={copier}
+            className="min-h-10 rounded-xl border border-navy-900/15 bg-white px-4 text-sm font-medium text-navy-900/70">
+            {copie ? "Copié ✓" : "Copier la liste"}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -1266,66 +1249,84 @@ const ETAT_MOIS = {
   partiel: ["Payé en partie", "bg-amber-100 text-amber-800"],
   a_venir: ["À venir", "bg-navy-900/5 text-navy-900/60"],
 };
-function MoisParMois({ donnees, factures, devise, onDocument, onPayer, peutRegler, encours }) {
+function MoisParMois({ donnees, factures, declarations, devise, onDocument, onPayer, onPayerMois, moisPayables, peutRegler, encours }) {
   const lignes = lignesDetail(donnees);
   if (lignes.length === 0) return null;
   const parId = Object.fromEntries((factures || []).map((f) => [f.id, f]));
+  const declareSur = enAttenteParFacture(declarations);
+  //  Un mois déclaré attend la caisse : ni « Payer » une seconde fois, ni
+  //  « à régler à la caisse ».
+  const avancesEnAttente = (declarations || []).filter((d) => d.statut === "en_attente" && d.avance).map((d) => d.avance);
+
+  const ligne = (l) => {
+    const [txt, ton] = ETAT_MOIS[l.statut.cle] || ETAT_MOIS.a_venir;
+    const f = l.factureId ? parId[l.factureId] : null;
+    const du = l.statut.cle === "en_retard" || l.statut.cle === "partiel";
+    const declare = (f && declareSur[f.id] > 0) || avancesEnAttente.some((a) => a.includes(l.libelle));
+    const payerFacture = du && !declare && f && peutPayer(f) && peutRegler;
+    const payerMois = du && !declare && !f && moisPayables.has(l.mois);
+    const precision = declare ? "paiement déclaré, en attente de l'école"
+      : l.date ? `payé le ${fmtDate(l.date)}${l.mode ? ` · ${l.mode}` : ""}`
+        : l.statut.cle === "a_venir" && l.echeance ? `à payer avant le ${fmtDate(l.echeance)}`
+          : du && !payerFacture && !payerMois ? "à régler à la caisse de l'école" : "";
+    return (
+      //  L'état reste à droite, à la même place sur chaque ligne : on lit la
+      //  colonne d'un coup d'œil. Seule la précision passe à la ligne.
+      <li key={l.cle} className="flex items-start justify-between gap-3 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-navy-900">{l.libelle}</p>
+          <p className="text-xs text-navy-900/60">
+            <span className="tabular-nums">{fmt(l.montant)} {devise}</span>
+            {precision && <span className="block">{precision}</span>}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${ton}`}>{txt}</span>
+          {(l.factureId || l.paiementId || payerFacture || payerMois) && (
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {(payerFacture || payerMois) && (
+                <button type="button" disabled={f && encours === f.id}
+                  onClick={() => (payerFacture ? onPayer(f) : onPayerMois(l.mois))}
+                  className="min-h-10 rounded-lg bg-navy-900 px-3 py-1 text-xs font-semibold text-creme disabled:opacity-60">
+                  {f && encours === f.id ? "…" : "Payer"}
+                </button>
+              )}
+              {l.factureId && (
+                <button type="button" onClick={() => onDocument({ id: l.factureId, type: "facture" })}
+                  className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/75 hover:border-or-500">
+                  Facture
+                </button>
+              )}
+              {l.paiementId && (
+                <button type="button" onClick={() => onDocument({ id: l.factureId, type: "recu", paiementId: l.paiementId })}
+                  className="min-h-10 rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
+                  Reçu
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </li>
+    );
+  };
+
+  const autres = lignes.filter((l) => l.cle.startsWith("autre:"));
+  const scolarite = lignes.filter((l) => !l.cle.startsWith("autre:"));
+  const panneaux = [
+    ["Inscription", scolarite.filter((l) => !l.mois)],
+    ["Mensualités", scolarite.filter((l) => l.mois)],
+    ["Autres frais", autres],
+  ].filter(([, l]) => l.length > 0);
   return (
-    <Carte className="overflow-hidden">
-      <h3 className="px-4 pt-4 font-display font-semibold text-navy-900">Mois par mois</h3>
-      <ul className="divide-y divide-navy-900/5">
-        {lignes.map((l) => {
-          const [txt, ton] = ETAT_MOIS[l.statut.cle] || ETAT_MOIS.a_venir;
-          const f = l.factureId ? parId[l.factureId] : null;
-          const du = l.statut.cle === "en_retard" || l.statut.cle === "partiel";
-          const payable = du && f && peutPayer(f) && peutRegler;
-          const precision = l.date
-            ? `payé le ${fmtDate(l.date)}${l.mode ? ` · ${l.mode}` : ""}`
-            : l.statut.cle === "a_venir" && l.echeance ? `à payer avant le ${fmtDate(l.echeance)}` : "";
-          return (
-            //  L'état reste à droite, à la même place sur chaque ligne : on lit la
-            //  colonne d'un coup d'œil. Seule la précision passe à la ligne.
-            <li key={l.cle} className="flex items-start justify-between gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-navy-900">{l.libelle}</p>
-                <p className="text-xs text-navy-900/60">
-                  <span className="tabular-nums">{fmt(l.montant)} {devise}</span>
-                  {precision && <span className="block">{precision}</span>}
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-2">
-                <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${ton}`}>{txt}</span>
-                {(l.factureId || l.paiementId || payable) && (
-                  <div className="flex flex-wrap justify-end gap-1.5">
-                    {payable && (
-                      <button type="button" onClick={() => onPayer(f)} disabled={encours === f.id}
-                        className="min-h-10 rounded-lg bg-navy-900 px-3 py-1 text-xs font-semibold text-creme disabled:opacity-60">
-                        {encours === f.id ? "…" : "Payer"}
-                      </button>
-                    )}
-                    {l.factureId && (
-                      <button type="button" onClick={() => onDocument({ id: l.factureId, type: "facture" })}
-                        className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/75 hover:border-or-500">
-                        Facture
-                      </button>
-                    )}
-                    {l.paiementId && (
-                      <button type="button" onClick={() => onDocument({ id: l.factureId, type: "recu", paiementId: l.paiementId })}
-                        className="min-h-10 rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
-                        Reçu
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="border-t border-navy-900/5 px-4 py-3 text-xs text-navy-900/55">
-        Le reçu apparaît dès que l'école a enregistré le paiement.
-      </p>
-    </Carte>
+    <>
+      {panneaux.map(([titre, l]) => (
+        <Carte key={titre} className="p-4">
+          <h3 className="font-display text-lg font-bold text-navy-900">{titre}</h3>
+          <ul className="divide-y divide-navy-900/5">{l.map(ligne)}</ul>
+        </Carte>
+      ))}
+      <p className="text-xs text-navy-900/55">Le reçu apparaît dès que l'école a enregistré le paiement.</p>
+    </>
   );
 }
 
@@ -1353,6 +1354,10 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   //  Avec l'échéancier, la liste des FACTURES (numéros) se replie : le parent
   //  lit ses mois, et n'ouvre les factures que s'il les cherche.
   const [voirFactures, setVoirFactures] = useState(false);
+  //  Les mois sans facture que le parent peut régler (`avance_options`), et
+  //  celui dont il vient de toucher « Payer ».
+  const [groupesAvance, setGroupesAvance] = useState([]);
+  const [moisDemande, setMoisDemande] = useState(null);
   useEffect(() => {
     let vivant = true;
     enfantEcheancier(eleveId)
@@ -1399,26 +1404,16 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
     <div className="space-y-4">
       <Alerte ton="erreur">{erreur}</Alerte>
       {ech ? (
-        //  🔴 LA COULEUR EST SUR LE TOTAL PAYÉ (demande du promoteur) :
-        //  rouge en retard, vert à jour, bleu en avance — avec le libellé à
-        //  côté, jamais la couleur seule.
-        <Carte className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm text-navy-900/60">Total payé</p>
-              <p className={`mt-1 font-display text-2xl font-bold ${etatEnfant.texte || "text-navy-900"}`}>
-                {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">{devise}</span>
-              </p>
-            </div>
-            <BadgeStatut statut={ech.statut} />
-          </div>
-          {resEch.totalDu > 0 && (
-            <p className="mt-2 text-sm font-medium text-rose-700">
-              À régler maintenant : {fmt(resEch.totalDu)} {devise}
-              ({resEch.dus.length} échéance{resEch.dus.length > 1 ? "s" : ""})
-            </p>
-          )}
-          <p className="mt-1 text-sm text-navy-900/60">{etatEnfant.explication}</p>
+        //  Une ligne, pas un tableau de bord : ce qu'il y a à faire, ou que
+        //  tout va bien. Le détail, c'est la liste des mois juste dessous.
+        //  JAMAIS LA COULEUR SEULE : le badge dit l'état en toutes lettres.
+        <Carte className="flex items-center justify-between gap-3 p-4">
+          <p className={`min-w-0 text-sm font-semibold ${resEch.totalDu > 0 ? "text-rose-700" : "text-navy-900/70"}`}>
+            {resEch.totalDu > 0
+              ? `À régler maintenant : ${fmt(resEch.totalDu)} ${devise}`
+              : etatEnfant.explication}
+          </p>
+          <BadgeStatut statut={ech.statut} className="shrink-0" />
         </Carte>
       ) : visibles.length > 0 ? (
         <Carte className="p-5">
@@ -1449,8 +1444,10 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
       )}
 
       {ech && (
-        <MoisParMois donnees={ech} factures={factures} devise={devise}
+        <MoisParMois donnees={ech} factures={factures} declarations={declarations} devise={devise}
           onDocument={setFactureDoc}
+          onPayerMois={setMoisDemande}
+          moisPayables={aDesNumeros ? new Set(groupesAvance.map((g) => g.mois)) : new Set()}
           onPayer={(f) => {
             const reste = resteFacture(f);
             if (enLigne.actif) payerEnLigne(f, reste);
@@ -1463,7 +1460,8 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
           aucune facture — c'est précisément le cas où il sert. Il reçoit
           TOUTES les déclarations : une avance validée y reste « payée ». */}
       <PayerAvance eleveId={eleveId} infos={infos} aDesNumeros={aDesNumeros}
-        declarations={declarations} onChange={onChange} />
+        declarations={declarations} onChange={onChange}
+        onGroupes={setGroupesAvance} moisDemande={moisDemande} onFermerDemande={() => setMoisDemande(null)} />
 
       {visibles.length > 0 && ech && (
         <button type="button" onClick={() => setVoirFactures((v) => !v)} aria-expanded={voirFactures}
@@ -1612,7 +1610,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
 // Le parent coche des mois, pas un montant : le tarif vient de la base, et
 // c'est elle qui recalcule le total déclaré. À la validation par la caisse,
 // la facture du mois est créée déjà réglée, et le parent est prévenu.
-function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange }) {
+function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange, onGroupes, moisDemande, onFermerDemande }) {
   const [groupes, setGroupes] = useState([]);
   const [echec, setEchec] = useState(false);
   const [version, setVersion] = useState(0);
@@ -1625,10 +1623,16 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange 
     //  n'apparaît simplement pas. Un ÉCHEC, lui, n'est pas une liste vide :
     //  on le dit, avec de quoi réessayer.
     avanceOptions(eleveId)
-      .then((l) => { if (vivant) setGroupes(grouperParMois(l)); })
-      .catch(() => { if (vivant) { setGroupes([]); setEchec(true); } });
+      .then((l) => { if (vivant) { const g = grouperParMois(l); setGroupes(g); onGroupes?.(g); } })
+      .catch(() => { if (vivant) { setGroupes([]); onGroupes?.([]); setEchec(true); } });
     return () => { vivant = false; };
+    // `onGroupes` est un setter stable : on ne relit pas à chaque rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eleveId, version]);
+
+  //  « Payer » sur la ligne d'un mois : la fenêtre s'ouvre, ce mois coché.
+  useEffect(() => { if (moisDemande) setOuvert(true); }, [moisDemande]);
+  const fermer = () => { setOuvert(false); onFermerDemande?.(); };
 
   //  Deux parents, un enfant : ce que l'un a payé d'avance disparaît de la
   //  liste de l'autre. On dit pourquoi, et qui l'a fait.
@@ -1650,11 +1654,11 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange 
   return (
     <Carte className="flex flex-wrap items-center justify-between gap-3 p-5">
       <div className="min-w-0">
-        <h3 className="font-display font-semibold text-navy-900">Payer d&apos;avance</h3>
+        <h3 className="font-display font-semibold text-navy-900">Payer plusieurs mois</h3>
         {groupes.length > 0 ? (
           <p className="mt-0.5 text-sm text-navy-900/60">
-            Réglez dès maintenant {groupes[0].libelle}{groupes.length > 1 ? " ou les mois suivants" : ""} :
-            {" "}la facture sera émise déjà payée.
+            Réglez {groupes[0].libelle}{groupes.length > 1 ? " et les mois suivants" : ""} en une fois,
+            {" "}même à l'avance : la facture sera émise déjà payée.
           </p>
         ) : (
           <p className="mt-0.5 text-sm text-navy-900/60">Tous les mois restants de l&apos;année sont déjà réglés ou facturés.</p>
@@ -1670,17 +1674,17 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange 
           </ul>
         )}
       </div>
-      {groupes.length > 0 && <Bouton onClick={() => setOuvert(true)}>Payer d&apos;avance</Bouton>}
+      {groupes.length > 0 && <Bouton onClick={() => setOuvert(true)}>Choisir les mois</Bouton>}
 
       {ouvert && (
         <ModaleAvance
-          groupes={groupes} infos={infos}
-          onFermer={() => setOuvert(false)}
+          groupes={groupes} infos={infos} moisInitial={moisDemande}
+          onFermer={fermer}
           onDeclare={async ({ mois, mode, reference, fichier }) => {
             //  L'erreur remonte à la modale, qui l'affiche (cf. ModalePayer).
             const preuve = await televerserPreuve(eleveId, fichier);
             await declarerAvance(eleveId, mois, mode, reference, preuve);
-            setOuvert(false);
+            fermer();
             setVersion((v) => v + 1);
             await onChange();
           }}
@@ -1690,9 +1694,10 @@ function PayerAvance({ eleveId, infos, aDesNumeros, declarations = [], onChange 
   );
 }
 
-function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
+function ModaleAvance({ groupes, infos, moisInitial, onFermer, onDeclare }) {
   const devise = useDevise();
-  const [choisis, setChoisis] = useState(() => choixParDefaut(groupes));
+  //  Ouverte depuis un mois : lui et ceux d'avant, jamais de trou (cf. basculerMois).
+  const [choisis, setChoisis] = useState(() => (moisInitial ? basculerMois(groupes, [], moisInitial) : choixParDefaut(groupes)));
   //  Premier mode configuré par l'école : un clic de moins dans le cas courant.
   const [mode, setMode] = useState(() => (MODES_MOBILE.find(([k]) => infos?.[k]) || ["wave"])[0]);
   const [reference, setReference] = useState("");
@@ -1705,7 +1710,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
   const libelles = groupes.filter((g) => choisis.includes(g.mois)).map((g) => g.libelle);
 
   return (
-    <Modale ouvert onFermer={onFermer} titre="Payer d'avance">
+    <Modale ouvert onFermer={onFermer} titre="Payer">
       <div className="space-y-4">
         <div>
           <p className="mb-2 text-sm text-navy-900/60">1. Choisissez les mois à payer :</p>
@@ -1745,7 +1750,7 @@ function ModaleAvance({ groupes, infos, onFermer, onDeclare }) {
           </div>
           {numero && <p className="mt-3 font-display text-xl font-bold text-navy-900">{numero}</p>}
           {libelles.length > 0 && (
-            <p className="mt-1 text-xs text-navy-900/50">Motif à indiquer : <span className="font-mono">Avance {resumeMois(libelles)}</span></p>
+            <p className="mt-1 text-xs text-navy-900/50">Motif à indiquer : <span className="font-mono">Scolarité {resumeMois(libelles)}</span></p>
           )}
         </div>
 
