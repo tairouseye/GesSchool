@@ -149,6 +149,19 @@ test("détail : description, statut du modèle, date et mode", async () => {
   assert.equal(new Set(L.map((l) => l.cle)).size, L.length, "clés uniques");
 });
 
+test("détail : la facture et le reçu de chaque ligne (mig. 229), absents avant", async () => {
+  const { lignesDetail } = await P();
+  const [paye, du, ancien] = lignesDetail({ lignes: [
+    { mois: "2026-10", libelle: "Mensualité — Octobre 2026", montant: 1, etat: "paye", facture_id: "f1", paiement_id: "p1" },
+    { mois: "2026-11", libelle: "Mensualité — Novembre 2026", montant: 1, etat: "en_retard", facture_id: "f2", echeance: "2026-11-05" },
+    { libelle: "Inscription", montant: 1, etat: "paye" },
+  ] }, "2026-11");
+  assert.equal(paye.libelle, "Octobre 2026");
+  assert.deepEqual([paye.factureId, paye.paiementId], ["f1", "p1"]);
+  assert.deepEqual([du.factureId, du.paiementId, du.echeance], ["f2", null, "2026-11-05"]);
+  assert.deepEqual([ancien.factureId, ancien.paiementId], [null, null]);
+});
+
 test("détail : sans échéancier ou ancienne base (sans `autres`), pas d'erreur", async () => {
   const { lignesDetail } = await P();
   assert.deepEqual(lignesDetail(null), []);

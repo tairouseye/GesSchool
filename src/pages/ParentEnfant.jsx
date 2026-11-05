@@ -10,8 +10,8 @@ import {
   enfantFactureDetail, avanceOptions, declarerAvance, enfantEcheancier, enfantProgramme,
 } from "@/lib/parent.js";
 import { MOIS as MOIS_PROGRAMME } from "@/lib/programmationIEF.js";
-import { BadgeStatut, DetailPaiements } from "@/composants/Echeancier.jsx";
-import { etat as etatPaiement, resumeEcheancier, objetFacture } from "@/lib/paiementStatut.js";
+import { BadgeStatut } from "@/composants/Echeancier.jsx";
+import { etat as etatPaiement, resumeEcheancier, objetFacture, lignesDetail } from "@/lib/paiementStatut.js";
 import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
 import {
   facturesVisibles, syntheseFactures, resteFacture, etatFacture, peutPayer, estAnnulee,
@@ -1253,6 +1253,82 @@ function Fournitures({ items, enfant }) {
   );
 }
 
+//  LES PAIEMENTS MOIS PAR MOIS (maquette de Mme Kane, 05/11/2026 ; mig. 229).
+//  Un parent compte en mois — « j'ai payé novembre ? » —, pas en numéros de
+//  facture : une ligne par échéance, son état en toutes lettres, et sur la
+//  ligne même la facture, le reçu, ou « Payer » quand c'est dû.
+//  Sans la 229, les lignes n'ont pas de facture : les boutons n'apparaissent
+//  pas, la liste reste juste.
+const ETAT_MOIS = {
+  paye: ["Payé", "bg-emerald-100 text-emerald-800"],
+  avance: ["Payé d'avance", "bg-sky-100 text-sky-800"],
+  en_retard: ["En retard", "bg-rose-100 text-rose-800"],
+  partiel: ["Payé en partie", "bg-amber-100 text-amber-800"],
+  a_venir: ["À venir", "bg-navy-900/5 text-navy-900/60"],
+};
+function MoisParMois({ donnees, factures, devise, onDocument, onPayer, peutRegler, encours }) {
+  const lignes = lignesDetail(donnees);
+  if (lignes.length === 0) return null;
+  const parId = Object.fromEntries((factures || []).map((f) => [f.id, f]));
+  return (
+    <Carte className="overflow-hidden">
+      <h3 className="px-4 pt-4 font-display font-semibold text-navy-900">Mois par mois</h3>
+      <ul className="divide-y divide-navy-900/5">
+        {lignes.map((l) => {
+          const [txt, ton] = ETAT_MOIS[l.statut.cle] || ETAT_MOIS.a_venir;
+          const f = l.factureId ? parId[l.factureId] : null;
+          const du = l.statut.cle === "en_retard" || l.statut.cle === "partiel";
+          const payable = du && f && peutPayer(f) && peutRegler;
+          const precision = l.date
+            ? `payé le ${fmtDate(l.date)}${l.mode ? ` · ${l.mode}` : ""}`
+            : l.statut.cle === "a_venir" && l.echeance ? `à payer avant le ${fmtDate(l.echeance)}` : "";
+          return (
+            //  L'état reste à droite, à la même place sur chaque ligne : on lit la
+            //  colonne d'un coup d'œil. Seule la précision passe à la ligne.
+            <li key={l.cle} className="flex items-start justify-between gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-navy-900">{l.libelle}</p>
+                <p className="text-xs text-navy-900/60">
+                  <span className="tabular-nums">{fmt(l.montant)} {devise}</span>
+                  {precision && <span className="block">{precision}</span>}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${ton}`}>{txt}</span>
+                {(l.factureId || l.paiementId || payable) && (
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    {payable && (
+                      <button type="button" onClick={() => onPayer(f)} disabled={encours === f.id}
+                        className="min-h-10 rounded-lg bg-navy-900 px-3 py-1 text-xs font-semibold text-creme disabled:opacity-60">
+                        {encours === f.id ? "…" : "Payer"}
+                      </button>
+                    )}
+                    {l.factureId && (
+                      <button type="button" onClick={() => onDocument({ id: l.factureId, type: "facture" })}
+                        className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/75 hover:border-or-500">
+                        Facture
+                      </button>
+                    )}
+                    {l.paiementId && (
+                      <button type="button" onClick={() => onDocument({ id: l.factureId, type: "recu", paiementId: l.paiementId })}
+                        className="min-h-10 rounded-lg border border-emerald-600/30 px-3 py-1 text-xs font-medium text-emerald-700 hover:border-emerald-600">
+                        Reçu
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="border-t border-navy-900/5 px-4 py-3 text-xs text-navy-900/55">
+        Le reçu apparaît dès que l'école a enregistré le paiement.
+      </p>
+    </Carte>
+  );
+}
+
 function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   const devise = useDevise();
   //  Erreur du paiement en ligne : affichée DANS la rubrique, pas en haut de
@@ -1274,9 +1350,9 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
   //  synthèse des factures, qui reste juste. Relu quand les factures changent
   //  (déclaration validée, avance…).
   const [echeancier, setEcheancier] = useState(null);
-  //  Le détail (Description · Montant · Statut · Date · Mode) s'ouvre à la
-  //  demande, depuis le bouton « Détails » à côté du total payé.
-  const [detail, setDetail] = useState(false);
+  //  Avec l'échéancier, la liste des FACTURES (numéros) se replie : le parent
+  //  lit ses mois, et n'ouvre les factures que s'il les cherche.
+  const [voirFactures, setVoirFactures] = useState(false);
   useEffect(() => {
     let vivant = true;
     enfantEcheancier(eleveId)
@@ -1334,14 +1410,7 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
                 {fmt(Math.max(synthese.paye, resEch.totalPaye))} <span className="text-xs font-normal">{devise}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <BadgeStatut statut={ech.statut} />
-              <button type="button" onClick={() => setDetail((v) => !v)} aria-expanded={detail}
-                aria-controls="detail-paiements"
-                className="min-h-10 rounded-lg border border-navy-900/15 px-3 py-1 text-xs font-medium text-navy-900/80 hover:border-or-500">
-                {detail ? "Masquer le détail" : "Détails"}
-              </button>
-            </div>
+            <BadgeStatut statut={ech.statut} />
           </div>
           {resEch.totalDu > 0 && (
             <p className="mt-2 text-sm font-medium text-rose-700">
@@ -1350,11 +1419,6 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
             </p>
           )}
           <p className="mt-1 text-sm text-navy-900/60">{etatEnfant.explication}</p>
-          {detail && (
-            <div id="detail-paiements" className="mt-4">
-              <DetailPaiements donnees={ech} />
-            </div>
-          )}
         </Carte>
       ) : visibles.length > 0 ? (
         <Carte className="p-5">
@@ -1384,13 +1448,30 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
         <Carte className="p-6 text-sm text-navy-900/40">Aucune facture.</Carte>
       )}
 
+      {ech && (
+        <MoisParMois donnees={ech} factures={factures} devise={devise}
+          onDocument={setFactureDoc}
+          onPayer={(f) => {
+            const reste = resteFacture(f);
+            if (enLigne.actif) payerEnLigne(f, reste);
+            else if (aDesNumeros) setPayer({ ...f, reste });
+          }}
+          peutRegler={enLigne.actif || aDesNumeros} encours={encours} />
+      )}
+
       {/*  Le paiement anticipé (mig. 202) : AVANT la liste, et même sans
           aucune facture — c'est précisément le cas où il sert. Il reçoit
           TOUTES les déclarations : une avance validée y reste « payée ». */}
       <PayerAvance eleveId={eleveId} infos={infos} aDesNumeros={aDesNumeros}
         declarations={declarations} onChange={onChange} />
 
-      {visibles.length > 0 && (
+      {visibles.length > 0 && ech && (
+        <button type="button" onClick={() => setVoirFactures((v) => !v)} aria-expanded={voirFactures}
+          className="min-h-10 text-sm font-medium text-navy-700 underline-offset-2 hover:underline">
+          {voirFactures ? "Masquer les factures" : `Voir les factures (${visibles.length})`}
+        </button>
+      )}
+      {visibles.length > 0 && (!ech || voirFactures) && (
         <Carte className="divide-y divide-navy-900/5 overflow-hidden">
           {visibles.map((f) => {
             const reste = resteFacture(f);

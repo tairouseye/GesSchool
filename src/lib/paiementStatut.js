@@ -176,6 +176,12 @@ export function lignesDetail(donnees, moisCourant) {
       statut: { cle, ...STATUTS_DETAIL[cle] },
       date: l?.date_paiement || null,
       mode: libelleMode(l?.mode),
+      //  Mig. 229 : le libellé complet (« Octobre 2026 »), l'échéance, et de
+      //  quoi ouvrir la facture et le reçu de la ligne (absents avant la 229).
+      libelle: libelleLigne(l),
+      echeance: l?.echeance || null,
+      factureId: l?.facture_id || null,
+      paiementId: l?.paiement_id || null,
     };
   };
   return [...lignes.map((l) => une(l, false)), ...autres.map((l) => une(l, true))];
