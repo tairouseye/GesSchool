@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.308 · mise à jour du 5 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.309 · mise à jour du 5 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -301,7 +301,7 @@ Quatre gestes, dans l'ordre d'une journée.
 
 En arrivant, l'enseignant voit **son** accueil, sur téléphone comme sur ordinateur : ses gestes en grand, et rien des chiffres de l'école.
 
-- **Faire l'appel** : le grand bouton ouvre la feuille de présence de la classe du cours **en cours**, sinon du prochain, avec le nombre d'**absences déjà saisies**. *(L'écran n'annonce jamais qu'un appel est terminé : un appel où tout le monde est présent n'enregistre rien, l'appli ne peut pas le savoir.)*
+- **Faire l'appel** : le grand bouton ouvre la feuille de présence de la classe du cours **en cours**, sinon du prochain, et dit où il en est : **appel à faire**, ou **appel validé** avec le nombre d'absents. Un appel validé compte même si tout le monde est présent, et il reste modifiable dans la journée.
 - **Saisir des notes** : ouvre la première évaluation à compléter, sur la bonne classe et la bonne matière.
 - **Cahier de textes**.
 - **Aujourd'hui** : les cours qui restent, vos autres classes (trois au plus, puis **Toutes mes classes**), et les notes à saisir pour la période en cours — les évaluations **passées** sans **aucune note** (**Saisir**), puis les matières de vos classes **sans évaluation** (**Créer**).
@@ -310,6 +310,8 @@ En arrivant, l'enseignant voit **son** accueil, sur téléphone comme sur ordina
 Si l'accueil dit que votre compte n'est pas relié à une fiche enseignant, voyez §4.6.
 
 ### 5.1 Le matin : la feuille de présence
+
+> La direction voit dans **À traiter** (accueil Pédagogie) les **classes sans appel** : celles dont un cours a commencé aujourd'hui et dont l'appel n'est pas validé. Une classe sans emploi du temps saisi n'y figure pas.
 
 *(Anciennement « Appel ».)*
 
