@@ -5,6 +5,18 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.305.0] — Espace parent : au plus près des écrans de Mme Kane
+La 2.304 restait loin de ses écrans. Celle-ci en reprend la présentation, en gardant les données et la sécurité de GesSchool.
+- **Correction, paiements** : la fiche de l'enfant affichait « 100 % / Tout est réglé ✓ » à 70 des 79 élèves de Tut'Tank en retard, parce qu'elle ne regardait que les factures. Accueil, fiche et rubrique disent maintenant la même chose. **Un mois dû sans facture se paie** depuis sa ligne (mig. 230) ; il n'y avait aucun moyen de le faire.
+- **L'école d'abord** : logo et nom de l'école en haut, sur fond blanc ; GesSchool reste en bas de page.
+- **Fiche de l'enfant** : bandeau à sa couleur et tuiles deux par ligne, avec une marque seulement quand il y a quelque chose à voir. **Programme** a sa tuile, **Mot de passe** aussi ; Notes et bulletins sont réunis.
+- **Rubriques** : un simple « ← Prénom » remplace la barre de rubriques.
+- **Accueil** : Écrire à l'école et **WhatsApp** côte à côte, âge de l'enfant sur sa carte.
+- **Suivi paiements** : Inscription et Mensualités, une ligne pour dire ce qu'il y a à régler.
+- **Emploi du temps** : un jour à la fois, aujourd'hui d'emblée, la semaine à un toucher.
+- **Fournitures** : à préparer, avec le compteur et les étiquettes « Donné par l'école » et « Vendu à l'école ».
+- **Migration 230** : `_lignes_avance` sans plancher de mois ; `mes_enfants` rend `date_naissance` et `telephone_ecole`. Essai : `supabase/tests/essai_230.sql` (5 contrôles).
+
 ## [2.304.0] — Espace parent : l'accueil en cartes et les paiements mois par mois
 D'après la maquette de la directrice de Tut'Tank : elle connaît ses parents, qui ouvrent l'appli sur leur téléphone pour savoir d'un coup d'œil si tout va bien.
 - **Accueil en cartes** : une grande carte par enfant, avec sa photo ou ses initiales, sa classe et l'état de ses paiements en clair (« À jour », « 1 mois à payer », « Payé d'avance ») ; un toucher ouvre sa fiche. **✉️ Écrire à l'école** en tête, **la dernière annonce** en bas. L'école n'est écrite sur la carte que si les enfants sont dans des écoles différentes.
