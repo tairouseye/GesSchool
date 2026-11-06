@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.314.0] — Le nouvel accueil de l'espace parent
+- **Un accueil pour l'enfant affiché** : « Bonjour », sa carte, les onglets Paiements, Notes et Emploi du temps, puis À faire en priorité.
+- **Aujourd'hui** : le cours du moment ou le prochain, avec l'accès à l'emploi du temps.
+- **Notes récentes** : les trois dernières notes. Pas de moyenne générale ici : l'officielle reste celle du bulletin.
+- **Plusieurs enfants** : des boutons à leur prénom changent l'enfant affiché ; les retards de tous restent visibles.
+
 ## [2.313.0] — L'accueil parent dit d'abord quoi faire
 - **À faire en priorité** : en haut de l'accueil, le montant à régler pour chaque enfant et un bouton **Payer** qui ouvre ses paiements. Le chiffre est calculé comme dans la rubrique Paiements. Une ligne compacte par enfant dès qu'il y en a deux. Rien à régler : le bloc n'apparaît pas.
 - **Pas de double paiement** : un paiement déclaré qui attend l'école est signalé, et le bouton devient **Voir les paiements**.
