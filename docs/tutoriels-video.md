@@ -12,7 +12,7 @@ Pour chaque vidéo : ce qu'il faut préparer, puis le déroulé plan par plan �
 
 ### 1. Filmez sur l'école de démonstration, jamais sur une vraie école
 
-Une vidéo circule : on ne doit y voir **ni le nom, ni la photo, ni les paiements d'un vrai enfant**. Utilisez l'école **TutTank_Demo** (ou créez-en une autre de démonstration) et remplissez-la avec des élèves fictifs. Vérifiez chaque plan avant de publier : une notification ou un nom réel peut passer à l'écran.
+Une vidéo circule : on ne doit y voir **ni le nom, ni la photo, ni les paiements d'un vrai enfant**. Utilisez l'école **KEUR CHEIKH ANTA** (ou créez-en une autre de démonstration) et remplissez-la avec des élèves fictifs. Vérifiez chaque plan avant de publier : une notification ou un nom réel peut passer à l'écran.
 
 Préparez sur l'école de démonstration :
 - deux ou trois classes (CI A, CM1 A…) et une dizaine d'élèves fictifs ;

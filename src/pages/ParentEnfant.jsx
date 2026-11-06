@@ -534,9 +534,22 @@ function Notes({ notes, lienBulletins }) {
                 Moyenne générale : voir le bulletin
               </Link>
             </div>
-            {/* Sur téléphone, le tableau défile horizontalement s'il déborde ;
-                la zone est atteignable au clavier pour défiler aussi. */}
-            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Notes — ${periode}`}>
+            {/*  Sur téléphone, une matière par ligne : le parent lit la moyenne
+                 sans faire glisser un tableau. */}
+            <ul aria-label={`Notes — ${periode}`} className="divide-y divide-navy-900/5 px-4 sm:hidden">
+              {matieres.map(([matiere, m]) => (
+                <li key={matiere} className="py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 font-medium text-navy-900">{matiere}</span>
+                    <span className="shrink-0 font-mono font-semibold text-navy-900">{m.sC ? (m.sN / m.sC).toFixed(2) : "—"}/20</span>
+                  </div>
+                  <p className="mt-1 font-mono text-xs text-navy-900/70">
+                    {m.notes.map((x) => `${x.valeur}/${x.bareme}`).join(" · ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block" tabIndex={0} role="region" aria-label={`Notes — ${periode}`}>
               <table className="w-full min-w-[18rem] text-left text-sm">
                 <caption className="sr-only">Notes de la période {periode}, et moyenne provisoire par matière sur 20</caption>
                 <thead className="bg-navy-900/[0.03] text-navy-900/60">
