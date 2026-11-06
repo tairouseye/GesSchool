@@ -5,6 +5,10 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.312.0] — Les notes lisibles sur téléphone
+- **Espace parent** : sur téléphone, chaque matière tient sur une ligne, avec sa moyenne visible d'emblée. Plus de tableau à faire glisser ; il reste sur ordinateur.
+- **Démonstration** : l'école de démo s'appelle KEUR CHEIKH ANTA et porte le logo Gespro (changement fait en base, sans migration).
+
 ## [2.311.0] — L'accueil du responsable pédagogique et du comptable
 - **Responsable pédagogique** : ce qui demande une décision d'abord, l'école aujourd'hui à côté, puis Absences du jour, Bulletins, Écrire une annonce, Messages.
 - **Comptable** : Encaisser, Voir les impayés, Saisir une dépense, puis ce qui attend et les chiffres clés.
