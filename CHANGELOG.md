@@ -5,6 +5,13 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.313.0] — L'accueil parent dit d'abord quoi faire
+- **À faire en priorité** : en haut de l'accueil, le montant à régler pour chaque enfant et un bouton **Payer** qui ouvre ses paiements. Le chiffre est calculé comme dans la rubrique Paiements. Une ligne compacte par enfant dès qu'il y en a deux. Rien à régler : le bloc n'apparaît pas.
+- **Pas de double paiement** : un paiement déclaré qui attend l'école est signalé, et le bouton devient **Voir les paiements**.
+- **Le cours du moment** sur chaque carte d'enfant : en cours, ou le prochain de la journée.
+- **L'inscription n'est plus comptée comme un mois** : « Frais d'inscription et 2 mois à payer » au lieu de « 3 mois à payer », sur la pastille aussi.
+- **Le nom de l'école s'affiche en entier** sur téléphone : Déconnexion est sous **Plus**, et ne le coupe plus.
+
 ## [2.312.0] — Les notes lisibles sur téléphone
 - **Espace parent** : sur téléphone, chaque matière tient sur une ligne, avec sa moyenne visible d'emblée. Plus de tableau à faire glisser ; il reste sur ordinateur.
 - **Démonstration** : l'école de démo s'appelle KEUR CHEIKH ANTA et porte le logo Gespro (changement fait en base, sans migration).
