@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { mesEnfants, lierParent, enfantEcheancier, enfantFactures } from "@/lib/parent.js";
+import { mesEnfants, lierParent, enfantEcheancier, enfantFactures, enfantDeclarations, enfantEmploi } from "@/lib/parent.js";
 import { annoncesEnfant } from "@/lib/annonces.js";
-import { pastillePaiement, derniereAnnonce, couleurEnfant, ageEnfant, TONS_PASTILLE } from "@/lib/accueilParent.js";
+import { pastillePaiement, aPayerAccueil, prochainCours, derniereAnnonce, couleurEnfant, ageEnfant, TONS_PASTILLE } from "@/lib/accueilParent.js";
 import { lienWhatsApp } from "@/lib/recouvrement.js";
-import { Alerte, Bouton, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
+import { Alerte, Bouton, Carte, Champ, Modale, EtatVide, SkeletonListe } from "@/composants/ui.jsx";
 import { useToast } from "@/composants/Feedback.jsx";
 import Photo from "@/composants/Photo.jsx";
 
@@ -23,6 +23,7 @@ const ICONE_MESSAGE = <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9h8M8 12h5" /
 const ICONE_WHATSAPP = <><path d="M4 20l1.3-4A8 8 0 1 1 8 18.8z" /><path d="M9 9.5c.3 2 1.8 3.8 4 4.5l1.2-1.2 2 .8-.4 1.8c-3.6.4-7.4-3.2-7-7l1.8-.4.8 2z" /></>;
 const ICONE_ALERTE = <><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7" /><path d="M10 20a2 2 0 0 0 4 0" /></>;
 const dateAnnonce = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
 
 export default function ParentAccueil() {
   const toast = useToast();
@@ -30,7 +31,7 @@ export default function ParentAccueil() {
   const [erreur, setErreur] = useState("");
   const [chargement, setChargement] = useState(true);
   const [modale, setModale] = useState(false);
-  //  Par enfant : { echeancier, factures, annonces } — chacun peut manquer
+  //  Par enfant : { echeancier, factures, annonces, declarations, emploi } — chacun peut manquer
   //  (rubrique en panne) sans empêcher la carte de s'afficher.
   const [details, setDetails] = useState({});
   const lecture = useRef(0);
@@ -47,11 +48,11 @@ export default function ParentAccueil() {
       setEnfants(liste);
       setEchec(false);
       liste.forEach((e) => {
-        Promise.allSettled([enfantEcheancier(e.eleve_id), enfantFactures(e.eleve_id), annoncesEnfant(e.eleve_id)])
-          .then(([ech, fac, ann]) => {
+        Promise.allSettled([enfantEcheancier(e.eleve_id), enfantFactures(e.eleve_id), annoncesEnfant(e.eleve_id), enfantDeclarations(e.eleve_id), enfantEmploi(e.eleve_id)])
+          .then(([ech, fac, ann, dec, edt]) => {
             if (n !== lecture.current) return;
             const v = (r) => (r.status === "fulfilled" ? r.value : undefined);
-            setDetails((d) => ({ ...d, [e.eleve_id]: { echeancier: v(ech), factures: v(fac), annonces: v(ann) } }));
+            setDetails((d) => ({ ...d, [e.eleve_id]: { echeancier: v(ech), factures: v(fac), annonces: v(ann), declarations: v(dec), emploi: v(edt) } }));
           });
       });
     } catch (e) {
@@ -75,6 +76,12 @@ export default function ParentAccueil() {
   const whatsapp = !plusieursEcoles && enfants[0]?.telephone_ecole
     ? lienWhatsApp(enfants[0].telephone_ecole, "Bonjour, je vous écris depuis l'espace parent.") : null;
   const enfantAnnonce = annonce && enfants.find((e) => (details[e.eleve_id]?.annonces || []).some((a) => a.id === annonce.id));
+  //  Une ligne par enfant, jamais un total : deux enfants peuvent être dans
+  //  deux écoles, avec deux devises.
+  const priorites = enfants.flatMap((e) => {
+    const p = aPayerAccueil(details[e.eleve_id]);
+    return p ? [{ enfant: e, ...p }] : [];
+  });
 
   return (
     <div className="space-y-5">
@@ -94,6 +101,16 @@ export default function ParentAccueil() {
         </EtatVide>
       ) : (
         <>
+          {/*  CE QUI DEMANDE UN GESTE, D'ABORD (maquette du 06/11/2026). Rien à
+               faire : le bloc n'existe pas, l'accueil reste celui d'un parent
+               tranquille. */}
+          {priorites.length > 0 && (
+            <section aria-labelledby="titre-priorites" className="space-y-2.5">
+              <h2 id="titre-priorites" className="font-display text-lg font-bold text-navy-900">À faire en priorité</h2>
+              {priorites.map((p) => <CartePriorite key={p.enfant.eleve_id} {...p} compact={priorites.length > 1} />)}
+            </section>
+          )}
+
           {/* Les deux gestes les plus demandés, nommés par ce qu'ils font. */}
           <div className="grid grid-cols-2 gap-2.5">
             <Geste to="/parent/messages" fond="bg-sky-50" trait="stroke-sky-600" titre="Écrire à l'école" sous="Direction, enseignants, caisse" icone={ICONE_MESSAGE} />
@@ -142,6 +159,45 @@ export default function ParentAccueil() {
   );
 }
 
+//  Le montant d'un enfant et le bouton qui mène à ses paiements. Un paiement
+//  déclaré attend la caisse : on le dit, et le bouton ne pousse plus à payer.
+//  `compact` : dès deux enfants, une ligne chacun. Deux grandes cartes
+//  repoussaient « Mes enfants » sous le bas de l'écran.
+function CartePriorite({ enfant: e, montant, texte, declaree, compact }) {
+  const lien = {
+    to: `/parent/enfant/${e.eleve_id}/paiements`,
+    onClick: () => ecrire(e.eleve_id),
+    "aria-label": `${declaree ? "Voir les paiements" : "Payer"} de ${e.prenom}`,
+  };
+  const tonLien = declaree ? "border border-navy-900/15 text-navy-900" : "bg-navy-900 text-creme";
+  const attente = "Votre paiement déclaré attend la validation de l'école.";
+  if (compact) {
+    return (
+      <Carte className="flex items-center gap-3 border-l-4 border-l-or-500 p-3">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-navy-900/70">{e.prenom}</span>
+          <span className="block font-display text-xl font-bold text-navy-900">{fmt(montant)} <span className="text-xs font-semibold">{e.devise || "XOF"}</span></span>
+          <span className="block text-xs text-navy-900/70">{declaree ? attente : texte}</span>
+        </span>
+        <Link {...lien} className={`flex min-h-11 shrink-0 items-center rounded-xl px-4 text-sm font-semibold ${tonLien}`}>
+          {declaree ? "Voir" : "Payer"}
+        </Link>
+      </Carte>
+    );
+  }
+  return (
+    <Carte className="border-t-4 border-t-or-500 p-4">
+      <p className="text-sm font-semibold text-navy-900/70">Frais de scolarité de {e.prenom}</p>
+      <p className="mt-1 font-display text-3xl font-bold text-navy-900">{fmt(montant)} <span className="text-sm font-semibold">{e.devise || "XOF"}</span></p>
+      <p className="mt-0.5 text-sm text-navy-900/70">{texte}</p>
+      {declaree && <p className="mt-2 rounded-lg bg-or-500/10 px-3 py-2 text-sm text-navy-900">{attente}</p>}
+      <Link {...lien} className={`mt-3 flex min-h-12 items-center justify-center rounded-xl text-sm font-semibold ${tonLien}`}>
+        {declaree ? "Voir les paiements" : "Payer"}
+      </Link>
+    </Carte>
+  );
+}
+
 // Un geste de l'accueil : un lien dans l'appli, ou vers WhatsApp.
 function Geste({ to, href, fond, trait, titre, sous, icone }) {
   const contenu = (
@@ -168,6 +224,7 @@ function CarteEnfant({ enfant: e, detail, avecEcole }) {
   const pastille = detail ? pastillePaiement(detail.echeancier, detail.factures) : null;
   const initiales = `${(e.prenom?.[0] || "").toUpperCase()}${(e.nom?.[0] || "").toUpperCase()}`;
   const age = ageEnfant(e.date_naissance);
+  const cours = prochainCours(detail?.emploi);
   return (
     <Link to={`/parent/enfant/${e.eleve_id}`} onClick={() => ecrire(e.eleve_id)}
       className={`flex min-h-[4.5rem] items-center gap-3 rounded-[1.4rem] p-3.5 text-navy-900 transition active:scale-[.98] ${clair}`}>
@@ -186,6 +243,7 @@ function CarteEnfant({ enfant: e, detail, avecEcole }) {
           {e.classe && <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-navy-900/80">{e.classe}</span>}
           {pastille && <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${pastille.ton === "neutre" ? "bg-white text-navy-900/70" : TONS_PASTILLE[pastille.ton]}`}>{pastille.texte}</span>}
         </span>
+        {cours && <span className="mt-1 block truncate text-xs font-medium text-navy-900/70">{cours}</span>}
         {avecEcole && e.ecole && <span className="mt-1 block truncate text-xs text-navy-900/60">{e.ecole}</span>}
       </span>
       {age != null && (

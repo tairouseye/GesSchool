@@ -161,7 +161,8 @@ export default function ParentLayout() {
            ne paraît qu'à partir de 520 px — le sceau reste, et mène toujours
            à l'accueil. 320 px : 32 + 36 + 8 + 5 × 40 + 4 × 4 = 292 px.
            Sous 1024 px, ces commandes sont dans les onglets du bas : il ne
-           reste ici que le sceau, la marque et le choix de l'enfant. */}
+           reste ici que le sceau, la marque et le choix de l'enfant. Déconnexion
+           est sous « Plus » : ici, le bouton coupait le nom de l'école. */}
       <header ref={entete} onFocus={() => setMasque(false)}
         className={`z-30 flex items-center justify-between gap-2 border-b border-navy-900/10 bg-white px-4 py-2 text-navy-900 max-lg:sticky max-lg:top-0 motion-safe:transition-transform motion-safe:duration-300 sm:px-6 sm:py-3 ${masque ? "max-lg:-translate-y-full" : ""}`}>
         {/*  L'ÉCOLE D'ABORD (écrans de Mme Kane, 05/11/2026) : le parent
@@ -176,10 +177,6 @@ export default function ParentLayout() {
           </span>
         </Link>
         <div className="flex min-w-0 shrink-0 items-center gap-1 text-sm sm:gap-2">
-          {surAccueil && (
-            <button type="button" onClick={deconnexion}
-              className="min-h-10 rounded-full bg-navy-900/5 px-3.5 text-xs font-bold text-navy-900 lg:hidden">Déconnexion</button>
-          )}
           {/*  Choix de l'enfant, dès qu'il y en a deux : sans revenir à
                l'accueil, et en restant sur la même rubrique. */}
           {enfantAffiche && enfants.length > 1 && (
