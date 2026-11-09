@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.317 · mise à jour du 9 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.318 · mise à jour du 9 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -578,6 +578,8 @@ La facturation en lot et le paiement anticipé appliquent ce tarif : un élève 
 > **Mettez une date d'échéance.** Sans elle, une facture impayée n'est jamais comptée « en retard » (§19) et n'entre pas dans les relances. L'application ne devine pas une échéance que vous n'avez pas donnée.
 
 ### 10.3 Encaisser
+
+> **Les mois pas encore facturés se règlent dans la même fenêtre** (version 2.318). Après le choix de l'élève, **Encaisser** montre ses factures ouvertes, puis **les mois sans facture** : ceux qui sont en retard et le mois en cours sont cochés d'office (« Octobre 2026 · en retard »). Cocher un mois coche ceux d'avant ; la facture du mois est créée **déjà réglée**, et le reçu s'imprime comme d'habitude. On règle une facture **ou** des mois, pas les deux à la fois. Un mois déjà couvert par une facture ouverte (même sans mois, comme « Scolarité (3 mois) ») n'est pas proposé : il ne peut pas être facturé deux fois.
 
 Cliquez une facture : vous voyez son détail, ses encaissements, et un **reçu imprimable** avec le logo de l'école.
 

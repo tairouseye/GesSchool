@@ -5,6 +5,12 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.318.0] — La caisse règle aussi les mois pas encore facturés
+Migration 234.
+- **Encaisser** : après le choix de l'élève, la fenêtre montre ses factures ouvertes **et les mois sans facture**. Les mois en retard et le mois en cours sont cochés d'office ; la facture du mois naît réglée, le reçu s'imprime comme d'habitude. Avant, une famille en retard sur un mois non facturé ressortait « rien à régler », et il fallait passer par « Plus → Encaisser une avance ».
+- **Pas de double facturation** (mig. 234) : un mois couvert par une facture de scolarité sans mois encore ouverte (« Scolarité (3 mois) ») n'est plus proposé, ni à la caisse ni au parent. Les montants dus ne changent pas.
+- **En-têtes parent et étudiant** : des icônes au trait (messages, alertes, aide, compte) à la place des emoji.
+
 ## [2.317.0] — L'espace école, plus direct
 Pistes 2 à 6 du test côté école du 9 novembre 2026. Migration 233.
 - **« En retard » veut dire la même chose partout** (mig. 233) : un mois échu et non payé, ou une facture échue hors scolarité. Le statut de la Situation des paiements et le compte de l'accueil donnent le même nombre d'élèves.
