@@ -296,6 +296,27 @@ export function libelleMois(mois) {
   return nom ? `${nom[0].toUpperCase()}${nom.slice(1)} ${m[1]}` : null;
 }
 
+// Les mois facturables de l'année ("AAAA-MM"), du premier mois jusqu'au
+// dernier mois de mensualité (mig. 211), sinon la fin de l'année.
+export function moisFacturables(annee) {
+  if (!annee?.date_debut || !annee?.date_fin) return [];
+  const fin = (annee.fin_facturation || annee.date_fin).slice(0, 7);
+  const out = [];
+  let [a, m] = annee.date_debut.slice(0, 7).split("-").map(Number);
+  for (let i = 0; i < 24; i++) {
+    const cle = `${a}-${String(m).padStart(2, "0")}`;
+    if (cle > fin) break;
+    out.push(cle);
+    if (++m > 12) { m = 1; a += 1; }
+  }
+  return out;
+}
+
+// Le libellé d'un mois de frais mensuel, EXACTEMENT celui de l'échéancier
+// (mig. 210) : « Frais de scolarité — Octobre 2026 ». C'est par ce libellé
+// qu'un mois est reconnu payé ; sans le mois, il resterait « en retard ».
+export const libelleMensuel = (libelle, mois) => `${libelle} — ${libelleMois(mois)}`;
+
 // Génère une facture par élève à partir d'une liste de frais.
 // - Frais MENSUEL (recurrent) : facturé POUR LE MOIS choisi ; son libellé porte
 //   le mois (« Scolarité — Octobre 2026 ») → facturable chaque mois, une seule

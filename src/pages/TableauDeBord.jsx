@@ -82,7 +82,6 @@ function TableauGestion() {
   //  Une action n'est proposée que si l'écran qui la traite est ouvert à ce
   //  rôle et que le module est actif : un bouton qui mène à un refus ne sert à rien.
   const ouvert = (cle) => peutVoir(roles, cle) && moduleActif(modulesActifs, cle);
-  const reste = stats ? stats.totalFacture - stats.totalPaye : 0;
 
   const aTraiter = aTraiterGestion({ stats, demandes, aSigner, adoption, ouvert });
 
@@ -133,10 +132,10 @@ function TableauGestion() {
             valeur={stats && `${stats.tauxRecouvrement.toFixed(0)} %`}
             tonValeur={stats && stats.tauxRecouvrement >= 80 ? "text-emerald-700" : stats && stats.tauxRecouvrement >= 60 ? "text-or-600" : "text-rose-700"}
             barre={stats?.tauxRecouvrement}
-            ligne={stats && <span className="text-navy-900/55">{fmtMontant(stats.totalPaye)} encaissés sur {fmtMontant(stats.totalFacture)} {devise}</span>} />
+            ligne={stats && <span className="text-navy-900/55">{fmtMontant(stats.totalPaye)} encaissés sur {fmtMontant(stats.totalFacture)} {devise} dus à ce jour</span>} />
           <Chiffre chargement={chargement} label="Impayés en retard" icone="!" ton="rouge"
             valeur={stats && fmtMontant(stats.retardMontant)} suffixe={devise} tonValeur={stats?.retardMontant > 0 ? "text-rose-700" : "text-navy-900"}
-            ligne={stats && <span className="text-navy-900/55">{pl(stats.nbEnRetard, "élève")} · reste total {fmtMontant(reste)} {devise}</span>} />
+            ligne={stats && <span className="text-navy-900/55">{pl(stats.nbEnRetard, "élève")} · reste de l'année {fmtMontant(stats.resteAnnee)} {devise}</span>} />
         </div>
 
         {/* L'année, comparée à la précédente · agenda */}

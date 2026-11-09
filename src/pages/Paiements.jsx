@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import SelecteurEleve from "@/composants/SelecteurEleve.jsx";
@@ -901,17 +901,38 @@ function PanneauMobile({ infos, identite, onSave, onSaveIdentite, ecoleStyle }) 
 function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, frais, devise, onCree, onErreur }) {
   const [eleveId, setEleveId] = useState("");
   const [echeance, setEcheance] = useState("");
-  const [lignes, setLignes] = useState([{ libelle: "", quantite: "1", prix_unitaire: "", frais_id: "" }]);
+  const [lignes, setLignes] = useState([{ libelle: "", quantite: "1", prix_unitaire: "", frais_id: "", mois: "" }]);
   const [enCours, setEnCours] = useState(false);
 
   const total = lignes.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prix_unitaire) || 0), 0);
   const majLigne = (i, patch) => setLignes((s) => s.map((l, j) => (j === i ? { ...l, ...patch } : l)));
-  const ajouterLigne = () => setLignes((s) => [...s, { libelle: "", quantite: "1", prix_unitaire: "", frais_id: "" }]);
+  const ajouterLigne = () => setLignes((s) => [...s, { libelle: "", quantite: "1", prix_unitaire: "", frais_id: "", mois: "" }]);
   const retirerLigne = (i) => setLignes((s) => s.filter((_, j) => j !== i));
 
+  //  ⚠️ UN FRAIS MENSUEL SE FACTURE POUR UN MOIS (test du 09/11/2026) :
+  //  « Frais de scolarité » sans mois était encaissé, mais l'échéancier ne
+  //  reconnaissait aucun mois payé — la famille restait « en retard » chez
+  //  la direction et chez le parent. Le mois est demandé, le libellé suit.
+  const moisAnnee = useMemo(() => api.moisFacturables(annee), [annee]);
+  const estMensuel = (l) => !!frais.find((x) => x.id === l.frais_id)?.recurrent;
   function choisirFrais(i, fraisId) {
     const fr = frais.find((x) => x.id === fraisId);
-    majLigne(i, fr ? { frais_id: fr.id, libelle: fr.libelle, prix_unitaire: String(fr.montant) } : { frais_id: "" });
+    majLigne(i, fr ? { frais_id: fr.id, libelle: fr.libelle, prix_unitaire: String(fr.montant), quantite: "1", mois: "" }
+                   : { frais_id: "", mois: "" });
+  }
+  function choisirMois(i, mois) {
+    const fr = frais.find((x) => x.id === lignes[i].frais_id);
+    majLigne(i, { mois, libelle: fr && mois ? api.libelleMensuel(fr.libelle, mois) : fr?.libelle || lignes[i].libelle });
+  }
+  //  Le mois suivant du même frais, en une touche.
+  function moisSuivant(i) {
+    const l = lignes[i], fr = frais.find((x) => x.id === l.frais_id);
+    const pris = new Set(lignes.filter((x) => x.frais_id === l.frais_id).map((x) => x.mois));
+    const prochain = moisAnnee.find((m) => m > l.mois && !pris.has(m));
+    if (!fr || !prochain) return;
+    setLignes((s) => [...s.slice(0, i + 1),
+      { libelle: api.libelleMensuel(fr.libelle, prochain), quantite: "1", prix_unitaire: l.prix_unitaire, frais_id: fr.id, mois: prochain },
+      ...s.slice(i + 1)]);
   }
 
   async function soumettre(e) {
@@ -921,8 +942,11 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, frais, devise
     try {
       const valides = lignes.filter((l) => l.libelle.trim() && l.prix_unitaire);
       if (!eleveId || valides.length === 0) throw new Error("Choisissez un élève et au moins une ligne.");
-      await api.creerFacture(ecoleId, { eleve_id: eleveId, annee_id: annee?.id, date_echeance: echeance, lignes: valides });
-      setEleveId(""); setEcheance(""); setLignes([{ libelle: "", quantite: "1", prix_unitaire: "", frais_id: "" }]);
+      const sansMois = valides.find((l) => estMensuel(l) && !l.mois);
+      if (sansMois) throw new Error(`Choisissez le mois de « ${frais.find((x) => x.id === sansMois.frais_id)?.libelle} ».`);
+      await api.creerFacture(ecoleId, { eleve_id: eleveId, annee_id: annee?.id, date_echeance: echeance,
+        lignes: valides.map(({ mois, ...l }) => l) });
+      setEleveId(""); setEcheance(""); setLignes([{ libelle: "", quantite: "1", prix_unitaire: "", frais_id: "", mois: "" }]);
       onCree();
     } catch (er) {
       onErreur(er.message);
@@ -941,28 +965,46 @@ function ModaleNouvelleFacture({ ouvert, onFermer, ecoleId, annee, frais, devise
                n'était même PAS dans la liste, le chargement étant plafonné
                sans le dire. On tape, le serveur renvoie huit résultats. */}
           <SelecteurEleve value={eleveId} anneeId={annee?.id}
-            onChange={(id) => setEleveId(id)} label="Élève *" requis />
+            onChange={(id) => setEleveId(id)} label="Élève" requis />
           <Champ label="Échéance" type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
         </div>
 
         <div className="space-y-2">
           <p className="text-sm font-medium text-navy-900/70">Lignes</p>
-          {lignes.map((l, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <select value={l.frais_id} onChange={(e) => choisirFrais(i, e.target.value)}
-                className="w-40 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-xs outline-none focus:border-or-500">
+          {lignes.map((l, i) => {
+            const mensuel = estMensuel(l);
+            return (
+            <div key={i} className="flex flex-wrap items-end gap-2">
+              <select value={l.frais_id} onChange={(e) => choisirFrais(i, e.target.value)} aria-label="Frais"
+                className="w-56 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-xs outline-none focus:border-or-500">
                 <option value="">Frais…</option>
-                {frais.map((fr) => <option key={fr.id} value={fr.id}>{fr.libelle}</option>)}
+                {/*  Un même frais existe pour chaque niveau : la cible et le
+                     montant les distinguent. */}
+                {frais.map((fr) => <option key={fr.id} value={fr.id}>{fr.libelle} · {cibleFrais(fr)} · {fmt(fr.montant)}{fr.recurrent ? " / mois" : ""}</option>)}
               </select>
-              <input value={l.libelle} onChange={(e) => majLigne(i, { libelle: e.target.value })} placeholder="Libellé"
-                className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
-              <input value={l.quantite} onChange={(e) => majLigne(i, { quantite: e.target.value.replace(/[^0-9]/g, "") })}
+              {mensuel ? (
+                <select value={l.mois} onChange={(e) => choisirMois(i, e.target.value)} aria-label="Mois" required
+                  className={`flex-1 rounded-lg border bg-white px-3 py-2 text-sm outline-none focus:border-or-500 ${l.mois ? "border-navy-900/15" : "border-or-500"}`}>
+                  <option value="">Pour quel mois ?</option>
+                  {moisAnnee.map((m) => <option key={m} value={m}>{api.libelleMois(m)}</option>)}
+                </select>
+              ) : (
+                <input value={l.libelle} onChange={(e) => majLigne(i, { libelle: e.target.value })} placeholder="Libellé" aria-label="Libellé"
+                  className="flex-1 rounded-lg border border-navy-900/15 bg-white px-3 py-2 text-sm outline-none focus:border-or-500" />
+              )}
+              {mensuel ? (
+                <button type="button" onClick={() => moisSuivant(i)} disabled={!l.mois}
+                  className="min-h-10 rounded-lg border border-navy-900/15 px-2 text-xs font-medium text-navy-700 hover:border-or-500 disabled:opacity-40">+ mois suivant</button>
+              ) : (
+              <input value={l.quantite} onChange={(e) => majLigne(i, { quantite: e.target.value.replace(/[^0-9]/g, "") })} aria-label="Quantité"
                 className="w-14 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-center text-sm outline-none focus:border-or-500" />
+              )}
               <input value={l.prix_unitaire} onChange={(e) => majLigne(i, { prix_unitaire: e.target.value.replace(/[^0-9]/g, "") })}
                 placeholder="Prix" className="w-28 rounded-lg border border-navy-900/15 bg-white px-2 py-2 text-right font-mono text-sm outline-none focus:border-or-500" />
-              <button type="button" onClick={() => retirerLigne(i)} className="pb-2 text-navy-900/30 hover:text-rose-700">✕</button>
+              <button type="button" onClick={() => retirerLigne(i)} aria-label="Retirer la ligne" className="pb-2 text-navy-900/30 hover:text-rose-700">✕</button>
             </div>
-          ))}
+            );
+          })}
           <button type="button" onClick={ajouterLigne} className="text-sm text-navy-700 hover:text-or-500">+ Ajouter une ligne</button>
         </div>
 

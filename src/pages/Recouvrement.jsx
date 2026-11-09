@@ -8,6 +8,7 @@ import * as relancesApi from "@/lib/relances.js";
 import { getAnneeCourante } from "@/lib/academique.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
+const dateFr = (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : "");
 
 export default function Recouvrement() {
   const { ecoleId, ecole } = useAuth();
@@ -52,15 +53,15 @@ export default function Recouvrement() {
 
   const liste = impayes.filter((i) => (filtre === "retard" ? i.enRetard : true));
   const totalDu = impayes.reduce((s, i) => s + i.reste, 0);
-  const totalRetard = impayes.filter((i) => i.enRetard).reduce((s, i) => s + i.reste, 0);
+  const totalRetard = impayes.reduce((s, i) => s + i.retard, 0);
 
   // Relance WhatsApp (manuelle, lien pré-rempli)
   function relancerWhatsApp(i) {
     const c = contacts[i.eleve_id];
     const msg =
       `Bonjour, rappel de l'établissement ${ecole?.nom || ""} : ` +
-      `un solde de ${fmt(i.reste)} ${devise} reste dû pour l'élève ${i.eleve?.prenom} ${i.eleve?.nom}` +
-      `${i.echeance ? ` (échéance ${i.echeance})` : ""}. Merci de régulariser. Cordialement.`;
+      `un solde de ${fmt(i.enRetard ? i.retard : i.reste)} ${devise} reste dû pour l'élève ${i.eleve?.prenom} ${i.eleve?.nom}` +
+      `${i.echeance ? ` (échéance du ${dateFr(i.echeance)})` : ""}. Merci de régulariser. Cordialement.`;
     const lien = api.lienWhatsApp(c?.telephone, msg);
     if (lien) window.open(lien, "_blank");
     else {
@@ -125,17 +126,20 @@ export default function Recouvrement() {
 
         {/* Synthèse */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/*  Le même chiffre que l'accueil et la Situation (mig. 232) : le
+               retard d'abord ; le reste de l'année compte aussi les mois à venir. */}
           <Carte className="p-5">
-            <p className="text-sm text-navy-900/50">Total dû</p>
-            <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalDu)} <span className="text-sm font-normal">{devise}</span></p>
-          </Carte>
-          <Carte className="p-5">
-            <p className="text-sm text-navy-900/50">Dont en retard</p>
+            <p className="text-sm text-navy-900/50">En retard</p>
             <p className="mt-1 font-display text-2xl font-bold text-rose-700">{fmt(totalRetard)} <span className="text-sm font-normal">{devise}</span></p>
           </Carte>
           <Carte className="p-5">
-            <p className="text-sm text-navy-900/50">Élèves concernés</p>
-            <p className="mt-1 font-display text-2xl font-bold text-navy-900">{impayes.length}</p>
+            <p className="text-sm text-navy-900/50">Élèves en retard</p>
+            <p className="mt-1 font-display text-2xl font-bold text-navy-900">{impayes.filter((i) => i.enRetard).length}</p>
+          </Carte>
+          <Carte className="p-5">
+            <p className="text-sm text-navy-900/50">Reste de l'année</p>
+            <p className="mt-1 font-display text-2xl font-bold text-navy-900">{fmt(totalDu)} <span className="text-sm font-normal">{devise}</span></p>
+            <p className="text-xs text-navy-900/45">mois à venir compris</p>
           </Carte>
         </div>
 
@@ -178,10 +182,10 @@ export default function Recouvrement() {
                   ) },
                   { key: "echeance", label: "Échéance", render: (i) => i.echeance ? (
                     <span className={i.enRetard ? "text-danger-600" : "text-navy-900/60"}>
-                      {i.echeance}{i.enRetard && <span className="ml-1 text-xs">(+{i.joursRetard} j)</span>}
+                      {dateFr(i.echeance)}{i.enRetard && <span className="ml-1 text-xs">· {i.joursRetard} jour{i.joursRetard > 1 ? "s" : ""} de retard</span>}
                     </span>
                   ) : "—" },
-                  { key: "reste", label: "Reste dû", align: "right", tdClassName: "font-semibold", render: (i) => `${fmt(i.reste)} ${devise}` },
+                  { key: "reste", label: filtre === "retard" ? "En retard" : "Reste dû", align: "right", tdClassName: "font-semibold", render: (i) => `${fmt(filtre === "retard" ? i.retard : i.reste)} ${devise}` },
                   { key: "contact", label: "Contact", hideMobile: true, render: (i) => {
                     const c = contacts[i.eleve_id];
                     return c ? (<span className="text-navy-900/60">{c.prenom} {c.nom}<div className="font-mono text-xs text-navy-900/40">{c.telephone || "—"}</div></span>) : "—";
@@ -190,7 +194,7 @@ export default function Recouvrement() {
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => relancerPush(i)} disabled={enCours === i.eleve_id}
                         className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800 disabled:opacity-50">
-                        {enCours === i.eleve_id ? "…" : "Relancer (push)"}
+                        {enCours === i.eleve_id ? "…" : "Envoyer un rappel"}
                       </button>
                       <button onClick={() => relancerWhatsApp(i)}
                         className="rounded-lg bg-success-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-success-600">
@@ -202,7 +206,7 @@ export default function Recouvrement() {
               />
             )}
             <p className="text-xs text-navy-900/40">
-              « Relancer (push) » envoie une notification + push au parent connecté.
+              « Envoyer un rappel » prévient le parent dans l'application (et sur son téléphone s'il a accepté les notifications).
               « WhatsApp » ouvre un message pré-rempli (ou le copie si aucun numéro).
             </p>
           </>

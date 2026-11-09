@@ -2,44 +2,41 @@ import { supabase } from "@/lib/supabase.js";
 
 // GesSchool — recouvrement : impayés, retards, contacts payeur.
 
-// Impayés agrégés par élève (factures avec reste > 0, hors annulées).
+// Impayés par élève, d'après l'échéancier ET les factures hors échéancier
+// (mig. 232, `impayes_annee`) : le même chiffre que l'accueil Gestion, la
+// Situation des paiements, la fiche et l'espace parent. Avant, on lisait les
+// seules factures : un mois dû sans facture n'était jamais « en retard ».
+//   retard : ce qui est échu et non payé ; reste : tout ce qui reste sur l'année.
 export async function getImpayes(ecoleId, anneeId) {
-  let q = supabase
-    .from("factures")
-    .select("id, eleve_id, montant_total, montant_paye, date_echeance, statut, eleves(prenom, nom, matricule)")
-    .eq("ecole_id", ecoleId)
-    .neq("statut", "annulee");
-  if (anneeId) q = q.eq("annee_id", anneeId);
-  const { data, error } = await q;
+  if (!anneeId) return [];
+  const { data, error } = await supabase.rpc("impayes_annee", { p_annee: anneeId });
   if (error) throw error;
+  return listeImpayes(data ?? []);
+}
 
-  const today = new Date().toISOString().slice(0, 10);
-  const parEleve = {};
-  for (const f of data ?? []) {
-    const reste = (Number(f.montant_total) || 0) - (Number(f.montant_paye) || 0);
+// La forme attendue par le Recouvrement, à partir des lignes d'`impayes_annee`.
+// Module pur, testé (test/impayes.test.mjs).
+export function listeImpayes(lignes, aujourdhui = new Date()) {
+  const liste = [];
+  for (const l of lignes) {
+    const retard = (Number(l.du) || 0) + (Number(l.hors) || 0);
+    const reste = Math.max(Number(l.reste) || 0, retard);
     if (reste <= 0) continue;
-    const e = (parEleve[f.eleve_id] ||= {
-      eleve_id: f.eleve_id,
-      eleve: f.eleves,
-      total: 0, paye: 0, reste: 0,
-      nbFactures: 0, echeance: null, enRetard: false,
+    const enRetard = retard > 0;
+    const echeance = enRetard ? l.depuis || null : l.prochaine || null;
+    liste.push({
+      eleve_id: l.eleve_id,
+      eleve: { prenom: l.prenom, nom: l.nom, matricule: l.matricule },
+      classe: l.classe || "",
+      paye: Number(l.paye) || 0,
+      retard, reste, enRetard, echeance,
+      joursRetard: enRetard && echeance
+        ? Math.max(0, Math.floor((aujourdhui.getTime() - new Date(echeance).getTime()) / 86400000))
+        : 0,
     });
-    e.total += Number(f.montant_total) || 0;
-    e.paye += Number(f.montant_paye) || 0;
-    e.reste += reste;
-    e.nbFactures += 1;
-    if (f.date_echeance && (!e.echeance || f.date_echeance < e.echeance)) e.echeance = f.date_echeance;
-    if (f.date_echeance && f.date_echeance < today) e.enRetard = true;
   }
-  const liste = Object.values(parEleve);
-  // jours de retard (depuis l'échéance la plus ancienne)
-  for (const e of liste) {
-    e.joursRetard = e.echeance && e.enRetard
-      ? Math.floor((Date.now() - new Date(e.echeance).getTime()) / 86400000)
-      : 0;
-  }
-  // en retard d'abord, puis reste décroissant
-  liste.sort((a, b) => Number(b.enRetard) - Number(a.enRetard) || b.reste - a.reste);
+  // en retard d'abord, puis le plus gros retard
+  liste.sort((a, b) => Number(b.enRetard) - Number(a.enRetard) || b.retard - a.retard || b.reste - a.reste);
   return liste;
 }
 

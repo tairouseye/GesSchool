@@ -53,6 +53,53 @@ export async function getStats(ecoleId, anneeId) {
   };
 }
 
+// Les impayés de l'accueil, à partir des lignes d'`impayes_annee` (mig. 232).
+//   retard  = dû et échu (échéancier + factures hors échéancier) ;
+//   taux    = ce qui est encaissé, rapporté à ce qui l'est + ce qui est en
+//             retard : la part de ce qui était dû à ce jour qui est rentrée ;
+//   echeances = les prochaines échéances (le 5 du mois pour les mensualités).
+// Module pur, testé (test/impayes.test.mjs).
+export function syntheseImpayes(lignes, { jour, dans7, dans45 }) {
+  let totalPaye = 0, retardMontant = 0, resteAnnee = 0, echeanceNb = 0, echeanceMontant = 0, nbEnRetard = 0;
+  const parDebiteur = [], parClasse = {}, parEcheance = {};
+  for (const l of lignes) {
+    const paye = Number(l.paye) || 0;
+    const retard = (Number(l.du) || 0) + (Number(l.hors) || 0);
+    totalPaye += paye; retardMontant += retard;
+    resteAnnee += Math.max(Number(l.reste) || 0, retard);
+    const c = (parClasse[l.classe || "Sans classe"] ||= { paye: 0, retard: 0 });
+    c.paye += paye; c.retard += retard;
+    if (retard > 0) {
+      nbEnRetard += 1;
+      parDebiteur.push({ nom: `${l.prenom || ""} ${l.nom || ""}`.trim() || "—", reste: retard });
+    }
+    const d = l.prochaine, m = Number(l.prochaine_montant) || 0;
+    if (d && d >= jour && m > 0) {
+      if (d <= dans7) { echeanceNb += 1; echeanceMontant += m; }
+      if (d <= dans45) {
+        const e = (parEcheance[d] ||= { familles: 0, montant: 0 });
+        e.familles += 1; e.montant += m;
+      }
+    }
+  }
+  const tauxDe = (paye, retard) => (paye + retard > 0 ? (paye / (paye + retard)) * 100 : 100);
+  return {
+    totalPaye, totalFacture: totalPaye + retardMontant, resteAnnee,
+    tauxRecouvrement: tauxDe(totalPaye, retardMontant),
+    retardMontant, nbEnRetard,
+    topDebiteurs: parDebiteur.sort((a, b) => b.reste - a.reste).slice(0, 5),
+    echeanceNb, echeanceMontant,
+    echeances: Object.entries(parEcheance)
+      .map(([date, e]) => ({ date, familles: e.familles, montant: e.montant }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+    // Les classes qui paient le moins, en premier.
+    classes: Object.entries(parClasse)
+      .map(([libelle, c]) => ({ libelle, reste: c.retard, taux: tauxDe(c.paye, c.retard) }))
+      .filter((c) => c.reste > 0)
+      .sort((a, b) => a.taux - b.taux),
+  };
+}
+
 // --- Tableau de bord GESTION / FINANCES (responsable : comptable) ---
 // Met en avant ce qui demande une action (déclarations à valider, impayés,
 // échéances proches), la santé financière, et l'année comparée à la
@@ -68,11 +115,9 @@ export async function statsGestion(ecoleId, annee) {
   const debutMois = isoJour(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [facRes, declRes, payRes, finRes, effRes, nvRes, precRes, actPay, actIns] = await Promise.all([
-    anneeId
-      ? supabase.from("factures")
-          .select("eleve_id, montant_total, montant_paye, date_echeance, statut, eleves(prenom, nom, inscriptions(annee_id, classes(libelle)))")
-          .eq("ecole_id", ecoleId).eq("annee_id", anneeId).neq("statut", "annulee")
-      : Promise.resolve({ data: [] }),
+    //  Impayés élève par élève, d'après l'échéancier (mig. 232) : le même
+    //  chiffre que le Recouvrement, la Situation, la fiche et le parent.
+    anneeId ? supabase.rpc("impayes_annee", { p_annee: anneeId }) : Promise.resolve({ data: [] }),
     supabase.from("declarations_paiement").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("statut", "en_attente"),
     // Le mois en cours seulement : le jour, la semaine et les modes.
     supabase.from("paiements").select("montant, date_paiement, mode").eq("ecole_id", ecoleId).gte("date_paiement", debutMois),
@@ -89,40 +134,10 @@ export async function statsGestion(ecoleId, annee) {
       : Promise.resolve({ data: [] }),
   ]);
 
-  // Factures de l'année → recouvrement, impayés, échéances, classes.
-  let totalFacture = 0, totalPaye = 0, retardMontant = 0, echeanceNb = 0, echeanceMontant = 0;
-  const parDebiteur = {}, parClasse = {}, parEcheance = {};
-  const enRetard = new Set();
-  for (const f of facRes.data ?? []) {
-    const total = Number(f.montant_total) || 0, paye = Math.min(Number(f.montant_paye) || 0, total), reste = total - paye;
-    totalFacture += total; totalPaye += paye;
-    const insc = (f.eleves?.inscriptions || []).find((i) => i.annee_id === anneeId);
-    const classe = insc?.classes?.libelle || "Sans classe";
-    const c = (parClasse[classe] ||= { facture: 0, paye: 0 });
-    c.facture += total; c.paye += paye;
-    if (reste <= 0) continue;
-    if (f.date_echeance && f.date_echeance < jour) {
-      retardMontant += reste; enRetard.add(f.eleve_id);
-      const d = (parDebiteur[f.eleve_id] ||= { nom: `${f.eleves?.prenom || ""} ${f.eleves?.nom || ""}`.trim() || "—", reste: 0 });
-      d.reste += reste;
-    } else if (f.date_echeance && f.date_echeance >= jour) {
-      if (f.date_echeance <= dans7) { echeanceNb += 1; echeanceMontant += reste; }
-      if (f.date_echeance <= dans45) {
-        const e = (parEcheance[f.date_echeance] ||= { familles: new Set(), montant: 0 });
-        e.familles.add(f.eleve_id); e.montant += reste;
-      }
-    }
-  }
-  const topDebiteurs = Object.values(parDebiteur).sort((a, b) => b.reste - a.reste).slice(0, 5);
-  const tauxRecouvrement = totalFacture > 0 ? (totalPaye / totalFacture) * 100 : 0;
-  // Les classes qui paient le moins, en premier.
-  const classes = Object.entries(parClasse)
-    .map(([libelle, c]) => ({ libelle, reste: c.facture - c.paye, taux: c.facture > 0 ? (c.paye / c.facture) * 100 : 100 }))
-    .filter((c) => c.reste > 0)
-    .sort((a, b) => a.taux - b.taux);
-  const echeances = Object.entries(parEcheance)
-    .map(([date, e]) => ({ date, familles: e.familles.size, montant: e.montant }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  //  Sans le droit de voir les impayés (ni caisse ni « voir les impayés »),
+  //  la RPC refuse : l'accueil reste utilisable, sans ces chiffres.
+  if (facRes.error) console.warn("impayes_annee :", facRes.error.message);
+  const imp = syntheseImpayes(facRes.error ? [] : facRes.data ?? [], { jour, dans7, dans45 });
 
   // Encaissements du mois : jour, semaine, modes.
   let encJour = 0, encSemaine = 0, encMois = 0;
@@ -167,9 +182,7 @@ export async function statsGestion(ecoleId, annee) {
 
   return {
     effectif: effRes.count ?? 0, nouveaux: nvRes.count ?? 0, effectifN1: precRes?.effectif ?? null,
-    totalFacture, totalPaye, tauxRecouvrement,
-    retardMontant, nbEnRetard: enRetard.size, topDebiteurs,
-    echeanceNb, echeanceMontant, echeances, classes,
+    ...imp,
     declEnAttente: declRes.count ?? 0,
     encJour, encSemaine, encMois, encMoisN1, parMode,
     serie, annuel, activite,

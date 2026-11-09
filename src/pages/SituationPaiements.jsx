@@ -32,10 +32,11 @@ const TONS = {
   neutre: "bg-navy-900/5 text-navy-900/50 ring-navy-900/10",
 };
 
-//  Le dû d'une ligne : celui de l'échéancier (mig. 210) quand il existe —
-//  les mois dus n'y sont pas forcément facturés —, sinon le reste échu des
-//  factures (avant la 210).
-const duDe = (l) => (l.du != null ? Number(l.du) : Number(l.echu) || 0);
+//  Le dû d'une ligne : celui de l'échéancier (mig. 210) — les mois dus n'y
+//  sont pas forcément facturés — plus le reste échu des factures HORS
+//  échéancier, cantine ou transport (`echu`, mig. 232). Le même calcul que
+//  l'accueil Gestion et le Recouvrement (`impayes_annee`).
+const duDe = (l) => (Number(l.du) || 0) + (Number(l.echu) || 0);
 
 export default function SituationPaiements() {
   const { ecoleId, ecole } = useAuth();
