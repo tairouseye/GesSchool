@@ -141,10 +141,9 @@ export default function ParentAccueil() {
             </section>
           )}
 
-          <CarteAujourdhui enfant={enfant} emploi={detail?.emploi} />
-          <CarteNotes enfant={enfant} notes={detail?.notes} />
-
-          {/* Les deux gestes les plus demandés, nommés par ce qu'ils font. */}
+          {/*  Les deux gestes les plus demandés, nommés par ce qu'ils font. Juste
+               sous les priorités, pas en pied de page : le promoteur les veut à
+               portée (09/11/2026). */}
           <div className="grid grid-cols-2 gap-2.5">
             <Geste to="/parent/messages" fond="bg-sky-50" trait="stroke-sky-600" titre="Écrire à l'école" sous="Direction, enseignants, caisse" icone={ICONE_MESSAGE} />
             {whatsapp ? (
@@ -153,6 +152,9 @@ export default function ParentAccueil() {
               <Geste to="/parent/notifications" fond="bg-emerald-50" trait="stroke-emerald-700" titre="Alertes" sous="Ce que l'école vous signale" icone={ICONE_ALERTE} />
             )}
           </div>
+
+          <CarteAujourdhui enfant={enfant} emploi={detail?.emploi} />
+          <CarteNotes enfant={enfant} notes={detail?.notes} />
 
           {annonce && (
             <section aria-labelledby="titre-annonce" className="space-y-2">
