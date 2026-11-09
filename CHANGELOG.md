@@ -5,6 +5,17 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.315.0] — L'espace parent, plus simple à chaque écran
+Pistes du test du 9 novembre 2026 (démo en ligne, téléphone).
+- **Fiche de l'enfant** : chaque tuile dit ce qu'il y a dedans (« 2 mois à payer », « Maintenant : Mathématiques », « Aucune absence »…). Les rubriques les plus ouvertes en tête ; Documents, Fournitures, Programme, Cantine, Transport et Mot de passe sous **Autres rubriques**.
+- **Un seul nom par rubrique** : Paiements, Notes et bulletins, Absences et retards, partout.
+- **Paiements** : le montant en grand et **un bouton pour tout le retard** (« Payer octobre et novembre 2026 »), qui ouvre la fenêtre de paiement avec ces mois cochés ; la prochaine échéance juste dessous. Pas de bouton si un paiement déclaré attend l'école.
+- **Notes** : une note par matière, dans une pastille verte, orange ou rouge, écrite à la française (« 14,5 ») ; le détail seulement quand une matière a plusieurs notes.
+- **Emploi du temps** : les cinq jours tiennent à l'écran ; le cours du moment ressort, ceux qui sont passés sont grisés. La légende reste dans la semaine.
+- **Messages** : trois sujets prêts (absence, paiement, rendez-vous) qui pré-remplissent le message ; rien ne part sans « Envoyer ».
+- **Le nom de l'école entier** dans l'en-tête : le choix de l'enfant est passé à côté du retour. « ← Mes enfants » retiré des onglets Messages et Alertes.
+- **Petites retouches** : bandeau de démo sur une ligne ; boutons des mois du Programme et « afficher le mot de passe » à la taille d'un doigt ; titres du Programme hors capitales.
+
 ## [2.314.1] — Écrire à l'école et WhatsApp remontent
 - **Espace parent** : les deux gestes « Écrire à l'école » et « WhatsApp » reviennent juste sous « À faire en priorité », au lieu du bas de l'accueil.
 
