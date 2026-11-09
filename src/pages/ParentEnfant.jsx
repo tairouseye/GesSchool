@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useOutletContext } from "react-router-dom";
 import {
   enfantNotes, enfantFactures, enfantAbsences, enfantEmploi, enfantFournitures,
   ecolePaiementInfos, declarerPaiement, televerserPreuve, enfantDeclarations, justifierAbsenceParent,
@@ -10,8 +10,8 @@ import {
 } from "@/lib/parent.js";
 import { MOIS as MOIS_PROGRAMME } from "@/lib/programmationIEF.js";
 import { BadgeStatut } from "@/composants/Echeancier.jsx";
-import { etat as etatPaiement, resumeEcheancier, objetFacture, lignesDetail } from "@/lib/paiementStatut.js";
-import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes } from "@/lib/avance.js";
+import { etat as etatPaiement, resumeEcheancier, objetFacture, lignesDetail, libelleLigne } from "@/lib/paiementStatut.js";
+import { grouperParMois, choixParDefaut, basculerMois, totalDesMois, resumeMois, avancesCouvertes, reglerRetard } from "@/lib/avance.js";
 import {
   facturesVisibles, syntheseFactures, resteFacture, etatFacture, peutPayer, estAnnulee,
   declarationsAffichees, enAttenteParFacture, aDesRecus, recuParDefaut,
@@ -32,8 +32,8 @@ import Photo from "@/composants/Photo.jsx";
 import { enfantAcquis } from "@/lib/acquis.js";
 import { valeur as valeurAcquis } from "@/lib/acquisEchelle.js";
 import { messageErreur } from "@/lib/erreurs.js";
-import { devoirsAVenir } from "@/lib/apercuEnfant.js";
-import { pastillePaiement, couleurEnfant, ageEnfant, TONS_PASTILLE } from "@/lib/accueilParent.js";
+import { resumeRubriques, tonNote } from "@/lib/apercuEnfant.js";
+import { pastillePaiement, prochainCours, couleurEnfant, ageEnfant } from "@/lib/accueilParent.js";
 import { dateFr } from "@/lib/dates.js";
 
 const MODES_MOBILE = [["wave", "Wave"], ["orange_money", "Orange Money"], ["free_money", "Free Money"]];
@@ -53,6 +53,9 @@ export default function ParentEnfant() {
   //  fiche de l'enfant au lieu de revenir à la rubrique précédente, et aucune
   //  alerte ne pouvait mener directement à « Paiements ».
   const { id, rubrique } = useParams();
+  //  Changer d'enfant : le panneau vit dans la coque (ParentLayout). Le bouton
+  //  est ici, à côté du retour : dans l'en-tête, il coupait le nom de l'école.
+  const { choisirEnfant, nbEnfants = 0 } = useOutletContext() || {};
   const lienRubrique = (cle) => (cle ? `/parent/enfant/${id}/${cle}` : `/parent/enfant/${id}`);
   const [enfant, setEnfant] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -274,11 +277,21 @@ export default function ParentEnfant() {
     <div className="space-y-5">
       {/*  Un seul chemin, comme sur les écrans de Mme Kane : la fiche revient
           aux enfants, la rubrique revient à la fiche. */}
-      {onglet === null || inconnu ? (
-        <Link to="/parent" className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← Mes enfants</Link>
-      ) : (
-        <Link to={lienRubrique(null)} className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← {enfant?.prenom || "Mon enfant"}</Link>
-      )}
+      <div className="flex items-center justify-between gap-3">
+        {onglet === null || inconnu ? (
+          <Link to="/parent" className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← Mes enfants</Link>
+        ) : (
+          <Link to={lienRubrique(null)} className="inline-flex min-h-10 items-center text-sm font-semibold text-navy-900">← {enfant?.prenom || "Mon enfant"}</Link>
+        )}
+        {enfant && nbEnfants > 1 && choisirEnfant && (
+          <button type="button" onClick={choisirEnfant} aria-haspopup="dialog"
+            aria-label={`Changer d'enfant (actuellement ${enfant.prenom} ${enfant.nom})`}
+            className="flex min-h-10 min-w-0 max-w-[11rem] items-center gap-2 rounded-full border border-navy-900/15 bg-white px-3 text-sm font-semibold text-navy-900">
+            <span className="truncate">{enfant.prenom}</span>
+            <span aria-hidden="true" className="text-navy-900/60">▾</span>
+          </button>
+        )}
+      </div>
       <Alerte ton="erreur">{erreur}</Alerte>
       {!chargement && !inconnu && erreurInitiale && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-or-500/40 bg-or-500/10 px-4 py-3 text-sm text-or-700" role="status">
@@ -306,7 +319,8 @@ export default function ParentEnfant() {
         <>
           <BandeauEnfant enfant={enfant} eleveId={id} />
           <TuilesEnfant eleveId={id} tuiles={tuiles.filter((t) => !t.horsGrille)} badges={badges} lienRubrique={lienRubrique}
-            pastille={pastillePaiement(echeancier, factures)} accent={enfant?.couleur_secondaire} />
+            pastille={pastillePaiement(echeancier, factures)} accent={enfant?.couleur_secondaire}
+            alertes={alertes} demandesEnCours={demandesEnCours} />
         </>
       ) : (
         <>
@@ -375,64 +389,97 @@ function BandeauEnfant({ enfant, eleveId }) {
 
 // Les rubriques en tuiles, deux par ligne (écrans de Mme Kane) : le parent
 // voit tout sans faire défiler. Seul ce qui demande un geste porte une marque.
-function TuilesEnfant({ eleveId, tuiles, badges, lienRubrique, pastille, accent }) {
-  //  Seul chiffre qui ne vient pas de la fiche : les devoirs à venir.
-  const [devoirs, setDevoirs] = useState(0);
+//  ⚠️ CHAQUE TUILE DIT CE QU'IL Y A DEDANS (pistes du 09/11/2026) : onze
+//  tuiles muettes obligeaient à les ouvrir une à une pour savoir s'il y avait
+//  un devoir ou une absence. Une ligne d'état sous le titre ; une donnée qui
+//  n'a pas pu être lue ne produit AUCUNE ligne plutôt qu'une fausse.
+//  Paiements reprend la pastille de l'accueil : le même calcul, le même mot.
+const TONS_LIGNE = { rouge: "font-semibold text-rose-700", or: "font-semibold text-amber-800", vert: "font-semibold text-emerald-700" };
+function TuilesEnfant({ eleveId, tuiles, badges, lienRubrique, pastille, accent, alertes, demandesEnCours }) {
+  const [apercu, setApercu] = useState({});
   useEffect(() => {
     let vivant = true;
-    enfantCahier(eleveId)
-      .then((c) => { if (vivant) setDevoirs(devoirsAVenir(c).length); })
-      .catch(() => { /* la tuile reste sans chiffre */ });
+    setApercu({});
+    //  Lectures seules : aucune ne marque rien comme lu (jamais
+    //  `enfant_bulletins`, qui marque le bulletin « consulté »).
+    Promise.allSettled([enfantCahier(eleveId), enfantEmploi(eleveId), enfantNotes(eleveId), enfantAbsences(eleveId), annoncesEnfant(eleveId), enfantFournitures(eleveId)])
+      .then(([cahier, emploi, notes, absences, annonces, fournitures]) => {
+        if (!vivant) return;
+        const v = (r) => (r.status === "fulfilled" ? r.value || [] : undefined);
+        setApercu({ cahier: v(cahier), emploi: v(emploi), notes: v(notes), absences: v(absences), annonces: v(annonces), fournitures: v(fournitures) });
+      });
     return () => { vivant = false; };
   }, [eleveId]);
-  const nombres = { ...badges, cahier: devoirs };
+  const lignes = resumeRubriques({ ...apercu, alertes, demandesEnCours });
+  const maintenant = prochainCours(apercu.emploi);
+  if (maintenant) lignes.emploi = { texte: maintenant.replace(/^Prochain cours : /, "Ensuite : ").replace(/^En cours : /, "Maintenant : ") };
+  if (pastille) lignes.paiements = { texte: pastille.texte, ton: pastille.ton === "rouge" ? "rouge" : pastille.ton === "vert" ? "vert" : undefined };
+  //  La ligne dit déjà le nombre de devoirs : pas de pastille en double.
+  const nombres = { ...badges, cahier: 0 };
   const couleur = accent ? { color: accent } : undefined;
-  const classe = "relative flex min-h-24 flex-col gap-2 rounded-2xl border border-navy-900/10 bg-white p-3.5 text-navy-900 transition active:scale-[.98] [&:last-child:nth-child(odd)]:col-span-2";
+  const classe = "relative flex min-h-24 flex-col gap-1.5 rounded-2xl border border-navy-900/10 bg-white p-3.5 text-navy-900 transition active:scale-[.98] [&:last-child:nth-child(odd)]:col-span-2";
+  const autres = tuiles.filter((t) => t.autre);
   return (
-    <nav aria-label="Rubriques" className="grid grid-cols-2 gap-2.5">
-      {tuiles.map((t) => {
+    <nav aria-label="Rubriques" className="space-y-4">
+      <div className="grid grid-cols-2 gap-2.5">
+      {tuiles.filter((t) => !t.autre).map((t) => {
         const n = nombres[t.cle] || 0;
+        const ligne = lignes[t.cle];
         return (
           <Link key={t.cle} to={lienRubrique(t.cle)} className={classe}>
             <span style={couleur} className={accent ? "" : "text-sky-700"}><Icone name={t.icone || t.cle} className="h-7 w-7" /></span>
             <span className="text-sm font-bold leading-tight">{t.label}</span>
-            {t.cle === "paiements" && pastille && (
-              <span className={`absolute right-2 top-2 max-w-[62%] truncate rounded-full px-2 py-0.5 text-[11px] font-bold ${TONS_PASTILLE[pastille.ton]}`}>{pastille.texte}</span>
-            )}
+            {ligne && <span className={`line-clamp-2 text-xs leading-snug ${TONS_LIGNE[ligne.ton] || "text-navy-900/65"}`}>{ligne.texte}</span>}
             {n > 0 && <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold text-amber-800">{n}</span>}
           </Link>
         );
       })}
-      <Link to="/parent/compte" className={classe}>
-        <span style={couleur} className={accent ? "" : "text-sky-700"}><Icone name="parametres" className="h-7 w-7" /></span>
-        <span className="text-sm font-bold leading-tight">Mot de passe</span>
-      </Link>
+      </div>
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-navy-900/70">Autres rubriques</h3>
+        <div className="flex flex-wrap gap-2">
+          {[...autres, { cle: "_compte", label: "Mot de passe", icone: "parametres", to: "/parent/compte" }].map((t) => {
+            const n = nombres[t.cle] || 0;
+            return (
+              <Link key={t.cle} to={t.to || lienRubrique(t.cle)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-navy-900/15 bg-white px-3.5 text-sm font-semibold text-navy-900 transition active:scale-[.98]">
+                <span style={couleur} className={accent ? "" : "text-sky-700"}><Icone name={t.icone || t.cle} className="h-5 w-5" /></span>
+                {t.label}
+                {n > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold text-amber-800">{n}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </nav>
   );
 }
 
-// Les rubriques de l'enfant, dans l'ordre et sous les noms des écrans de
-// Mme Kane (05/11/2026), qui connaît ses parents.
+// Les rubriques de l'enfant, DANS L'ORDRE DE L'USAGE (pistes du 09/11/2026,
+// choix du promoteur) : ce que les parents ouvrent le plus en tête, le reste
+// sous « Autres rubriques » (`autre`). Les noms sont ceux de l'accueil :
+// « Suivi paiements » ici et « Paiements » là-bas désignaient la même page.
+// L'ordre précédent reprenait les écrans de Mme Kane (05/11/2026).
 const TUILES = [
-  { cle: "paiements",   label: "Suivi paiements" },
-  { cle: "emploi",      label: "Emploi du temps" },
-  { cle: "fournitures", label: "Fournitures" },
-  { cle: "programme",   label: "Programme", icone: "programmation" },
-  { cle: "cahier",      label: "Cahier de textes" },
-  { cle: "notes",       label: "Notes / bulletins" },
+  { cle: "paiements",   label: "Paiements" },
+  { cle: "notes",       label: "Notes et bulletins" },
   //  ⚠️ Au préscolaire on n'évalue pas, on OBSERVE : cette tuile remplace
   //  « Notes » pour les plus petits. Elle n'apparaît que si l'école a
   //  réellement enregistré des observations — une tuile vide inquiéterait
   //  un parent sans rien lui apprendre (mig. 172).
   { cle: "acquis",      label: "Suivi des acquis" },
+  { cle: "emploi",      label: "Emploi du temps" },
+  { cle: "absences",    label: "Absences et retards" },
+  { cle: "cahier",      label: "Cahier de textes" },
+  { cle: "annonces",    label: "Annonces" },
   //  Pas de tuile : on y va depuis les Notes. L'adresse reste valable, les
   //  alertes « bulletin publié » y mènent.
   { cle: "bulletins",   label: "Bulletins", horsGrille: true },
-  { cle: "absences",    label: "Absences / Retards" },
-  { cle: "documents",   label: "Documents" },
-  { cle: "annonces",    label: "Annonces" },
-  { cle: "cantine",     label: "Cantine" },
-  { cle: "transport",   label: "Transport" },
+  { cle: "documents",   label: "Documents", autre: true },
+  { cle: "fournitures", label: "Fournitures", autre: true },
+  { cle: "programme",   label: "Programme", icone: "programmation", autre: true },
+  { cle: "cantine",     label: "Cantine", autre: true },
+  { cle: "transport",   label: "Transport", autre: true },
 ];
 
 // (icônes fournies par le composant partagé @/composants/Icones.jsx)
@@ -509,6 +556,11 @@ function ErreurRubrique({ message, onReessayer }) {
 // exclues — mig. 208) : elle est exacte, mais PROVISOIRE tant que la période
 // n'est pas close, et exprimée sur 20 (le bulletin peut utiliser un autre
 // barème).
+//  « 14,5 » et non « 14.50 » : la virgule, comme sur le bulletin.
+const nombreFr = (v) => String(Math.round(Number(v) * 100) / 100).replace(".", ",");
+const moyenneFr = (m) => (m.sC ? nombreFr(m.sN / m.sC) : "—");
+const TONS_NOTE = { rouge: "bg-rose-100 text-rose-800", or: "bg-amber-100 text-amber-800", vert: "bg-emerald-100 text-emerald-800" };
+
 function Notes({ notes, lienBulletins }) {
   if (notes.length === 0) return <Carte className="p-6 text-sm text-navy-900/50">Aucune note pour l&apos;instant.</Carte>;
   const parPeriode = {};
@@ -530,22 +582,27 @@ function Notes({ notes, lienBulletins }) {
           <Carte key={periode} className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-navy-900/10 px-4 py-3 sm:px-6">
               <h3 className="font-display font-semibold text-navy-900">{periode}</h3>
-              <Link to={lienBulletins} className="text-xs font-medium text-navy-700 underline-offset-2 hover:text-or-600 hover:underline">
+              <Link to={lienBulletins} className="inline-flex min-h-11 items-center text-xs font-medium text-navy-700 underline-offset-2 hover:text-or-600 hover:underline">
                 Moyenne générale : voir le bulletin
               </Link>
             </div>
             {/*  Sur téléphone, une matière par ligne : le parent lit la moyenne
-                 sans faire glisser un tableau. */}
+                 sans faire glisser un tableau. Le détail n'apparaît que s'il
+                 apprend quelque chose (plusieurs notes) : « 15/20 » répété
+                 deux fois n'en apprenait rien. La couleur double le chiffre,
+                 sans jamais le remplacer. */}
             <ul aria-label={`Notes — ${periode}`} className="divide-y divide-navy-900/5 px-4 sm:hidden">
               {matieres.map(([matiere, m]) => (
                 <li key={matiere} className="py-3">
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0 font-medium text-navy-900">{matiere}</span>
-                    <span className="shrink-0 font-mono font-semibold text-navy-900">{m.sC ? (m.sN / m.sC).toFixed(2) : "—"}/20</span>
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-sm font-bold ${m.sC ? TONS_NOTE[tonNote(m.sN / m.sC)] : "text-navy-900"}`}>{moyenneFr(m)}/20</span>
                   </div>
-                  <p className="mt-1 font-mono text-xs text-navy-900/70">
-                    {m.notes.map((x) => `${x.valeur}/${x.bareme}`).join(" · ")}
-                  </p>
+                  {m.notes.length > 1 && (
+                    <p className="mt-1 font-mono text-xs text-navy-900/70">
+                      Notes : {m.notes.map((x) => `${nombreFr(x.valeur)}/${nombreFr(x.bareme)}`).join(" · ")}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -566,7 +623,7 @@ function Notes({ notes, lienBulletins }) {
                       <td className="px-4 py-2 font-mono text-xs text-navy-900/70 sm:px-6">
                         {m.notes.map((x) => `${x.valeur}/${x.bareme}`).join(" · ")}
                       </td>
-                      <td className="px-4 py-2 text-right font-mono sm:px-6">{m.sC ? (m.sN / m.sC).toFixed(2) : "—"}</td>
+                      <td className="px-4 py-2 text-right font-mono sm:px-6">{moyenneFr(m)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -616,33 +673,45 @@ function Emploi({ creneaux, enfant }) {
   const teinte = (c) => TEINTES_MATIERES[matieres.indexOf(c.couleur || c.titre) % TEINTES_MATIERES.length];
   const duJour = lignes.filter((c) => Number(c.jour) === jour)
     .sort((a, b) => String(a.heure_debut).localeCompare(String(b.heure_debut)));
+  //  Aujourd'hui seulement : le cours en cours ressort, ceux qui sont passés
+  //  s'effacent. Un autre jour se lit en entier.
+  const d = new Date();
+  const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const moment = (c) => (jour !== aujourdhui ? null
+    : heure(c.heure_fin) <= hm ? "passe" : heure(c.heure_debut) <= hm ? "encours" : null);
   return (
     <div className="space-y-3">
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Jour">
+      {/*  Jours abrégés : les cinq (ou six) tiennent à l'écran. « Vendredi »
+           était coupé à droite et demandait de faire glisser la rangée. */}
+      <div className="flex gap-1.5" role="group" aria-label="Jour">
         {jours.map(([n, nom]) => (
           <button key={n} type="button" onClick={() => setJour(n)} aria-pressed={n === jour}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-bold ${n === jour ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900"}`}>
-            {nom}{n === aujourdhui ? " ·" : ""}
+            aria-label={n === aujourdhui ? `${nom}, aujourd'hui` : nom}
+            className={`relative min-h-11 min-w-0 flex-1 rounded-full text-sm font-bold ${n === jour ? "bg-navy-900 text-creme" : "border border-navy-900/15 bg-white text-navy-900"}`}>
+            {nom.slice(0, 3)}
+            {n === aujourdhui && <span aria-hidden="true" className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-or-500" />}
           </button>
         ))}
       </div>
       <Carte className="divide-y divide-navy-900/5 px-4 py-1">
-        {duJour.map((c, i) => (
-          <div key={i} className="grid grid-cols-[6.5rem_1fr] items-center gap-3 py-3 text-sm">
-            <b className="tabular-nums text-navy-900">{heure(c.heure_debut)} – {heure(c.heure_fin)}</b>
-            {c.pause ? <span className="italic text-navy-900/55">{c.titre === "—" ? "Pause" : c.titre}</span> : (
-              <span className="border-l-4 pl-2.5 font-semibold text-navy-900" style={{ borderColor: teinte(c) }}>{c.titre}</span>
-            )}
-          </div>
-        ))}
+        {duJour.map((c, i) => {
+          const m = moment(c);
+          return (
+            <div key={i} aria-current={m === "encours" ? "time" : undefined}
+              className={`grid grid-cols-[6.5rem_1fr] items-center gap-3 py-3 text-sm ${m === "passe" ? "opacity-50" : ""} ${m === "encours" ? "-mx-4 rounded-xl bg-amber-50 px-4" : ""}`}>
+              <b className="tabular-nums text-navy-900">{heure(c.heure_debut)} – {heure(c.heure_fin)}</b>
+              {c.pause ? <span className="italic text-navy-900/55">{c.titre === "—" ? "Pause" : c.titre}</span> : (
+                <span className="border-l-4 pl-2.5 font-semibold text-navy-900" style={{ borderColor: teinte(c) }}>
+                  {c.titre}
+                  {m === "encours" && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">En cours</span>}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </Carte>
-      <ul className="space-y-1 text-xs text-navy-900/60">
-        {matieres.map((m, i) => (
-          <li key={m} className="flex items-center gap-2">
-            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: TEINTES_MATIERES[i % TEINTES_MATIERES.length] }} />{m}
-          </li>
-        ))}
-      </ul>
+      {/*  La légende des couleurs reste dans « Voir toute la semaine », où
+           elle sert ; ici chaque cours porte déjà son nom à côté de sa couleur. */}
       <button type="button" onClick={() => setSemaine(true)} className="min-h-10 text-sm font-semibold text-navy-700">Voir toute la semaine</button>
     </div>
   );
@@ -941,7 +1010,7 @@ function ProgrammeDuMois({ eleveId }) {
       <div className="no-print mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {moisAnnee.map((m) => (
           <button key={m} type="button" disabled={!dispo.has(m)} onClick={() => { setMois(m); setToutLeMois(false); }}
-            className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${Number(donnees.mois) === m
+            className={`min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium ${Number(donnees.mois) === m
               ? "bg-or-500 font-semibold text-navy-900" : dispo.has(m) ? "bg-creme text-navy-900/70" : "bg-creme text-navy-900/25"}`}>
             {nomMois(m)}
           </button>
@@ -955,7 +1024,7 @@ function ProgrammeDuMois({ eleveId }) {
         <div className="no-print mt-2 inline-flex rounded-lg bg-creme p-0.5 text-xs font-medium">
           {[[false, `Cette semaine (sem. ${semaineCourante})`], [true, "Tout le mois"]].map(([v, lib]) => (
             <button key={lib} type="button" onClick={() => { setToutLeMois(v); setOuvert(0); }}
-              className={`rounded-md px-2.5 py-1 ${toutLeMois === v ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/55"}`}>
+              className={`min-h-10 rounded-md px-3 ${toutLeMois === v ? "bg-white text-navy-900 shadow-sm" : "text-navy-900/55"}`}>
               {lib}
             </button>
           ))}
@@ -998,6 +1067,10 @@ function ProgrammeDuMois({ eleveId }) {
 
 //  Regroupées comme le document de l'IEF : sous-domaine, activité, puis les
 //  semaines (même lecture que l'écran Programmation officielle).
+//  « COMMUNICATION ORALE » (document de l'IEF) → « Communication orale » :
+//  un titre en capitales se lit mal sur un téléphone.
+const enPhrase = (t) => (t && t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+
 function LignesProgramme({ lignes, semaineCourante }) {
   const groupes = [];
   for (const l of lignes || []) {
@@ -1011,7 +1084,7 @@ function LignesProgramme({ lignes, semaineCourante }) {
       {groupes.map((g, i) => (
         <div key={i} className="mt-2">
           {g.tete.sous_domaine && (i === 0 || groupes[i - 1].tete.sous_domaine !== g.tete.sous_domaine) && (
-            <div className="mt-2 text-[11px] font-bold uppercase tracking-wide text-or-600">{g.tete.sous_domaine}</div>
+            <div className="mt-2 text-sm font-bold text-or-700">{enPhrase(g.tete.sous_domaine)}</div>
           )}
           {(g.tete.activite || g.tete.rubrique) && (
             <div className="mt-1 text-xs font-semibold text-navy-900/80">{g.tete.activite || g.tete.rubrique}</div>
@@ -1412,6 +1485,14 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
     ? echeancier : null;
   const resEch = ech ? resumeEcheancier(ech.lignes) : null;
   const etatEnfant = ech ? etatPaiement(ech.statut) : null;
+  //  UN GESTE POUR TOUT LE RETARD (pistes du 09/11/2026) : avant, un
+  //  « Payer » par mois. Le bouton ouvre la fenêtre des mois, déjà cochés ;
+  //  il nomme les mois qu'il règle (l'inscription a son propre bouton).
+  //  ⚠️ Un paiement déjà déclaré attend la caisse : pas de bouton, pour ne
+  //  pas payer deux fois.
+  const retard = resEch && aDesNumeros && !(declarations || []).some((d) => d?.statut === "en_attente")
+    ? reglerRetard(resEch.dus, groupesAvance) : null;
+  const prochaine = resEch?.aVenir[0];
 
   return (
     <div className="space-y-4">
@@ -1420,14 +1501,33 @@ function Paiements({ factures, infos, declarations, eleveId, onChange }) {
         //  Une ligne, pas un tableau de bord : ce qu'il y a à faire, ou que
         //  tout va bien. Le détail, c'est la liste des mois juste dessous.
         //  JAMAIS LA COULEUR SEULE : le badge dit l'état en toutes lettres.
-        <Carte className="flex items-center justify-between gap-3 p-4">
-          <p className={`min-w-0 text-sm font-semibold ${resEch.totalDu > 0 ? "text-rose-700" : "text-navy-900/70"}`}>
-            {resEch.totalDu > 0
-              ? `À régler maintenant : ${fmt(resEch.totalDu)} ${devise}`
-              : etatEnfant.explication}
-          </p>
-          <BadgeStatut statut={ech.statut} className="shrink-0" />
-        </Carte>
+        resEch.totalDu > 0 ? (
+          <Carte className="space-y-2 border-t-4 border-t-or-500 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-semibold text-navy-900/70">À régler maintenant</p>
+              <BadgeStatut statut={ech.statut} className="shrink-0" />
+            </div>
+            <p className="whitespace-nowrap font-display text-3xl font-bold text-navy-900">{fmt(resEch.totalDu)} <span className="text-sm font-semibold">{devise}</span></p>
+            {retard && (
+              <Bouton className="w-full" onClick={() => setMoisDemande(retard.dernier)}>
+                {/*  Le montant n'est répété que s'il diffère du total affiché
+                     au-dessus (une inscription due a son propre bouton). */}
+                Payer {retard.libelle.toLowerCase()}
+                {retard.total !== resEch.totalDu && <span className="whitespace-nowrap">&nbsp;· {fmt(retard.total)} {devise}</span>}
+              </Bouton>
+            )}
+            {prochaine && (
+              <p className="text-sm text-navy-900/60">
+                Prochaine échéance : {prochaine.echeance ? fmtDate(prochaine.echeance) : libelleLigne(prochaine)} · {fmt(prochaine.montant)} {devise}
+              </p>
+            )}
+          </Carte>
+        ) : (
+          <Carte className="flex items-center justify-between gap-3 p-4">
+            <p className="min-w-0 text-sm font-semibold text-navy-900/70">{etatEnfant.explication}</p>
+            <BadgeStatut statut={ech.statut} className="shrink-0" />
+          </Carte>
+        )
       ) : visibles.length > 0 ? (
         <Carte className="p-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

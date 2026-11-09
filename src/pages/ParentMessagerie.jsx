@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
 import { mesConversations, conversationMessages, parentEnvoyer } from "@/lib/parent.js";
 import { Carte, Alerte, Bouton, Skeleton } from "@/composants/ui.jsx";
 
@@ -17,6 +16,13 @@ function ChargementFil({ label }) {
   );
 }
 
+//  Les raisons les plus fréquentes d'écrire à l'école, et le début du message.
+const SUJETS = [
+  ["Mon enfant sera absent", "Bonjour, mon enfant sera absent le "],
+  ["Question sur un paiement", "Bonjour, j'ai une question sur un paiement : "],
+  ["Demander un rendez-vous", "Bonjour, je souhaiterais un rendez-vous avec "],
+];
+
 export default function ParentMessagerie() {
   const [convs, setConvs] = useState([]);
   //  ⚠️ « Aucune conversation » N'EST AFFICHÉ QU'APRÈS UNE RÉPONSE RÉUSSIE.
@@ -32,6 +38,7 @@ export default function ParentMessagerie() {
   const [fil, setFil] = useState({ ecoleId: null, messages: [], echec: false });
   const ecoleCourante = useRef(null);
   const [texte, setTexte] = useState("");
+  const champ = useRef(null);
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
 
@@ -79,7 +86,6 @@ export default function ParentMessagerie() {
 
   return (
     <div className="space-y-5">
-      <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
       <Alerte ton="erreur">{erreur}</Alerte>
 
       <h1 className="font-display text-2xl font-bold text-navy-900">Messagerie</h1>
@@ -124,7 +130,18 @@ export default function ParentMessagerie() {
                 </Bouton>
               </div>
             ) : messages.length === 0 ? (
-              <p className="text-center text-sm text-navy-900/40">Démarrez la conversation avec l'établissement.</p>
+              //  NE PAS PARTIR D'UNE PAGE BLANCHE (pistes du 09/11/2026) : un sujet
+              //  ne fait que pré-remplir le message. Rien ne part sans « Envoyer ».
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-navy-900">Écrire à {conv?.ecole || "l'école"}</p>
+                <p className="text-sm text-navy-900/60">Choisissez un sujet, ou écrivez directement.</p>
+                {SUJETS.map(([lib, debut]) => (
+                  <button key={lib} type="button" onClick={() => { setTexte(debut); champ.current?.focus(); }}
+                    className="flex min-h-11 w-full items-center rounded-xl border border-navy-900/15 bg-white px-4 text-left text-sm font-medium text-navy-900 hover:border-or-500">
+                    {lib}
+                  </button>
+                ))}
+              </div>
             ) : (
               messages.map((m) => (
                 <div key={m.id} className={`flex ${m.expediteur === "parent" ? "justify-end" : "justify-start"}`}>
@@ -141,6 +158,7 @@ export default function ParentMessagerie() {
 
           <form onSubmit={envoyer} className="flex gap-2 border-t border-navy-900/10 p-3">
             <input
+              ref={champ}
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
               placeholder="Votre message…"

@@ -91,3 +91,23 @@ export function libellesReserves(declarations = []) {
   }
   return map;
 }
+
+/**
+ * Le bouton « Payer octobre et novembre 2026 » de la rubrique Paiements :
+ * les mois DUS sans facture, réglables par la fenêtre de paiement des mois.
+ * On l'ouvre sur le dernier mois en retard : `basculerMois` coche aussi ceux
+ * d'avant. `null` quand rien ne s'y prête (mois facturés, aucun mois réglable).
+ *
+ * @param dus      lignes dues de l'échéancier (`resumeEcheancier(...).dus`)
+ * @param groupes  mois réglables (`grouperParMois(avance_options)`)
+ */
+export function reglerRetard(dus = [], groupes = []) {
+  const mois = (Array.isArray(dus) ? dus : []).filter((l) => l?.mois && !l.facture_id).map((l) => l.mois).sort();
+  const dernier = mois[mois.length - 1];
+  if (!dernier || !groupes.some((g) => g.mois === dernier)) return null;
+  const choix = basculerMois(groupes, [], dernier);
+  return {
+    dernier, nb: choix.length, total: totalDesMois(groupes, choix),
+    libelle: resumeMois(groupes.filter((g) => choix.includes(g.mois)).map((g) => g.libelle)),
+  };
+}

@@ -137,7 +137,7 @@ export function ChampMotDePasse({ label, className = "", type, ...props }) {
       <div className="relative">
         <input
           type={voir ? "text" : "password"}
-          className={`w-full rounded-lg border border-navy-900/15 bg-white px-4 py-2.5 pr-11 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
+          className={`w-full rounded-lg border border-navy-900/15 bg-white px-4 py-2.5 pr-12 text-sm text-navy-900 outline-none transition focus:border-or-500 focus:ring-2 focus:ring-or-500/20 ${className}`}
           {...props}
         />
         <button
@@ -145,7 +145,7 @@ export function ChampMotDePasse({ label, className = "", type, ...props }) {
           onClick={() => setVoir((v) => !v)}
           aria-label={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
           title={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-          className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-navy-900/40 transition hover:bg-navy-900/5 hover:text-navy-900/70"
+          className="absolute right-0.5 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-lg text-navy-900/40 transition hover:bg-navy-900/5 hover:text-navy-900/70"
         >
           {voir ? (
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

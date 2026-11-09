@@ -154,7 +154,7 @@ export function resumeRubriques(d = {}, now = new Date()) {
   }
   if (d.absences) {
     const aj = absencesAJustifier(d.absences).length;
-    r.absences = aj > 0 ? { texte: `${aj} à justifier`, ton: "or" } : { texte: d.absences.length ? pl(d.absences.length, "absence") + " cette année" : "Aucune absence" };
+    r.absences = aj > 0 ? { texte: `${aj} à justifier`, ton: "or" } : { texte: d.absences.length ? pl(d.absences.length, "absence") + " cette année" : "Aucune absence", ton: d.absences.length ? undefined : "vert" };
   }
   if (d.fournitures) {
     const n = d.fournitures.length;

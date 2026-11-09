@@ -77,8 +77,7 @@ export default function ParentNotifications() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <Link to="/parent" className="text-sm text-navy-700 hover:text-or-500">← Mes enfants</Link>
+      <div className="flex items-center justify-end">
         {nonLues > 0 && (
           <Bouton variante="fantome" disabled={action === "toutes"} onClick={() => marquer("toutes", marquerToutesLues)}>
             {action === "toutes" ? "…" : "Tout marquer comme lu"}

@@ -161,7 +161,7 @@ export default function ParentLayout() {
            ne paraît qu'à partir de 520 px — le sceau reste, et mène toujours
            à l'accueil. 320 px : 32 + 36 + 8 + 5 × 40 + 4 × 4 = 292 px.
            Sous 1024 px, ces commandes sont dans les onglets du bas : il ne
-           reste ici que le sceau, la marque et le choix de l'enfant. Déconnexion
+           reste ici que le sceau et la marque : le choix de l'enfant est à côté du retour, dans la page. Déconnexion
            est sous « Plus » : ici, le bouton coupait le nom de l'école. */}
       <header ref={entete} onFocus={() => setMasque(false)}
         className={`z-30 flex items-center justify-between gap-2 border-b border-navy-900/10 bg-white px-4 py-2 text-navy-900 max-lg:sticky max-lg:top-0 motion-safe:transition-transform motion-safe:duration-300 sm:px-6 sm:py-3 ${masque ? "max-lg:-translate-y-full" : ""}`}>
@@ -177,19 +177,6 @@ export default function ParentLayout() {
           </span>
         </Link>
         <div className="flex min-w-0 shrink-0 items-center gap-1 text-sm sm:gap-2">
-          {/*  Choix de l'enfant, dès qu'il y en a deux : sans revenir à
-               l'accueil, et en restant sur la même rubrique. */}
-          {enfantAffiche && enfants.length > 1 && (
-            <button type="button" onClick={() => setPanneau("enfants")} aria-haspopup="dialog"
-              aria-label={`Changer d'enfant (actuellement ${enfantAffiche.prenom} ${enfantAffiche.nom})`}
-              className="flex h-10 min-w-0 max-w-[11rem] items-center gap-2 rounded-lg border border-navy-900/15 px-2.5 hover:bg-navy-900/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500">
-              <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-or-500 text-[11px] font-bold text-navy-900">
-                {(enfantAffiche.prenom || "?").charAt(0)}
-              </span>
-              <span className="truncate font-semibold">{enfantAffiche.prenom}</span>
-              <span aria-hidden="true" className="text-navy-900/60">▾</span>
-            </button>
-          )}
           {/* Nom accessible explicite (avec le nombre de non-lus) : l'emoji et
               le `title` seuls sont restitués de façon variable par les lecteurs
               d'écran. Emoji et pastille sont donc masqués à leur intention. */}
@@ -219,13 +206,13 @@ export default function ParentLayout() {
       </header>
       <main className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
         {/* Bannière : mobile uniquement (sur desktop, la page « Alertes » suffit). */}
-        <BandeauDemo />
+        <BandeauDemo compact />
         <div className="empty:hidden lg:hidden"><InvitePush /></div>
         <div className="empty:hidden"><InviteBiometrie /></div>
         <Suspense fallback={<ChargementPage />}>
           {/* Les compteurs sont déjà chargés ici, à chaque navigation : on les
               transmet plutôt que de les redemander depuis l'accueil. */}
-          <Outlet context={{ nonLues, msgNonLus }} />
+          <Outlet context={{ nonLues, msgNonLus, choisirEnfant: () => setPanneau("enfants"), nbEnfants: enfants.length }} />
         </Suspense>
       </main>
 
