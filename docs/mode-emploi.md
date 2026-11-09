@@ -3,7 +3,7 @@
 Guide d'utilisation pas à pas, de la création de l'école à l'usage quotidien.
 Application web (PWA) : utilisable sur ordinateur, tablette et téléphone, depuis un navigateur — installable comme une application.
 
-> **Version 2.315 · mise à jour du 9 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
+> **Version 2.316 · mise à jour du 9 novembre 2026.** Cette édition intègre ce qui a été construit après la visite d'établissement : circuit du bulletin et procès-verbal du conseil de classe, suivi des acquis au préscolaire, programmation officielle de l'IEF, photos d'élèves, indicateur de paiement, paliers d'établissement, présence par séance au supérieur, paiement anticipé des parents et situation des paiements. Les **52 écrans** du menu y sont décrits, et une épreuve automatique refuse qu'un écran neuf parte en production sans sa page de manuel.
 >
 > **Où le retrouver** : dans l'application, lien **📖 Aide & mode d'emploi** en bas de la barre latérale (ou dans le menu **Compte** sur téléphone), qui ouvre la page d'aide — ce manuel y est le dernier lien.
 
@@ -569,7 +569,7 @@ La facturation en lot et le paiement anticipé appliquent ce tarif : un élève 
 
 ### 10.2 Facturer
 
-**Un élève à la fois** — **+ Nouvelle facture** : l'élève, une **date d'échéance**, puis les lignes (**+ Ajouter une ligne**, ou choisissez dans **Frais à facturer**).
+**Un élève à la fois** — **+ Nouvelle facture** : l'élève, une **date d'échéance**, puis les lignes (**+ Ajouter une ligne**, ou choisissez dans **Frais à facturer**). Chaque frais porte son niveau et son montant (« Scolarité mensuelle · CM1 · 65 000 / mois »). **Un frais mensuel demande son mois** : « Pour quel mois ? », et la ligne devient « Scolarité mensuelle — Octobre 2026 » ; **+ mois suivant** ajoute le mois d'après. C'est à ce libellé que l'application reconnaît un mois payé, chez vous comme chez le parent.
 
 > **On CHERCHE l'élève, on ne le déroule plus.** Tapez deux lettres du nom, du prénom ou du matricule : l'application interroge le serveur et propose huit résultats. C'était une liste déroulante jusqu'à la version 2.242 — praticable à cent élèves, impossible à dix mille, et surtout **plafonnée à 1 000 noms sans le dire** : au-delà, un élève en fin d'alphabet était absent de la liste, donc impossible à facturer. Le même champ de recherche sert maintenant partout où l'on désigne un élève : facture, incident de vie scolaire, document, cantine, transport, messagerie.
 
@@ -650,9 +650,9 @@ Le même état colore le nom de l'élève dans la **liste des élèves** (filtr�
 
 ### 10.5 Recouvrement (menu **Recouvrement**)
 
-La liste des impayés : montant total, retard, contact de la famille.
+La liste des impayés : ce qui est **en retard**, le nombre d'élèves en retard et le **reste de l'année** (mois à venir compris), avec le contact de la famille. Le chiffre est le même que sur l'accueil Gestion, la Situation des paiements, la fiche de l'élève et l'espace parent : il compte les mois dus d'après la grille tarifaire, même sans facture, et les factures échues hors scolarité (cantine, transport…). Chaque ligne dit depuis quand : « 05/10/2026 · 35 jours de retard ».
 
-- **Relancer** envoie une notification (et un push si la famille l'a activé).
+- **Envoyer un rappel** prévient la famille dans l'application (et sur son téléphone si elle a accepté les notifications).
 - **WhatsApp** ouvre un message pré-rempli vers le numéro du parent — c'est le canal qui fonctionne le mieux au Sénégal.
 - L'**historique** des relances est conservé, ce qui évite de relancer deux fois la même famille le même jour.
 - **Annuler une relance** (onglet Historique) : bouton **Annuler** sur la ligne, ou cochez plusieurs relances puis **Annuler la sélection**. Le rappel disparaît des notifications du parent ; la relance reste dans l'historique, barrée et marquée « Annulée le … », et le même palier automatique ne repart pas. ⚠️ Une notification push déjà reçue sur le téléphone ne peut pas être reprise.

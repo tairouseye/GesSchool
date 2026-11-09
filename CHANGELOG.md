@@ -5,6 +5,14 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.316.0] — Un seul chiffre des impayés, partout
+Piste 1 du test côté école du 9 novembre 2026 (démo, ordinateur). Migration 232.
+- **Le même montant sur chaque écran** : l'accueil Gestion, l'accueil du comptable et de la caisse, et le Recouvrement comptent désormais comme la Situation des paiements, la fiche de l'élève et l'espace parent — les mois dus d'après la grille tarifaire, même sans facture, plus les factures échues hors scolarité (cantine, transport…). Avant, l'accueil disait 19 élèves en retard et la Situation 50.
+- **Garde-fou** : ce qui est payé sur une facture de scolarité sans mois couvre les mois les plus anciens encore dus, au lieu d'être ignoré. Une famille qui avait tout payé n'apparaît plus « en retard », chez vous comme chez le parent.
+- **+ Nouvelle facture** : un frais mensuel demande « Pour quel mois ? » et écrit le mois dans la ligne ; **+ mois suivant** ajoute le mois d'après. Chaque frais affiche son niveau et son montant.
+- **Accueil** : « X encaissés sur Y dus à ce jour », et sous les impayés le reste de l'année. Les échéances de l'agenda suivent les mensualités (le 5 du mois).
+- **Recouvrement** : En retard, Élèves en retard, Reste de l'année ; « 05/10/2026 · 35 jours de retard » ; le bouton « Relancer (push) » devient **Envoyer un rappel**.
+
 ## [2.315.0] — L'espace parent, plus simple à chaque écran
 Pistes du test du 9 novembre 2026 (démo en ligne, téléphone).
 - **Fiche de l'enfant** : chaque tuile dit ce qu'il y a dedans (« 2 mois à payer », « Maintenant : Mathématiques », « Aucune absence »…). Les rubriques les plus ouvertes en tête ; Documents, Fournitures, Programme, Cantine, Transport et Mot de passe sous **Autres rubriques**.

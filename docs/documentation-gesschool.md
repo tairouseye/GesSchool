@@ -176,7 +176,7 @@ Quand un parent déclare un paiement mobile (voir §9), il apparaît ici : **val
 
 ### 6.5 Recouvrement & relances (menu **Recouvrement**)
 - Vue **Impayés** : total dû, dont en retard, liste par élève avec jours de retard et contact payeur.
-  - **Relancer (push)** : envoie une notification + push au parent.
+  - **Envoyer un rappel** : envoie une notification + push au parent.
   - **WhatsApp** : ouvre un message pré-rempli (ou le copie si aucun numéro).
 - Onglet **Historique** : journal de toutes les relances envoyées.
 - **Relances automatiques** (Paramètres) : créer des **paliers** (ex. J+1, J+7, J+15 après l'échéance) avec un message type. Le système envoie les rappels chaque jour automatiquement. Bouton **Relancer tous les retards** pour un envoi immédiat.
