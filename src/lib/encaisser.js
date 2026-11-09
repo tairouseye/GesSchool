@@ -38,6 +38,28 @@ export function verifierMontant(montant, facture) {
 }
 
 /**
+ * Les mois SANS FACTURE cochés d'office (09/11/2026) : à Tut'Tank, un mois dû
+ * n'a pas de facture tant qu'il n'est pas payé. La fenêtre ne proposait que
+ * des factures — « rien à régler » pour une famille en retard. On coche les
+ * mois échus et le mois en cours ; s'il n'y en a pas, le premier mois à venir.
+ * `groupes` : `grouperParMois(avance_options)`, triés. `mois` = « AAAA-MM ».
+ */
+export function moisParDefaut(groupes = [], aujourdhui = new Date()) {
+  const courant = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, "0")}`;
+  const dus = groupes.filter((g) => g.mois <= courant).map((g) => g.mois);
+  if (dus.length) return groupes.slice(0, groupes.findIndex((g) => g.mois === dus[dus.length - 1]) + 1).map((g) => g.mois);
+  return groupes.length ? [groupes[0].mois] : [];
+}
+
+/** « en retard », « ce mois-ci » ou rien, pour un mois « AAAA-MM ». */
+export function etatMois(mois, aujourdhui = new Date()) {
+  const courant = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, "0")}`;
+  if (mois < courant || (mois === courant && aujourdhui.getDate() > 5)) return "en retard";
+  if (mois === courant) return "ce mois-ci";
+  return "";
+}
+
+/**
  * Ouvre la fenêtre depuis n'importe quel écran. `eleve` ({ id, prenom, nom,
  * matricule }) la pré-remplit ; sans lui, on commence par chercher l'élève.
  */

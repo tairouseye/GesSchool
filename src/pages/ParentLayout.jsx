@@ -19,7 +19,7 @@ import { appliquerCharte } from "@/lib/theme.js";
 
 // Commande d'en-tête : 40 × 40 px, la taille d'un doigt. La pastille de
 // non-lus se pose dans ce carré, sans le déborder.
-const ICONE_ENTETE = "relative grid h-10 w-10 place-items-center rounded-lg hover:bg-navy-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500";
+const ICONE_ENTETE = "relative grid h-10 w-10 place-items-center rounded-lg text-navy-900/70 hover:bg-navy-900/5 hover:text-navy-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-or-500";
 
 const CLE_DERNIER_ENFANT = "parent_dernier_enfant";
 const lire = (cle) => { try { return localStorage.getItem(cle); } catch { return null; } };
@@ -177,25 +177,25 @@ export default function ParentLayout() {
           </span>
         </Link>
         <div className="flex min-w-0 shrink-0 items-center gap-1 text-sm sm:gap-2">
-          {/* Nom accessible explicite (avec le nombre de non-lus) : l'emoji et
+          {/* Nom accessible explicite (avec le nombre de non-lus) : l'icône et
               le `title` seuls sont restitués de façon variable par les lecteurs
-              d'écran. Emoji et pastille sont donc masqués à leur intention. */}
+              d'écran. Icône et pastille sont donc masquées à leur intention. */}
           <Link to="/parent/messages" className={`${ICONE_ENTETE} max-lg:hidden`} title="Messagerie" {...ancre("messagerie", true)}
             aria-label={libelleCompteur("Messagerie", msgNonLus, "message non lu", "messages non lus")}>
-            <span className="text-xl" aria-hidden="true">💬</span>
+            <span aria-hidden="true"><Icone name="messagerie" className="h-[22px] w-[22px]" /></span>
             <Pastille n={msgNonLus} className="absolute -right-0.5 top-0" />
           </Link>
           <Link to="/parent/notifications" className={`${ICONE_ENTETE} max-lg:hidden`} title="Alertes" {...ancre("alertes", true)}
             aria-label={libelleCompteur("Alertes", nonLues, "alerte non lue", "alertes non lues")}>
-            <span className="text-xl" aria-hidden="true">🔔</span>
+            <span aria-hidden="true"><Icone name="cloche" className="h-[22px] w-[22px]" /></span>
             <Pastille n={nonLues} className="absolute -right-0.5 top-0" />
           </Link>
           <button {...ancre("aide-parent", true)} onClick={() => setTour(true)} title="Visite guidée" aria-label="Visite guidée"
             className={`${ICONE_ENTETE} max-lg:hidden`}>
-            <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full border border-navy-900/15 text-sm text-navy-900/70">?</span>
+            <span aria-hidden="true"><Icone name="aide" className="h-[22px] w-[22px]" /></span>
           </button>
           <Link to="/parent/compte" title="Mon compte" aria-label="Mon compte" className={`${ICONE_ENTETE} max-lg:hidden`}>
-            <span className="text-xl leading-none" aria-hidden="true">⚙️</span>
+            <span aria-hidden="true"><Icone name="compte" className="h-[22px] w-[22px]" /></span>
           </Link>
           <span className="hidden text-navy-900/70 lg:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
           <button onClick={deconnexion} title="Déconnexion" aria-label="Déconnexion"

@@ -64,6 +64,12 @@ const P = {
   // Connexion par le visage : le cadre de visée aux quatre coins, comme
   // sur les téléphones (et les applis bancaires) — le geste est reconnu.
   demo: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z"/>',
+
+  // En-têtes parent / étudiant : des traits, comme le reste de l'appli,
+  // plutôt que des emoji (jugés « pas professionnels », 09/11/2026).
+  cloche: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  aide: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/>',
+  compte: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   biometrie: '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M9 9v1.5M15 9v1.5"/><path d="M12.5 9v3.5h-1"/><path d="M9 15.5c1.8 1.4 4.2 1.4 6 0"/>',
 };
 

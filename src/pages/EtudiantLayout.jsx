@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import Logo from "@/composants/Logo.jsx";
+import { Icone } from "@/composants/Icones.jsx";
 import { ChargementPage } from "@/composants/ui.jsx";
 import GesProSignature from "@/composants/GesProSignature.jsx";
 import InvitePush from "@/composants/InvitePush.jsx";
@@ -53,12 +54,12 @@ export default function EtudiantLayout() {
         <div className="flex shrink-0 items-center gap-3 text-sm">
           <Link to="/etudiant/messagerie" className="relative" title="Messagerie"
             aria-label={libelleCompteur("Messagerie", msgNonLus, "message non lu", "messages non lus")}>
-            <span className="text-xl" aria-hidden="true">💬</span>
+            <span aria-hidden="true"><Icone name="messagerie" className="h-[22px] w-[22px]" /></span>
             <Pastille n={msgNonLus} />
           </Link>
           <Link to="/etudiant/notifications" className="relative" title="Alertes"
             aria-label={libelleCompteur("Alertes", nonLues, "alerte non lue", "alertes non lues")}>
-            <span className="text-xl" aria-hidden="true">🔔</span>
+            <span aria-hidden="true"><Icone name="cloche" className="h-[22px] w-[22px]" /></span>
             <Pastille n={nonLues} />
           </Link>
           <span className="hidden text-creme/70 sm:inline">{profil ? `${profil.prenom} ${profil.nom}` : ""}</span>
