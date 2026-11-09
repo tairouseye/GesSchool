@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { compterPeriodesDatees } from "@/lib/miseEnRoute.js";
 
 // GesSchool — couche d'accès aux données « structure académique ».
 // Toutes les écritures incluent ecole_id (exigé par les RLS = ecole_courante()).
@@ -34,9 +35,14 @@ export async function etatMiseEnRoute(ecoleId, anneeId) {
   //  qu'une liste qui ne s'affiche pas.
   const zero = (p) => p.catch(() => 0);
   const an = anneeId || "00000000-0000-0000-0000-000000000000";
-  const [periodes, periodesDatees, enseignantsRelies, tuteurs, tuteursRelies, mobile] = await Promise.all([
+  const [periodes, datation, enseignantsRelies, tuteurs, tuteursRelies, mobile] = await Promise.all([
     zero(nb(supabase.from("periodes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", an))),
-    zero(nb(supabase.from("periodes").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).eq("annee_id", an).not("date_debut", "is", null).not("date_fin", "is", null))),
+    //  Les dates des périodes ET de l'année : une période ne compte que si
+    //  elle tombe dans l'année (`compterPeriodesDatees`).
+    Promise.all([
+      supabase.from("periodes").select("date_debut, date_fin").eq("ecole_id", ecoleId).eq("annee_id", an),
+      supabase.from("annees_scolaires").select("date_debut, date_fin").eq("id", an).maybeSingle(),
+    ]).then(([p, a]) => compterPeriodesDatees(p.data ?? [], a.data)).catch(() => ({ datees: 0, hors: 0 })),
     zero(nb(supabase.from("enseignants").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null))),
     zero(nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId))),
     zero(nb(supabase.from("tuteurs").select("id", { count: "exact", head: true }).eq("ecole_id", ecoleId).not("profil_id", "is", null))),
@@ -45,7 +51,8 @@ export async function etatMiseEnRoute(ecoleId, anneeId) {
       .catch(() => false),
   ]);
   return { niveaux, classes, matieres, enseignants, affectations, frais, inscriptions,
-    periodes, periodesDatees, enseignantsRelies, tuteurs, tuteursRelies, mobile };
+    periodes, periodesDatees: datation.datees, periodesHorsAnnee: datation.hors,
+    enseignantsRelies, tuteurs, tuteursRelies, mobile };
 }
 
 // Qui est connecté : enseignants et parents reliés à un compte (lignes

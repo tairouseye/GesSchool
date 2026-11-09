@@ -16,11 +16,16 @@ export function etapesMiseEnRoute(etat, { paiements = true } = {}) {
   const e = etat || {};
   const etapes = [
     { id: "structure", ok: e.niveaux > 0 && e.classes > 0, label: "Niveaux & classes",
-      detail: `${pl(e.niveaux || 0, "niveau")} · ${pl(e.classes || 0, "classe")}`,
+      detail: `${pl(e.niveaux || 0, "niveau", "niveaux")} · ${pl(e.classes || 0, "classe")}`,
       aide: "créez les niveaux et les classes de l'année (ou la structure type en un clic).",
       to: "/parametres/structure", action: "Configurer" },
+    //  « Datée » = datée DANS l'année scolaire (test du 09/11/2026 : la démo
+    //  cochait 3 / 3 avec des trimestres de l'année précédente, et l'accueil
+    //  suivait le « 3ème Trimestre » en novembre).
     { id: "periodes", ok: e.periodes > 0 && e.periodesDatees === e.periodes, label: "Dates des trimestres",
-      detail: e.periodes ? `${e.periodesDatees || 0} / ${e.periodes} datée(s)` : "aucune période",
+      detail: e.periodes
+        ? (e.periodesHorsAnnee ? `${pl(e.periodesHorsAnnee, "période")} hors de l'année` : `${e.periodesDatees || 0} / ${e.periodes} datée${e.periodes > 1 ? "s" : ""}`)
+        : "aucune période",
       aide: "datez chaque trimestre : les bulletins, l'assiduité et les tableaux de bord en dépendent.",
       to: "/parametres/structure", action: "Dater" },
     { id: "matieres", ok: e.matieres > 0, label: "Matières", detail: pl(e.matieres || 0, "matière"),
@@ -37,11 +42,11 @@ export function etapesMiseEnRoute(etat, { paiements = true } = {}) {
       aide: "ajoutez vos enseignants et dites qui enseigne quoi, dans quelle classe.",
       to: "/enseignants", action: "Ajouter" },
     { id: "comptes_enseignants", ok: e.enseignants > 0 && e.enseignantsRelies > 0, label: "Comptes des enseignants",
-      detail: `${e.enseignantsRelies || 0} / ${e.enseignants || 0} connecté(s)`,
+      detail: `${e.enseignantsRelies || 0} / ${e.enseignants || 0} connecté${(e.enseignants || 0) > 1 ? "s" : ""}`,
       aide: "donnez à chaque enseignant son code d'accès : sans compte, il ne peut ni faire l'appel ni saisir de notes.",
       to: "/enseignants", action: "Donner les codes" },
     { id: "parents", ok: e.tuteurs > 0 && (e.tuteursRelies || 0) / e.tuteurs >= SEUIL_PARENTS, label: "Parents connectés",
-      detail: `${e.tuteursRelies || 0} / ${e.tuteurs || 0} relié(s)`,
+      detail: `${e.tuteursRelies || 0} / ${e.tuteurs || 0} relié${(e.tuteurs || 0) > 1 ? "s" : ""}`,
       aide: "distribuez les codes parents (ou la connexion par téléphone) : c'est ce qui fait vivre l'espace des familles.",
       to: "/codes-parents", action: "Distribuer" },
     paiements && { id: "mobile", ok: !!e.mobile, label: "Paiement mobile", detail: e.mobile ? "numéros enregistrés" : "Wave, Orange Money…",
@@ -49,6 +54,19 @@ export function etapesMiseEnRoute(etat, { paiements = true } = {}) {
       to: "/paiements?onglet=mobile", action: "Configurer" },
   ];
   return etapes.filter(Boolean);
+}
+
+//  Les périodes datées DANS l'année : début et fin remplis, et compris entre
+//  le début et la fin de l'année scolaire (si elle est datée).
+export function compterPeriodesDatees(periodes = [], annee = null) {
+  let datees = 0, hors = 0;
+  for (const p of periodes) {
+    if (!p?.date_debut || !p?.date_fin) continue;
+    const dedans = !annee?.date_debut || !annee?.date_fin
+      || (p.date_debut >= annee.date_debut && p.date_fin <= annee.date_fin);
+    if (dedans) datees += 1; else hors += 1;
+  }
+  return { datees, hors };
 }
 
 //  Les lignes « À traiter » de l'adoption (prise en main, lot 3) : elles

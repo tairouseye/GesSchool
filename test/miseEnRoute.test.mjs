@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { etapesMiseEnRoute } from "../src/lib/miseEnRoute.js";
+import { etapesMiseEnRoute, compterPeriodesDatees } from "../src/lib/miseEnRoute.js";
 
 const ok = (etapes) => Object.fromEntries(etapes.map((e) => [e.id, e.ok]));
 
@@ -43,4 +43,28 @@ test("🔴 adoption : Tut'Tank voit ses 10 enseignants sans compte et 141 parent
   assert.match(l[1].titre, /141 parents pas encore connectés \(4 \/ 145\)/);
   assert.equal(lignesAdoption({ enseignants: 10, enseignantsRelies: 0 }, (c) => c !== "enseignants").length, 0);
   assert.equal(lignesAdoption({ enseignants: 2, enseignantsRelies: 2, tuteurs: 3, tuteursRelies: 3 }, () => true).length, 0);
+});
+
+test("un trimestre ne compte que s'il est daté dans l'année scolaire", () => {
+  const annee = { date_debut: "2026-10-01", date_fin: "2027-07-31" };
+  const t = (d, f) => ({ date_debut: d, date_fin: f });
+  //  La démo du 09/11/2026 : trois trimestres de l'année précédente.
+  assert.deepEqual(compterPeriodesDatees([t("2025-10-01", "2025-12-20"), t("2026-01-05", "2026-03-28"), t("2026-04-06", "2026-06-30")], annee),
+    { datees: 0, hors: 3 });
+  assert.deepEqual(compterPeriodesDatees([t("2026-10-01", "2026-12-20"), t(null, null), t("2027-04-06", "2027-06-30")], annee),
+    { datees: 2, hors: 0 });
+  //  Année sans dates : on ne peut pas juger, une période datée compte.
+  assert.deepEqual(compterPeriodesDatees([t("2025-10-01", "2025-12-20")], null), { datees: 1, hors: 0 });
+  const e = etapesMiseEnRoute({ periodes: 3, periodesDatees: 0, periodesHorsAnnee: 3 }).find((x) => x.id === "periodes");
+  assert.equal(e.ok, false);
+  assert.equal(e.detail, "3 périodes hors de l'année");
+});
+
+test("les étapes s'accordent : niveaux, datées, connectés, reliés", () => {
+  const d = Object.fromEntries(etapesMiseEnRoute({ niveaux: 9, classes: 12, periodes: 3, periodesDatees: 3,
+    enseignants: 12, enseignantsRelies: 0, tuteurs: 32, tuteursRelies: 3 }).map((x) => [x.id, x.detail]));
+  assert.equal(d.structure, "9 niveaux · 12 classes");
+  assert.equal(d.periodes, "3 / 3 datées");
+  assert.equal(d.comptes_enseignants, "0 / 12 connectés");
+  assert.equal(d.parents, "3 / 32 reliés");
 });
