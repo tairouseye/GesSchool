@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { periodeDeReference } from "@/lib/dashboard.js";
+import { isoJour } from "@/lib/apercuEnfant.js";
 import { useAuth } from "@/contextes/AuthContext.jsx";
 import { EnTete } from "@/composants/Layout.jsx";
 import { Bouton, Carte, Alerte, Modale, EtatVide, SansAnnee, Onglets, SkeletonListe } from "@/composants/ui.jsx";
@@ -111,7 +113,11 @@ export default function Bulletins() {
         setPeriodes(per);
         setMatieres(mat);
         setNotation(cfg);
-        if (per[0]) setPeriodeId(per[0].id);
+        //  La période en cours (même règle que Notes et l'accueil), et la
+        //  seule classe d'un enseignant qui n'en a qu'une.
+        const perDefaut = periodeDeReference(per, isoJour(new Date())).reference || per[0];
+        if (perDefaut) setPeriodeId(perDefaut.id);
+        if (cls.length === 1) setClasseId(cls[0].id);
         try { setSignataire(signatairePedagogique(await getSignataires(ecoleId))); } catch { /* facultatif */ }
         //  Pour savoir si JE suis responsable du cycle de la classe : la
         //  reponse ne se deduit pas du role (tout compte `direction` couvre

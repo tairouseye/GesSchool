@@ -115,12 +115,23 @@ export async function supprimerNiveau(id) {
 }
 
 // --- Classes (rattachées à un niveau et à l'année courante) ---
+// Les classes dans l'ORDRE DE L'ÉCOLE — celui des niveaux (TPS, PS, MS, GS,
+// CI, CP, CE1…), puis le libellé : l'ordre alphabétique mettait CE1 avant CI
+// (test du 09/11/2026). Toutes les listes de classes passent par ici.
 export async function getClasses(ecoleId, anneeId) {
-  let q = supabase.from("classes").select("*").eq("ecole_id", ecoleId);
+  let q = supabase.from("classes").select("*, niveaux(ordre)").eq("ecole_id", ecoleId);
   if (anneeId) q = q.eq("annee_id", anneeId);
   const { data, error } = await q.order("libelle");
   if (error) throw error;
-  return data ?? [];
+  return trierClasses(data ?? []);
+}
+
+// Module pur : `niveaux.ordre` (embarqué) d'abord, puis le libellé, chiffres
+// compris (« 6e 2 » avant « 6e 10 »). Une classe sans niveau va en dernier.
+export function trierClasses(classes) {
+  const ordre = (c) => c?.niveaux?.ordre ?? c?.ordre_niveau ?? Number.MAX_SAFE_INTEGER;
+  return [...classes].sort((a, b) => ordre(a) - ordre(b)
+    || (a.libelle || "").localeCompare(b.libelle || "", "fr", { numeric: true }));
 }
 
 export async function creerClasse(ecoleId, niveauId, anneeId, libelle, effectifMax, serieId = null) {

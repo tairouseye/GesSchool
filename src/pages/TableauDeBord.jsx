@@ -138,20 +138,21 @@ function TableauGestion() {
             ligne={stats && <span className="text-navy-900/55">{pl(stats.nbEnRetard, "élève")} · reste de l'année {fmtMontant(stats.resteAnnee)} {devise}</span>} />
         </div>
 
-        {/* L'année, comparée à la précédente · agenda */}
+        {/*  La liste du jour juste sous les chiffres (test du 09/11/2026) :
+             ce qu'il faut faire passe avant le graphique de l'année. */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Bloc titre={`Encaissements par mois${annee ? ` — ${annee.libelle}` : ""}`} className="lg:col-span-2">
-            {stats && <GraphiqueAnnuel points={stats.annuel} format={fmtMontant} legende={[annee?.libelle || "Cette année", "Année précédente"]} />}
+          <Bloc titre="À traiter" compteur={aTraiter.length} className="lg:col-span-2">
+            <ListeCompacte items={aTraiter} />
           </Bloc>
           <Bloc titre="Agenda" to={ouvert("recouvrement") ? "/recouvrement" : null} lien="Échéances">
             <Agenda items={agenda} />
           </Bloc>
         </div>
 
-        {/* À traiter · recouvrement par classe · modes */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Bloc titre="À traiter" compteur={aTraiter.length}>
-            <ListeCompacte items={aTraiter} />
+        {/* L'année, comparée à la précédente · recouvrement par classe · modes */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Bloc titre={`Encaissements par mois${annee ? ` — ${annee.libelle}` : ""}`} className="lg:col-span-2">
+            {stats && <GraphiqueAnnuel points={stats.annuel} format={fmtMontant} legende={[annee?.libelle || "Cette année", "Année précédente"]} />}
           </Bloc>
           <Bloc titre="Recouvrement par classe" to={ouvert("situation_paiements") ? "/situation-paiements" : null} lien="Détail">
             <BarresListe vide="Toutes les classes sont à jour ✓"
@@ -160,16 +161,16 @@ function TableauGestion() {
                 ton: c.taux >= 80 ? "vert" : c.taux >= 60 ? "or" : "rouge",
               }))} />
           </Bloc>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Bloc titre={`Modes de paiement (${moisCourant})`}>
             <Anneau vide="Aucun encaissement ce mois."
               parts={Object.entries(stats?.parMode || {}).sort((a, b) => b[1] - a[1])
                 .map(([m, v]) => ({ label: modeLabel(m), val: v, couleur: COULEURS_MODE[m] || "#94a3b8" }))} />
           </Bloc>
-        </div>
-
-        {/* Activité récente · raccourcis */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Bloc titre="Activité récente" className="lg:col-span-2">
+          {/* Activité récente · raccourcis */}
+          <Bloc titre="Activité récente">
             <FilActivite items={(stats?.activite || []).map((a) => a.type === "paiement"
               ? { initiales: initiales(a.eleve), ton: "vert", titre: `Paiement de ${fmtMontant(a.montant)} ${devise}`, detail: [a.eleve, modeLabel(a.mode)].filter(Boolean).join(" · "), quand: ilYa(a.date) }
               : { initiales: initiales(a.eleve), ton: "bleu", titre: "Nouvelle inscription", detail: [a.eleve, a.classe].filter(Boolean).join(" en "), quand: ilYa(a.date) })} />

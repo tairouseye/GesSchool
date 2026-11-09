@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase.js";
+import { trierClasses } from "@/lib/academique.js";
 
 // GesSchool — « appel en classe » : rattache le prof connecté à ses classes.
 
@@ -25,15 +26,15 @@ export async function getMesClasses(ecoleId, anneeId, ensId) {
     //  `niveau_id` sert à retrouver la programmation officielle du niveau
     //  (mig. 165) : elle est partagée par toutes les classes d'un même
     //  niveau. Purement additif — les appelants ne lisent que id/libelle.
-    supabase.from("classes").select("id, libelle, niveau_id")
+    supabase.from("classes").select("id, libelle, niveau_id, niveaux(ordre)")
       .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("prof_principal_id", ensId),
-    supabase.from("affectations").select("classes(id, libelle, niveau_id)")
+    supabase.from("affectations").select("classes(id, libelle, niveau_id, niveaux(ordre))")
       .eq("ecole_id", ecoleId).eq("annee_id", anneeId).eq("enseignant_id", ensId),
   ]);
   const map = {};
   for (const c of pp.data ?? []) map[c.id] = c;
   for (const a of aff.data ?? []) if (a.classes) map[a.classes.id] = a.classes;
-  return Object.values(map).sort((x, y) => (x.libelle || "").localeCompare(y.libelle || ""));
+  return trierClasses(Object.values(map));
 }
 
 // Matières que le prof enseigne, par classe : { classe_id: [matiere_id, …] }.

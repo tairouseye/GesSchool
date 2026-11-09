@@ -38,6 +38,8 @@ const TONS = {
 //  l'accueil Gestion et le Recouvrement (`impayes_annee`).
 const duDe = (l) => (Number(l.du) || 0) + (Number(l.echu) || 0);
 
+const pl = (n, mot, motPl = `${mot}s`) => `${n} ${n > 1 ? motPl : mot}`;
+
 export default function SituationPaiements() {
   const { ecoleId, ecole } = useAuth();
   const devise = ecole?.devise || "XOF";
@@ -102,7 +104,7 @@ export default function SituationPaiements() {
           <Carte className="p-4">
             <p className="text-xs uppercase tracking-wide text-navy-900/45">Échu impayé</p>
             <p className="mt-1 font-display text-2xl font-bold text-danger-600">{fmt(totaux.echu)} <span className="text-sm font-normal">{devise}</span></p>
-            <p className="text-xs text-navy-900/50">{synthese.en_retard} élève(s) en retard</p>
+            <p className="text-xs text-navy-900/50">{pl(synthese.en_retard, "élève")} en retard</p>
           </Carte>
           <Carte className="p-4">
             <p className="text-xs uppercase tracking-wide text-navy-900/45">Reste à payer</p>

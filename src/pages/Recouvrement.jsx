@@ -5,6 +5,7 @@ import { Carte, Alerte, EtatVide, SkeletonListe, Bouton, Modale, Table, Badge } 
 import { useToast, useConfirm } from "@/composants/Feedback.jsx";
 import * as api from "@/lib/recouvrement.js";
 import * as relancesApi from "@/lib/relances.js";
+import { ouvrirEncaisser, EVENEMENT_ENCAISSE } from "@/lib/encaisser.js";
 import { getAnneeCourante } from "@/lib/academique.js";
 
 const fmt = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(Number(n) || 0));
@@ -50,6 +51,11 @@ export default function Recouvrement() {
   }, [ecoleId]);
 
   useEffect(() => { recharger(); }, [recharger]);
+  //  Un encaissement fait depuis la fenêtre : la liste suit.
+  useEffect(() => {
+    window.addEventListener(EVENEMENT_ENCAISSE, recharger);
+    return () => window.removeEventListener(EVENEMENT_ENCAISSE, recharger);
+  }, [recharger]);
 
   const liste = impayes.filter((i) => (filtre === "retard" ? i.enRetard : true));
   const totalDu = impayes.reduce((s, i) => s + i.reste, 0);
@@ -192,6 +198,11 @@ export default function Recouvrement() {
                   } },
                   { key: "actions", label: "", align: "right", render: (i) => (
                     <div className="flex items-center justify-end gap-2">
+                      {/*  Encaisser depuis la ligne : la fenêtre s'ouvre sur l'élève. */}
+                      <button onClick={() => ouvrirEncaisser({ id: i.eleve_id, ...i.eleve })}
+                        className="rounded-lg border border-navy-900/15 px-3 py-1.5 text-xs font-semibold text-navy-900 hover:border-or-500">
+                        Encaisser
+                      </button>
                       <button onClick={() => relancerPush(i)} disabled={enCours === i.eleve_id}
                         className="rounded-lg bg-navy-900 px-3 py-1.5 text-xs font-semibold text-creme hover:bg-navy-800 disabled:opacity-50">
                         {enCours === i.eleve_id ? "…" : "Envoyer un rappel"}

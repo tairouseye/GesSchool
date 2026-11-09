@@ -16,6 +16,8 @@ import { etapesMiseEnRoute } from "@/lib/miseEnRoute.js";
 //
 // `compacte` : sur les accueils Gestion et Pédagogie, elle disparaît une fois
 // terminée (Pilotage, lui, affiche « Mise en route terminée »).
+const pl = (n, mot, motPl = `${mot}s`) => `${n} ${n > 1 ? motPl : mot}`;
+
 export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = false }) {
   const toast = useToast();
   const [etat, setEtat] = useState(null);
@@ -23,9 +25,11 @@ export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = 
   //  Repli mémorisé par école : le fil peut rester ouvert des semaines (tant
   //  que la moitié des parents n'est pas reliée) ; on ne l'impose pas chaque
   //  matin en haut de l'accueil.
+  //  Sans choix mémorisé, l'accueil la replie sur UNE LIGNE dès 5 étapes
+  //  faites (test du 09/11/2026 : dépliée, elle remplissait tout le premier
+  //  écran d'un portable, et les chiffres du jour passaient sous le pli).
   const cleRepli = `mise_en_route_repliee_${ecoleId}`;
-  const [replie, setReplie] = useState(() => { try { return localStorage.getItem(cleRepli) === "1"; } catch { return false; } });
-  const basculerRepli = () => setReplie((r) => { try { localStorage.setItem(cleRepli, r ? "0" : "1"); } catch { /* ignoré */ } return !r; });
+  const [choix, setChoix] = useState(() => { try { return localStorage.getItem(cleRepli); } catch { return null; } });
 
   const charger = useCallback(async () => {
     try {
@@ -38,6 +42,13 @@ export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = 
   if (!etat) return null;
   const etapes = etapesMiseEnRoute(etat, { paiements: moduleActif(modulesActifs, "paiements") });
   const restants = etapes.filter((e) => !e.ok).length;
+  const faites = etapes.length - restants;
+  const replie = choix != null ? choix === "1" : compacte && faites >= 5;
+  const basculerRepli = () => {
+    const v = replie ? "0" : "1";
+    try { localStorage.setItem(cleRepli, v); } catch { /* ignoré */ }
+    setChoix(v);
+  };
 
   async function structureType() {
     setEnCours(true);
@@ -45,7 +56,7 @@ export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = 
       const r = await appliquerStructureType();
       const total = (r.niveaux || 0) + (r.matieres || 0) + (r.periodes || 0);
       if (total === 0) toast.succes("Rien à créer : votre structure est déjà en place.");
-      else toast.succes(`Créé : ${r.niveaux || 0} niveau(x), ${r.classes || 0} classe(s), ${r.matieres || 0} matière(s)${r.periodes ? `, ${r.periodes} période(s) datée(s)` : ""}. Tout reste modifiable.`);
+      else toast.succes(`Créé : ${pl(r.niveaux || 0, "niveau", "niveaux")}, ${pl(r.classes || 0, "classe")}, ${pl(r.matieres || 0, "matière")}${r.periodes ? `, ${pl(r.periodes, "période datée", "périodes datées")}` : ""}. Tout reste modifiable.`);
       await charger();
     } catch (e) {
       toast.erreur(e.message);
@@ -65,22 +76,36 @@ export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = 
   }
 
   const prochaine = etapes.find((e) => !e.ok);
+  const barre = (
+    <div className="h-1.5 overflow-hidden rounded-full bg-navy-900/10">
+      <div className="h-full rounded-full bg-or-500" style={{ width: `${Math.round((faites / etapes.length) * 100)}%` }} />
+    </div>
+  );
+  if (replie) return (
+    <Carte className="flex flex-wrap items-center gap-x-4 gap-y-2 border-l-4 border-l-or-500 px-5 py-3">
+      <p className="text-sm font-semibold text-navy-900">Mise en route {faites} / {etapes.length}</p>
+      <div className="min-w-24 flex-1">{barre}</div>
+      <p className="min-w-0 text-sm text-navy-900/60">Prochaine étape : <b className="text-navy-900">{prochaine.label}</b></p>
+      <Link to={prochaine.to} className="text-sm font-semibold text-navy-700 hover:text-or-600">{prochaine.action} →</Link>
+      <button type="button" onClick={basculerRepli} aria-expanded="false"
+        className="min-h-10 text-xs font-medium text-navy-900/50 underline-offset-2 hover:text-navy-900 hover:underline">
+        Voir les étapes
+      </button>
+    </Carte>
+  );
   return (
     <Carte className="border-l-4 border-l-or-500 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-lg font-semibold text-navy-900">Mise en route — {ecole?.nom}</h3>
         <span className="flex items-center gap-3">
-          <span className="text-xs font-medium text-or-600">{etapes.length - restants} / {etapes.length} étapes</span>
-          <button type="button" onClick={basculerRepli} aria-expanded={!replie}
-            className="text-xs font-medium text-navy-900/50 underline-offset-2 hover:text-navy-900 hover:underline">
-            {replie ? "Déplier" : "Replier"}
+          <span className="text-xs font-medium text-or-600">{faites} / {etapes.length} étapes</span>
+          <button type="button" onClick={basculerRepli} aria-expanded="true"
+            className="min-h-10 text-xs font-medium text-navy-900/50 underline-offset-2 hover:text-navy-900 hover:underline">
+            Replier
           </button>
         </span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-navy-900/10">
-        <div className="h-full rounded-full bg-or-500" style={{ width: `${Math.round(((etapes.length - restants) / etapes.length) * 100)}%` }} />
-      </div>
-      {!replie && (<>
+      <div className="mt-2">{barre}</div>
       <p className="mt-3 text-sm text-navy-900/60">
         Prochaine étape : <b className="text-navy-900">{prochaine.label}</b> — {prochaine.aide}
       </p>
@@ -107,7 +132,6 @@ export default function MiseEnRoute({ ecoleId, ecole, modulesActifs, compacte = 
           </li>
         ))}
       </ol>
-      </>)}
     </Carte>
   );
 }

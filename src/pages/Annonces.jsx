@@ -139,9 +139,9 @@ export default function Annonces() {
                   </a>
                   <button
                     onClick={async () => { if (await confirmer("Supprimer cette annonce ?")) wrap(() => api.supprimerAnnonce(a.id), "Annonce supprimée."); }}
-                    className="text-xs text-rose-700 hover:underline"
+                    className="min-h-8 text-xs text-rose-700 hover:underline"
                   >
-                    supprimer
+                    Supprimer
                   </button>
                 </div>
               </div>

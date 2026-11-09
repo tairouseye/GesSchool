@@ -72,7 +72,13 @@ export default function EmploiDuTemps() {
 function PanneauEmplois({ ecoleId, ecole, annee, classes, matieres, enseignants, salles }) {
   const toast = useToast();
   const confirmer = useConfirm();
-  const [classeId, setClasseId] = useState("");
+  //  La dernière classe ouverte sur ce poste (test du 09/11/2026).
+  const cleClasse = `edt_classe_${ecoleId}`;
+  const [classeId, setClasseIdBrut] = useState(() => { try { return localStorage.getItem(cleClasse) || ""; } catch { return ""; } });
+  const setClasseId = (id) => { setClasseIdBrut(id); try { localStorage.setItem(cleClasse, id); } catch { /* ignoré */ } };
+  useEffect(() => {
+    if (classeId && classes.length && !classes.some((c) => c.id === classeId)) setClasseIdBrut("");
+  }, [classeId, classes]);
   const [creneaux, setCreneaux] = useState([]);
   const [modale, setModale] = useState(null);
   const [imprimer, setImprimer] = useState(false);

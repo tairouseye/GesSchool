@@ -178,10 +178,12 @@ export default function Paiements() {
                   </>
                 )}
               </div>
-              <Bouton onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
+              {/*  Le geste du guichet est le bouton principal (test du
+                   09/11/2026) ; « Nouvelle facture » passe au second plan. */}
+              <Bouton variante="fantome" onClick={() => setModaleNouvelle(true)} disabled={inscrits.length === 0}>
                 + Nouvelle facture
               </Bouton>
-              <Bouton variante="or" onClick={() => ouvrirEncaisser()}>Encaisser</Bouton>
+              <Bouton onClick={() => ouvrirEncaisser()}>Encaisser</Bouton>
             </div>
           )
         }

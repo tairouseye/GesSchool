@@ -15,6 +15,15 @@ import { dateFr } from "@/lib/dates.js";
 const TYPES = ["devoir", "composition", "examen", "interro", "tp", "oral", "projet"];
 
 // Phase 1 — Module 2 : saisie des notes.
+// La dernière classe / matière saisie, par école, sur ce poste.
+const cleDernier = (ecoleId) => `notes_dernier_${ecoleId}`;
+function lireDernier(ecoleId) {
+  try { return JSON.parse(localStorage.getItem(cleDernier(ecoleId)) || "{}") || {}; } catch { return {}; }
+}
+function ecrireDernier(ecoleId, v) {
+  try { localStorage.setItem(cleDernier(ecoleId), JSON.stringify(v)); } catch { /* ignoré */ }
+}
+
 export default function Notes() {
   const { ecoleId, roles, profil, utilisateur } = useAuth();
   const toutVoir = voitToutesClasses(roles);
@@ -67,12 +76,26 @@ export default function Notes() {
         if (cls.some((c) => c.id === params.get("classe"))) {
           setClasseId(params.get("classe"));
           if (params.get("matiere")) setMatiereId(params.get("matiere"));
+        } else {
+          //  Sans lien : la dernière classe et la dernière matière saisies sur
+          //  ce poste, ou la seule classe de l'enseignant (test du 09/11/2026 :
+          //  trois listes à choisir avant de voir le moindre tableau).
+          const dernier = lireDernier(ecoleId);
+          const classe = cls.find((c) => c.id === dernier.classe) || (cls.length === 1 ? cls[0] : null);
+          if (classe) {
+            setClasseId(classe.id);
+            if (classe.id === dernier.classe && dernier.matiere) setMatiereId(dernier.matiere);
+          }
         }
       } catch (e) {
         setErreur(e.message);
       }
     })();
   }, [ecoleId, profil?.id, utilisateur?.email, toutVoir]);
+
+  useEffect(() => {
+    if (classeId) ecrireDernier(ecoleId, { classe: classeId, matiere: matiereId });
+  }, [ecoleId, classeId, matiereId]);
 
   // Matières proposées pour la classe choisie (restreintes pour un enseignant).
   const matieresVisibles = matieresAutorisees(matieres, mesMatieres, classeId, toutVoir);

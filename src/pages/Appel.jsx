@@ -15,7 +15,13 @@ const ETATS = [
   ["retard", "Retard", "bg-or-500 text-navy-900", "text-or-600"],
 ];
 const auj = () => new Date().toISOString().slice(0, 10);
-const dateLisible = () => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long" });
+//  « Lundi 9 novembre », comme sur l'accueil.
+const dateLisible = () => {
+  const d = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return d.charAt(0).toUpperCase() + d.slice(1);
+};
+
+const pl = (n, mot, motPl = `${mot}s`) => `${n} ${n > 1 ? motPl : mot}`;
 
 export default function Appel() {
   const { ecoleId, ecole, utilisateur, profil, roles } = useAuth();
@@ -97,7 +103,7 @@ export default function Appel() {
       const entries = eleves.map((e) => ({ eleve_id: e.id, etat: etats[e.id] || "present", motif: null }));
       await enregistrerAppel(ecoleId, classeId, auj(), entries, utilisateur?.id);
       setValideLe(new Date().toISOString());
-      setInfo(`Appel validé ✓ ${compteurs.absence} absent(s), ${compteurs.retard} retard(s). Transmis à l'administration et aux parents concernés.`);
+      setInfo(`Appel validé ✓ ${pl(compteurs.absence, "absent")}, ${pl(compteurs.retard, "retard")}. Transmis à l'administration et aux parents concernés.`);
     } catch (e) { setErreur(e.message); }
     finally { setEnCours(false); }
   }
@@ -157,7 +163,7 @@ export default function Appel() {
                 <span className="text-rose-700">Absents : <b>{compteurs.absence}</b></span>
                 <span className="text-or-600">Retards : <b>{compteurs.retard}</b></span>
               </div>
-              <span className="text-xs text-navy-900/40">{eleves.length} élève(s)</span>
+              <span className="text-xs text-navy-900/40">{pl(eleves.length, "élève")}</span>
             </Carte>
 
             <Carte className="divide-y divide-navy-900/5">
@@ -262,7 +268,7 @@ function ModaleFeuille({ ouvert, onFermer, ecole, classe, annee, eleves, etats, 
         </table>
 
         <p className="mt-2 text-[11px] text-navy-900/60">
-          {eleves.length} élève(s) · présents <b>{compte("present")}</b> · absents <b>{compte("absence")}</b> · retards <b>{compte("retard")}</b>
+          {pl(eleves.length, "élève")} · présents <b>{compte("present")}</b> · absents <b>{compte("absence")}</b> · retards <b>{compte("retard")}</b>
         </p>
         <div className="mt-8 flex justify-between text-sm">
           <span>

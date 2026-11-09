@@ -98,3 +98,12 @@ test("Nouvelle facture : le libellé du mois est celui de l'échéancier", () =>
   //  `fr.libelle || ' — ' || _libelle_mois('2026-10')` en SQL (mig. 210).
   assert.equal(libelleMensuel("Frais de scolarité", "2026-10"), "Frais de scolarité — Octobre 2026");
 });
+
+const { trierClasses } = await chargerLib("classes", ['export { trierClasses } from "@/lib/academique.js";']);
+
+test("les classes suivent l'ordre des niveaux de l'école, pas l'alphabet", () => {
+  const c = (libelle, ordre) => ({ libelle, niveaux: ordre == null ? null : { ordre } });
+  const l = trierClasses([c("CE1", 6), c("CI B", 4), c("CI A", 4), c("TPS", 0), c("CP", 5), c("Sans niveau", null), c("GS", 3)]);
+  assert.deepEqual(l.map((x) => x.libelle), ["TPS", "GS", "CI A", "CI B", "CP", "CE1", "Sans niveau"]);
+  assert.deepEqual(trierClasses([c("6e 10", 1), c("6e 2", 1)]).map((x) => x.libelle), ["6e 2", "6e 10"]);
+});

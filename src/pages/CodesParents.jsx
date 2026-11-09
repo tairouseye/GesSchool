@@ -47,6 +47,8 @@ const FILTRES = [
   { id: "connecte", label: "Déjà connectés" },
 ];
 
+const pl = (n, mot, motPl = `${mot}s`) => `${n} ${n > 1 ? motPl : mot}`;
+
 export default function CodesParents() {
   const { ecoleId, ecole } = useAuth();
   const toast = useToast();
@@ -130,7 +132,7 @@ export default function CodesParents() {
       titre: regenererTout ? "Régénérer TOUS les codes ?" : "Générer les codes manquants ?",
       message: regenererTout
         ? `${cibles.length} codes seront régénérés. Les anciens codes non encore utilisés ne fonctionneront plus.`
-        : `${cibles.length} code(s) parent(s) vont être générés en une fois.`,
+        : cibles.length > 1 ? `${cibles.length} codes parents vont être générés en une fois.` : "1 code parent va être généré.",
       danger: regenererTout,
       confirmer: "Générer",
     });
@@ -146,7 +148,7 @@ export default function CodesParents() {
         },
         (fait) => setProgression((p) => (p ? { ...p, fait } : p)),
       );
-      toast.succes(`${cibles.length} code(s) généré(s).`);
+      toast.succes(cibles.length > 1 ? `${cibles.length} codes générés.` : "1 code généré.");
     } catch (e) {
       toast.erreur(e);
     } finally {
@@ -207,8 +209,10 @@ export default function CodesParents() {
              personnes différentes est BLOQUÉ, pour qu'une famille ne voie pas
              les enfants d'une autre. L'école corrige la fiche, et c'est réglé. */}
         {aVerifier.length > 0 && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 print:hidden">
-            <p className="font-semibold">⚠️ {aVerifier.length} numéro(s) à vérifier : ces parents ne peuvent pas se connecter par leur numéro</p>
+          //  Plié par défaut : la liste peut être longue et repoussait tout
+          //  l'écran sous le pli (test du 09/11/2026). Le titre dit l'essentiel.
+          <details className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 print:hidden">
+            <summary className="cursor-pointer font-semibold">⚠️ {pl(aVerifier.length, "numéro")} à vérifier : ces parents ne peuvent pas se connecter par leur numéro <span className="font-normal underline">Voir</span></summary>
             <p className="mt-1 text-xs">
               Le même numéro est enregistré pour des personnes différentes. Corrigez le numéro ou le nom sur la fiche
               de l&apos;élève (Responsables) ; s&apos;il s&apos;agit bien de la même personne, écrivez son nom à l&apos;identique.
@@ -218,7 +222,7 @@ export default function CodesParents() {
                 <li key={n.telephone}><b className="font-mono">{n.telephone}</b> · {n.noms}{n.enfants ? <span className="text-amber-800"> — {n.enfants}</span> : null}</li>
               ))}
             </ul>
-          </div>
+          </details>
         )}
 
         {/* Cartes de synthèse */}
