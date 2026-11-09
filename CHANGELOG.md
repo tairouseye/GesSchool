@@ -5,6 +5,9 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.314.1] — Écrire à l'école et WhatsApp remontent
+- **Espace parent** : les deux gestes « Écrire à l'école » et « WhatsApp » reviennent juste sous « À faire en priorité », au lieu du bas de l'accueil.
+
 ## [2.314.0] — Le nouvel accueil de l'espace parent
 - **Un accueil pour l'enfant affiché** : « Bonjour », sa carte, les onglets Paiements, Notes et Emploi du temps, puis À faire en priorité.
 - **Aujourd'hui** : le cours du moment ou le prochain, avec l'accès à l'emploi du temps.
