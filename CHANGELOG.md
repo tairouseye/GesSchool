@@ -5,6 +5,17 @@ La version applicative est celle de `package.json` (affichée dans l'app). Migra
 
 > Historique antérieur à `2.109.0` : voir l'historique git. Ce journal démarre au chantier **Comptabilité / RH & Paie**.
 
+## [2.317.0] — L'espace école, plus direct
+Pistes 2 à 6 du test côté école du 9 novembre 2026. Migration 233.
+- **« En retard » veut dire la même chose partout** (mig. 233) : un mois échu et non payé, ou une facture échue hors scolarité. Le statut de la Situation des paiements et le compte de l'accueil donnent le même nombre d'élèves.
+- **Accueil** : la mise en route se replie sur une ligne dès cinq étapes faites (« Mise en route 7 / 9 · Prochaine étape · Donner les codes → ») ; **À traiter** et l'agenda remontent juste sous les chiffres, le graphique de l'année passe en dessous.
+- **Mise en route** : une période ne compte comme datée que si elle tombe dans l'année scolaire ; « 9 niveaux », « 3 / 3 datées », « 0 / 12 connectés ».
+- **Les classes dans l'ordre de l'école** (TPS, PS, MS, GS, CI, CP, CE1…) partout, au lieu de l'ordre alphabétique.
+- **Notes** : la dernière classe et la dernière matière sont reprises ; la seule classe d'un enseignant est choisie d'office. **Bulletins** : le trimestre en cours. **Emploi du temps** : la dernière classe ouverte.
+- **Encaisser** devient le bouton principal de Paiements, et chaque ligne du Recouvrement a son bouton **Encaisser**.
+- **Petites retouches** : pluriels accordés (Situation, Codes parents, Feuille de présence) ; « Lundi 9 novembre » ; l'avertissement des numéros partagés plié par défaut ; « Supprimer » une annonce plus lisible.
+- **Démo** : données remises d'aplomb (trimestres de l'année, factures reliées aux mois, sigle KCA, un numéro par enseignant, Pilotage ouvert).
+
 ## [2.316.0] — Un seul chiffre des impayés, partout
 Piste 1 du test côté école du 9 novembre 2026 (démo, ordinateur). Migration 232.
 - **Le même montant sur chaque écran** : l'accueil Gestion, l'accueil du comptable et de la caisse, et le Recouvrement comptent désormais comme la Situation des paiements, la fiche de l'élève et l'espace parent — les mois dus d'après la grille tarifaire, même sans facture, plus les factures échues hors scolarité (cantine, transport…). Avant, l'accueil disait 19 élèves en retard et la Situation 50.
